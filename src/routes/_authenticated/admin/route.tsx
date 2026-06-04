@@ -47,9 +47,9 @@ function AdminLayout() {
   return (
     <div className="min-h-screen flex bg-surface">
       <aside className="hidden lg:flex w-64 flex-col bg-primary-deep text-white shrink-0">
-        <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-white">
+        <div className="p-4 border-b border-white/10 flex items-center gap-3">
           <img src={logo} alt="Sicher Schwimmen e.V." className="h-14 w-auto object-contain" height={56} />
-          <div className="text-primary-deep">
+          <div className="text-white">
             <div className="font-display font-bold leading-none">Admin</div>
           </div>
         </div>
