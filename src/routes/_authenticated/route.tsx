@@ -2,7 +2,8 @@ import { Outlet, Link, createFileRoute, redirect, useNavigate } from "@tanstack/
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, LogOut, Waves, Shield, BookOpen } from "lucide-react";
-import logo from "@/assets/logo-beaver.png";
+import logoAsset from "@/assets/logo-sicher-schwimmen.jpg.asset.json";
+const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
