@@ -9,8 +9,74 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
+import { Route as SicherheitRouteImport } from './routes/sicherheit'
+import { Route as SatzungRouteImport } from './routes/satzung'
+import { Route as MitgliedsordnungRouteImport } from './routes/mitgliedsordnung'
+import { Route as MitgliedschaftRouteImport } from './routes/mitgliedschaft'
+import { Route as KurseRouteImport } from './routes/kurse'
+import { Route as KursAnfragenRouteImport } from './routes/kurs-anfragen'
+import { Route as KontaktRouteImport } from './routes/kontakt'
+import { Route as ImpressumRouteImport } from './routes/impressum'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UeberUnsRoute = UeberUnsRouteImport.update({
+  id: '/ueber-uns',
+  path: '/ueber-uns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SicherheitRoute = SicherheitRouteImport.update({
+  id: '/sicherheit',
+  path: '/sicherheit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SatzungRoute = SatzungRouteImport.update({
+  id: '/satzung',
+  path: '/satzung',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MitgliedsordnungRoute = MitgliedsordnungRouteImport.update({
+  id: '/mitgliedsordnung',
+  path: '/mitgliedsordnung',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MitgliedschaftRoute = MitgliedschaftRouteImport.update({
+  id: '/mitgliedschaft',
+  path: '/mitgliedschaft',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KurseRoute = KurseRouteImport.update({
+  id: '/kurse',
+  path: '/kurse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KursAnfragenRoute = KursAnfragenRouteImport.update({
+  id: '/kurs-anfragen',
+  path: '/kurs-anfragen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KontaktRoute = KontaktRouteImport.update({
+  id: '/kontakt',
+  path: '/kontakt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImpressumRoute = ImpressumRouteImport.update({
+  id: '/impressum',
+  path: '/impressum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatenschutzRoute = DatenschutzRouteImport.update({
+  id: '/datenschutz',
+  path: '/datenschutz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +85,186 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/faq': typeof FaqRoute
+  '/impressum': typeof ImpressumRoute
+  '/kontakt': typeof KontaktRoute
+  '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kurse': typeof KurseRoute
+  '/mitgliedschaft': typeof MitgliedschaftRoute
+  '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/satzung': typeof SatzungRoute
+  '/sicherheit': typeof SicherheitRoute
+  '/ueber-uns': typeof UeberUnsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/faq': typeof FaqRoute
+  '/impressum': typeof ImpressumRoute
+  '/kontakt': typeof KontaktRoute
+  '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kurse': typeof KurseRoute
+  '/mitgliedschaft': typeof MitgliedschaftRoute
+  '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/satzung': typeof SatzungRoute
+  '/sicherheit': typeof SicherheitRoute
+  '/ueber-uns': typeof UeberUnsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/faq': typeof FaqRoute
+  '/impressum': typeof ImpressumRoute
+  '/kontakt': typeof KontaktRoute
+  '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kurse': typeof KurseRoute
+  '/mitgliedschaft': typeof MitgliedschaftRoute
+  '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/satzung': typeof SatzungRoute
+  '/sicherheit': typeof SicherheitRoute
+  '/ueber-uns': typeof UeberUnsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/datenschutz'
+    | '/faq'
+    | '/impressum'
+    | '/kontakt'
+    | '/kurs-anfragen'
+    | '/kurse'
+    | '/mitgliedschaft'
+    | '/mitgliedsordnung'
+    | '/satzung'
+    | '/sicherheit'
+    | '/ueber-uns'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/datenschutz'
+    | '/faq'
+    | '/impressum'
+    | '/kontakt'
+    | '/kurs-anfragen'
+    | '/kurse'
+    | '/mitgliedschaft'
+    | '/mitgliedsordnung'
+    | '/satzung'
+    | '/sicherheit'
+    | '/ueber-uns'
+  id:
+    | '__root__'
+    | '/'
+    | '/datenschutz'
+    | '/faq'
+    | '/impressum'
+    | '/kontakt'
+    | '/kurs-anfragen'
+    | '/kurse'
+    | '/mitgliedschaft'
+    | '/mitgliedsordnung'
+    | '/satzung'
+    | '/sicherheit'
+    | '/ueber-uns'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DatenschutzRoute: typeof DatenschutzRoute
+  FaqRoute: typeof FaqRoute
+  ImpressumRoute: typeof ImpressumRoute
+  KontaktRoute: typeof KontaktRoute
+  KursAnfragenRoute: typeof KursAnfragenRoute
+  KurseRoute: typeof KurseRoute
+  MitgliedschaftRoute: typeof MitgliedschaftRoute
+  MitgliedsordnungRoute: typeof MitgliedsordnungRoute
+  SatzungRoute: typeof SatzungRoute
+  SicherheitRoute: typeof SicherheitRoute
+  UeberUnsRoute: typeof UeberUnsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ueber-uns': {
+      id: '/ueber-uns'
+      path: '/ueber-uns'
+      fullPath: '/ueber-uns'
+      preLoaderRoute: typeof UeberUnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sicherheit': {
+      id: '/sicherheit'
+      path: '/sicherheit'
+      fullPath: '/sicherheit'
+      preLoaderRoute: typeof SicherheitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/satzung': {
+      id: '/satzung'
+      path: '/satzung'
+      fullPath: '/satzung'
+      preLoaderRoute: typeof SatzungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mitgliedsordnung': {
+      id: '/mitgliedsordnung'
+      path: '/mitgliedsordnung'
+      fullPath: '/mitgliedsordnung'
+      preLoaderRoute: typeof MitgliedsordnungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mitgliedschaft': {
+      id: '/mitgliedschaft'
+      path: '/mitgliedschaft'
+      fullPath: '/mitgliedschaft'
+      preLoaderRoute: typeof MitgliedschaftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kurse': {
+      id: '/kurse'
+      path: '/kurse'
+      fullPath: '/kurse'
+      preLoaderRoute: typeof KurseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kurs-anfragen': {
+      id: '/kurs-anfragen'
+      path: '/kurs-anfragen'
+      fullPath: '/kurs-anfragen'
+      preLoaderRoute: typeof KursAnfragenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kontakt': {
+      id: '/kontakt'
+      path: '/kontakt'
+      fullPath: '/kontakt'
+      preLoaderRoute: typeof KontaktRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/impressum': {
+      id: '/impressum'
+      path: '/impressum'
+      fullPath: '/impressum'
+      preLoaderRoute: typeof ImpressumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/datenschutz': {
+      id: '/datenschutz'
+      path: '/datenschutz'
+      fullPath: '/datenschutz'
+      preLoaderRoute: typeof DatenschutzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +277,17 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DatenschutzRoute: DatenschutzRoute,
+  FaqRoute: FaqRoute,
+  ImpressumRoute: ImpressumRoute,
+  KontaktRoute: KontaktRoute,
+  KursAnfragenRoute: KursAnfragenRoute,
+  KurseRoute: KurseRoute,
+  MitgliedschaftRoute: MitgliedschaftRoute,
+  MitgliedsordnungRoute: MitgliedsordnungRoute,
+  SatzungRoute: SatzungRoute,
+  SicherheitRoute: SicherheitRoute,
+  UeberUnsRoute: UeberUnsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
