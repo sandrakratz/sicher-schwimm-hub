@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/logo-sicher-schwimmen-v2.jpg.asset.json";
+import logoAsset from "@/assets/sw-logo.png.asset.json";
 const logo = logoAsset.url;
 import { Mail, Phone, MapPin } from "lucide-react";
 
@@ -8,8 +8,8 @@ export function SiteFooter() {
     <footer className="bg-primary-deep text-sidebar-foreground mt-20">
       <div className="container mx-auto px-4 py-14 grid gap-10 md:grid-cols-4">
         <div>
-          <div className="mb-4 inline-block bg-white rounded-2xl p-3">
-            <img src={logo} alt="Sicher Schwimmen e.V." className="h-20 w-auto object-contain" height={80} loading="lazy" />
+          <div className="mb-4">
+            <img src={logo} alt="Sicher Schwimmen e.V." className="h-24 w-auto object-contain" height={96} loading="lazy" />
           </div>
           <p className="text-sm opacity-80 leading-relaxed">
             Schwimmkurse, Wassergewöhnung und vereinsleben für Familien im
