@@ -20,7 +20,7 @@ function AnfragenAdmin() {
     setRows(data || []);
   }
   useEffect(() => { load(); }, []);
-  async function setStatus(id: string, status: string) {
+  async function setStatus(id: string, status: "new" | "contacted" | "accepted" | "rejected" | "under_review" | "waiting_list") {
     const { error } = await supabase.from("course_requests").update({ status }).eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Aktualisiert"); load(); }
   }

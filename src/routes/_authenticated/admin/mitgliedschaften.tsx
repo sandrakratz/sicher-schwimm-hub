@@ -19,7 +19,7 @@ function Page() {
   }
   useEffect(() => { load(); }, []);
 
-  async function setStatus(id: string, status: string) {
+  async function setStatus(id: string, status: "pending" | "active" | "suspended" | "terminated") {
     const { error } = await supabase.from("memberships").update({ status, approved_at: status === "active" ? new Date().toISOString() : null }).eq("id", id);
     if (error) toast.error(error.message); else { toast.success("Aktualisiert"); load(); }
   }
