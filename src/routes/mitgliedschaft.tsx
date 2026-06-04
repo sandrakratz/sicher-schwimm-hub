@@ -1,0 +1,190 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { PublicLayout } from "@/components/PublicLayout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
+import { Check, Users, Heart, User, HandHeart } from "lucide-react";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/mitgliedschaft")({
+  head: () => ({
+    meta: [
+      { title: "Mitglied werden – Sicher Schwimmen e.V." },
+      { name: "description", content: "Werden Sie Teil unserer Schwimmgemeinschaft in Hennef – Einzel-, Familien- und Fördermitgliedschaft." },
+    ],
+  }),
+  component: Page,
+});
+
+const tiers = [
+  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: "60 €/Jahr", desc: "Für alle Mitglieder unter 18." },
+  { type: "adult", icon: User, name: "Erwachsene", price: "60 €/Jahr", desc: "Einzelmitgliedschaft ab 18 Jahren." },
+  { type: "family", icon: Users, name: "Familie", price: "96 €/Jahr", desc: "Für die ganze Familie – beste Wahl." },
+  { type: "supporting", icon: HandHeart, name: "Förderung", price: "ab 60 €/Jahr", desc: "Unterstützen Sie unsere Arbeit." },
+];
+
+const schema = z.object({
+  membership_type: z.enum(["children_youth","adult","family","supporting"]),
+  first_name: z.string().trim().min(1).max(100),
+  last_name: z.string().trim().min(1).max(100),
+  date_of_birth: z.string().optional(),
+  email: z.string().trim().email().max(255),
+  phone: z.string().trim().max(40).optional(),
+  address_street: z.string().trim().max(200).optional(),
+  address_zip: z.string().trim().max(20).optional(),
+  address_city: z.string().trim().max(100).optional(),
+  guardian_name: z.string().trim().max(200).optional(),
+  guardian_email: z.string().trim().max(255).optional(),
+  guardian_phone: z.string().trim().max(40).optional(),
+  accepted_statutes: z.boolean().refine(v => v),
+  accepted_rules: z.boolean().refine(v => v),
+  accepted_privacy: z.boolean().refine(v => v),
+});
+
+function Page() {
+  const [tier, setTier] = useState("family");
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const obj: Record<string, unknown> = {
+      membership_type: tier,
+      first_name: fd.get("first_name"),
+      last_name: fd.get("last_name"),
+      date_of_birth: fd.get("date_of_birth") || undefined,
+      email: fd.get("email"),
+      phone: fd.get("phone"),
+      address_street: fd.get("address_street"),
+      address_zip: fd.get("address_zip"),
+      address_city: fd.get("address_city"),
+      guardian_name: fd.get("guardian_name"),
+      guardian_email: fd.get("guardian_email"),
+      guardian_phone: fd.get("guardian_phone"),
+      accepted_statutes: fd.get("accepted_statutes") === "on",
+      accepted_rules: fd.get("accepted_rules") === "on",
+      accepted_privacy: fd.get("accepted_privacy") === "on",
+    };
+    const parsed = schema.safeParse(obj);
+    if (!parsed.success) {
+      toast.error("Bitte alle Pflichtfelder & Zustimmungen ausfüllen.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.from("memberships").insert({
+      ...parsed.data,
+      date_of_birth: parsed.data.date_of_birth || null,
+      consent_at: new Date().toISOString(),
+    });
+    setLoading(false);
+    if (error) { toast.error("Antrag konnte nicht gesendet werden."); return; }
+    setDone(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  return (
+    <PublicLayout>
+      <section className="bg-hero text-white py-20">
+        <div className="container mx-auto px-4 text-center max-w-3xl">
+          <Heart className="h-12 w-12 mx-auto text-accent mb-4" />
+          <h1 className="font-display text-5xl md:text-6xl font-bold mb-4">Mitglied werden</h1>
+          <p className="text-white/85 text-lg">
+            Werden Sie Teil unserer Schwimmgemeinschaft und unterstützen Sie
+            sichere Schwimmausbildung in Hennef.
+          </p>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
+          {tiers.map((t) => (
+            <Card key={t.type}
+              onClick={() => setTier(t.type)}
+              className={`cursor-pointer transition-all border-2 ${tier === t.type ? "border-accent shadow-glow -translate-y-1" : "border-transparent shadow-soft hover:-translate-y-1"}`}>
+              <CardContent className="p-6 text-center">
+                <t.icon className="h-10 w-10 text-primary mx-auto mb-3" />
+                <h3 className="font-display font-bold text-lg text-primary-deep">{t.name}</h3>
+                <div className="text-2xl font-bold text-accent my-2">{t.price}</div>
+                <p className="text-sm text-muted-foreground">{t.desc}</p>
+                {tier === t.type && (
+                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent"><Check className="h-3.5 w-3.5" /> Ausgewählt</div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {done ? (
+          <Card className="max-w-2xl mx-auto shadow-card border-0 text-center">
+            <CardContent className="p-10">
+              <Check className="h-16 w-16 text-success mx-auto mb-4" />
+              <h2 className="font-display text-3xl font-bold text-primary-deep mb-3">Antrag eingereicht</h2>
+              <p className="text-muted-foreground">
+                Vielen Dank! Die Mitgliedschaft wird erst nach Freigabe durch den Vorstand aktiv. Wir melden uns per E-Mail.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="max-w-3xl mx-auto shadow-card border-0">
+            <CardContent className="p-8">
+              <h2 className="font-display text-2xl font-bold text-primary-deep mb-2">Mitgliedsantrag</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Hinweis: Die Mitgliedschaft wird erst nach Genehmigung durch den Vereinsvorstand aktiv.
+              </p>
+              <form onSubmit={onSubmit} className="space-y-6">
+                <div>
+                  <Label>Mitgliedschaftsart</Label>
+                  <Select value={tier} onValueChange={setTier}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {tiers.map(t => <SelectItem key={t.type} value={t.type}>{t.name} – {t.price}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} /></div>
+                  <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} /></div>
+                  <div><Label htmlFor="date_of_birth">Geburtsdatum</Label><Input id="date_of_birth" type="date" name="date_of_birth" /></div>
+                  <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} /></div>
+                  <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" maxLength={40} /></div>
+                  <div><Label htmlFor="address_street">Straße & Nr.</Label><Input id="address_street" name="address_street" maxLength={200} /></div>
+                  <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" maxLength={20} /></div>
+                  <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" maxLength={100} /></div>
+                </div>
+                <div className="border-t pt-5">
+                  <h3 className="font-semibold text-primary-deep mb-3">Erziehungsberechtigte/r (bei Minderjährigen)</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div><Label htmlFor="guardian_name">Name</Label><Input id="guardian_name" name="guardian_name" maxLength={200} /></div>
+                    <div><Label htmlFor="guardian_email">E-Mail</Label><Input id="guardian_email" type="email" name="guardian_email" maxLength={255} /></div>
+                    <div><Label htmlFor="guardian_phone">Telefon</Label><Input id="guardian_phone" name="guardian_phone" maxLength={40} /></div>
+                  </div>
+                </div>
+                <div className="space-y-3 border-t pt-5">
+                  <label className="flex gap-3 items-start text-sm cursor-pointer">
+                    <Checkbox name="accepted_statutes" required /> <span>Ich akzeptiere die <a href="/satzung" className="text-primary underline">Vereinssatzung</a>. *</span>
+                  </label>
+                  <label className="flex gap-3 items-start text-sm cursor-pointer">
+                    <Checkbox name="accepted_rules" required /> <span>Ich akzeptiere die <a href="/mitgliedsordnung" className="text-primary underline">Mitgliedsordnung</a>. *</span>
+                  </label>
+                  <label className="flex gap-3 items-start text-sm cursor-pointer">
+                    <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a>. *</span>
+                  </label>
+                </div>
+                <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
+                  {loading ? "Wird gesendet..." : "Mitgliedsantrag absenden"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+      </section>
+    </PublicLayout>
+  );
+}

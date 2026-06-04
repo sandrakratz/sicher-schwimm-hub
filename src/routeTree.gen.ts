@@ -9,38 +9,543 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
+import { Route as SicherheitRouteImport } from './routes/sicherheit'
+import { Route as SatzungRouteImport } from './routes/satzung'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as MitgliedsordnungRouteImport } from './routes/mitgliedsordnung'
+import { Route as MitgliedschaftRouteImport } from './routes/mitgliedschaft'
+import { Route as KurseRouteImport } from './routes/kurse'
+import { Route as KursAnfragenRouteImport } from './routes/kurs-anfragen'
+import { Route as KontaktRouteImport } from './routes/kontakt'
+import { Route as ImpressumRouteImport } from './routes/impressum'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as DatenschutzRouteImport } from './routes/datenschutz'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
+import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
+import { Route as AuthenticatedPortalKurseRouteImport } from './routes/_authenticated/portal/kurse'
+import { Route as AuthenticatedPortalKontaktRouteImport } from './routes/_authenticated/portal/kontakt'
+import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal/events'
+import { Route as AuthenticatedPortalDokumenteRouteImport } from './routes/_authenticated/portal/dokumente'
+import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
+import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
+import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
+import { Route as AuthenticatedAdminKurseRouteImport } from './routes/_authenticated/admin/kurse'
+import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
+import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authenticated/admin/dokumente'
+import { Route as AuthenticatedAdminBenutzerRouteImport } from './routes/_authenticated/admin/benutzer'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
+import { Route as AuthenticatedAdminAnfragenRouteImport } from './routes/_authenticated/admin/anfragen'
 
+const UeberUnsRoute = UeberUnsRouteImport.update({
+  id: '/ueber-uns',
+  path: '/ueber-uns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SicherheitRoute = SicherheitRouteImport.update({
+  id: '/sicherheit',
+  path: '/sicherheit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SatzungRoute = SatzungRouteImport.update({
+  id: '/satzung',
+  path: '/satzung',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MitgliedsordnungRoute = MitgliedsordnungRouteImport.update({
+  id: '/mitgliedsordnung',
+  path: '/mitgliedsordnung',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MitgliedschaftRoute = MitgliedschaftRouteImport.update({
+  id: '/mitgliedschaft',
+  path: '/mitgliedschaft',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KurseRoute = KurseRouteImport.update({
+  id: '/kurse',
+  path: '/kurse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KursAnfragenRoute = KursAnfragenRouteImport.update({
+  id: '/kurs-anfragen',
+  path: '/kurs-anfragen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KontaktRoute = KontaktRouteImport.update({
+  id: '/kontakt',
+  path: '/kontakt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImpressumRoute = ImpressumRouteImport.update({
+  id: '/impressum',
+  path: '/impressum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatenschutzRoute = DatenschutzRouteImport.update({
+  id: '/datenschutz',
+  path: '/datenschutz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPortalIndexRoute =
+  AuthenticatedPortalIndexRouteImport.update({
+    id: '/portal/',
+    path: '/portal/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const AuthenticatedPortalProfilRoute =
+  AuthenticatedPortalProfilRouteImport.update({
+    id: '/portal/profil',
+    path: '/portal/profil',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPortalNewsRoute = AuthenticatedPortalNewsRouteImport.update({
+  id: '/portal/news',
+  path: '/portal/news',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPortalKurseRoute =
+  AuthenticatedPortalKurseRouteImport.update({
+    id: '/portal/kurse',
+    path: '/portal/kurse',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPortalKontaktRoute =
+  AuthenticatedPortalKontaktRouteImport.update({
+    id: '/portal/kontakt',
+    path: '/portal/kontakt',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPortalEventsRoute =
+  AuthenticatedPortalEventsRouteImport.update({
+    id: '/portal/events',
+    path: '/portal/events',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPortalDokumenteRoute =
+  AuthenticatedPortalDokumenteRouteImport.update({
+    id: '/portal/dokumente',
+    path: '/portal/dokumente',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminNewsRoute = AuthenticatedAdminNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const AuthenticatedAdminNachrichtenRoute =
+  AuthenticatedAdminNachrichtenRouteImport.update({
+    id: '/nachrichten',
+    path: '/nachrichten',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminMitgliedschaftenRoute =
+  AuthenticatedAdminMitgliedschaftenRouteImport.update({
+    id: '/mitgliedschaften',
+    path: '/mitgliedschaften',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminKurseRoute = AuthenticatedAdminKurseRouteImport.update({
+  id: '/kurse',
+  path: '/kurse',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const AuthenticatedAdminEventsRoute =
+  AuthenticatedAdminEventsRouteImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminDokumenteRoute =
+  AuthenticatedAdminDokumenteRouteImport.update({
+    id: '/dokumente',
+    path: '/dokumente',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminBenutzerRoute =
+  AuthenticatedAdminBenutzerRouteImport.update({
+    id: '/benutzer',
+    path: '/benutzer',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
+const AuthenticatedAdminAnfragenRoute =
+  AuthenticatedAdminAnfragenRouteImport.update({
+    id: '/anfragen',
+    path: '/anfragen',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/faq': typeof FaqRoute
+  '/impressum': typeof ImpressumRoute
+  '/kontakt': typeof KontaktRoute
+  '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kurse': typeof KurseRoute
+  '/mitgliedschaft': typeof MitgliedschaftRoute
+  '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/satzung': typeof SatzungRoute
+  '/sicherheit': typeof SicherheitRoute
+  '/ueber-uns': typeof UeberUnsRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
+  '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
+  '/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/admin/kurse': typeof AuthenticatedAdminKurseRoute
+  '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
+  '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
+  '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
+  '/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
+  '/portal/kurse': typeof AuthenticatedPortalKurseRoute
+  '/portal/news': typeof AuthenticatedPortalNewsRoute
+  '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/portal/': typeof AuthenticatedPortalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/faq': typeof FaqRoute
+  '/impressum': typeof ImpressumRoute
+  '/kontakt': typeof KontaktRoute
+  '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kurse': typeof KurseRoute
+  '/mitgliedschaft': typeof MitgliedschaftRoute
+  '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/satzung': typeof SatzungRoute
+  '/sicherheit': typeof SicherheitRoute
+  '/ueber-uns': typeof UeberUnsRoute
+  '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
+  '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
+  '/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/admin/kurse': typeof AuthenticatedAdminKurseRoute
+  '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
+  '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
+  '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
+  '/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
+  '/portal/kurse': typeof AuthenticatedPortalKurseRoute
+  '/portal/news': typeof AuthenticatedPortalNewsRoute
+  '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/portal': typeof AuthenticatedPortalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/datenschutz': typeof DatenschutzRoute
+  '/faq': typeof FaqRoute
+  '/impressum': typeof ImpressumRoute
+  '/kontakt': typeof KontaktRoute
+  '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kurse': typeof KurseRoute
+  '/mitgliedschaft': typeof MitgliedschaftRoute
+  '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/satzung': typeof SatzungRoute
+  '/sicherheit': typeof SicherheitRoute
+  '/ueber-uns': typeof UeberUnsRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
+  '/_authenticated/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
+  '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/_authenticated/admin/kurse': typeof AuthenticatedAdminKurseRoute
+  '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
+  '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
+  '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/_authenticated/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
+  '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/_authenticated/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
+  '/_authenticated/portal/kurse': typeof AuthenticatedPortalKurseRoute
+  '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
+  '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/datenschutz'
+    | '/faq'
+    | '/impressum'
+    | '/kontakt'
+    | '/kurs-anfragen'
+    | '/kurse'
+    | '/mitgliedschaft'
+    | '/mitgliedsordnung'
+    | '/reset-password'
+    | '/satzung'
+    | '/sicherheit'
+    | '/ueber-uns'
+    | '/admin'
+    | '/admin/anfragen'
+    | '/admin/audit'
+    | '/admin/benutzer'
+    | '/admin/dokumente'
+    | '/admin/events'
+    | '/admin/kurse'
+    | '/admin/mitgliedschaften'
+    | '/admin/nachrichten'
+    | '/admin/news'
+    | '/portal/dokumente'
+    | '/portal/events'
+    | '/portal/kontakt'
+    | '/portal/kurse'
+    | '/portal/news'
+    | '/portal/profil'
+    | '/admin/'
+    | '/portal/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/datenschutz'
+    | '/faq'
+    | '/impressum'
+    | '/kontakt'
+    | '/kurs-anfragen'
+    | '/kurse'
+    | '/mitgliedschaft'
+    | '/mitgliedsordnung'
+    | '/reset-password'
+    | '/satzung'
+    | '/sicherheit'
+    | '/ueber-uns'
+    | '/admin/anfragen'
+    | '/admin/audit'
+    | '/admin/benutzer'
+    | '/admin/dokumente'
+    | '/admin/events'
+    | '/admin/kurse'
+    | '/admin/mitgliedschaften'
+    | '/admin/nachrichten'
+    | '/admin/news'
+    | '/portal/dokumente'
+    | '/portal/events'
+    | '/portal/kontakt'
+    | '/portal/kurse'
+    | '/portal/news'
+    | '/portal/profil'
+    | '/admin'
+    | '/portal'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/datenschutz'
+    | '/faq'
+    | '/impressum'
+    | '/kontakt'
+    | '/kurs-anfragen'
+    | '/kurse'
+    | '/mitgliedschaft'
+    | '/mitgliedsordnung'
+    | '/reset-password'
+    | '/satzung'
+    | '/sicherheit'
+    | '/ueber-uns'
+    | '/_authenticated/admin'
+    | '/_authenticated/admin/anfragen'
+    | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/benutzer'
+    | '/_authenticated/admin/dokumente'
+    | '/_authenticated/admin/events'
+    | '/_authenticated/admin/kurse'
+    | '/_authenticated/admin/mitgliedschaften'
+    | '/_authenticated/admin/nachrichten'
+    | '/_authenticated/admin/news'
+    | '/_authenticated/portal/dokumente'
+    | '/_authenticated/portal/events'
+    | '/_authenticated/portal/kontakt'
+    | '/_authenticated/portal/kurse'
+    | '/_authenticated/portal/news'
+    | '/_authenticated/portal/profil'
+    | '/_authenticated/admin/'
+    | '/_authenticated/portal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  DatenschutzRoute: typeof DatenschutzRoute
+  FaqRoute: typeof FaqRoute
+  ImpressumRoute: typeof ImpressumRoute
+  KontaktRoute: typeof KontaktRoute
+  KursAnfragenRoute: typeof KursAnfragenRoute
+  KurseRoute: typeof KurseRoute
+  MitgliedschaftRoute: typeof MitgliedschaftRoute
+  MitgliedsordnungRoute: typeof MitgliedsordnungRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SatzungRoute: typeof SatzungRoute
+  SicherheitRoute: typeof SicherheitRoute
+  UeberUnsRoute: typeof UeberUnsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ueber-uns': {
+      id: '/ueber-uns'
+      path: '/ueber-uns'
+      fullPath: '/ueber-uns'
+      preLoaderRoute: typeof UeberUnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sicherheit': {
+      id: '/sicherheit'
+      path: '/sicherheit'
+      fullPath: '/sicherheit'
+      preLoaderRoute: typeof SicherheitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/satzung': {
+      id: '/satzung'
+      path: '/satzung'
+      fullPath: '/satzung'
+      preLoaderRoute: typeof SatzungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mitgliedsordnung': {
+      id: '/mitgliedsordnung'
+      path: '/mitgliedsordnung'
+      fullPath: '/mitgliedsordnung'
+      preLoaderRoute: typeof MitgliedsordnungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mitgliedschaft': {
+      id: '/mitgliedschaft'
+      path: '/mitgliedschaft'
+      fullPath: '/mitgliedschaft'
+      preLoaderRoute: typeof MitgliedschaftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kurse': {
+      id: '/kurse'
+      path: '/kurse'
+      fullPath: '/kurse'
+      preLoaderRoute: typeof KurseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kurs-anfragen': {
+      id: '/kurs-anfragen'
+      path: '/kurs-anfragen'
+      fullPath: '/kurs-anfragen'
+      preLoaderRoute: typeof KursAnfragenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kontakt': {
+      id: '/kontakt'
+      path: '/kontakt'
+      fullPath: '/kontakt'
+      preLoaderRoute: typeof KontaktRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/impressum': {
+      id: '/impressum'
+      path: '/impressum'
+      fullPath: '/impressum'
+      preLoaderRoute: typeof ImpressumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/datenschutz': {
+      id: '/datenschutz'
+      path: '/datenschutz'
+      fullPath: '/datenschutz'
+      preLoaderRoute: typeof DatenschutzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +553,210 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/': {
+      id: '/_authenticated/portal/'
+      path: '/portal'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof AuthenticatedPortalIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/portal/profil': {
+      id: '/_authenticated/portal/profil'
+      path: '/portal/profil'
+      fullPath: '/portal/profil'
+      preLoaderRoute: typeof AuthenticatedPortalProfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/news': {
+      id: '/_authenticated/portal/news'
+      path: '/portal/news'
+      fullPath: '/portal/news'
+      preLoaderRoute: typeof AuthenticatedPortalNewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/kurse': {
+      id: '/_authenticated/portal/kurse'
+      path: '/portal/kurse'
+      fullPath: '/portal/kurse'
+      preLoaderRoute: typeof AuthenticatedPortalKurseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/kontakt': {
+      id: '/_authenticated/portal/kontakt'
+      path: '/portal/kontakt'
+      fullPath: '/portal/kontakt'
+      preLoaderRoute: typeof AuthenticatedPortalKontaktRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/events': {
+      id: '/_authenticated/portal/events'
+      path: '/portal/events'
+      fullPath: '/portal/events'
+      preLoaderRoute: typeof AuthenticatedPortalEventsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/dokumente': {
+      id: '/_authenticated/portal/dokumente'
+      path: '/portal/dokumente'
+      fullPath: '/portal/dokumente'
+      preLoaderRoute: typeof AuthenticatedPortalDokumenteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/news': {
+      id: '/_authenticated/admin/news'
+      path: '/news'
+      fullPath: '/admin/news'
+      preLoaderRoute: typeof AuthenticatedAdminNewsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/nachrichten': {
+      id: '/_authenticated/admin/nachrichten'
+      path: '/nachrichten'
+      fullPath: '/admin/nachrichten'
+      preLoaderRoute: typeof AuthenticatedAdminNachrichtenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/mitgliedschaften': {
+      id: '/_authenticated/admin/mitgliedschaften'
+      path: '/mitgliedschaften'
+      fullPath: '/admin/mitgliedschaften'
+      preLoaderRoute: typeof AuthenticatedAdminMitgliedschaftenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/kurse': {
+      id: '/_authenticated/admin/kurse'
+      path: '/kurse'
+      fullPath: '/admin/kurse'
+      preLoaderRoute: typeof AuthenticatedAdminKurseRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/events': {
+      id: '/_authenticated/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AuthenticatedAdminEventsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/dokumente': {
+      id: '/_authenticated/admin/dokumente'
+      path: '/dokumente'
+      fullPath: '/admin/dokumente'
+      preLoaderRoute: typeof AuthenticatedAdminDokumenteRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/benutzer': {
+      id: '/_authenticated/admin/benutzer'
+      path: '/benutzer'
+      fullPath: '/admin/benutzer'
+      preLoaderRoute: typeof AuthenticatedAdminBenutzerRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/anfragen': {
+      id: '/_authenticated/admin/anfragen'
+      path: '/anfragen'
+      fullPath: '/admin/anfragen'
+      preLoaderRoute: typeof AuthenticatedAdminAnfragenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminAnfragenRoute: typeof AuthenticatedAdminAnfragenRoute
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminBenutzerRoute: typeof AuthenticatedAdminBenutzerRoute
+  AuthenticatedAdminDokumenteRoute: typeof AuthenticatedAdminDokumenteRoute
+  AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
+  AuthenticatedAdminKurseRoute: typeof AuthenticatedAdminKurseRoute
+  AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
+  AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
+  AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminAnfragenRoute: AuthenticatedAdminAnfragenRoute,
+    AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+    AuthenticatedAdminBenutzerRoute: AuthenticatedAdminBenutzerRoute,
+    AuthenticatedAdminDokumenteRoute: AuthenticatedAdminDokumenteRoute,
+    AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
+    AuthenticatedAdminKurseRoute: AuthenticatedAdminKurseRoute,
+    AuthenticatedAdminMitgliedschaftenRoute:
+      AuthenticatedAdminMitgliedschaftenRoute,
+    AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
+    AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
+    AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
+  AuthenticatedPortalDokumenteRoute: typeof AuthenticatedPortalDokumenteRoute
+  AuthenticatedPortalEventsRoute: typeof AuthenticatedPortalEventsRoute
+  AuthenticatedPortalKontaktRoute: typeof AuthenticatedPortalKontaktRoute
+  AuthenticatedPortalKurseRoute: typeof AuthenticatedPortalKurseRoute
+  AuthenticatedPortalNewsRoute: typeof AuthenticatedPortalNewsRoute
+  AuthenticatedPortalProfilRoute: typeof AuthenticatedPortalProfilRoute
+  AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
+  AuthenticatedPortalDokumenteRoute: AuthenticatedPortalDokumenteRoute,
+  AuthenticatedPortalEventsRoute: AuthenticatedPortalEventsRoute,
+  AuthenticatedPortalKontaktRoute: AuthenticatedPortalKontaktRoute,
+  AuthenticatedPortalKurseRoute: AuthenticatedPortalKurseRoute,
+  AuthenticatedPortalNewsRoute: AuthenticatedPortalNewsRoute,
+  AuthenticatedPortalProfilRoute: AuthenticatedPortalProfilRoute,
+  AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  DatenschutzRoute: DatenschutzRoute,
+  FaqRoute: FaqRoute,
+  ImpressumRoute: ImpressumRoute,
+  KontaktRoute: KontaktRoute,
+  KursAnfragenRoute: KursAnfragenRoute,
+  KurseRoute: KurseRoute,
+  MitgliedschaftRoute: MitgliedschaftRoute,
+  MitgliedsordnungRoute: MitgliedsordnungRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SatzungRoute: SatzungRoute,
+  SicherheitRoute: SicherheitRoute,
+  UeberUnsRoute: UeberUnsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
