@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import heroPool from "@/assets/hero-pool.jpg";
 import kids from "@/assets/kids-swimming.jpg";
-import beaverAsset from "@/assets/logo-sicher-schwimmen.jpg.asset.json";
+import beaverAsset from "@/assets/logo-sicher-schwimmen-v2.jpg.asset.json";
 const beaver = beaverAsset.url;
 
 export const Route = createFileRoute("/")({

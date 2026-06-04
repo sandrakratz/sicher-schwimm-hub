@@ -1,34 +1,24 @@
 ## Logo austauschen
 
-Dein hochgeladenes Logo (`Logo_SW.jpg` mit Biber, Hennefer Silhouette und Schriftzug „SICHER SCHWIMMEN e.V.") ersetzt das bisher generierte Beaver-Logo überall in der App.
+Das neue Logo (Biber mit Hennefer Silhouette und Schriftzug „SICHER SCHWIMMEN e.V.") ersetzt das aktuell verwendete Logo überall.
 
 ### Schritte
 
-1. **Logo als CDN-Asset registrieren**
-   - `Logo_SW.jpg` über `lovable-assets` hochladen → erzeugt `src/assets/logo-sicher-schwimmen.jpg.asset.json`.
-   - Das alte `src/assets/logo-beaver.png` aus dem Code entfernen (Datei kann liegen bleiben oder gelöscht werden).
+1. **Neues Logo als CDN-Asset registrieren**
+   - Upload via `lovable-assets` aus `/mnt/user-uploads/WhatsApp_Image_2026-06-04_at_13.10.47.jpeg` → neue Datei `src/assets/logo-sicher-schwimmen-v2.jpg.asset.json`.
+   - Altes Asset `src/assets/logo-sicher-schwimmen.jpg.asset.json` löschen (via `delete_asset`).
 
-2. **Importe & Verwendungen umstellen**
-   In folgenden Dateien den Import auf das neue Asset umstellen:
-   - `src/components/SiteHeader.tsx` (öffentliche Navigation)
-   - `src/components/SiteFooter.tsx` (Footer)
-   - `src/routes/index.tsx` (Startseite/Hero)
-   - `src/routes/auth.tsx` (Login)
-   - `src/routes/_authenticated/route.tsx` (Mitgliederportal-Sidebar)
-   - `src/routes/_authenticated/admin/route.tsx` (Admin-Sidebar)
+2. **Importe umstellen** in:
+   - `src/components/SiteHeader.tsx`
+   - `src/components/SiteFooter.tsx`
+   - `src/routes/index.tsx`
+   - `src/routes/auth.tsx`
+   - `src/routes/_authenticated/route.tsx`
+   - `src/routes/_authenticated/admin/route.tsx`
 
-3. **Darstellung anpassen**
-   Da das neue Logo bereits den Schriftzug „SICHER SCHWIMMEN e.V." enthält:
-   - In Header/Sidebars den separaten Text-Schriftzug neben dem Logo entweder entfernen oder verkleinern (sonst doppelt).
-   - Logo-Größen leicht anheben (z. B. Header von 40 px auf ~56 px), weiß-runde Hintergrund-Maske entfernen (Logo hat schon transparenten/weißen Hintergrund).
-   - Favicon (`index.html`) ebenfalls auf das neue Logo umstellen.
-
-4. **Visuelle Prüfung**
-   - Startseite, Login, Portal und Admin-Bereich in der Preview kontrollieren (Schärfe, Proportionen, kein doppelter Schriftzug).
+3. **Visuelle Prüfung** in Header, Footer, Login und Portal/Admin-Sidebar.
 
 ### Nicht im Scope
 
-- Keine Änderungen an Farbschema, Typografie oder Layout.
-- Keine Backend-/Datenbankänderungen.
-
-Soll ich es so umsetzen?
+- Keine Layout-, Farb- oder Textänderungen.
+- Keine Backend-Änderungen.
