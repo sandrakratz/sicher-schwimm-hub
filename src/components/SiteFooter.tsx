@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import logo from "@/assets/logo-beaver.png";
+import logoAsset from "@/assets/logo-sicher-schwimmen.jpg.asset.json";
+const logo = logoAsset.url;
 import { Mail, Phone, MapPin } from "lucide-react";
 
 export function SiteFooter() {
@@ -7,12 +8,8 @@ export function SiteFooter() {
     <footer className="bg-primary-deep text-sidebar-foreground mt-20">
       <div className="container mx-auto px-4 py-14 grid gap-10 md:grid-cols-4">
         <div>
-          <div className="flex items-center gap-3 mb-4">
-            <img src={logo} alt="" className="h-12 w-12 bg-white rounded-full p-1" width={48} height={48} loading="lazy" />
-            <div>
-              <div className="font-display font-bold text-lg">Sicher Schwimmen</div>
-              <div className="text-xs opacity-75">e.V. · Hennef</div>
-            </div>
+          <div className="mb-4 inline-block bg-white rounded-2xl p-3">
+            <img src={logo} alt="Sicher Schwimmen e.V." className="h-20 w-auto object-contain" height={80} loading="lazy" />
           </div>
           <p className="text-sm opacity-80 leading-relaxed">
             Schwimmkurse, Wassergewöhnung und vereinsleben für Familien im

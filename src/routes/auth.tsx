@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Waves, ArrowLeft } from "lucide-react";
-import logo from "@/assets/logo-beaver.png";
+import logoAsset from "@/assets/logo-sicher-schwimmen.jpg.asset.json";
+const logo = logoAsset.url;
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Login – Sicher Schwimmen e.V." }] }),
@@ -74,7 +75,7 @@ function AuthPage() {
       <Card className="w-full max-w-md shadow-card border-0">
         <CardContent className="p-8">
           <div className="text-center mb-6">
-            <img src={logo} alt="" className="h-16 w-16 mx-auto mb-2" width={64} height={64} />
+            <img src={logo} alt="Sicher Schwimmen e.V." className="h-28 w-auto object-contain mx-auto mb-2" height={112} />
             <h1 className="font-display font-bold text-2xl text-primary-deep">Mitgliederbereich</h1>
             <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1"><Waves className="h-3.5 w-3.5" /> Sicher Schwimmen e.V.</p>
           </div>
