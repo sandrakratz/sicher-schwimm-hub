@@ -2,7 +2,8 @@ import { Outlet, Link, createFileRoute, redirect, useNavigate } from "@tanstack/
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, LogOut, Waves, Shield, BookOpen } from "lucide-react";
-import logo from "@/assets/logo-beaver.png";
+import logoAsset from "@/assets/logo-sicher-schwimmen.jpg.asset.json";
+const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -51,12 +52,9 @@ function AuthLayout() {
   return (
     <div className="min-h-screen flex bg-surface">
       <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground shrink-0">
-        <Link to="/" className="flex items-center gap-3 p-5 border-b border-sidebar-border">
-          <img src={logo} alt="" className="h-10 w-10 bg-white rounded-full p-1" width={40} height={40} />
-          <div>
-            <div className="font-display font-bold leading-none">Sicher Schwimmen</div>
-            <div className="text-xs opacity-70">Mitgliederportal</div>
-          </div>
+        <Link to="/" className="flex flex-col items-center gap-2 p-4 border-b border-sidebar-border bg-white">
+          <img src={logo} alt="Sicher Schwimmen e.V." className="h-20 w-auto object-contain" height={80} />
+          <div className="text-xs font-semibold text-primary-deep">Mitgliederportal</div>
         </Link>
         <nav className="p-3 flex-1 space-y-1">
           {portalNav.map(n => (

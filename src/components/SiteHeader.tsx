@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Menu, X, LogIn } from "lucide-react";
-import logo from "@/assets/logo-beaver.png";
+import logoAsset from "@/assets/logo-sicher-schwimmen.jpg.asset.json";
+const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,12 +29,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-3">
-          <img src={logo} alt="Sicher Schwimmen e.V." className="h-12 w-12" width={48} height={48} />
-          <div className="hidden sm:block">
-            <div className="font-display text-lg leading-none font-bold text-primary-deep">Sicher Schwimmen</div>
-            <div className="text-xs text-muted-foreground">e.V. · Hennef</div>
-          </div>
+        <Link to="/" className="flex items-center">
+          <img src={logo} alt="Sicher Schwimmen e.V. – Hennef" className="h-16 w-auto object-contain" height={64} />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
