@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/logo-sicher-schwimmen-v2.jpg.asset.json";
+import logoAsset from "@/assets/sw-logo.png.asset.json";
 const logo = logoAsset.url;
 import { Mail, Phone, MapPin } from "lucide-react";
 
