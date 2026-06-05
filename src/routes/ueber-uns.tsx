@@ -74,17 +74,28 @@ function Page() {
       </section>
 
       <section className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-3 gap-6">
-          {["Vorstand", "Trainer*innen", "Partnerorganisationen"].map((t) => (
-            <Card key={t} className="border-0 shadow-soft">
-              <CardContent className="p-8 text-center">
-                <h3 className="font-display font-bold text-xl text-primary-deep mb-2">{t}</h3>
-                <p className="text-sm text-muted-foreground">Inhalte folgen in Kürze.</p>
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-8 text-center">Vorstand & Verein</h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {[
+            { role: "1. Vorsitzender", name: "Michael Kratz" },
+            { role: "2. Vorsitzende", name: "Sandra Kratz" },
+            { role: "Kassenwart", name: "Anja Brauer-Walbe" },
+            { role: "Kassenprüfung", name: "Manuela Schoz-Ornowski" },
+          ].map((p) => (
+            <Card key={p.role} className="border-0 shadow-soft">
+              <CardContent className="p-7 text-center">
+                <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-2">{p.role}</div>
+                <h3 className="font-display font-bold text-lg text-primary-deep">{p.name}</h3>
               </CardContent>
             </Card>
           ))}
         </div>
+        <p className="text-sm text-muted-foreground text-center max-w-2xl mx-auto">
+          Der Verein befindet sich in Gründung. Vereinsregister-Nummer und Steuernummer werden nach
+          Abschluss des Gründungsverfahrens ergänzt.
+        </p>
       </section>
+
     </PublicLayout>
   );
 }
