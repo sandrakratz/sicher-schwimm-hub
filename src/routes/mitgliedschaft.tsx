@@ -137,6 +137,9 @@ function Page() {
             </Card>
           ))}
         </div>
+        <p className="text-center text-sm text-muted-foreground max-w-2xl mx-auto mb-12 -mt-6">{billingNote}</p>
+
+
 
         {done ? (
           <Card className="max-w-2xl mx-auto shadow-card border-0 text-center">
