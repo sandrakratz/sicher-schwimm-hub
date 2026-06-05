@@ -8,7 +8,7 @@ export const Route = createFileRoute("/impressum")({
       <h2 className="font-display text-2xl font-bold text-primary-deep">Angaben gemäß § 5 TMG</h2>
       <p>Sicher Schwimmen e.V.<br />Hennef, Rhein-Sieg-Kreis<br />Deutschland</p>
       <p><strong>Vertreten durch:</strong> Vorstand (Platzhalter)</p>
-      <p><strong>Kontakt:</strong> info@sicher-schwimmen.de</p>
+      <p><strong>Kontakt:</strong> info@sicher-schwimmen.com</p>
       <p><strong>Vereinsregister:</strong> Eintrag folgt</p>
       <p className="text-sm text-muted-foreground">Dieser Inhalt ist ein Platzhalter und muss vor dem Live-Gang ergänzt werden.</p>
     </LegalPage>

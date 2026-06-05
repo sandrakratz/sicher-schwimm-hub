@@ -41,7 +41,7 @@ export function SiteFooter() {
           <h4 className="font-display font-bold mb-3 text-base">Kontakt</h4>
           <ul className="space-y-3 text-sm opacity-90">
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 shrink-0 text-accent" />Hennef, Rhein-Sieg-Kreis</li>
-            <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 shrink-0 text-accent" />info@sicher-schwimmen.de</li>
+            <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 shrink-0 text-accent" />info@sicher-schwimmen.com</li>
             <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 shrink-0 text-accent" />Telefon folgt</li>
           </ul>
         </div>

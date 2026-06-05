@@ -7,7 +7,7 @@ export const Route = createFileRoute("/datenschutz")({
     <LegalPage title="Datenschutzerklärung">
       <p>Wir erheben und verarbeiten personenbezogene Daten nur im Rahmen der gesetzlichen Bestimmungen (DSGVO, BDSG).</p>
       <h2 className="font-display text-2xl font-bold text-primary-deep">Verantwortlicher</h2>
-      <p>Sicher Schwimmen e.V., Hennef – info@sicher-schwimmen.de</p>
+      <p>Sicher Schwimmen e.V., Hennef – info@sicher-schwimmen.com</p>
       <h2 className="font-display text-2xl font-bold text-primary-deep">Zwecke der Verarbeitung</h2>
       <ul className="list-disc pl-5"><li>Bearbeitung von Kursanfragen</li><li>Verwaltung der Mitgliedschaft</li><li>Kommunikation mit Mitgliedern</li></ul>
       <h2 className="font-display text-2xl font-bold text-primary-deep">Ihre Rechte</h2>
