@@ -3,7 +3,7 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Users } from "lucide-react";
+import { Clock, MapPin, Users, Tag } from "lucide-react";
 
 export const Route = createFileRoute("/kurse")({
   head: () => ({
@@ -17,14 +17,18 @@ export const Route = createFileRoute("/kurse")({
 
 type Status = "Offen" | "Warteliste" | "Ausgebucht";
 
-const courses: { name: string; group: string; age: string; desc: string; duration: string; location: string; status: Status }[] = [
-  { name: "Wassergewöhnung", group: "Kinder", age: "3–5 Jahre", desc: "Spielerische erste Erfahrungen im Wasser ohne Leistungsdruck.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Eltern & Kind", group: "Familien", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für Eltern mit Kleinkindern.", duration: "8 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Anfänger Schwimmen", group: "Kinder", age: "ab 5", desc: "Erste Schwimmtechniken und Sicherheit im Wasser.", duration: "12 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Seepferdchen Vorbereitung", group: "Kinder", age: "5–8", desc: "Gezielte Vorbereitung auf das Seepferdchen-Abzeichen.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Schwimmabzeichen Bronze", group: "Kinder/Jugend", age: "ab 7", desc: "Sicheres Schwimmen über längere Strecken.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Schwimmabzeichen Silber", group: "Kinder/Jugend", age: "ab 9", desc: "Erweiterte Technik und Ausdauer.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Ferien-Intensivkurse", group: "Kinder", age: "5–10", desc: "Schnell ins Schwimmen kommen in den Ferien.", duration: "5 Tage", location: "Hallenbad Hennef", status: "Warteliste" },
+const STANDARD_PRICE = "200 €";
+const MEMBER_PRICE = "150 €";
+const STANDARD_UNITS = "10 Einheiten à 45 Min.";
+
+const courses: { name: string; group: string; age: string; desc: string; duration: string; location: string; status: Status; price?: { standard: string; member: string; units: string } | "tbd" }[] = [
+  { name: "Wassergewöhnung", group: "Kinder", age: "3–5 Jahre", desc: "Spielerische erste Erfahrungen im Wasser ohne Leistungsdruck.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Eltern & Kind", group: "Familien", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für Eltern mit Kleinkindern.", duration: "8 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: "tbd" },
+  { name: "Anfänger Schwimmen", group: "Kinder", age: "ab 5", desc: "Erste Schwimmtechniken und Sicherheit im Wasser.", duration: "12 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Seepferdchen Vorbereitung", group: "Kinder", age: "5–8", desc: "Gezielte Vorbereitung auf das Seepferdchen-Abzeichen.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Schwimmabzeichen Bronze", group: "Kinder/Jugend", age: "ab 7", desc: "Sicheres Schwimmen über längere Strecken.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Schwimmabzeichen Silber", group: "Kinder/Jugend", age: "ab 9", desc: "Erweiterte Technik und Ausdauer.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Ferien-Intensivkurse", group: "Kinder", age: "5–10", desc: "Schnell ins Schwimmen kommen in den Ferien.", duration: "5 Tage", location: "Hallenbad Hennef", status: "Warteliste", price: "tbd" },
 ];
 
 function statusVariant(s: Status) {
@@ -62,6 +66,17 @@ function KursePage() {
                   <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>
                   <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{c.location}</div>
                   <div className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Kleine Gruppen</div>
+                  {c.price && c.price !== "tbd" ? (
+                    <div className="flex items-start gap-2 pt-1">
+                      <Tag className="h-3.5 w-3.5 mt-0.5" />
+                      <div>
+                        <div><span className="font-semibold text-foreground">{c.price.standard}</span> Normalpreis · <span className="font-semibold text-primary">{c.price.member}</span> für Mitglieder</div>
+                        <div className="text-[11px] opacity-80">{c.price.units} · Mitglieder werden bevorzugt aufgenommen</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 pt-1"><Tag className="h-3.5 w-3.5" />Preis folgt nach Schwimmbadbuchung</div>
+                  )}
                 </div>
                 <Button asChild variant={c.status === "Ausgebucht" ? "outline" : "accent"} className="w-full">
                   <Link to="/kurs-anfragen">{c.status === "Ausgebucht" ? "Auf Warteliste" : "Anfragen"}</Link>
