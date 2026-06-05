@@ -120,6 +120,27 @@ function Page() {
       </section>
 
       <section className="container mx-auto px-4 py-16">
+        <div className="max-w-5xl mx-auto mb-16">
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep text-center mb-3">Warum sich eine Mitgliedschaft lohnt</h2>
+          <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">Als Mitglied profitieren Sie nicht nur von vergünstigten Kursen, sondern unterstützen aktiv sichere Schwimmausbildung in Hennef.</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { icon: Waves, title: "Kostenlose Wasserzeit", desc: "Einmal im Monat exklusive Wasserzeit für Mitglieder – Termine werden vom Verein bekannt gegeben." },
+              { icon: Euro, title: "Vergünstigte Kurse", desc: "Mitglieder zahlen für Schwimmkurse 150 € statt 200 € (10 Einheiten à 45 Min.)." },
+              { icon: Star, title: "Bevorzugte Plätze", desc: "Bei der Kursvergabe werden Vereinsmitglieder bevorzugt berücksichtigt." },
+              { icon: Vote, title: "Mitbestimmung", desc: "Stimmrecht in der Mitgliederversammlung und aktive Mitgestaltung des Vereins." },
+            ].map((b) => (
+              <Card key={b.title} className="shadow-soft border-0">
+                <CardContent className="p-6 text-center">
+                  <b.icon className="h-10 w-10 text-accent mx-auto mb-3" />
+                  <h3 className="font-display font-bold text-primary-deep mb-2">{b.title}</h3>
+                  <p className="text-sm text-muted-foreground">{b.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
           {tiers.map((t) => (
             <Card key={t.type}
