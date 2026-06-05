@@ -12,7 +12,7 @@ export function SiteFooter() {
             <img src={logo} alt="Sicher Schwimmen e.V." className="h-24 w-auto object-contain" height={96} loading="lazy" />
           </div>
           <p className="text-sm opacity-80 leading-relaxed">
-            Schwimmkurse, Wassergewöhnung und vereinsleben für Familien im
+            Schwimmkurse, Wassergewöhnung und Vereinsleben für Familien im
             Rhein-Sieg-Kreis.
           </p>
         </div>
