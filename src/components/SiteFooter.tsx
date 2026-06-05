@@ -42,7 +42,7 @@ export function SiteFooter() {
           <ul className="space-y-3 text-sm opacity-90">
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 shrink-0 text-accent" />Hennef, Rhein-Sieg-Kreis</li>
             <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 shrink-0 text-accent" />info@sicher-schwimmen.com</li>
-            <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 shrink-0 text-accent" />Telefon folgt</li>
+            <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 shrink-0 text-accent" />0178 / 1142945 (Michael Kratz)</li>
           </ul>
         </div>
       </div>
