@@ -299,6 +299,13 @@ export type Database = {
           membership_type: Database["public"]["Enums"]["membership_type"]
           notes: string | null
           phone: string | null
+          sepa_account_holder: string | null
+          sepa_bank_name: string | null
+          sepa_bic: string | null
+          sepa_iban: string | null
+          sepa_mandate_accepted: boolean
+          sepa_signature_date: string | null
+          sepa_signature_place: string | null
           status: Database["public"]["Enums"]["membership_status"]
           updated_at: string
           user_id: string | null
@@ -325,6 +332,13 @@ export type Database = {
           membership_type: Database["public"]["Enums"]["membership_type"]
           notes?: string | null
           phone?: string | null
+          sepa_account_holder?: string | null
+          sepa_bank_name?: string | null
+          sepa_bic?: string | null
+          sepa_iban?: string | null
+          sepa_mandate_accepted?: boolean
+          sepa_signature_date?: string | null
+          sepa_signature_place?: string | null
           status?: Database["public"]["Enums"]["membership_status"]
           updated_at?: string
           user_id?: string | null
@@ -351,6 +365,13 @@ export type Database = {
           membership_type?: Database["public"]["Enums"]["membership_type"]
           notes?: string | null
           phone?: string | null
+          sepa_account_holder?: string | null
+          sepa_bank_name?: string | null
+          sepa_bic?: string | null
+          sepa_iban?: string | null
+          sepa_mandate_accepted?: boolean
+          sepa_signature_date?: string | null
+          sepa_signature_place?: string | null
           status?: Database["public"]["Enums"]["membership_status"]
           updated_at?: string
           user_id?: string | null
