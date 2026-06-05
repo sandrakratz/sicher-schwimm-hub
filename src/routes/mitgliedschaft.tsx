@@ -42,6 +42,13 @@ const schema = z.object({
   guardian_name: z.string().trim().max(200).optional(),
   guardian_email: z.string().trim().max(255).optional(),
   guardian_phone: z.string().trim().max(40).optional(),
+  sepa_account_holder: z.string().trim().min(1, "Kontoinhaber erforderlich").max(200),
+  sepa_iban: z.string().trim().min(15, "IBAN ungültig").max(42).regex(/^[A-Z]{2}[0-9A-Z ]+$/i, "IBAN ungültig"),
+  sepa_bic: z.string().trim().max(11).optional(),
+  sepa_bank_name: z.string().trim().min(1, "Bank erforderlich").max(200),
+  sepa_signature_place: z.string().trim().min(1, "Ort erforderlich").max(120),
+  sepa_signature_date: z.string().min(1, "Datum erforderlich"),
+  sepa_mandate_accepted: z.boolean().refine(v => v, "SEPA-Mandat erforderlich"),
   accepted_statutes: z.boolean().refine(v => v),
   accepted_rules: z.boolean().refine(v => v),
   accepted_privacy: z.boolean().refine(v => v),
@@ -68,6 +75,13 @@ function Page() {
       guardian_name: fd.get("guardian_name"),
       guardian_email: fd.get("guardian_email"),
       guardian_phone: fd.get("guardian_phone"),
+      sepa_account_holder: fd.get("sepa_account_holder"),
+      sepa_iban: (fd.get("sepa_iban") as string | null)?.replace(/\s+/g, "").toUpperCase(),
+      sepa_bic: (fd.get("sepa_bic") as string | null)?.toUpperCase() || undefined,
+      sepa_bank_name: fd.get("sepa_bank_name"),
+      sepa_signature_place: fd.get("sepa_signature_place"),
+      sepa_signature_date: fd.get("sepa_signature_date"),
+      sepa_mandate_accepted: fd.get("sepa_mandate_accepted") === "on",
       accepted_statutes: fd.get("accepted_statutes") === "on",
       accepted_rules: fd.get("accepted_rules") === "on",
       accepted_privacy: fd.get("accepted_privacy") === "on",
@@ -166,6 +180,31 @@ function Page() {
                     <div><Label htmlFor="guardian_phone">Telefon</Label><Input id="guardian_phone" name="guardian_phone" maxLength={40} /></div>
                   </div>
                 </div>
+
+                <div className="border-t pt-5">
+                  <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Gläubiger-Identifikationsnummer: <em>wird vom Verein eingetragen</em> · Mandatsreferenz: <em>Mitgliedsnummer (wird vergeben)</em>
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Ich ermächtige den Verein Sicher Schwimmen e.V., Zahlungen von meinem Konto mittels
+                    Lastschrift einzuziehen. Zugleich weise ich mein Kreditinstitut an, die auf mein Konto
+                    gezogenen Lastschriften einzulösen.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2"><Label htmlFor="sepa_account_holder">Kontoinhaber/in *</Label><Input id="sepa_account_holder" name="sepa_account_holder" required maxLength={200} /></div>
+                    <div className="md:col-span-2"><Label htmlFor="sepa_iban">IBAN *</Label><Input id="sepa_iban" name="sepa_iban" required maxLength={42} placeholder="DE00 0000 0000 0000 0000 00" /></div>
+                    <div><Label htmlFor="sepa_bic">BIC</Label><Input id="sepa_bic" name="sepa_bic" maxLength={11} /></div>
+                    <div><Label htmlFor="sepa_bank_name">Kreditinstitut *</Label><Input id="sepa_bank_name" name="sepa_bank_name" required maxLength={200} /></div>
+                    <div><Label htmlFor="sepa_signature_place">Ort *</Label><Input id="sepa_signature_place" name="sepa_signature_place" required maxLength={120} /></div>
+                    <div><Label htmlFor="sepa_signature_date">Datum *</Label><Input id="sepa_signature_date" type="date" name="sepa_signature_date" required defaultValue={new Date().toISOString().slice(0,10)} /></div>
+                  </div>
+                  <label className="flex gap-3 items-start text-sm cursor-pointer mt-4">
+                    <Checkbox name="sepa_mandate_accepted" required />
+                    <span>Ich erteile das SEPA-Lastschriftmandat. Bei Minderjährigen erfolgt die Unterschrift durch die gesetzlichen Vertreter. *</span>
+                  </label>
+                </div>
+
                 <div className="space-y-3 border-t pt-5">
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
                     <Checkbox name="accepted_statutes" required /> <span>Ich akzeptiere die <a href="/satzung" className="text-primary underline">Vereinssatzung</a>. *</span>
