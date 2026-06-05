@@ -63,7 +63,7 @@ function Page() {
         <div className="space-y-4">
           {[
             { icon: MapPin, title: "Adresse", text: "Hennef, Rhein-Sieg-Kreis" },
-            { icon: Mail, title: "E-Mail", text: "info@sicher-schwimmen.de" },
+            { icon: Mail, title: "E-Mail", text: "info@sicher-schwimmen.com" },
             { icon: Phone, title: "Telefon", text: "Folgt in Kürze" },
             { icon: Clock, title: "Bürozeiten", text: "Folgt in Kürze" },
           ].map(i => (

@@ -171,7 +171,7 @@ function Home() {
             Vier-Augen-Prinzip sind für uns selbstverständlich.
           </p>
           <ul className="space-y-3 mb-8">
-            {["Erweitertes Führungszeugnis aller Trainer*innen", "Rettungsschwimmer- und Erste-Hilfe-Pflicht", "Vier-Augen-Prinzip & klares Verhaltensregelwerk", "Kein Fotografie-Verbot ohne Einwilligung"].map(i => (
+            {["Erweitertes Führungszeugnis aller Trainer*innen", "Rettungsschwimmer- und Erste-Hilfe-Pflicht", "Vier-Augen-Prinzip & klares Verhaltensregelwerk", "Fotografie-/Filmverbot ohne ausdrückliche Einwilligung"].map(i => (
               <li key={i} className="flex gap-3"><CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" /><span>{i}</span></li>
             ))}
           </ul>

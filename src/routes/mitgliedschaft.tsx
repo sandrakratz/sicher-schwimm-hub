@@ -23,11 +23,14 @@ export const Route = createFileRoute("/mitgliedschaft")({
 });
 
 const tiers = [
-  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: "60 €/Jahr", desc: "Für alle Mitglieder unter 18." },
+  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: "60 €/Jahr", desc: "Einzelmitgliedschaft für alle unter 18." },
   { type: "adult", icon: User, name: "Erwachsene", price: "60 €/Jahr", desc: "Einzelmitgliedschaft ab 18 Jahren." },
-  { type: "family", icon: Users, name: "Familie", price: "96 €/Jahr", desc: "Für die ganze Familie – beste Wahl." },
-  { type: "supporting", icon: HandHeart, name: "Förderung", price: "ab 60 €/Jahr", desc: "Unterstützen Sie unsere Arbeit." },
+  { type: "family", icon: Users, name: "Familie", price: "96 €/Jahr", desc: "Ab 3 Personen, max. 2 Erwachsene + Kinder unter 18 im selben Haushalt." },
+  { type: "supporting", icon: HandHeart, name: "Förderung", price: "ab 60 €/Jahr", desc: "Passive Mitgliedschaft ohne Stimmrecht, Beitrag nach oben frei wählbar." },
 ];
+
+const billingNote = "Beitrag fällig jeweils zum 1. März per SEPA-Lastschrift. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.";
+
 
 const schema = z.object({
   membership_type: z.enum(["children_youth","adult","family","supporting"]),
@@ -134,6 +137,9 @@ function Page() {
             </Card>
           ))}
         </div>
+        <p className="text-center text-sm text-muted-foreground max-w-2xl mx-auto mb-12 -mt-6">{billingNote}</p>
+
+
 
         {done ? (
           <Card className="max-w-2xl mx-auto shadow-card border-0 text-center">

@@ -13,14 +13,14 @@ export const Route = createFileRoute("/sicherheit")({
 
 const items = [
   { icon: Shield, title: "Kinderschutz im Mittelpunkt", text: "Wir verpflichten uns einem umfassenden Kinderschutzkonzept – dokumentiert und gelebt." },
-  { icon: UserCheck, title: "Erweiterte Führungszeugnisse", text: "Alle Übungsleiter*innen legen ein erweitertes Führungszeugnis vor." },
-  { icon: BadgePlus, title: "Verhaltenskodex", text: "Verbindlicher Verhaltenskodex für alle Trainer*innen und Helfer*innen." },
-  { icon: Eye, title: "Vier-Augen-Prinzip", text: "Keine Eins-zu-Eins-Situationen ohne Sichtbarkeit für Dritte." },
-  { icon: Camera, title: "Foto-Richtlinie", text: "Keine Fotos oder Videos ohne ausdrückliche schriftliche Einwilligung." },
-  { icon: LifeBuoy, title: "Rettungsschwimmer-Pflicht", text: "Trainer*innen besitzen aktuelle Rettungsschwimmer-Qualifikationen." },
-  { icon: HandHeart, title: "Transparente Hilfestellung", text: "Körperliche Hilfestellung erfolgt nur transparent und altersgerecht." },
-  { icon: Users, title: "Eltern-Kind Aufsicht", text: "Klare Regeln zur Aufsicht und Begleitung jüngerer Kinder." },
-  { icon: Phone, title: "Vertrauensperson", text: "Eigene Kinderschutz-Ansprechperson – vertraulich erreichbar." },
+  { icon: UserCheck, title: "Erweiterte Führungszeugnisse", text: "Alle Personen ab 16 Jahren mit regelmäßigem Kontakt zu Minderjährigen legen ein eFZ vor – mit Wiedervorlage in der Regel alle 3 bis 5 Jahre." },
+  { icon: BadgePlus, title: "Verhaltenskodex", text: "Verbindlicher Verhaltenskodex (LSB NRW oder vereinsintern) für alle Trainer*innen und Helfer*innen." },
+  { icon: Eye, title: "Vier-Augen-Prinzip", text: "Soweit organisatorisch umsetzbar bleibt keine Lehrkraft allein mit der Gruppe in nicht einsehbaren Bereichen." },
+  { icon: Users, title: "Umkleidesituationen", text: "Übungsleiter*innen betreten die Sammelumkleiden nur im Ausnahmefall – nach lautem Anklopfen und Ankündigung." },
+  { icon: Camera, title: "Foto- & Filmverbot", text: "Im Schwimm- und Umkleidebereich gilt striktes Fotografie- und Filmverbot ohne ausdrückliche schriftliche Einwilligung." },
+  { icon: LifeBuoy, title: "Rettungsfähigkeit", text: "Für jede Gruppe im Wasser ist die Rettungsfähigkeit (DRSA Silber oder äquivalenter Nachweis) sichergestellt." },
+  { icon: HandHeart, title: "Transparente Hilfestellung", text: "Körperkontakt wird auf das sportlich notwendige Maß beschränkt und den Kindern vorab angekündigt." },
+  { icon: Phone, title: "Vertrauensperson Kinderschutz", text: "Sandra Kratz – vertraulich erreichbar unter info@sicher-schwimmen.com." },
 ];
 
 function Page() {
