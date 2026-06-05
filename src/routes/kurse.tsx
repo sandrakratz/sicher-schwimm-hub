@@ -66,6 +66,17 @@ function KursePage() {
                   <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>
                   <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{c.location}</div>
                   <div className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Kleine Gruppen</div>
+                  {c.price && c.price !== "tbd" ? (
+                    <div className="flex items-start gap-2 pt-1">
+                      <Tag className="h-3.5 w-3.5 mt-0.5" />
+                      <div>
+                        <div><span className="font-semibold text-foreground">{c.price.standard}</span> Normalpreis · <span className="font-semibold text-primary">{c.price.member}</span> für Mitglieder</div>
+                        <div className="text-[11px] opacity-80">{c.price.units} · Mitglieder werden bevorzugt aufgenommen</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 pt-1"><Tag className="h-3.5 w-3.5" />Preis folgt nach Schwimmbadbuchung</div>
+                  )}
                 </div>
                 <Button asChild variant={c.status === "Ausgebucht" ? "outline" : "accent"} className="w-full">
                   <Link to="/kurs-anfragen">{c.status === "Ausgebucht" ? "Auf Warteliste" : "Anfragen"}</Link>
