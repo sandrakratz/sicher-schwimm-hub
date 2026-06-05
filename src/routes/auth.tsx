@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Waves, ArrowLeft } from "lucide-react";
-import logoAsset from "@/assets/sw-logo.png.asset.json";
+import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 
 export const Route = createFileRoute("/auth")({
