@@ -19,17 +19,12 @@ type Status = "Offen" | "Warteliste" | "Ausgebucht";
 
 const courses: { name: string; group: string; age: string; desc: string; duration: string; location: string; status: Status }[] = [
   { name: "Wassergewöhnung", group: "Kinder", age: "3–5 Jahre", desc: "Spielerische erste Erfahrungen im Wasser ohne Leistungsdruck.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Eltern & Kind", group: "Familien", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für Eltern mit Kleinkindern.", duration: "8 Wochen", location: "Hallenbad Hennef", status: "Offen" },
+  { name: "Eltern & Kind", group: "Familien", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für Eltern mit Kleinkindern.", duration: "8 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
   { name: "Anfänger Schwimmen", group: "Kinder", age: "ab 5", desc: "Erste Schwimmtechniken und Sicherheit im Wasser.", duration: "12 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Seepferdchen Vorbereitung", group: "Kinder", age: "5–8", desc: "Gezielte Vorbereitung auf das Seepferdchen-Abzeichen.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Ausgebucht" },
-  { name: "Schwimmabzeichen Bronze", group: "Kinder/Jugend", age: "ab 7", desc: "Sicheres Schwimmen über längere Strecken.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen" },
-  { name: "Schwimmabzeichen Silber", group: "Kinder/Jugend", age: "ab 9", desc: "Erweiterte Technik und Ausdauer.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen" },
-  { name: "Schwimmabzeichen Gold", group: "Jugend", age: "ab 11", desc: "Hohes technisches Niveau und Wassersicherheit.", duration: "12 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
-  { name: "Ferien-Intensivkurse", group: "Kinder", age: "5–10", desc: "Schnell ins Schwimmen kommen in den Ferien.", duration: "5 Tage", location: "Hallenbad Hennef", status: "Offen" },
-  { name: "Erwachsenen-Schwimmen", group: "Erwachsene", age: "18+", desc: "Schwimmen lernen oder verbessern – auch als Späteinsteiger.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen" },
-  { name: "Familienschwimmen", group: "Familien", age: "Alle", desc: "Gemeinsame Schwimmzeit für die ganze Familie.", duration: "Laufend", location: "Hallenbad Hennef", status: "Offen" },
-  { name: "Aqua Fitness", group: "Erwachsene", age: "18+", desc: "Gelenkschonendes Training im Wasser.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen" },
-  { name: "Inklusives Schwimmen", group: "Alle", age: "Alle", desc: "Schwimmen für Menschen mit besonderen Bedürfnissen.", duration: "Individuell", location: "Hallenbad Hennef", status: "Warteliste" },
+  { name: "Seepferdchen Vorbereitung", group: "Kinder", age: "5–8", desc: "Gezielte Vorbereitung auf das Seepferdchen-Abzeichen.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
+  { name: "Schwimmabzeichen Bronze", group: "Kinder/Jugend", age: "ab 7", desc: "Sicheres Schwimmen über längere Strecken.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
+  { name: "Schwimmabzeichen Silber", group: "Kinder/Jugend", age: "ab 9", desc: "Erweiterte Technik und Ausdauer.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste" },
+  { name: "Ferien-Intensivkurse", group: "Kinder", age: "5–10", desc: "Schnell ins Schwimmen kommen in den Ferien.", duration: "5 Tage", location: "Hallenbad Hennef", status: "Warteliste" },
 ];
 
 function statusVariant(s: Status) {
