@@ -79,8 +79,7 @@ function Page() {
           {[
             { role: "1. Vorsitzender", name: "Michael Kratz" },
             { role: "2. Vorsitzende", name: "Sandra Kratz" },
-            { role: "Kassenwart", name: "Anja Brauer-Walbe" },
-            { role: "Kassenprüfung", name: "Manuela Schoz-Ornowski" },
+            { role: "Kassenwart/Mitgliederverwaltung", name: "Manuela Scholz-Ornowski" },
           ].map((p) => (
             <Card key={p.role} className="border-0 shadow-soft">
               <CardContent className="p-7 text-center">
