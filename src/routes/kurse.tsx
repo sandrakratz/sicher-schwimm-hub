@@ -61,7 +61,11 @@ function KursePage() {
                 </div>
                 <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
                 <div className="text-sm font-semibold text-primary mb-3">{c.age}</div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">{c.desc}</p>
+                <p className="text-sm text-muted-foreground mb-3">{c.desc}</p>
+                <div className="text-xs mb-4 flex-1">
+                  <span className="font-semibold text-primary-deep">Voraussetzungen: </span>
+                  <span className="text-muted-foreground">{c.requirements}</span>
+                </div>
                 <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
                   <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>
                   <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{c.location}</div>
