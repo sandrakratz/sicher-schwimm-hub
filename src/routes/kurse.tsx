@@ -85,6 +85,15 @@ function KursePage() {
             </Card>
           ))}
         </div>
+
+
+        <p className="text-center text-sm text-muted-foreground mt-10">
+          Mit der Anmeldung gelten unsere{" "}
+          <Link to="/kursbedingungen" className="text-primary underline font-semibold hover:text-primary-deep">
+            Kursteilnahmebedingungen
+          </Link>
+          {" "}(Zahlung, Rücktritt, Aufsicht, Haftung).
+        </p>
       </section>
     </PublicLayout>
   );
