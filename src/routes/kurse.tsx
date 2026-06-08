@@ -83,6 +83,7 @@ function KursePage() {
                 </Button>
               </CardContent>
             </Card>
+          ))}
         </div>
 
 
