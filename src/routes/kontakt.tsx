@@ -65,7 +65,6 @@ function Page() {
             { icon: MapPin, title: "Adresse", text: "Hennef, Rhein-Sieg-Kreis" },
             { icon: Mail, title: "E-Mail", text: "info@sicher-schwimmen.com" },
             { icon: Phone, title: "Telefon", text: "0178 / 1142945 (Michael Kratz)" },
-            { icon: Clock, title: "Bürozeiten", text: "Folgt in Kürze" },
           ].map(i => (
             <Card key={i.title} className="border-0 shadow-soft">
               <CardContent className="p-5 flex gap-4 items-start">
