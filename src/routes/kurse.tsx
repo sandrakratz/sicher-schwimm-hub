@@ -83,41 +83,8 @@ function KursePage() {
                 </Button>
               </CardContent>
             </Card>
-          ))}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((c) => (
-            <Card key={c.name} className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
-              <CardContent className="p-6 flex flex-col flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <Badge variant="outline" className="bg-secondary text-primary-deep border-0">{c.group}</Badge>
-                  <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${statusVariant(c.status)}`}>{c.status}</span>
-                </div>
-                <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
-                <div className="text-sm font-semibold text-primary mb-3">{c.age}</div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">{c.desc}</p>
-                <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
-                  <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>
-                  <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{c.location}</div>
-                  <div className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Kleine Gruppen</div>
-                  {c.price && c.price !== "tbd" ? (
-                    <div className="flex items-start gap-2 pt-1">
-                      <Tag className="h-3.5 w-3.5 mt-0.5" />
-                      <div>
-                        <div><span className="font-semibold text-foreground">{c.price.standard}</span> Normalpreis · <span className="font-semibold text-primary">{c.price.member}</span> für Mitglieder</div>
-                        <div className="text-[11px] opacity-80">{c.price.units} · Mitglieder werden bevorzugt aufgenommen</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 pt-1"><Tag className="h-3.5 w-3.5" />Preis folgt nach Schwimmbadbuchung</div>
-                  )}
-                </div>
-                <Button asChild variant={c.status === "Ausgebucht" ? "outline" : "accent"} className="w-full">
-                  <Link to="/kurs-anfragen">{c.status === "Ausgebucht" ? "Auf Warteliste" : "Anfragen"}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
         </div>
+
 
         <p className="text-center text-sm text-muted-foreground mt-10">
           Mit der Anmeldung gelten unsere{" "}
