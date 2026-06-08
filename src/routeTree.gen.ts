@@ -16,6 +16,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MitgliedsordnungRouteImport } from './routes/mitgliedsordnung'
 import { Route as MitgliedschaftRouteImport } from './routes/mitgliedschaft'
 import { Route as KurseRouteImport } from './routes/kurse'
+import { Route as KursbedingungenRouteImport } from './routes/kursbedingungen'
 import { Route as KursAnfragenRouteImport } from './routes/kurs-anfragen'
 import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as ImpressumRouteImport } from './routes/impressum'
@@ -76,6 +77,11 @@ const MitgliedschaftRoute = MitgliedschaftRouteImport.update({
 const KurseRoute = KurseRouteImport.update({
   id: '/kurse',
   path: '/kurse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KursbedingungenRoute = KursbedingungenRouteImport.update({
+  id: '/kursbedingungen',
+  path: '/kursbedingungen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KursAnfragenRoute = KursAnfragenRouteImport.update({
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/impressum': typeof ImpressumRoute
   '/kontakt': typeof KontaktRoute
   '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kursbedingungen': typeof KursbedingungenRoute
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/impressum': typeof ImpressumRoute
   '/kontakt': typeof KontaktRoute
   '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kursbedingungen': typeof KursbedingungenRoute
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/impressum': typeof ImpressumRoute
   '/kontakt': typeof KontaktRoute
   '/kurs-anfragen': typeof KursAnfragenRoute
+  '/kursbedingungen': typeof KursbedingungenRoute
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/kontakt'
     | '/kurs-anfragen'
+    | '/kursbedingungen'
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/kontakt'
     | '/kurs-anfragen'
+    | '/kursbedingungen'
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/kontakt'
     | '/kurs-anfragen'
+    | '/kursbedingungen'
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
@@ -437,6 +449,7 @@ export interface RootRouteChildren {
   ImpressumRoute: typeof ImpressumRoute
   KontaktRoute: typeof KontaktRoute
   KursAnfragenRoute: typeof KursAnfragenRoute
+  KursbedingungenRoute: typeof KursbedingungenRoute
   KurseRoute: typeof KurseRoute
   MitgliedschaftRoute: typeof MitgliedschaftRoute
   MitgliedsordnungRoute: typeof MitgliedsordnungRoute
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       path: '/kurse'
       fullPath: '/kurse'
       preLoaderRoute: typeof KurseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kursbedingungen': {
+      id: '/kursbedingungen'
+      path: '/kursbedingungen'
+      fullPath: '/kursbedingungen'
+      preLoaderRoute: typeof KursbedingungenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kurs-anfragen': {
@@ -749,6 +769,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImpressumRoute: ImpressumRoute,
   KontaktRoute: KontaktRoute,
   KursAnfragenRoute: KursAnfragenRoute,
+  KursbedingungenRoute: KursbedingungenRoute,
   KurseRoute: KurseRoute,
   MitgliedschaftRoute: MitgliedschaftRoute,
   MitgliedsordnungRoute: MitgliedsordnungRoute,
