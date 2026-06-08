@@ -21,14 +21,14 @@ const STANDARD_PRICE = "200 €";
 const MEMBER_PRICE = "150 €";
 const STANDARD_UNITS = "10 Einheiten à 45 Min.";
 
-const courses: { name: string; group: string; age: string; desc: string; duration: string; location: string; status: Status; price?: { standard: string; member: string; units: string } | "tbd" }[] = [
-  { name: "Wassergewöhnung", group: "Kinder", age: "3–5 Jahre", desc: "Spielerische erste Erfahrungen im Wasser ohne Leistungsdruck.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
-  { name: "Eltern & Kind", group: "Familien", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für Eltern mit Kleinkindern.", duration: "8 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: "tbd" },
-  { name: "Anfänger Schwimmen", group: "Kinder", age: "ab 5", desc: "Erste Schwimmtechniken und Sicherheit im Wasser.", duration: "12 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
-  { name: "Schwimmabzeichen Seepferdchen", group: "Kinder", age: "5–8", desc: "Gezielte Vorbereitung auf das Seepferdchen-Abzeichen.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
-  { name: "Schwimmabzeichen Bronze", group: "Kinder/Jugend", age: "ab 7", desc: "Sicheres Schwimmen über längere Strecken.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
-  { name: "Schwimmabzeichen Silber", group: "Kinder/Jugend", age: "ab 9", desc: "Erweiterte Technik und Ausdauer.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
-  { name: "Ferien-Intensivkurse", group: "Kinder", age: "5–10", desc: "Schnell ins Schwimmen kommen in den Ferien.", duration: "5 Tage", location: "Hallenbad Hennef", status: "Warteliste", price: "tbd" },
+const courses: { name: string; group: string; age: string; desc: string; requirements: string; duration: string; location: string; status: Status; price?: { standard: string; member: string; units: string } | "tbd" }[] = [
+  { name: "Wassergewöhnung", group: "Kinder", age: "3–5 Jahre", desc: "Spielerische erste Erfahrungen im Wasser ohne Leistungsdruck.", requirements: "Keine Voraussetzungen.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Eltern & Kind", group: "Familien", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für Eltern mit Kleinkindern.", requirements: "Keine Voraussetzungen.", duration: "8 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: "tbd" },
+  { name: "Anfänger Schwimmen", group: "Kinder", age: "ab 5", desc: "Erste Schwimmtechniken und Sicherheit im Wasser.", requirements: "Keine Angst vor Wasser, ggf. altersgerechte Motorik (Hampelmann, Laufrad-/Fahrradfahren).", duration: "12 Wochen", location: "Hallenbad Hennef", status: "Warteliste", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Schwimmabzeichen Seepferdchen", group: "Kinder", age: "5–8", desc: "Gezielte Vorbereitung auf das Seepferdchen-Abzeichen.", requirements: "Kopf unter Wasser nehmen, Springen ins Wasser, Motorik Hampelmann.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Schwimmabzeichen Bronze", group: "Kinder/Jugend", age: "ab 7", desc: "Sicheres Schwimmen über längere Strecken.", requirements: "Bedingungen des Seepferdchen-Abzeichens müssen erfüllt sein.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Schwimmabzeichen Silber", group: "Kinder/Jugend", age: "ab 9", desc: "Erweiterte Technik und Ausdauer.", requirements: "Bedingungen des Bronze-Abzeichens müssen erfüllt sein.", duration: "10 Wochen", location: "Hallenbad Hennef", status: "Offen", price: { standard: STANDARD_PRICE, member: MEMBER_PRICE, units: STANDARD_UNITS } },
+  { name: "Ferien-Intensivkurse", group: "Kinder", age: "5–10", desc: "Schnell ins Schwimmen kommen in den Ferien.", requirements: "Je nach Kursniveau – bitte bei Anfrage angeben.", duration: "5 Tage", location: "Hallenbad Hennef", status: "Warteliste", price: "tbd" },
 ];
 
 function statusVariant(s: Status) {
@@ -61,7 +61,11 @@ function KursePage() {
                 </div>
                 <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
                 <div className="text-sm font-semibold text-primary mb-3">{c.age}</div>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">{c.desc}</p>
+                <p className="text-sm text-muted-foreground mb-3">{c.desc}</p>
+                <div className="text-xs mb-4 flex-1">
+                  <span className="font-semibold text-primary-deep">Voraussetzungen: </span>
+                  <span className="text-muted-foreground">{c.requirements}</span>
+                </div>
                 <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
                   <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>
                   <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{c.location}</div>
