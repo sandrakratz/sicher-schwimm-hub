@@ -95,13 +95,31 @@ function Page() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from("memberships").insert({
+    const { data: inserted, error } = await supabase.from("memberships").insert({
       ...parsed.data,
       date_of_birth: parsed.data.date_of_birth || null,
       consent_at: new Date().toISOString(),
-    });
+    }).select("id, created_at").maybeSingle();
     setLoading(false);
     if (error) { toast.error("Antrag konnte nicht gesendet werden."); return; }
+    // Fire-and-forget admin notification email
+    fetch("/api/public/notify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        templateName: "membership-application",
+        idempotencyKey: inserted?.id ? `membership-${inserted.id}` : undefined,
+        templateData: {
+          full_name: `${parsed.data.first_name} ${parsed.data.last_name}`,
+          email: parsed.data.email,
+          phone: parsed.data.phone,
+          city: parsed.data.address_city,
+          membership_type: parsed.data.membership_type,
+          iban: parsed.data.sepa_iban,
+          created_at: inserted?.created_at || new Date().toISOString(),
+        },
+      }),
+    }).catch(() => {});
     setDone(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
