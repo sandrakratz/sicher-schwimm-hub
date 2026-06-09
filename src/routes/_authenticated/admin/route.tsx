@@ -6,15 +6,19 @@ const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { assertIsStaff } from "@/lib/admin-guard.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
-    const ok = !!roles?.some(r => r.role === "admin" || r.role === "board");
-    if (!ok) throw redirect({ to: "/portal" });
+    // Server-side enforcement: cannot be bypassed by editing client JS.
+    try {
+      await assertIsStaff();
+    } catch {
+      throw redirect({ to: "/portal" });
+    }
   },
   component: AdminLayout,
 });
