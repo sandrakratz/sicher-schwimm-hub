@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
 import { Route as SicherheitRouteImport } from './routes/sicherheit'
 import { Route as SatzungRouteImport } from './routes/satzung'
@@ -50,6 +51,11 @@ import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lova
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UeberUnsRoute = UeberUnsRouteImport.update({
   id: '/ueber-uns',
   path: '/ueber-uns',
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
   '/ueber-uns': typeof UeberUnsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
@@ -322,6 +329,7 @@ export interface FileRoutesByTo {
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
   '/ueber-uns': typeof UeberUnsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -364,6 +372,7 @@ export interface FileRoutesById {
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
   '/ueber-uns': typeof UeberUnsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
@@ -407,6 +416,7 @@ export interface FileRouteTypes {
     | '/satzung'
     | '/sicherheit'
     | '/ueber-uns'
+    | '/unsubscribe'
     | '/admin'
     | '/email/unsubscribe'
     | '/admin/anfragen'
@@ -448,6 +458,7 @@ export interface FileRouteTypes {
     | '/satzung'
     | '/sicherheit'
     | '/ueber-uns'
+    | '/unsubscribe'
     | '/email/unsubscribe'
     | '/admin/anfragen'
     | '/admin/audit'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/satzung'
     | '/sicherheit'
     | '/ueber-uns'
+    | '/unsubscribe'
     | '/_authenticated/admin'
     | '/email/unsubscribe'
     | '/_authenticated/admin/anfragen'
@@ -532,6 +544,7 @@ export interface RootRouteChildren {
   SatzungRoute: typeof SatzungRoute
   SicherheitRoute: typeof SicherheitRoute
   UeberUnsRoute: typeof UeberUnsRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
@@ -542,6 +555,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ueber-uns': {
       id: '/ueber-uns'
       path: '/ueber-uns'
@@ -900,6 +920,7 @@ const rootRouteChildren: RootRouteChildren = {
   SatzungRoute: SatzungRoute,
   SicherheitRoute: SicherheitRoute,
   UeberUnsRoute: UeberUnsRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
@@ -910,3 +931,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
