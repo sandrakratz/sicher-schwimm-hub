@@ -62,15 +62,24 @@ function RequestPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from("course_requests").insert({
+    const { data: inserted, error } = await supabase.from("course_requests").insert({
       ...parsed.data,
       child_dob: parsed.data.child_dob || null,
-    });
+    }).select("id, created_at").maybeSingle();
     setLoading(false);
     if (error) {
       toast.error("Anfrage konnte nicht gesendet werden");
       return;
     }
+    fetch("/api/public/notify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        templateName: "course-request",
+        idempotencyKey: inserted?.id ? `course-request-${inserted.id}` : undefined,
+        templateData: { ...parsed.data, created_at: inserted?.created_at || new Date().toISOString() },
+      }),
+    }).catch(() => {});
     setDone(true);
   }
 
