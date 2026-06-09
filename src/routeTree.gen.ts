@@ -30,6 +30,7 @@ import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
 import { Route as AuthenticatedPortalKurseRouteImport } from './routes/_authenticated/portal/kurse'
@@ -152,6 +153,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicNotifyAdminRoute = ApiPublicNotifyAdminRouteImport.update({
+  id: '/api/public/notify-admin',
+  path: '/api/public/notify-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedPortalProfilRoute =
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
@@ -373,6 +381,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
     | '/portal/kurse'
     | '/portal/news'
     | '/portal/profil'
+    | '/api/public/notify-admin'
     | '/lovable/email/suppression'
     | '/admin/'
     | '/portal/'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/portal/kurse'
     | '/portal/news'
     | '/portal/profil'
+    | '/api/public/notify-admin'
     | '/lovable/email/suppression'
     | '/admin'
     | '/portal'
@@ -495,6 +506,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/kurse'
     | '/_authenticated/portal/news'
     | '/_authenticated/portal/profil'
+    | '/api/public/notify-admin'
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
@@ -521,6 +533,7 @@ export interface RootRouteChildren {
   SicherheitRoute: typeof SicherheitRoute
   UeberUnsRoute: typeof UeberUnsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -674,6 +687,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/suppression'
       fullPath: '/lovable/email/suppression'
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/notify-admin': {
+      id: '/api/public/notify-admin'
+      path: '/api/public/notify-admin'
+      fullPath: '/api/public/notify-admin'
+      preLoaderRoute: typeof ApiPublicNotifyAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/portal/profil': {
@@ -881,6 +901,7 @@ const rootRouteChildren: RootRouteChildren = {
   SicherheitRoute: SicherheitRoute,
   UeberUnsRoute: UeberUnsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
