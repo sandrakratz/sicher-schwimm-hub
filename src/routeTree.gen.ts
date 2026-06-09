@@ -43,6 +43,7 @@ import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminBenutzerRouteImport } from './routes/_authenticated/admin/benutzer'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminAnfragenRouteImport } from './routes/_authenticated/admin/anfragen'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
 const UeberUnsRoute = UeberUnsRouteImport.update({
   id: '/ueber-uns',
@@ -225,6 +226,12 @@ const AuthenticatedAdminAnfragenRoute =
     path: '/anfragen',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -260,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -294,6 +302,7 @@ export interface FileRoutesByTo {
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -331,6 +340,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/portal/profil'
     | '/admin/'
     | '/portal/'
+    | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/portal/profil'
     | '/admin'
     | '/portal'
+    | '/lovable/email/queue/process'
   id:
     | '__root__'
     | '/'
@@ -438,6 +450,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/profil'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
+    | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -457,6 +470,7 @@ export interface RootRouteChildren {
   SatzungRoute: typeof SatzungRoute
   SicherheitRoute: typeof SicherheitRoute
   UeberUnsRoute: typeof UeberUnsRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -699,6 +713,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnfragenRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -777,7 +798,18 @@ const rootRouteChildren: RootRouteChildren = {
   SatzungRoute: SatzungRoute,
   SicherheitRoute: SicherheitRoute,
   UeberUnsRoute: UeberUnsRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
