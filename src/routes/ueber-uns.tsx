@@ -75,16 +75,29 @@ function Page() {
 
       <section className="container mx-auto px-4 py-16">
         <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-8 text-center">Vorstand & Verein</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {[
-            { role: "1. Vorsitzender", name: "Michael Kratz" },
-            { role: "2. Vorsitzende", name: "Sandra Kratz" },
-            { role: "Kassenwart/Mitgliederverwaltung", name: "Manuela Scholz-Ornowski" },
+            {
+              role: "1. Vorsitzender",
+              name: "Michael Kratz",
+              bio: "Michael Kratz verfügt über nahezu vier Jahrzehnte Erfahrung in der Schwimmausbildung und im Bäderwesen. Als staatlich geprüfte Fachkraft für Bäderbetriebe vermittelt er bereits seit seiner Jugend Kindern und Erwachsenen Sicherheit und Freude im Wasser. Sein beruflicher Werdegang umfasst unter anderem die Bereiche Schwimmausbildung, Badeaufsicht, Wasseraufbereitung und Gesundheitsförderung. Darüber hinaus engagiert er sich seit vielen Jahren in der Kinderbetreuung und betreibt gemeinsam mit seiner Frau Sandra die Großtagespflege „Hennefer Mäusenest“. Durch seine Kombination aus pädagogischer Erfahrung und fachlicher Expertise im Schwimmsport setzt er sich mit besonderem Engagement für die Förderung der Schwimmfähigkeit und die Prävention von Badeunfällen ein.",
+            },
+            {
+              role: "2. Vorsitzende",
+              name: "Sandra Kratz",
+              bio: "Sandra Kratz engagiert sich seit vielen Jahren mit großer Leidenschaft für die Betreuung und Förderung von Kindern. Bereits 2008 begann sie ihre Tätigkeit als qualifizierte Kindertagespflegeperson und baute in Hennef ihre eigene Kindertagespflegestelle „Die kleinen Feldmäuse“ auf. Seitdem begleitet sie Kinder in ihren ersten Lebensjahren mit viel Herz, Fachwissen und pädagogischer Erfahrung. Dabei orientiert sie sich an den individuellen Bedürfnissen und Interessen jedes Kindes und verbindet bewährte pädagogische Ansätze mit einer alltagsnahen, liebevollen Betreuung. Regelmäßige Fort- und Weiterbildungen gehören für sie selbstverständlich zu ihrer professionellen Arbeit. Gemeinsam mit ihrem Mann Michael Kratz betreibt sie seit 2016 die Großtagespflege „Hennefer Mäusenest“. Ihre langjährige Erfahrung in der Arbeit mit Kindern und Familien bringt sie heute auch in die Vorstandsarbeit von Sicher Schwimmen ein.",
+            },
+            {
+              role: "Kassenwart/Mitgliederverwaltung",
+              name: "Manuela Scholz-Ornowski",
+              bio: "Manuela Scholz-Ornowski engagiert sich im Vorstand von Sicher Schwimmen für die Förderung von Schwimmkompetenz und Wassersicherheit. Mit ihrem Einsatz unterstützt sie die Weiterentwicklung der Vereinsarbeit und setzt sich dafür ein, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen. Ihr besonderes Anliegen ist es, Menschen für die Bedeutung von Schwimmfähigkeit als wichtige Lebenskompetenz zu sensibilisieren und die Ziele des Vereins nachhaltig voranzubringen.",
+            },
           ].map((p) => (
-            <Card key={p.role} className="border-0 shadow-soft">
-              <CardContent className="p-7 text-center">
+            <Card key={p.role} className="border-0 shadow-soft h-full">
+              <CardContent className="p-7">
                 <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-2">{p.role}</div>
-                <h3 className="font-display font-bold text-lg text-primary-deep">{p.name}</h3>
+                <h3 className="font-display font-bold text-lg text-primary-deep mb-3">{p.name}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{p.bio}</p>
               </CardContent>
             </Card>
           ))}
