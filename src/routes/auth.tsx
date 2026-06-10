@@ -24,18 +24,41 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/portal" });
     });
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pending") === "1") {
+      toast.info("Dein Konto wartet noch auf Freischaltung durch einen Administrator.");
+    }
   }, [navigate]);
 
   async function onLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: signIn, error } = await supabase.auth.signInWithPassword({
       email: String(fd.get("email")),
       password: String(fd.get("password")),
     });
+    if (error) { setLoading(false); toast.error(error.message); return; }
+
+    // Status-Check: nur freigeschaltete Konten dürfen ins Portal
+    const userId = signIn.user?.id;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", userId)
+        .maybeSingle();
+      if (profile?.status && profile.status !== "active") {
+        await supabase.auth.signOut();
+        setLoading(false);
+        const msg = profile.status === "pending"
+          ? "Dein Konto wartet noch auf Freischaltung durch einen Administrator."
+          : "Dein Konto ist derzeit nicht aktiv. Bitte kontaktiere den Vorstand.";
+        toast.error(msg);
+        return;
+      }
+    }
+
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
     toast.success("Willkommen zurück!");
     navigate({ to: "/portal" });
   }
@@ -54,7 +77,7 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Bitte E-Mail-Adresse bestätigen.");
+    toast.success("Registrierung eingegangen. Dein Konto wird nach Bestätigung der E-Mail durch einen Administrator freigeschaltet.");
   }
 
   async function onReset() {
@@ -101,7 +124,7 @@ function AuthPage() {
                 <div><Label htmlFor="signup_email">E-Mail</Label><Input id="signup_email" type="email" name="email" required /></div>
                 <div><Label htmlFor="signup_password">Passwort (min. 8 Zeichen)</Label><Input id="signup_password" type="password" name="password" required minLength={8} /></div>
                 <Button type="submit" variant="accent" className="w-full" disabled={loading}>Registrieren</Button>
-                <p className="text-xs text-muted-foreground text-center">Eine Bestätigungs-E-Mail wird gesendet.</p>
+                <p className="text-xs text-muted-foreground text-center">Nach der E-Mail-Bestätigung muss dein Konto noch von einem Administrator freigeschaltet werden.</p>
               </form>
             </TabsContent>
           </Tabs>
