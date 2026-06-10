@@ -5,6 +5,7 @@ import { Target, Eye, Heart, Users, Sparkles, Accessibility } from "lucide-react
 import parentChild from "@/assets/parent-child.jpg";
 import sandraKratzAsset from "@/assets/sandra-kratz.png.asset.json";
 import michaelKratzAsset from "@/assets/michael-kratz.jpg.asset.json";
+import manuelaScholzOrnowskiAsset from "@/assets/manuela-scholz-ornowski.jpg.asset.json";
 
 export const Route = createFileRoute("/ueber-uns")({
   head: () => ({ meta: [
@@ -94,6 +95,7 @@ function Page() {
             {
               role: "Kassenwart/Mitgliederverwaltung",
               name: "Manuela Scholz-Ornowski",
+              photo: manuelaScholzOrnowskiAsset.url,
               bio: "Manuela Scholz-Ornowski engagiert sich im Vorstand von Sicher Schwimmen für die Förderung von Schwimmkompetenz und Wassersicherheit. Mit ihrem Einsatz unterstützt sie die Weiterentwicklung der Vereinsarbeit und setzt sich dafür ein, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen. Ihr besonderes Anliegen ist es, Menschen für die Bedeutung von Schwimmfähigkeit als wichtige Lebenskompetenz zu sensibilisieren und die Ziele des Vereins nachhaltig voranzubringen.",
             },
           ].map((p) => (
