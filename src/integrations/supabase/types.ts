@@ -377,6 +377,7 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           email: string
+          family_members: Json | null
           first_name: string
           guardian_email: string | null
           guardian_name: string | null
@@ -410,6 +411,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           email: string
+          family_members?: Json | null
           first_name: string
           guardian_email?: string | null
           guardian_name?: string | null
@@ -443,6 +445,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           email?: string
+          family_members?: Json | null
           first_name?: string
           guardian_email?: string | null
           guardian_name?: string | null
