@@ -107,6 +107,7 @@ function Page() {
                       src={p.photo}
                       alt={p.name}
                       className="h-20 w-20 rounded-full object-cover shrink-0 ring-2 ring-accent/20"
+                      style={{ objectPosition: p.objectPosition ?? "center" }}
                       loading="lazy"
                     />
                   ) : (
