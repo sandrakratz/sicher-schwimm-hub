@@ -122,7 +122,7 @@ function Page() {
               {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kurse.</TableCell></TableRow>}
               {rows.map(c => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">intern</Badge>}</TableCell>
+                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}</TableCell>
                   <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
