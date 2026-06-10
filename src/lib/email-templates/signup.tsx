@@ -6,9 +6,11 @@ import {
   Container,
   Head,
   Heading,
+  Hr,
   Html,
   Link,
   Preview,
+  Section,
   Text,
 } from '@react-email/components'
 
@@ -25,31 +27,44 @@ export const SignupEmail = ({
   recipient,
   confirmationUrl,
 }: SignupEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="de" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Bitte bestätige deine E-Mail-Adresse für {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <Heading style={h1}>E-Mail-Adresse bestätigen</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
+          Vielen Dank für deine Registrierung bei{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          !
+          .
         </Text>
         <Text style={text}>
-          Please confirm your email address (
+          Bitte bestätige zunächst deine E-Mail-Adresse (
           <Link href={`mailto:${recipient}`} style={link}>
             {recipient}
           </Link>
-          ) by clicking the button below:
+          ) über den folgenden Button:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Verify Email
+          E-Mail-Adresse bestätigen
         </Button>
+
+        <Hr style={hr} />
+
+        <Section style={noticeBox}>
+          <Text style={noticeTitle}>Wichtiger Hinweis</Text>
+          <Text style={noticeText}>
+            Nach der Bestätigung deiner E-Mail-Adresse ist dein Konto noch{' '}
+            <strong>nicht sofort nutzbar</strong>. Dein Zugang muss zuerst durch
+            den <strong>Vorstand</strong> freigeschaltet werden. Du erhältst
+            Zugriff auf den internen Bereich, sobald die Freigabe erfolgt ist.
+          </Text>
+        </Section>
+
         <Text style={footer}>
-          If you didn't create an account, you can safely ignore this email.
+          Falls du dich nicht registriert hast, kannst du diese E-Mail ignorieren.
         </Text>
       </Container>
     </Body>
@@ -59,26 +74,50 @@ export const SignupEmail = ({
 export default SignupEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const container = { padding: '20px 25px', maxWidth: '560px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: '#0b3d66',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  color: '#33373d',
+  lineHeight: '1.6',
+  margin: '0 0 18px',
 }
-const link = { color: 'inherit', textDecoration: 'underline' }
+const link = { color: '#0b6cb7', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: '#0b6cb7',
   color: '#ffffff',
   fontSize: '14px',
+  fontWeight: 'bold' as const,
   borderRadius: '8px',
-  padding: '12px 20px',
+  padding: '12px 22px',
   textDecoration: 'none',
+}
+const hr = {
+  borderColor: '#e6e8eb',
+  margin: '28px 0',
+}
+const noticeBox = {
+  backgroundColor: '#fff8e6',
+  border: '1px solid #f5d893',
+  borderRadius: '8px',
+  padding: '14px 18px',
+  margin: '0 0 20px',
+}
+const noticeTitle = {
+  fontSize: '14px',
+  fontWeight: 'bold' as const,
+  color: '#7a5300',
+  margin: '0 0 6px',
+}
+const noticeText = {
+  fontSize: '13px',
+  color: '#5b4200',
+  lineHeight: '1.6',
+  margin: 0,
 }
 const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
