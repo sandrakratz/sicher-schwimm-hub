@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteUser } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/benutzer")({
   component: Page,
@@ -18,6 +22,21 @@ const ROLES = ["admin", "board", "trainer", "member", "parent"] as const;
 type Role = typeof ROLES[number];
 const STATUSES = ["pending", "active", "disabled", "archived"] as const;
 type Status = typeof STATUSES[number];
+
+const ROLE_LABEL: Record<Role, string> = {
+  admin: "Administrator",
+  board: "Vorstand",
+  trainer: "Trainer/in",
+  member: "Mitglied",
+  parent: "Elternteil",
+};
+
+const STATUS_LABEL: Record<Status, string> = {
+  pending: "Wartet auf Freigabe",
+  active: "Aktiv",
+  disabled: "Deaktiviert",
+  archived: "Archiviert",
+};
 
 const STATUS_COLOR: Record<Status, string> = {
   pending: "bg-amber-100 text-amber-900",
@@ -42,6 +61,25 @@ function Page() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [toDelete, setToDelete] = useState<Profile | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteUserFn = useServerFn(deleteUser);
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    try {
+      await deleteUserFn({ data: { userId: toDelete.id } });
+      toast.success("Benutzer gelöscht");
+      setToDelete(null);
+      setSelected(s => s && s.id === toDelete.id ? null : s);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Löschen fehlgeschlagen");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -115,10 +153,15 @@ function Page() {
                 <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelected(p)}>
                   <TableCell className="font-medium">{[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
                   <TableCell className="text-sm">{p.email}</TableCell>
-                  <TableCell><Badge className={STATUS_COLOR[p.status]} variant="secondary">{p.status}</Badge></TableCell>
-                  <TableCell className="text-xs">{(roles[p.id] || []).join(", ") || <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell><Badge className={STATUS_COLOR[p.status]} variant="secondary">{STATUS_LABEL[p.status]}</Badge></TableCell>
+                  <TableCell className="text-xs">{(roles[p.id] || []).map(r => ROLE_LABEL[r]).join(", ") || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("de-DE")}</TableCell>
-                  <TableCell className="text-right"><Button variant="ghost" size="sm">Details</Button></TableCell>
+                  <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>Details</Button>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -143,7 +186,7 @@ function Page() {
                   <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Status</div>
                   <div className="flex flex-wrap gap-2">
                     {STATUSES.map(s => (
-                      <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => setStatus(selected.id, s)}>{s}</Button>
+                      <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => setStatus(selected.id, s)}>{STATUS_LABEL[s]}</Button>
                     ))}
                   </div>
                 </div>
@@ -156,20 +199,40 @@ function Page() {
                       return (
                         <label key={r} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
                           <Checkbox checked={has} onCheckedChange={() => toggleRole(selected.id, r, has)} />
-                          <span className="capitalize">{r}</span>
+                          <span>{ROLE_LABEL[r]}</span>
                         </label>
                       );
                     })}
                   </div>
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="gap-2 sm:justify-between">
+                <Button variant="destructive" onClick={() => setToDelete(selected)}>
+                  <Trash2 className="h-4 w-4" />Benutzer löschen
+                </Button>
                 <Button variant="outline" onClick={() => setSelected(null)}>Schließen</Button>
               </DialogFooter>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!toDelete} onOpenChange={o => !o && !deleting && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Benutzer endgültig löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toDelete && (<>Das Konto von <strong>{[toDelete.first_name, toDelete.last_name].filter(Boolean).join(" ") || toDelete.email}</strong> wird unwiderruflich gelöscht – inklusive Profil, Rollen und zugehörigen Daten.</>)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Lösche…" : "Endgültig löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
