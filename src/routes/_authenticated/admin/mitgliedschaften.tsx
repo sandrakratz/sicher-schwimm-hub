@@ -22,6 +22,13 @@ const TYPE_LABEL: Record<string, string> = {
   supporting: "Förderung",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Wartet auf Freigabe",
+  active: "Aktiv",
+  suspended: "Pausiert",
+  terminated: "Beendet",
+};
+
 type Member = { name: string; date_of_birth: string | null };
 type FamilyMembers = { partner?: Member | null; children?: Member[] } | null;
 
@@ -144,7 +151,7 @@ function Page() {
                   <TableCell>{r.first_name} {r.last_name}</TableCell>
                   <TableCell className="text-xs">{r.email}</TableCell>
                   <TableCell><Badge variant="outline">{TYPE_LABEL[r.membership_type] || r.membership_type}</Badge></TableCell>
-                  <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
                   <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" onClick={() => { setSelected(r); setEditingFamily(false); }}>Details</Button>
                     {r.status !== "active" && <Button size="sm" variant="accent" onClick={() => setStatus(r.id, "active")}>Genehmigen</Button>}
@@ -166,7 +173,7 @@ function Page() {
               <section>
                 <h3 className="font-display font-bold text-primary-deep mb-2">Antragsdaten</h3>
                 <Row label="Eingegangen" value={fmtDate(selected.created_at)} />
-                <Row label="Status" value={<Badge variant="outline">{selected.status}</Badge>} />
+                <Row label="Status" value={<Badge variant="outline">{STATUS_LABEL[selected.status] || selected.status}</Badge>} />
                 <Row label="Genehmigt am" value={fmtDate(selected.approved_at)} />
                 <Row label="Mitgliedschaftsart" value={TYPE_LABEL[selected.membership_type] || selected.membership_type} />
               </section>

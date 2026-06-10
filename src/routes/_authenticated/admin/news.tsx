@@ -18,6 +18,13 @@ export const Route = createFileRoute("/_authenticated/admin/news")({
   component: Page,
 });
 
+const VISIBILITY_LABEL: Record<string, string> = {
+  public: "Öffentlich",
+  members: "Mitglieder",
+  trainers: "Trainer:innen",
+  admin: "Admin",
+};
+
 type News = {
   id: string;
   title: string;
@@ -106,8 +113,8 @@ function Page() {
                 <TableRow key={n.id}>
                   <TableCell className="font-medium">{n.title}</TableCell>
                   <TableCell className="text-xs">{n.category}</TableCell>
-                  <TableCell><Badge variant="secondary">{n.visibility}</Badge></TableCell>
-                  <TableCell>{n.published ? <Badge className="bg-emerald-100 text-emerald-900">Live</Badge> : <Badge variant="secondary">Entwurf</Badge>}</TableCell>
+                  <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[n.visibility] || n.visibility}</Badge></TableCell>
+                  <TableCell>{n.published ? <Badge className="bg-emerald-100 text-emerald-900">Veröffentlicht</Badge> : <Badge variant="secondary">Entwurf</Badge>}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{n.published_at ? new Date(n.published_at).toLocaleDateString("de-DE") : "—"}</TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>Bearbeiten</Button>

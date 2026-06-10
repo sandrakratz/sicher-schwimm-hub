@@ -137,7 +137,7 @@ function Page() {
                 <TableRow key={d.id}>
                   <TableCell className="font-medium">{d.title}{d.description && <div className="text-xs text-muted-foreground">{d.description}</div>}</TableCell>
                   <TableCell className="text-xs">{d.version || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{d.visibility}</Badge></TableCell>
+                  <TableCell><Badge variant="secondary">{VISIBILITY_OPTIONS.find(o => o.value === d.visibility)?.label || d.visibility}</Badge></TableCell>
                   <TableCell>{d.file_url ? <Button variant="ghost" size="sm" onClick={() => download(d)}><Download className="h-4 w-4" /></Button> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("de-DE")}</TableCell>
                   <TableCell className="text-right space-x-1">

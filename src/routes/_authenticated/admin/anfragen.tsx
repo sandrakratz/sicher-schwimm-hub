@@ -20,6 +20,15 @@ export const Route = createFileRoute("/_authenticated/admin/anfragen")({
   component: AnfragenAdmin,
 });
 
+const STATUS_LABEL: Record<string, string> = {
+  new: "Neu",
+  under_review: "In Prüfung",
+  contacted: "Kontaktiert",
+  waiting_list: "Warteliste",
+  accepted: "Akzeptiert",
+  rejected: "Abgelehnt",
+};
+
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
@@ -60,7 +69,7 @@ function AnfragenAdmin() {
                   </TableCell>
                   <TableCell>{r.child_name || "—"}</TableCell>
                   <TableCell>{r.desired_course || "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{r.status}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
                   <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
                 </TableRow>
               ))}
@@ -75,7 +84,7 @@ function AnfragenAdmin() {
           {selected && (
             <div className="space-y-4 text-sm">
               <Row label="Eingegangen" value={new Date(selected.created_at).toLocaleString("de-DE")} />
-              <Row label="Status" value={<Badge variant="outline">{selected.status}</Badge>} />
+              <Row label="Status" value={<Badge variant="outline">{STATUS_LABEL[selected.status] || selected.status}</Badge>} />
               <hr />
               <h3 className="font-semibold">Eltern / Erziehungsberechtigte</h3>
               <Row label="Name" value={selected.parent_name} />

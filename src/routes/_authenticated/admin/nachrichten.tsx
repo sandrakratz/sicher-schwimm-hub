@@ -9,6 +9,22 @@ export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   component: Page,
 });
 
+const STATUS_LABEL: Record<string, string> = {
+  new: "Neu",
+  read: "Gelesen",
+  replied: "Beantwortet",
+  archived: "Archiviert",
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  general: "Allgemein",
+  membership: "Mitgliedschaft",
+  course: "Kurs",
+  feedback: "Feedback",
+  complaint: "Beschwerde",
+  other: "Sonstiges",
+};
+
 function Page() {
   const [rows, setRows] = useState<any[]>([]);
   useEffect(() => {
@@ -27,9 +43,9 @@ function Page() {
                 <TableRow key={m.id}>
                   <TableCell className="text-xs">{new Date(m.created_at).toLocaleDateString("de-DE")}</TableCell>
                   <TableCell><div className="font-semibold">{m.from_name}</div><div className="text-xs text-muted-foreground">{m.from_email}</div></TableCell>
-                  <TableCell><Badge variant="outline">{m.category}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge></TableCell>
                   <TableCell>{m.subject || "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{m.status}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{STATUS_LABEL[m.status] || m.status}</Badge></TableCell>
                 </TableRow>
               ))}
             </TableBody>
