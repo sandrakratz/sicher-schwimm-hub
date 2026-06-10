@@ -114,6 +114,18 @@ function Page() {
                 </section>
               )}
 
+              {selected.family_members && (selected.family_members.partner || (selected.family_members.children?.length > 0)) && (
+                <section>
+                  <h3 className="font-display font-bold text-primary-deep mb-2">Familienangaben</h3>
+                  {selected.family_members.partner?.name && (
+                    <Row label="Partner/in" value={`${selected.family_members.partner.name}${selected.family_members.partner.date_of_birth ? ` (geb. ${fmtDate(selected.family_members.partner.date_of_birth)})` : ""}`} />
+                  )}
+                  {(selected.family_members.children || []).map((c: any, i: number) => (
+                    <Row key={i} label={`Kind ${i + 1}`} value={`${c.name}${c.date_of_birth ? ` (geb. ${fmtDate(c.date_of_birth)})` : ""}`} />
+                  ))}
+                </section>
+              )}
+
               <section>
                 <h3 className="font-display font-bold text-primary-deep mb-2">SEPA-Lastschriftmandat</h3>
                 <Row label="Kontoinhaber/in" value={selected.sepa_account_holder} />
