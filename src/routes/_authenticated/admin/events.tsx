@@ -17,6 +17,13 @@ export const Route = createFileRoute("/_authenticated/admin/events")({
   component: Page,
 });
 
+const VISIBILITY_LABEL: Record<string, string> = {
+  public: "Öffentlich",
+  members: "Mitglieder",
+  trainers: "Trainer:innen",
+  admin: "Admin",
+};
+
 type Ev = {
   id: string;
   title: string;
