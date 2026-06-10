@@ -144,8 +144,26 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
             <Button asChild size="sm" variant="default">
               <a href={mailto}><Reply className="h-4 w-4 mr-1" />Antworten</a>
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive" aria-label="Nachricht löschen"><Trash2 className="h-4 w-4" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Nachricht löschen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Diese Nachricht von {m.from_name} wird endgültig entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(m.id)}>Löschen</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
+
 
         <div className="rounded-lg bg-muted/40 p-4">
           <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Mail className="h-3 w-3" />Nachricht</div>
