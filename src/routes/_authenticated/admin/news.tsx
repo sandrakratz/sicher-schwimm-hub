@@ -18,6 +18,13 @@ export const Route = createFileRoute("/_authenticated/admin/news")({
   component: Page,
 });
 
+const VISIBILITY_LABEL: Record<string, string> = {
+  public: "Öffentlich",
+  members: "Mitglieder",
+  trainers: "Trainer:innen",
+  admin: "Admin",
+};
+
 type News = {
   id: string;
   title: string;
