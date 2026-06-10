@@ -107,9 +107,16 @@ function Page() {
       return;
     }
     setLoading(true);
+    const family_members = tier === "family" ? {
+      partner: partner.name.trim() ? { name: partner.name.trim(), date_of_birth: partner.date_of_birth || null } : null,
+      children: children
+        .filter(c => c.name.trim())
+        .map(c => ({ name: c.name.trim(), date_of_birth: c.date_of_birth || null })),
+    } : null;
     const { data: inserted, error } = await supabase.from("memberships").insert({
       ...parsed.data,
       date_of_birth: parsed.data.date_of_birth || null,
+      family_members,
       consent_at: new Date().toISOString(),
     }).select("id, created_at").maybeSingle();
     setLoading(false);
