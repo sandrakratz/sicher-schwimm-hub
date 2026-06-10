@@ -69,6 +69,14 @@ function Page() {
     toast.success("Notiz gespeichert");
   }
 
+  async function deleteMsg(id: string) {
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) return toast.error("Fehler beim Löschen");
+    setRows(r => r.filter(m => m.id !== id));
+    toast.success("Nachricht gelöscht");
+  }
+
+
   const filtered = filter === "all" ? rows : rows.filter(m => m.status === filter);
 
   return (
