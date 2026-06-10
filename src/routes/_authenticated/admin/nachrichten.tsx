@@ -9,6 +9,22 @@ export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   component: Page,
 });
 
+const STATUS_LABEL: Record<string, string> = {
+  new: "Neu",
+  read: "Gelesen",
+  replied: "Beantwortet",
+  archived: "Archiviert",
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  general: "Allgemein",
+  membership: "Mitgliedschaft",
+  course: "Kurs",
+  feedback: "Feedback",
+  complaint: "Beschwerde",
+  other: "Sonstiges",
+};
+
 function Page() {
   const [rows, setRows] = useState<any[]>([]);
   useEffect(() => {
