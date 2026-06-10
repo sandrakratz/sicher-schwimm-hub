@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Target, Eye, Heart, Users, Sparkles, Accessibility } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
 import sandraKratzAsset from "@/assets/sandra-kratz.png.asset.json";
+import michaelKratzAsset from "@/assets/michael-kratz.jpg.asset.json";
 
 export const Route = createFileRoute("/ueber-uns")({
   head: () => ({ meta: [
