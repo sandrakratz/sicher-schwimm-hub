@@ -22,6 +22,13 @@ const TYPE_LABEL: Record<string, string> = {
   supporting: "Förderung",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Wartet auf Freigabe",
+  active: "Aktiv",
+  suspended: "Pausiert",
+  terminated: "Beendet",
+};
+
 type Member = { name: string; date_of_birth: string | null };
 type FamilyMembers = { partner?: Member | null; children?: Member[] } | null;
 
