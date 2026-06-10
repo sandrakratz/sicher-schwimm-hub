@@ -42,6 +42,7 @@ const STATUS_OPTIONS = [
   { value: "fully_booked", label: "Ausgebucht" },
   { value: "completed", label: "Abgeschlossen" },
 ];
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTIONS.map(o => [o.value, o.label]));
 
 function slugify(s: string) {
   return s.toLowerCase().replace(/[äöüß]/g, m => ({ä:"ae",ö:"oe",ü:"ue",ß:"ss"}[m] || m)).replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
