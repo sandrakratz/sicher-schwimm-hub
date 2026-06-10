@@ -12,6 +12,7 @@ const nav = [
   { to: "/mitgliedschaft", label: "Mitgliedschaft" },
   { to: "/sicherheit", label: "Sicherheit" },
   { to: "/ueber-uns", label: "Über uns" },
+  { to: "/news", label: "News" },
   { to: "/faq", label: "FAQ" },
   { to: "/kontakt", label: "Kontakt" },
 ];

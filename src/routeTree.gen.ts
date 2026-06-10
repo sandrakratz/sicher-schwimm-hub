@@ -14,6 +14,7 @@ import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
 import { Route as SicherheitRouteImport } from './routes/sicherheit'
 import { Route as SatzungRouteImport } from './routes/satzung'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as MitgliedsordnungRouteImport } from './routes/mitgliedsordnung'
 import { Route as MitgliedschaftRouteImport } from './routes/mitgliedschaft'
 import { Route as KurseRouteImport } from './routes/kurse'
@@ -74,6 +75,11 @@ const SatzungRoute = SatzungRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MitgliedsordnungRoute = MitgliedsordnungRouteImport.update({
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/news': typeof NewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/news': typeof NewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/news': typeof NewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
@@ -412,6 +421,7 @@ export interface FileRouteTypes {
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
+    | '/news'
     | '/reset-password'
     | '/satzung'
     | '/sicherheit'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
+    | '/news'
     | '/reset-password'
     | '/satzung'
     | '/sicherheit'
@@ -496,6 +507,7 @@ export interface FileRouteTypes {
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
+    | '/news'
     | '/reset-password'
     | '/satzung'
     | '/sicherheit'
@@ -540,6 +552,7 @@ export interface RootRouteChildren {
   KurseRoute: typeof KurseRoute
   MitgliedschaftRoute: typeof MitgliedschaftRoute
   MitgliedsordnungRoute: typeof MitgliedsordnungRoute
+  NewsRoute: typeof NewsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SatzungRoute: typeof SatzungRoute
   SicherheitRoute: typeof SicherheitRoute
@@ -588,6 +601,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mitgliedsordnung': {
@@ -916,6 +936,7 @@ const rootRouteChildren: RootRouteChildren = {
   KurseRoute: KurseRoute,
   MitgliedschaftRoute: MitgliedschaftRoute,
   MitgliedsordnungRoute: MitgliedsordnungRoute,
+  NewsRoute: NewsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SatzungRoute: SatzungRoute,
   SicherheitRoute: SicherheitRoute,
