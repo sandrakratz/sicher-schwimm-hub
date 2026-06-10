@@ -3,6 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, FileText, Newspaper, User as UserIcon } from "lucide-react";
+import { getMyMembership } from "@/lib/membership.functions";
+
+const MEMBERSHIP_STATUS_LABEL: Record<string, string> = {
+  active: "Aktiv",
+  pending: "In Bearbeitung",
+  inactive: "Inaktiv",
+  cancelled: "Gekündigt",
+  rejected: "Abgelehnt",
+};
 
 export const Route = createFileRoute("/_authenticated/portal/")({
   component: Dashboard,
