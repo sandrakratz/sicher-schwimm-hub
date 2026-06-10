@@ -102,14 +102,14 @@ function Page() {
 
       <div className="space-y-4">
         {filtered.map(m => (
-          <MessageCard key={m.id} m={m} onStatus={updateStatus} onNotes={saveNotes} />
+          <MessageCard key={m.id} m={m} onStatus={updateStatus} onNotes={saveNotes} onDelete={deleteMsg} />
         ))}
       </div>
     </div>
   );
 }
 
-function MessageCard({ m, onStatus, onNotes }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void }) {
+function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void; onDelete: (id: string) => void }) {
   const [notes, setNotes] = useState(m.internal_notes || "");
   const replySubject = encodeURIComponent(`Re: ${m.subject || "Ihre Nachricht"}`);
   const replyBody = encodeURIComponent(`\n\n--- Ursprüngliche Nachricht ---\nVon: ${m.from_name} <${m.from_email}>\nGesendet: ${new Date(m.created_at).toLocaleString("de-DE")}\nBetreff: ${m.subject || "—"}\n\n${m.body}`);
