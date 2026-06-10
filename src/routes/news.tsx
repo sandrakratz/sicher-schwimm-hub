@@ -66,9 +66,12 @@ function Page() {
                     )}
                   </div>
                   <h2 className="font-display text-xl font-bold text-primary-deep mt-1">{n.title}</h2>
-                  <p className="text-muted-foreground mt-2 whitespace-pre-line">
-                    {n.excerpt || n.content?.slice(0, 400)}
-                  </p>
+                  {n.excerpt && (
+                    <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>
+                  )}
+                  <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">
+                    {n.content}
+                  </div>
                 </CardContent>
               </Card>
             ))}
