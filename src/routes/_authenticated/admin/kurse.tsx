@@ -125,7 +125,7 @@ function Page() {
                   <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">intern</Badge>}</TableCell>
                   <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{c.status}</Badge></TableCell>
+                  <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
                   <TableCell className="text-xs">{c.max_participants ?? "—"}</TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
