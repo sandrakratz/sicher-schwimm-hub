@@ -57,7 +57,19 @@ const schema = z.object({
   accepted_privacy: z.boolean().refine(v => v),
 });
 
+type FamilyMember = { name: string; date_of_birth: string };
+
 function Page() {
+  const [partner, setPartner] = useState<FamilyMember>({ name: "", date_of_birth: "" });
+  const [children, setChildren] = useState<FamilyMember[]>([
+    { name: "", date_of_birth: "" },
+    { name: "", date_of_birth: "" },
+    { name: "", date_of_birth: "" },
+    { name: "", date_of_birth: "" },
+  ]);
+  const updateChild = (i: number, patch: Partial<FamilyMember>) =>
+    setChildren(prev => prev.map((c, idx) => idx === i ? { ...c, ...patch } : c));
+
   const [tier, setTier] = useState("family");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -95,9 +107,16 @@ function Page() {
       return;
     }
     setLoading(true);
+    const family_members = tier === "family" ? {
+      partner: partner.name.trim() ? { name: partner.name.trim(), date_of_birth: partner.date_of_birth || null } : null,
+      children: children
+        .filter(c => c.name.trim())
+        .map(c => ({ name: c.name.trim(), date_of_birth: c.date_of_birth || null })),
+    } : null;
     const { data: inserted, error } = await supabase.from("memberships").insert({
       ...parsed.data,
       date_of_birth: parsed.data.date_of_birth || null,
+      family_members,
       consent_at: new Date().toISOString(),
     }).select("id, created_at").maybeSingle();
     setLoading(false);
@@ -225,6 +244,32 @@ function Page() {
                     <div><Label htmlFor="guardian_phone">Telefon</Label><Input id="guardian_phone" name="guardian_phone" maxLength={40} /></div>
                   </div>
                 </div>
+
+                {tier === "family" && (
+                  <div className="border-t pt-5">
+                    <h3 className="font-semibold text-primary-deep mb-1">Familienangaben</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Bitte tragen Sie Partner/in und Kinder (bis zu 4) ein. Nicht ausgefüllte Felder werden ignoriert.</p>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Partner/in</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div><Label>Name</Label><Input value={partner.name} onChange={e => setPartner(p => ({ ...p, name: e.target.value }))} maxLength={200} /></div>
+                          <div><Label>Geburtsdatum</Label><Input type="date" value={partner.date_of_birth} onChange={e => setPartner(p => ({ ...p, date_of_birth: e.target.value }))} /></div>
+                        </div>
+                      </div>
+                      {children.map((c, i) => (
+                        <div key={i}>
+                          <h4 className="text-sm font-medium mb-2">Kind {i + 1}</h4>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div><Label>Name</Label><Input value={c.name} onChange={e => updateChild(i, { name: e.target.value })} maxLength={200} /></div>
+                            <div><Label>Geburtsdatum</Label><Input type="date" value={c.date_of_birth} onChange={e => updateChild(i, { date_of_birth: e.target.value })} /></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
 
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>
