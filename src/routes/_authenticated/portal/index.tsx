@@ -60,21 +60,24 @@ function Dashboard() {
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { icon: UserIcon, label: "Mitgliedschaft", value: membership },
-          { icon: Newspaper, label: "Neue Beiträge", value: newsCount === null ? "…" : String(newsCount) },
-          { icon: Calendar, label: "Kommende Termine", value: eventsCount === null ? "…" : String(eventsCount) },
-          { icon: FileText, label: "Dokumente", value: docsCount === null ? "…" : String(docsCount) },
-        ].map(s => (
-          <Card key={s.label} className="border-0 shadow-soft">
-            <CardContent className="p-5">
-              <s.icon className="h-7 w-7 text-accent mb-3" />
-              <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</div>
-              <div className="text-2xl font-bold text-primary-deep">{s.value}</div>
-            </CardContent>
-          </Card>
+        {([
+          { icon: UserIcon, label: "Mitgliedschaft", value: membership, to: "/portal/profil" as const },
+          { icon: Newspaper, label: "Neue Beiträge", value: newsCount === null ? "…" : String(newsCount), to: "/portal/news" as const },
+          { icon: Calendar, label: "Kommende Termine", value: eventsCount === null ? "…" : String(eventsCount), to: "/portal/events" as const },
+          { icon: FileText, label: "Dokumente", value: docsCount === null ? "…" : String(docsCount), to: "/portal/dokumente" as const },
+        ]).map(s => (
+          <Link key={s.label} to={s.to} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
+            <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
+              <CardContent className="p-5">
+                <s.icon className="h-7 w-7 text-accent mb-3" />
+                <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</div>
+                <div className="text-2xl font-bold text-primary-deep">{s.value}</div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
+
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-0 shadow-soft">
