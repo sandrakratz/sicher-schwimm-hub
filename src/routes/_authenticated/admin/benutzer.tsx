@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { deleteUser } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/benutzer")({
   component: Page,
@@ -18,6 +22,21 @@ const ROLES = ["admin", "board", "trainer", "member", "parent"] as const;
 type Role = typeof ROLES[number];
 const STATUSES = ["pending", "active", "disabled", "archived"] as const;
 type Status = typeof STATUSES[number];
+
+const ROLE_LABEL: Record<Role, string> = {
+  admin: "Administrator",
+  board: "Vorstand",
+  trainer: "Trainer/in",
+  member: "Mitglied",
+  parent: "Elternteil",
+};
+
+const STATUS_LABEL: Record<Status, string> = {
+  pending: "Wartet auf Freigabe",
+  active: "Aktiv",
+  disabled: "Deaktiviert",
+  archived: "Archiviert",
+};
 
 const STATUS_COLOR: Record<Status, string> = {
   pending: "bg-amber-100 text-amber-900",
