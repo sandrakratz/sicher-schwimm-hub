@@ -110,7 +110,7 @@ function Page() {
                   <TableCell className="font-medium">{e.title}</TableCell>
                   <TableCell className="text-sm">{new Date(e.starts_at).toLocaleString("de-DE")}</TableCell>
                   <TableCell className="text-sm">{e.location || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{e.visibility}</Badge></TableCell>
+                  <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[e.visibility] || e.visibility}</Badge></TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => startEdit(e)}>Bearbeiten</Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(e)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
