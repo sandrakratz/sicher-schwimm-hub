@@ -84,18 +84,21 @@ function Page() {
               role: "1. Vorsitzender",
               name: "Michael Kratz",
               photo: michaelKratzAsset.url,
+              objectPosition: "center 20%",
               bio: "Michael Kratz verfügt über nahezu vier Jahrzehnte Erfahrung in der Schwimmausbildung und im Bäderwesen. Als staatlich geprüfte Fachkraft für Bäderbetriebe vermittelt er bereits seit seiner Jugend Kindern und Erwachsenen Sicherheit und Freude im Wasser. Sein beruflicher Werdegang umfasst unter anderem die Bereiche Schwimmausbildung, Badeaufsicht, Wasseraufbereitung und Gesundheitsförderung. Darüber hinaus engagiert er sich seit vielen Jahren in der Kinderbetreuung und betreibt gemeinsam mit seiner Frau Sandra die Großtagespflege „Hennefer Mäusenest“. Durch seine Kombination aus pädagogischer Erfahrung und fachlicher Expertise im Schwimmsport setzt er sich mit besonderem Engagement für die Förderung der Schwimmfähigkeit und die Prävention von Badeunfällen ein.",
             },
             {
               role: "2. Vorsitzende",
               name: "Sandra Kratz",
               photo: sandraKratzAsset.url,
+              objectPosition: "center",
               bio: "Sandra Kratz engagiert sich seit vielen Jahren mit großer Leidenschaft für die Betreuung und Förderung von Kindern. Bereits 2008 begann sie ihre Tätigkeit als qualifizierte Kindertagespflegeperson und baute in Hennef ihre eigene Kindertagespflegestelle „Die kleinen Feldmäuse“ auf. Seitdem begleitet sie Kinder in ihren ersten Lebensjahren mit viel Herz, Fachwissen und pädagogischer Erfahrung. Dabei orientiert sie sich an den individuellen Bedürfnissen und Interessen jedes Kindes und verbindet bewährte pädagogische Ansätze mit einer alltagsnahen, liebevollen Betreuung. Regelmäßige Fort- und Weiterbildungen gehören für sie selbstverständlich zu ihrer professionellen Arbeit. Gemeinsam mit ihrem Mann Michael Kratz betreibt sie seit 2016 die Großtagespflege „Hennefer Mäusenest“. Ihre langjährige Erfahrung in der Arbeit mit Kindern und Familien bringt sie heute auch in die Vorstandsarbeit von Sicher Schwimmen ein.",
             },
             {
               role: "Kassenwart/Mitgliederverwaltung",
               name: "Manuela Scholz-Ornowski",
               photo: manuelaScholzOrnowskiAsset.url,
+              objectPosition: "center",
               bio: "Manuela Scholz-Ornowski engagiert sich im Vorstand von Sicher Schwimmen für die Förderung von Schwimmkompetenz und Wassersicherheit. Mit ihrem Einsatz unterstützt sie die Weiterentwicklung der Vereinsarbeit und setzt sich dafür ein, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen. Ihr besonderes Anliegen ist es, Menschen für die Bedeutung von Schwimmfähigkeit als wichtige Lebenskompetenz zu sensibilisieren und die Ziele des Vereins nachhaltig voranzubringen.",
             },
           ].map((p) => (
@@ -107,6 +110,7 @@ function Page() {
                       src={p.photo}
                       alt={p.name}
                       className="h-20 w-20 rounded-full object-cover shrink-0 ring-2 ring-accent/20"
+                      style={{ objectPosition: p.objectPosition ?? "center" }}
                       loading="lazy"
                     />
                   ) : (
