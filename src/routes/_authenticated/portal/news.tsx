@@ -21,9 +21,17 @@ function NewsList() {
         <div className="space-y-4">
           {items.map(n => (
             <Card key={n.id} className="border-0 shadow-soft"><CardContent className="p-6">
-              <div className="text-xs text-accent uppercase font-semibold tracking-wider">{n.category}</div>
-              <h2 className="font-display text-xl font-bold text-primary-deep">{n.title}</h2>
-              <p className="text-muted-foreground mt-2">{n.excerpt || n.content?.slice(0, 200)}</p>
+              <div className="text-xs text-accent uppercase font-semibold tracking-wider">
+                {n.category}
+                {n.published_at && (
+                  <span className="ml-2 text-muted-foreground normal-case font-normal">
+                    {new Date(n.published_at).toLocaleDateString("de-DE")}
+                  </span>
+                )}
+              </div>
+              <h2 className="font-display text-xl font-bold text-primary-deep mt-1">{n.title}</h2>
+              {n.excerpt && <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>}
+              <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{n.content}</div>
             </CardContent></Card>
           ))}
         </div>
