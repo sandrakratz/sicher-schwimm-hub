@@ -3,6 +3,7 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, Eye, Heart, Users, Sparkles, Accessibility } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
+import sandraKratzAsset from "@/assets/sandra-kratz.png.asset.json";
 
 export const Route = createFileRoute("/ueber-uns")({
   head: () => ({ meta: [
@@ -85,6 +86,7 @@ function Page() {
             {
               role: "2. Vorsitzende",
               name: "Sandra Kratz",
+              photo: sandraKratzAsset.url,
               bio: "Sandra Kratz engagiert sich seit vielen Jahren mit großer Leidenschaft für die Betreuung und Förderung von Kindern. Bereits 2008 begann sie ihre Tätigkeit als qualifizierte Kindertagespflegeperson und baute in Hennef ihre eigene Kindertagespflegestelle „Die kleinen Feldmäuse“ auf. Seitdem begleitet sie Kinder in ihren ersten Lebensjahren mit viel Herz, Fachwissen und pädagogischer Erfahrung. Dabei orientiert sie sich an den individuellen Bedürfnissen und Interessen jedes Kindes und verbindet bewährte pädagogische Ansätze mit einer alltagsnahen, liebevollen Betreuung. Regelmäßige Fort- und Weiterbildungen gehören für sie selbstverständlich zu ihrer professionellen Arbeit. Gemeinsam mit ihrem Mann Michael Kratz betreibt sie seit 2016 die Großtagespflege „Hennefer Mäusenest“. Ihre langjährige Erfahrung in der Arbeit mit Kindern und Familien bringt sie heute auch in die Vorstandsarbeit von Sicher Schwimmen ein.",
             },
             {
@@ -93,11 +95,18 @@ function Page() {
               bio: "Manuela Scholz-Ornowski engagiert sich im Vorstand von Sicher Schwimmen für die Förderung von Schwimmkompetenz und Wassersicherheit. Mit ihrem Einsatz unterstützt sie die Weiterentwicklung der Vereinsarbeit und setzt sich dafür ein, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen. Ihr besonderes Anliegen ist es, Menschen für die Bedeutung von Schwimmfähigkeit als wichtige Lebenskompetenz zu sensibilisieren und die Ziele des Vereins nachhaltig voranzubringen.",
             },
           ].map((p) => (
-            <Card key={p.role} className="border-0 shadow-soft h-full">
-              <CardContent className="p-7">
-                <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-2">{p.role}</div>
-                <h3 className="font-display font-bold text-lg text-primary-deep mb-3">{p.name}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{p.bio}</p>
+            <Card key={p.role} className="border-0 shadow-soft h-full overflow-hidden">
+              <CardContent className="p-0">
+                {p.photo ? (
+                  <img src={p.photo} alt={p.name} className="w-full aspect-[4/5] object-cover" loading="lazy" />
+                ) : (
+                  <div className="w-full aspect-[4/5] bg-muted" aria-hidden="true" />
+                )}
+                <div className="p-7">
+                  <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-2">{p.role}</div>
+                  <h3 className="font-display font-bold text-lg text-primary-deep mb-3">{p.name}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{p.bio}</p>
+                </div>
               </CardContent>
             </Card>
           ))}
