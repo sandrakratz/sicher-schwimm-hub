@@ -84,6 +84,7 @@ function Page() {
               role: "1. Vorsitzender",
               name: "Michael Kratz",
               photo: michaelKratzAsset.url,
+              objectPosition: "center 20%",
               bio: "Michael Kratz verfügt über nahezu vier Jahrzehnte Erfahrung in der Schwimmausbildung und im Bäderwesen. Als staatlich geprüfte Fachkraft für Bäderbetriebe vermittelt er bereits seit seiner Jugend Kindern und Erwachsenen Sicherheit und Freude im Wasser. Sein beruflicher Werdegang umfasst unter anderem die Bereiche Schwimmausbildung, Badeaufsicht, Wasseraufbereitung und Gesundheitsförderung. Darüber hinaus engagiert er sich seit vielen Jahren in der Kinderbetreuung und betreibt gemeinsam mit seiner Frau Sandra die Großtagespflege „Hennefer Mäusenest“. Durch seine Kombination aus pädagogischer Erfahrung und fachlicher Expertise im Schwimmsport setzt er sich mit besonderem Engagement für die Förderung der Schwimmfähigkeit und die Prävention von Badeunfällen ein.",
             },
             {
