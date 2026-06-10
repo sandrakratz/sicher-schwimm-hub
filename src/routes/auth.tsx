@@ -124,7 +124,7 @@ function AuthPage() {
                 <div><Label htmlFor="signup_email">E-Mail</Label><Input id="signup_email" type="email" name="email" required /></div>
                 <div><Label htmlFor="signup_password">Passwort (min. 8 Zeichen)</Label><Input id="signup_password" type="password" name="password" required minLength={8} /></div>
                 <Button type="submit" variant="accent" className="w-full" disabled={loading}>Registrieren</Button>
-                <p className="text-xs text-muted-foreground text-center">Eine Bestätigungs-E-Mail wird gesendet.</p>
+                <p className="text-xs text-muted-foreground text-center">Nach der E-Mail-Bestätigung muss dein Konto noch von einem Administrator freigeschaltet werden.</p>
               </form>
             </TabsContent>
           </Tabs>
