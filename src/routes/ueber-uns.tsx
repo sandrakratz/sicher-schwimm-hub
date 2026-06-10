@@ -82,6 +82,7 @@ function Page() {
             {
               role: "1. Vorsitzender",
               name: "Michael Kratz",
+              photo: michaelKratzAsset.url,
               bio: "Michael Kratz verfügt über nahezu vier Jahrzehnte Erfahrung in der Schwimmausbildung und im Bäderwesen. Als staatlich geprüfte Fachkraft für Bäderbetriebe vermittelt er bereits seit seiner Jugend Kindern und Erwachsenen Sicherheit und Freude im Wasser. Sein beruflicher Werdegang umfasst unter anderem die Bereiche Schwimmausbildung, Badeaufsicht, Wasseraufbereitung und Gesundheitsförderung. Darüber hinaus engagiert er sich seit vielen Jahren in der Kinderbetreuung und betreibt gemeinsam mit seiner Frau Sandra die Großtagespflege „Hennefer Mäusenest“. Durch seine Kombination aus pädagogischer Erfahrung und fachlicher Expertise im Schwimmsport setzt er sich mit besonderem Engagement für die Förderung der Schwimmfähigkeit und die Prävention von Badeunfällen ein.",
             },
             {
@@ -96,18 +97,25 @@ function Page() {
               bio: "Manuela Scholz-Ornowski engagiert sich im Vorstand von Sicher Schwimmen für die Förderung von Schwimmkompetenz und Wassersicherheit. Mit ihrem Einsatz unterstützt sie die Weiterentwicklung der Vereinsarbeit und setzt sich dafür ein, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen. Ihr besonderes Anliegen ist es, Menschen für die Bedeutung von Schwimmfähigkeit als wichtige Lebenskompetenz zu sensibilisieren und die Ziele des Vereins nachhaltig voranzubringen.",
             },
           ].map((p) => (
-            <Card key={p.role} className="border-0 shadow-soft h-full overflow-hidden">
-              <CardContent className="p-0">
-                {p.photo ? (
-                  <img src={p.photo} alt={p.name} className="w-full aspect-[4/5] object-cover" loading="lazy" />
-                ) : (
-                  <div className="w-full aspect-[4/5] bg-muted" aria-hidden="true" />
-                )}
-                <div className="p-7">
-                  <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-2">{p.role}</div>
-                  <h3 className="font-display font-bold text-lg text-primary-deep mb-3">{p.name}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{p.bio}</p>
+            <Card key={p.role} className="border-0 shadow-soft h-full">
+              <CardContent className="p-7">
+                <div className="flex items-center gap-4 mb-4">
+                  {p.photo ? (
+                    <img
+                      src={p.photo}
+                      alt={p.name}
+                      className="h-20 w-20 rounded-full object-cover shrink-0 ring-2 ring-accent/20"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-muted shrink-0" aria-hidden="true" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-1">{p.role}</div>
+                    <h3 className="font-display font-bold text-lg text-primary-deep leading-tight">{p.name}</h3>
+                  </div>
                 </div>
+                <p className="text-muted-foreground text-sm leading-relaxed">{p.bio}</p>
               </CardContent>
             </Card>
           ))}
