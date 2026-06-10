@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Reply } from "lucide-react";
+import { Mail, Reply, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   component: Page,
@@ -68,6 +69,14 @@ function Page() {
     toast.success("Notiz gespeichert");
   }
 
+  async function deleteMsg(id: string) {
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) return toast.error("Fehler beim Löschen");
+    setRows(r => r.filter(m => m.id !== id));
+    toast.success("Nachricht gelöscht");
+  }
+
+
   const filtered = filter === "all" ? rows : rows.filter(m => m.status === filter);
 
   return (
@@ -93,14 +102,14 @@ function Page() {
 
       <div className="space-y-4">
         {filtered.map(m => (
-          <MessageCard key={m.id} m={m} onStatus={updateStatus} onNotes={saveNotes} />
+          <MessageCard key={m.id} m={m} onStatus={updateStatus} onNotes={saveNotes} onDelete={deleteMsg} />
         ))}
       </div>
     </div>
   );
 }
 
-function MessageCard({ m, onStatus, onNotes }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void }) {
+function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void; onDelete: (id: string) => void }) {
   const [notes, setNotes] = useState(m.internal_notes || "");
   const replySubject = encodeURIComponent(`Re: ${m.subject || "Ihre Nachricht"}`);
   const replyBody = encodeURIComponent(`\n\n--- Ursprüngliche Nachricht ---\nVon: ${m.from_name} <${m.from_email}>\nGesendet: ${new Date(m.created_at).toLocaleString("de-DE")}\nBetreff: ${m.subject || "—"}\n\n${m.body}`);
@@ -135,8 +144,26 @@ function MessageCard({ m, onStatus, onNotes }: { m: Msg; onStatus: (id: string, 
             <Button asChild size="sm" variant="default">
               <a href={mailto}><Reply className="h-4 w-4 mr-1" />Antworten</a>
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive" aria-label="Nachricht löschen"><Trash2 className="h-4 w-4" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Nachricht löschen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Diese Nachricht von {m.from_name} wird endgültig entfernt. Diese Aktion kann nicht rückgängig gemacht werden.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(m.id)}>Löschen</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
+
 
         <div className="rounded-lg bg-muted/40 p-4">
           <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Mail className="h-3 w-3" />Nachricht</div>
