@@ -61,6 +61,25 @@ function Page() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [toDelete, setToDelete] = useState<Profile | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deleteUserFn = useServerFn(deleteUser);
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    try {
+      await deleteUserFn({ data: { userId: toDelete.id } });
+      toast.success("Benutzer gelöscht");
+      setToDelete(null);
+      setSelected(s => s && s.id === toDelete.id ? null : s);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Löschen fehlgeschlagen");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
