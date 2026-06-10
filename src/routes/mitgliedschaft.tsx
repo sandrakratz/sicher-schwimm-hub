@@ -57,7 +57,19 @@ const schema = z.object({
   accepted_privacy: z.boolean().refine(v => v),
 });
 
+type FamilyMember = { name: string; date_of_birth: string };
+
 function Page() {
+  const [partner, setPartner] = useState<FamilyMember>({ name: "", date_of_birth: "" });
+  const [children, setChildren] = useState<FamilyMember[]>([
+    { name: "", date_of_birth: "" },
+    { name: "", date_of_birth: "" },
+    { name: "", date_of_birth: "" },
+    { name: "", date_of_birth: "" },
+  ]);
+  const updateChild = (i: number, patch: Partial<FamilyMember>) =>
+    setChildren(prev => prev.map((c, idx) => idx === i ? { ...c, ...patch } : c));
+
   const [tier, setTier] = useState("family");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
