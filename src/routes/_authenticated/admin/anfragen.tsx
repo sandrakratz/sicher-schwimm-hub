@@ -20,6 +20,15 @@ export const Route = createFileRoute("/_authenticated/admin/anfragen")({
   component: AnfragenAdmin,
 });
 
+const STATUS_LABEL: Record<string, string> = {
+  new: "Neu",
+  under_review: "In Prüfung",
+  contacted: "Kontaktiert",
+  waiting_list: "Warteliste",
+  accepted: "Akzeptiert",
+  rejected: "Abgelehnt",
+};
+
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
