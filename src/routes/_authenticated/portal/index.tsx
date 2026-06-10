@@ -40,7 +40,7 @@ function Dashboard() {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [mem, newsRecent, newsList, evCount, evList, docs] = await Promise.all([
-        supabase.from("memberships").select("status").eq("user_id", u.user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        getMyMembership().catch(() => null),
         supabase.from("news").select("id", { count: "exact", head: true }).eq("published", true).gte("published_at", thirtyDaysAgo),
         supabase.from("news").select("id,title,slug,published_at,excerpt").eq("published", true).order("published_at", { ascending: false }).limit(3),
         supabase.from("events").select("id", { count: "exact", head: true }).gte("starts_at", nowIso),
@@ -48,7 +48,7 @@ function Dashboard() {
         supabase.from("documents").select("id", { count: "exact", head: true }),
       ]);
 
-      setMembership(mem.data?.status === "active" ? "Aktiv" : mem.data?.status ? mem.data.status : "—");
+      setMembership(mem?.status ? (MEMBERSHIP_STATUS_LABEL[mem.status] || mem.status) : "Keine");
       setNewsCount(newsRecent.count ?? 0);
       setEventsCount(evCount.count ?? 0);
       setDocsCount(docs.count ?? 0);
@@ -56,6 +56,7 @@ function Dashboard() {
       setEvents((evList.data as EventItem[]) ?? []);
     })();
   }, []);
+
 
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
   const fmtDateTime = (iso: string) => new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
