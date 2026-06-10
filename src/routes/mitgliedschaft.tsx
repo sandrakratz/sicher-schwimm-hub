@@ -245,6 +245,32 @@ function Page() {
                   </div>
                 </div>
 
+                {tier === "family" && (
+                  <div className="border-t pt-5">
+                    <h3 className="font-semibold text-primary-deep mb-1">Familienangaben</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Bitte tragen Sie Partner/in und Kinder (bis zu 4) ein. Nicht ausgefüllte Felder werden ignoriert.</p>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Partner/in</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div><Label>Name</Label><Input value={partner.name} onChange={e => setPartner(p => ({ ...p, name: e.target.value }))} maxLength={200} /></div>
+                          <div><Label>Geburtsdatum</Label><Input type="date" value={partner.date_of_birth} onChange={e => setPartner(p => ({ ...p, date_of_birth: e.target.value }))} /></div>
+                        </div>
+                      </div>
+                      {children.map((c, i) => (
+                        <div key={i}>
+                          <h4 className="text-sm font-medium mb-2">Kind {i + 1}</h4>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div><Label>Name</Label><Input value={c.name} onChange={e => updateChild(i, { name: e.target.value })} maxLength={200} /></div>
+                            <div><Label>Geburtsdatum</Label><Input type="date" value={c.date_of_birth} onChange={e => updateChild(i, { date_of_birth: e.target.value })} /></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>
                   <p className="text-xs text-muted-foreground mb-4">
