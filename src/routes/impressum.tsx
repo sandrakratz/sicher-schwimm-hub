@@ -16,14 +16,14 @@ export const Route = createFileRoute("/impressum")({
       <ul className="list-disc pl-5">
         <li>1. Vorsitzender: Michael Kratz</li>
         <li>2. Vorsitzende: Sandra Kratz</li>
-        <li>Kassenwart: Anja Brauer-Walbe</li>
+        <li>Kassenwart: Manuela Scholz-Ornowski</li>
       </ul>
       <p className="text-sm text-muted-foreground">
         Der Verein wird gerichtlich und außergerichtlich durch zwei Vorstandsmitglieder gemeinsam vertreten.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Kassenprüfung</h2>
-      <p>Manuela Schoz-Ornowski</p>
+      <p>Anja Brauer-Walbe</p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Kontakt</h2>
       <p>E-Mail: info@sicher-schwimmen.com</p>
