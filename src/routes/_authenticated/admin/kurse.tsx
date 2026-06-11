@@ -253,6 +253,82 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={partOpen} onOpenChange={setPartOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Teilnehmer: {partCourse?.name}</DialogTitle>
+          </DialogHeader>
+          {partCourse && (() => {
+            const cnt = counts[partCourse.id] || { confirmed: 0, waiting: 0 };
+            const max = partCourse.max_participants;
+            const free = max != null ? Math.max(0, max - cnt.confirmed) : null;
+            return (
+              <div className="text-sm text-muted-foreground mb-2">
+                Bestätigt: <span className="font-semibold text-foreground">{cnt.confirmed}</span>
+                {max != null && <> von {max} · Frei: <span className="font-semibold text-foreground">{free}</span></>}
+                {cnt.waiting > 0 && <> · Warteliste: <span className="font-semibold text-foreground">{cnt.waiting}</span></>}
+              </div>
+            );
+          })()}
+          <div className="border rounded-md overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Kontakt</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Notiz</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {participants.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium text-sm">{p.participant_name || "—"}</TableCell>
+                    <TableCell className="text-xs">{p.participant_email || "—"}{p.participant_phone && <><br />{p.participant_phone}</>}</TableCell>
+                    <TableCell>
+                      <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
+                        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
+                    <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="border-t pt-4 mt-4 space-y-3">
+            <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
+              <div><Label>E-Mail</Label><Input type="email" value={newPart.email} onChange={e => setNewPart(p => ({ ...p, email: e.target.value }))} /></div>
+              <div><Label>Telefon</Label><Input value={newPart.phone} onChange={e => setNewPart(p => ({ ...p, phone: e.target.value }))} /></div>
+              <div>
+                <Label>Status</Label>
+                <Select value={newPart.status} onValueChange={(v: any) => setNewPart(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">Bestätigt</SelectItem>
+                    <SelectItem value="waiting">Warteliste</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
+            <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPartOpen(false)}>Schließen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
