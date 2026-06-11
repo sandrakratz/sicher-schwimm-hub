@@ -110,12 +110,16 @@ function AnfragenAdmin() {
     if (!selected || !assignCourseId) return toast.error("Bitte Kurs auswählen");
     setBusy(true);
     try {
+      const priceNum = priceAmount.trim() ? Number(priceAmount.replace(",", ".")) : null;
       const res = await assignFn({ data: {
         requestId: selected.id,
         courseId: assignCourseId,
         status: assignStatus,
         sendEmail: sendMail,
         adminNotes: assignNotes || undefined,
+        isMember: isMember === "yes" ? true : isMember === "no" ? false : null,
+        parentUserId: parentUserId || null,
+        priceAmount: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
       }});
       toast.success(res.emailQueued ? "Eingebucht & E-Mail versendet" : "Eingebucht");
       setSelected(null);
@@ -124,6 +128,7 @@ function AnfragenAdmin() {
       toast.error(e.message || "Fehler");
     } finally { setBusy(false); }
   }
+
 
   return (
     <div className="max-w-6xl">
