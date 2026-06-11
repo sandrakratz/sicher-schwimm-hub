@@ -124,10 +124,12 @@ function Page() {
       participant_phone: newPart.phone.trim() || null,
       status: newPart.status,
       notes: newPart.notes.trim() || null,
+      date_of_birth: newPart.date_of_birth || null,
     });
     if (error) return toast.error(error.message);
     toast.success("Teilnehmer hinzugefügt");
-    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
+    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+
     await openParticipants(partCourse);
     await load();
   }
