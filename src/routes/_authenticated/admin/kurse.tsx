@@ -377,6 +377,16 @@ function Page() {
                       {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
                       {p.goal_reached == null && !p.badge && !p.achievement && "—"}
                     </TableCell>
+                    <TableCell className="text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
+                        {p.paid ? (
+                          <span className="text-green-700 font-medium">Bezahlt{p.paid_at && <div className="text-muted-foreground font-normal">{fmtDate(p.paid_at)}</div>}</span>
+                        ) : (
+                          <span className="text-muted-foreground">offen</span>
+                        )}
+                      </label>
+                    </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
