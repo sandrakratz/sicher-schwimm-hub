@@ -28,6 +28,9 @@ type Participant = {
   status: "confirmed" | "waiting" | "cancelled";
   notes: string | null;
   date_of_birth: string | null;
+  goal_reached: boolean | null;
+  achievement: string | null;
+  badge: string | null;
 };
 
 const ENROLL_STATUS = [
