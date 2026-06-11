@@ -404,6 +404,63 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editPart} onOpenChange={v => !v && setEditPart(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Teilnehmer bearbeiten</DialogTitle></DialogHeader>
+          {editPart && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Name *</Label><Input value={editPart.participant_name || ""} onChange={e => setEditPart(p => p && { ...p, participant_name: e.target.value })} /></div>
+                <div>
+                  <Label>Geburtsdatum</Label>
+                  <Input type="date" value={editPart.date_of_birth || ""} onChange={e => setEditPart(p => p && { ...p, date_of_birth: e.target.value })} />
+                  {editPart.date_of_birth && (() => {
+                    const a = ageAt(editPart.date_of_birth, partCourse?.starts_on);
+                    return a != null ? <div className="text-xs text-muted-foreground mt-1">{a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div> : null;
+                  })()}
+                </div>
+                <div><Label>E-Mail</Label><Input type="email" value={editPart.participant_email || ""} onChange={e => setEditPart(p => p && { ...p, participant_email: e.target.value })} /></div>
+                <div><Label>Telefon</Label><Input value={editPart.participant_phone || ""} onChange={e => setEditPart(p => p && { ...p, participant_phone: e.target.value })} /></div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={editPart.status} onValueChange={(v: any) => setEditPart(p => p && { ...p, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
+
+              <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Award className="h-4 w-4" /> Kursergebnis</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Kursziel erreicht?</Label>
+                    <Select
+                      value={editPart.goal_reached == null ? "unset" : editPart.goal_reached ? "yes" : "no"}
+                      onValueChange={(v) => setEditPart(p => p && { ...p, goal_reached: v === "unset" ? null : v === "yes" })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">— Offen —</SelectItem>
+                        <SelectItem value="yes">Ja, erreicht</SelectItem>
+                        <SelectItem value="no">Nein, nicht erreicht</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Abzeichen</Label><Input placeholder="z.B. Seepferdchen, Bronze" value={editPart.badge || ""} onChange={e => setEditPart(p => p && { ...p, badge: e.target.value })} /></div>
+                </div>
+                <div className="mt-3"><Label>Geschafft / Anmerkungen zum Ergebnis</Label><Textarea rows={3} placeholder="z.B. 25m geschwommen, Sprung vom Beckenrand …" value={editPart.achievement || ""} onChange={e => setEditPart(p => p && { ...p, achievement: e.target.value })} /></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPart(null)}>Abbrechen</Button>
+            <Button onClick={savePart}>Speichern</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
