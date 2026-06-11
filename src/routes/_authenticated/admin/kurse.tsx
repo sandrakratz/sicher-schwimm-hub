@@ -167,12 +167,27 @@ function Page() {
       goal_reached: editPart.goal_reached,
       achievement: editPart.achievement?.trim() || null,
       badge: editPart.badge?.trim() || null,
+      paid: editPart.paid,
+      paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
+      paid_by: editPart.paid ? (await supabase.auth.getUser()).data.user?.id ?? null : null,
+      payment_note: editPart.payment_note?.trim() || null,
     }).eq("id", editPart.id);
     if (error) return toast.error(error.message);
     toast.success("Gespeichert");
     setEditPart(null);
     if (partCourse) await openParticipants(partCourse);
     await load();
+  }
+  async function togglePaid(p: Participant, paid: boolean) {
+    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
+    const { error } = await supabase.from("course_participants").update({
+      paid,
+      paid_at: paid ? new Date().toISOString() : null,
+      paid_by: paid ? userId : null,
+    }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success(paid ? "Als bezahlt markiert" : "Zahlung zurückgesetzt");
+    if (partCourse) await openParticipants(partCourse);
   }
 
 
