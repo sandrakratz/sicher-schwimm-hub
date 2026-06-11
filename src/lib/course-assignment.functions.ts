@@ -42,7 +42,9 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       status: data.status,
       notes: req.health_info || null,
       request_id: req.id,
+      date_of_birth: req.child_dob || null,
     })
+
     if (partErr && !String(partErr.message).toLowerCase().includes('duplicate')) {
       throw new Error(partErr.message)
     }

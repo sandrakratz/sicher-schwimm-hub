@@ -27,6 +27,7 @@ type Participant = {
   participant_phone: string | null;
   status: "confirmed" | "waiting" | "cancelled";
   notes: string | null;
+  date_of_birth: string | null;
 };
 
 const ENROLL_STATUS = [
@@ -35,6 +36,22 @@ const ENROLL_STATUS = [
   { value: "cancelled", label: "Abgesagt" },
 ];
 const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(ENROLL_STATUS.map(o => [o.value, o.label]));
+
+function ageAt(dobStr: string | null | undefined, refStr: string | null | undefined): number | null {
+  if (!dobStr) return null;
+  const dob = new Date(dobStr);
+  const ref = refStr ? new Date(refStr) : new Date();
+  if (isNaN(dob.getTime()) || isNaN(ref.getTime())) return null;
+  let age = ref.getFullYear() - dob.getFullYear();
+  const m = ref.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
+  return age;
+}
+function fmtDate(s: string | null | undefined) {
+  if (!s) return "—";
+  try { return new Date(s).toLocaleDateString("de-DE"); } catch { return s; }
+}
+
 
 
 type Course = {
@@ -75,7 +92,7 @@ function Page() {
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
+  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
@@ -107,10 +124,12 @@ function Page() {
       participant_phone: newPart.phone.trim() || null,
       status: newPart.status,
       notes: newPart.notes.trim() || null,
+      date_of_birth: newPart.date_of_birth || null,
     });
     if (error) return toast.error(error.message);
     toast.success("Teilnehmer hinzugefügt");
-    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
+    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+
     await openParticipants(partCourse);
     await load();
   }
@@ -276,6 +295,7 @@ function Page() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Geburtsdatum</TableHead>
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Notiz</TableHead>
@@ -283,10 +303,22 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
-                {participants.map(p => (
+                {participants.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.map(p => {
+                  const age = ageAt(p.date_of_birth, partCourse?.starts_on);
+                  return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium text-sm">{p.participant_name || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {p.date_of_birth ? (
+                        <>
+                          {fmtDate(p.date_of_birth)}
+                          {age != null && (
+                            <div className="text-muted-foreground">{age} J. {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div>
+                          )}
+                        </>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell className="text-xs">{p.participant_email || "—"}{p.participant_phone && <><br />{p.participant_phone}</>}</TableCell>
                     <TableCell>
                       <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
@@ -297,7 +329,7 @@ function Page() {
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </div>
@@ -306,6 +338,14 @@ function Page() {
             <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
+              <div>
+                <Label>Geburtsdatum</Label>
+                <Input type="date" value={newPart.date_of_birth} onChange={e => setNewPart(p => ({ ...p, date_of_birth: e.target.value }))} />
+                {newPart.date_of_birth && (() => {
+                  const a = ageAt(newPart.date_of_birth, partCourse?.starts_on);
+                  return a != null ? <div className="text-xs text-muted-foreground mt-1">{a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div> : null;
+                })()}
+              </div>
               <div><Label>E-Mail</Label><Input type="email" value={newPart.email} onChange={e => setNewPart(p => ({ ...p, email: e.target.value }))} /></div>
               <div><Label>Telefon</Label><Input value={newPart.phone} onChange={e => setNewPart(p => ({ ...p, phone: e.target.value }))} /></div>
               <div>
@@ -319,6 +359,7 @@ function Page() {
                 </Select>
               </div>
             </div>
+
             <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
             <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
           </div>
