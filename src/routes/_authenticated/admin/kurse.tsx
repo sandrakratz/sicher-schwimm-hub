@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
@@ -28,6 +28,9 @@ type Participant = {
   status: "confirmed" | "waiting" | "cancelled";
   notes: string | null;
   date_of_birth: string | null;
+  goal_reached: boolean | null;
+  achievement: string | null;
+  badge: string | null;
 };
 
 const ENROLL_STATUS = [
@@ -93,6 +96,7 @@ function Page() {
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+  const [editPart, setEditPart] = useState<Participant | null>(null);
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
@@ -144,6 +148,26 @@ function Page() {
     const { error } = await supabase.from("course_participants").delete().eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success("Entfernt");
+    if (partCourse) await openParticipants(partCourse);
+    await load();
+  }
+  async function savePart() {
+    if (!editPart) return;
+    if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
+    const { error } = await supabase.from("course_participants").update({
+      participant_name: editPart.participant_name.trim(),
+      participant_email: editPart.participant_email?.trim() || null,
+      participant_phone: editPart.participant_phone?.trim() || null,
+      date_of_birth: editPart.date_of_birth || null,
+      status: editPart.status,
+      notes: editPart.notes?.trim() || null,
+      goal_reached: editPart.goal_reached,
+      achievement: editPart.achievement?.trim() || null,
+      badge: editPart.badge?.trim() || null,
+    }).eq("id", editPart.id);
+    if (error) return toast.error(error.message);
+    toast.success("Gespeichert");
+    setEditPart(null);
     if (partCourse) await openParticipants(partCourse);
     await load();
   }
@@ -298,12 +322,13 @@ function Page() {
                   <TableHead>Geburtsdatum</TableHead>
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Ergebnis</TableHead>
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
@@ -326,8 +351,18 @@ function Page() {
                         <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell className="text-xs">
+                      {p.goal_reached === true && <Badge className="bg-green-600 hover:bg-green-700"><Award className="h-3 w-3 mr-1" />Ziel erreicht</Badge>}
+                      {p.goal_reached === false && <Badge variant="secondary">Ziel offen</Badge>}
+                      {p.badge && <div className="mt-1">{p.badge}</div>}
+                      {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
+                      {p.goal_reached == null && !p.badge && !p.achievement && "—"}
+                    </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
-                    <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
                   </TableRow>
                 )})}
               </TableBody>
@@ -366,6 +401,63 @@ function Page() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPartOpen(false)}>Schließen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editPart} onOpenChange={v => !v && setEditPart(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Teilnehmer bearbeiten</DialogTitle></DialogHeader>
+          {editPart && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Name *</Label><Input value={editPart.participant_name || ""} onChange={e => setEditPart(p => p && { ...p, participant_name: e.target.value })} /></div>
+                <div>
+                  <Label>Geburtsdatum</Label>
+                  <Input type="date" value={editPart.date_of_birth || ""} onChange={e => setEditPart(p => p && { ...p, date_of_birth: e.target.value })} />
+                  {editPart.date_of_birth && (() => {
+                    const a = ageAt(editPart.date_of_birth, partCourse?.starts_on);
+                    return a != null ? <div className="text-xs text-muted-foreground mt-1">{a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div> : null;
+                  })()}
+                </div>
+                <div><Label>E-Mail</Label><Input type="email" value={editPart.participant_email || ""} onChange={e => setEditPart(p => p && { ...p, participant_email: e.target.value })} /></div>
+                <div><Label>Telefon</Label><Input value={editPart.participant_phone || ""} onChange={e => setEditPart(p => p && { ...p, participant_phone: e.target.value })} /></div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={editPart.status} onValueChange={(v: any) => setEditPart(p => p && { ...p, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
+
+              <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Award className="h-4 w-4" /> Kursergebnis</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Kursziel erreicht?</Label>
+                    <Select
+                      value={editPart.goal_reached == null ? "unset" : editPart.goal_reached ? "yes" : "no"}
+                      onValueChange={(v) => setEditPart(p => p && { ...p, goal_reached: v === "unset" ? null : v === "yes" })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">— Offen —</SelectItem>
+                        <SelectItem value="yes">Ja, erreicht</SelectItem>
+                        <SelectItem value="no">Nein, nicht erreicht</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Abzeichen</Label><Input placeholder="z.B. Seepferdchen, Bronze" value={editPart.badge || ""} onChange={e => setEditPart(p => p && { ...p, badge: e.target.value })} /></div>
+                </div>
+                <div className="mt-3"><Label>Geschafft / Anmerkungen zum Ergebnis</Label><Textarea rows={3} placeholder="z.B. 25m geschwommen, Sprung vom Beckenrand …" value={editPart.achievement || ""} onChange={e => setEditPart(p => p && { ...p, achievement: e.target.value })} /></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPart(null)}>Abbrechen</Button>
+            <Button onClick={savePart}>Speichern</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
