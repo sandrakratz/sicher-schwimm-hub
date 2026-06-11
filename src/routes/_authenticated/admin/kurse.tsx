@@ -500,6 +500,40 @@ function Page() {
               <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
 
               <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Mitglied?</Label>
+                    <Select
+                      value={editPart.is_member == null ? "unset" : editPart.is_member ? "yes" : "no"}
+                      onValueChange={(v) => setEditPart(p => p && { ...p, is_member: v === "unset" ? null : v === "yes" })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">— Unklar —</SelectItem>
+                        <SelectItem value="yes">Ja</SelectItem>
+                        <SelectItem value="no">Nein</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Kursgebühr (€)</Label>
+                    <Input type="number" step="0.01" value={editPart.price_amount ?? ""} onChange={e => setEditPart(p => p && { ...p, price_amount: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={editPart.member_confirmed} onCheckedChange={v => setEditPart(p => p && { ...p, member_confirmed: !!v })} />
+                      Mitgliedschaft bestätigt (Buchhaltung)
+                    </label>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Elternkonto-Verknüpfung: {editPart.parent_user_id ? <span className="font-mono">{editPart.parent_user_id}</span> : "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"}
+                </div>
+              </div>
+
+
+              <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Award className="h-4 w-4" /> Kursergebnis</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
