@@ -7,11 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/news")({
   head: () => ({
     meta: [
-      { title: "News – Sicher Schwimmen e.V." },
-      { name: "description", content: "Aktuelle Neuigkeiten, Termine und Informationen aus dem Verein." },
+      { title: "News & Termine – Sicher Schwimmen e.V. Hennef" },
+      { name: "description", content: "Aktuelle Neuigkeiten, Termine und Informationen aus dem Schwimmverein Sicher Schwimmen e.V. in Hennef." },
       { property: "og:title", content: "News – Sicher Schwimmen e.V." },
       { property: "og:description", content: "Aktuelle Neuigkeiten, Termine und Informationen aus dem Verein." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/news" },
     ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/news" }],
   }),
   component: Page,
 });

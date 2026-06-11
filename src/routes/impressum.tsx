@@ -2,7 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
 
 export const Route = createFileRoute("/impressum")({
-  head: () => ({ meta: [{ title: "Impressum – Sicher Schwimmen e.V." }] }),
+  head: () => ({
+    meta: [
+      { title: "Impressum – Sicher Schwimmen e.V." },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/impressum" }],
+  }),
   component: () => (
     <LegalPage title="Impressum">
       <h2 className="font-display text-2xl font-bold text-primary-deep">Angaben gemäß § 5 TMG</h2>
