@@ -167,6 +167,8 @@ function Page() {
   async function savePart() {
     if (!editPart) return;
     if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
+    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
+    const memberConfirmedChanged = editPart.member_confirmed && !editPart.member_confirmed_at;
     const { error } = await supabase.from("course_participants").update({
       participant_name: editPart.participant_name.trim(),
       participant_email: editPart.participant_email?.trim() || null,
@@ -179,8 +181,14 @@ function Page() {
       badge: editPart.badge?.trim() || null,
       paid: editPart.paid,
       paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
-      paid_by: editPart.paid ? (await supabase.auth.getUser()).data.user?.id ?? null : null,
+      paid_by: editPart.paid ? userId : null,
       payment_note: editPart.payment_note?.trim() || null,
+      is_member: editPart.is_member,
+      member_confirmed: editPart.member_confirmed,
+      member_confirmed_at: editPart.member_confirmed ? (editPart.member_confirmed_at || (memberConfirmedChanged ? new Date().toISOString() : null)) : null,
+      member_confirmed_by: editPart.member_confirmed ? userId : null,
+      price_amount: editPart.price_amount,
+      parent_user_id: editPart.parent_user_id || null,
     }).eq("id", editPart.id);
     if (error) return toast.error(error.message);
     toast.success("Gespeichert");
@@ -188,6 +196,7 @@ function Page() {
     if (partCourse) await openParticipants(partCourse);
     await load();
   }
+
   async function togglePaid(p: Participant, paid: boolean) {
     const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
     const { error } = await supabase.from("course_participants").update({
