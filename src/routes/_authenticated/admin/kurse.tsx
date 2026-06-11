@@ -322,12 +322,13 @@ function Page() {
                   <TableHead>Geburtsdatum</TableHead>
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Ergebnis</TableHead>
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
@@ -350,8 +351,18 @@ function Page() {
                         <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell className="text-xs">
+                      {p.goal_reached === true && <Badge className="bg-green-600 hover:bg-green-700"><Award className="h-3 w-3 mr-1" />Ziel erreicht</Badge>}
+                      {p.goal_reached === false && <Badge variant="secondary">Ziel offen</Badge>}
+                      {p.badge && <div className="mt-1">{p.badge}</div>}
+                      {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
+                      {p.goal_reached == null && !p.badge && !p.achievement && "—"}
+                    </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
-                    <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
                   </TableRow>
                 )})}
               </TableBody>
