@@ -1,6 +1,8 @@
 import type { ComponentType } from 'react'
 import { template as membershipApplication } from './membership-application'
 import { template as courseRequest } from './course-request'
+import { template as courseAssignment } from './course-assignment'
+
 
 export interface TemplateEntry {
   component: ComponentType<any>
