@@ -8,9 +8,35 @@ import { Clock, MapPin, Users, Tag } from "lucide-react";
 export const Route = createFileRoute("/kurse")({
   head: () => ({
     meta: [
-      { title: "Schwimmkurse Hennef – Kinder, Familien & Erwachsene" },
-      { name: "description", content: "Übersicht unserer Schwimmkurse: Wassergewöhnung, Seepferdchen, Bronze/Silber/Gold, Aqua-Fitness und mehr in Hennef." },
+      { title: "Schwimmkurse Hennef – Seepferdchen, Bronze, Silber & Gold | Sicher Schwimmen e.V." },
+      { name: "description", content: "Alle Schwimmkurse in Hennef im Überblick: Wassergewöhnung, Anfängerschwimmen, Seepferdchen, Bronze, Silber, Gold sowie Ferien-Intensivkurse. Kleine Gruppen im Hallenbad Hennef." },
+      { name: "keywords", content: "Schwimmkurs Hennef, Seepferdchen Kurs, Bronze Silber Gold, Wassergewöhnung Kinder, Ferienkurs Schwimmen Rhein-Sieg-Kreis" },
+      { property: "og:title", content: "Schwimmkurse in Hennef – Übersicht" },
+      { property: "og:description", content: "Vom ersten Plantschen bis zum Goldabzeichen – Schwimmkurse für Kinder, Familien und Erwachsene in Hennef." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/kurse" },
     ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/kurse" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        itemListElement: courses.map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "Course",
+            name: c.name,
+            description: c.desc,
+            provider: {
+              "@type": "Organization",
+              name: "Sicher Schwimmen e.V.",
+              url: "https://sicher-schwimmen.com",
+            },
+          },
+        })),
+      }),
+    }],
   }),
   component: KursePage,
 });

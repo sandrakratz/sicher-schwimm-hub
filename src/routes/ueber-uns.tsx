@@ -8,10 +8,16 @@ import michaelKratzAsset from "@/assets/michael-kratz.jpg.asset.json";
 import manuelaScholzOrnowskiAsset from "@/assets/manuela-scholz-ornowski.jpg.asset.json";
 
 export const Route = createFileRoute("/ueber-uns")({
-  head: () => ({ meta: [
-    { title: "Über uns – Sicher Schwimmen e.V." },
-    { name: "description", content: "Mission, Vision und Werte unseres Schwimmvereins in Hennef." },
-  ]}),
+  head: () => ({
+    meta: [
+      { title: "Über uns – Schwimmverein in Hennef | Sicher Schwimmen e.V." },
+      { name: "description", content: "Sicher Schwimmen e.V. – Schwimmverein in Hennef (Rhein-Sieg-Kreis). Lernen Sie unseren Vorstand, unsere Mission, Vision und Werte kennen." },
+      { property: "og:title", content: "Über uns – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Schwimmverein in Hennef mit Leidenschaft für sichere Schwimmausbildung und gelebte Gemeinschaft." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/ueber-uns" },
+    ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/ueber-uns" }],
+  }),
   component: Page,
 });
 

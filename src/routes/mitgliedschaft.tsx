@@ -15,9 +15,14 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
     meta: [
-      { title: "Mitglied werden – Sicher Schwimmen e.V." },
-      { name: "description", content: "Werden Sie Teil unserer Schwimmgemeinschaft in Hennef – Einzel-, Familien- und Fördermitgliedschaft." },
+      { title: "Mitglied werden – Schwimmverein Hennef | Sicher Schwimmen e.V." },
+      { name: "description", content: "Mitglied im Schwimmverein Sicher Schwimmen e.V. in Hennef werden: Einzel- (60 €), Familien- (96 €) oder Fördermitgliedschaft. Bevorzugte Kursplätze und vergünstigte Kursgebühren." },
+      { name: "keywords", content: "Schwimmverein Mitglied Hennef, Vereinsmitgliedschaft Schwimmen, Familienmitgliedschaft Schwimmverein, Rhein-Sieg-Kreis" },
+      { property: "og:title", content: "Mitglied werden – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Werden Sie Teil unserer Schwimmgemeinschaft in Hennef – mit Vorteilen bei Kursplätzen und Kursgebühren." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/mitgliedschaft" },
     ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/mitgliedschaft" }],
   }),
   component: Page,
 });

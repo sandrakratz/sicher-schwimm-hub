@@ -4,10 +4,16 @@ import { Shield, Eye, Users, Camera, LifeBuoy, BadgePlus, HandHeart, UserCheck, 
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/sicherheit")({
-  head: () => ({ meta: [
-    { title: "Sicherheit & Kinderschutz – Sicher Schwimmen e.V." },
-    { name: "description", content: "Unser Kinderschutzkonzept und unsere Sicherheitsstandards im Schwimmverein Hennef." },
-  ]}),
+  head: () => ({
+    meta: [
+      { title: "Sicherheit & Kinderschutz – Schwimmverein Hennef | Sicher Schwimmen e.V." },
+      { name: "description", content: "Kinderschutzkonzept, Verhaltenskodex, Rettungsfähigkeit, Vier-Augen-Prinzip: So sorgt Sicher Schwimmen e.V. in Hennef für maximale Sicherheit im Schwimmunterricht." },
+      { property: "og:title", content: "Sicherheit & Kinderschutz – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Unser Kinderschutzkonzept und unsere Sicherheitsstandards im Schwimmverein Hennef." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/sicherheit" },
+    ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/sicherheit" }],
+  }),
   component: Page,
 });
 

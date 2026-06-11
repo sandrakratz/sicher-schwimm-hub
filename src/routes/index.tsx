@@ -21,9 +21,26 @@ const beaver = beaverAsset.url;
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sicher Schwimmen lernen in Hennef – Sicher Schwimmen e.V." },
-      { name: "description", content: "Schwimmkurse, Wassergewöhnung und Schwimmaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
+      { title: "Schwimmkurse Hennef – Seepferdchen, Wassergewöhnung & mehr | Sicher Schwimmen e.V." },
+      { name: "description", content: "Schwimmen lernen in Hennef und im Rhein-Sieg-Kreis: Seepferdchen-Kurse, Wassergewöhnung, Bronze/Silber/Gold für Kinder, Familien und Erwachsene. Kleine Gruppen, qualifizierte Trainer*innen." },
+      { name: "keywords", content: "Schwimmkurs Hennef, Schwimmen lernen Hennef, Seepferdchen Hennef, Wassergewöhnung, Schwimmkurs Kinder Rhein-Sieg-Kreis, Schwimmverein Hennef" },
+      { property: "og:title", content: "Schwimmkurse in Hennef – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Sichere Schwimmausbildung für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/" },
+      { property: "og:image", content: "https://sicher-schwimmen.com/og-image.jpg" },
+      { name: "twitter:image", content: "https://sicher-schwimmen.com/og-image.jpg" },
     ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Sicher Schwimmen e.V.",
+        url: "https://sicher-schwimmen.com",
+        inLanguage: "de-DE",
+      }),
+    }],
   }),
   component: Home,
 });
