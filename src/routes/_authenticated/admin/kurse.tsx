@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
