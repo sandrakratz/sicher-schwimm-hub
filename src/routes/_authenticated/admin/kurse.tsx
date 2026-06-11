@@ -34,7 +34,13 @@ type Participant = {
   paid: boolean;
   paid_at: string | null;
   payment_note: string | null;
+  is_member: boolean | null;
+  member_confirmed: boolean;
+  member_confirmed_at: string | null;
+  price_amount: number | null;
+  parent_user_id: string | null;
 };
+
 
 const ENROLL_STATUS = [
   { value: "confirmed", label: "Bestätigt" },
@@ -75,7 +81,11 @@ type Course = {
   ends_on: string | null;
   schedule: string | null;
   is_public: boolean;
+  price_member: number | null;
+  price_non_member: number | null;
+  payment_due_days: number | null;
 };
+
 
 const STATUS_OPTIONS = [
   { value: "planned", label: "Geplant" },
@@ -157,6 +167,8 @@ function Page() {
   async function savePart() {
     if (!editPart) return;
     if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
+    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
+    const memberConfirmedChanged = editPart.member_confirmed && !editPart.member_confirmed_at;
     const { error } = await supabase.from("course_participants").update({
       participant_name: editPart.participant_name.trim(),
       participant_email: editPart.participant_email?.trim() || null,
@@ -169,8 +181,14 @@ function Page() {
       badge: editPart.badge?.trim() || null,
       paid: editPart.paid,
       paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
-      paid_by: editPart.paid ? (await supabase.auth.getUser()).data.user?.id ?? null : null,
+      paid_by: editPart.paid ? userId : null,
       payment_note: editPart.payment_note?.trim() || null,
+      is_member: editPart.is_member,
+      member_confirmed: editPart.member_confirmed,
+      member_confirmed_at: editPart.member_confirmed ? (editPart.member_confirmed_at || (memberConfirmedChanged ? new Date().toISOString() : null)) : null,
+      member_confirmed_by: editPart.member_confirmed ? userId : null,
+      price_amount: editPart.price_amount,
+      parent_user_id: editPart.parent_user_id || null,
     }).eq("id", editPart.id);
     if (error) return toast.error(error.message);
     toast.success("Gespeichert");
@@ -178,6 +196,7 @@ function Page() {
     if (partCourse) await openParticipants(partCourse);
     await load();
   }
+
   async function togglePaid(p: Participant, paid: boolean) {
     const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
     const { error } = await supabase.from("course_participants").update({
@@ -191,7 +210,7 @@ function Page() {
   }
 
 
-  function startNew() { setEditing({ status: "planned", is_public: true }); setOpen(true); }
+  function startNew() { setEditing({ status: "planned", is_public: true, price_member: 150, price_non_member: 200, payment_due_days: 14 }); setOpen(true); }
   function startEdit(c: Course) { setEditing(c); setOpen(true); }
 
   async function save() {
@@ -210,7 +229,11 @@ function Page() {
       ends_on: editing.ends_on || null,
       schedule: editing.schedule || null,
       is_public: editing.is_public ?? true,
+      price_member: editing.price_member ?? null,
+      price_non_member: editing.price_non_member ?? null,
+      payment_due_days: editing.payment_due_days ?? 14,
     };
+
     const res = editing.id
       ? await supabase.from("courses").update(payload).eq("id", editing.id)
       : await supabase.from("courses").insert(payload);
@@ -306,7 +329,22 @@ function Page() {
               </div>
             </div>
             <div><Label>Zeitplan</Label><Input value={editing.schedule || ""} onChange={e => setEditing(p => ({ ...p, schedule: e.target.value }))} placeholder="z.B. Mo & Mi 17:00–18:00" /></div>
+            <div className="grid grid-cols-3 gap-3 border-t pt-3">
+              <div>
+                <Label>Preis Mitglied (€)</Label>
+                <Input type="number" step="0.01" value={editing.price_member ?? ""} onChange={e => setEditing(p => ({ ...p, price_member: e.target.value ? Number(e.target.value) : null }))} placeholder="150" />
+              </div>
+              <div>
+                <Label>Preis Nicht-Mitglied (€)</Label>
+                <Input type="number" step="0.01" value={editing.price_non_member ?? ""} onChange={e => setEditing(p => ({ ...p, price_non_member: e.target.value ? Number(e.target.value) : null }))} placeholder="200" />
+              </div>
+              <div>
+                <Label>Zahlungsfrist (Tage)</Label>
+                <Input type="number" value={editing.payment_due_days ?? 14} onChange={e => setEditing(p => ({ ...p, payment_due_days: e.target.value ? Number(e.target.value) : 14 }))} />
+              </div>
+            </div>
             <label className="flex items-center gap-2 text-sm"><Checkbox checked={editing.is_public ?? true} onCheckedChange={v => setEditing(p => ({ ...p, is_public: !!v }))} /> Öffentlich sichtbar</label>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
@@ -340,6 +378,7 @@ function Page() {
                   <TableHead>Geburtsdatum</TableHead>
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Mitglied</TableHead>
                   <TableHead>Ergebnis</TableHead>
                   <TableHead>Bezahlt</TableHead>
                   <TableHead>Notiz</TableHead>
@@ -347,7 +386,8 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
@@ -370,6 +410,17 @@ function Page() {
                         <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </TableCell>
+                    <TableCell className="text-xs">
+                      {p.is_member === true && (
+                        <Badge className={p.member_confirmed ? "bg-green-600 hover:bg-green-700" : ""} variant={p.member_confirmed ? "default" : "outline"}>
+                          Mitglied{p.member_confirmed ? " ✓" : ""}
+                        </Badge>
+                      )}
+                      {p.is_member === false && <Badge variant="secondary">Nicht-Mitglied</Badge>}
+                      {p.is_member == null && <span className="text-muted-foreground">offen</span>}
+                      {p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
+                    </TableCell>
+
                     <TableCell className="text-xs">
                       {p.goal_reached === true && <Badge className="bg-green-600 hover:bg-green-700"><Award className="h-3 w-3 mr-1" />Ziel erreicht</Badge>}
                       {p.goal_reached === false && <Badge variant="secondary">Ziel offen</Badge>}
@@ -460,6 +511,40 @@ function Page() {
                 </div>
               </div>
               <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
+
+              <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Mitglied?</Label>
+                    <Select
+                      value={editPart.is_member == null ? "unset" : editPart.is_member ? "yes" : "no"}
+                      onValueChange={(v) => setEditPart(p => p && { ...p, is_member: v === "unset" ? null : v === "yes" })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unset">— Unklar —</SelectItem>
+                        <SelectItem value="yes">Ja</SelectItem>
+                        <SelectItem value="no">Nein</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Kursgebühr (€)</Label>
+                    <Input type="number" step="0.01" value={editPart.price_amount ?? ""} onChange={e => setEditPart(p => p && { ...p, price_amount: e.target.value ? Number(e.target.value) : null })} />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={editPart.member_confirmed} onCheckedChange={v => setEditPart(p => p && { ...p, member_confirmed: !!v })} />
+                      Mitgliedschaft bestätigt (Buchhaltung)
+                    </label>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Elternkonto-Verknüpfung: {editPart.parent_user_id ? <span className="font-mono">{editPart.parent_user_id}</span> : "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"}
+                </div>
+              </div>
+
 
               <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Award className="h-4 w-4" /> Kursergebnis</div>

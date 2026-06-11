@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useServerFn } from "@tanstack/react-start";
-import { assignRequestToCourse } from "@/lib/course-assignment.functions";
+import { assignRequestToCourse, suggestMatchForRequest } from "@/lib/course-assignment.functions";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+
 
 type Item = {
   id: string; created_at: string; status: string;
@@ -23,7 +25,7 @@ type Item = {
   assigned_course_id?: string | null;
 };
 
-type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null };
+type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
 
 
 export const Route = createFileRoute("/_authenticated/admin/anfragen")({
@@ -47,24 +49,58 @@ function AnfragenAdmin() {
   const [assignStatus, setAssignStatus] = useState<"confirmed" | "waiting">("confirmed");
   const [assignNotes, setAssignNotes] = useState("");
   const [sendMail, setSendMail] = useState(true);
+  const [isMember, setIsMember] = useState<"yes" | "no" | "unknown">("unknown");
+  const [parentUserId, setParentUserId] = useState<string>("");
+  const [parentLabel, setParentLabel] = useState<string>("");
+  const [priceAmount, setPriceAmount] = useState<string>("");
+  const [priceTouched, setPriceTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const assignFn = useServerFn(assignRequestToCourse);
+  const suggestFn = useServerFn(suggestMatchForRequest);
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
-    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on").order("starts_on", { ascending: true, nullsFirst: false });
+    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on,price_member,price_non_member").order("starts_on", { ascending: true, nullsFirst: false });
     setCourses((cs as CourseOpt[]) || []);
   }
   useEffect(() => { load(); }, []);
+
+  // Beim Öffnen einer Anfrage: Vorschläge holen
   useEffect(() => {
-    if (selected) {
-      setAssignCourseId(selected.assigned_course_id || "");
-      setAssignStatus("confirmed");
-      setAssignNotes("");
-      setSendMail(true);
-    }
+    if (!selected) return;
+    setAssignCourseId(selected.assigned_course_id || "");
+    setAssignStatus("confirmed");
+    setAssignNotes("");
+    setSendMail(true);
+    setIsMember("unknown");
+    setParentUserId("");
+    setParentLabel("");
+    setPriceAmount("");
+    setPriceTouched(false);
+    (async () => {
+      try {
+        const res = await suggestFn({ data: { email: selected.parent_email } });
+        if (res.isMember === true) setIsMember("yes");
+        else if (res.isMember === false) setIsMember("no");
+        if (res.parentUserId) {
+          setParentUserId(res.parentUserId);
+          setParentLabel(res.parentLabel || "");
+        }
+      } catch {}
+    })();
   }, [selected?.id]);
+
+  // Preis automatisch aus Kurs + Mitgliedstatus ableiten (wenn nicht manuell überschrieben)
+  useEffect(() => {
+    if (priceTouched) return;
+    const c = courses.find(x => x.id === assignCourseId);
+    if (!c) { setPriceAmount(""); return; }
+    if (isMember === "yes" && c.price_member != null) setPriceAmount(String(c.price_member));
+    else if (isMember === "no" && c.price_non_member != null) setPriceAmount(String(c.price_non_member));
+    else setPriceAmount("");
+  }, [assignCourseId, isMember, courses, priceTouched]);
+
   async function setStatus(id: string, status: "new" | "contacted" | "accepted" | "rejected" | "under_review" | "waiting_list") {
     const { error } = await supabase.from("course_requests").update({ status }).eq("id", id);
     if (error) toast.error(error.message);
@@ -74,12 +110,16 @@ function AnfragenAdmin() {
     if (!selected || !assignCourseId) return toast.error("Bitte Kurs auswählen");
     setBusy(true);
     try {
+      const priceNum = priceAmount.trim() ? Number(priceAmount.replace(",", ".")) : null;
       const res = await assignFn({ data: {
         requestId: selected.id,
         courseId: assignCourseId,
         status: assignStatus,
         sendEmail: sendMail,
         adminNotes: assignNotes || undefined,
+        isMember: isMember === "yes" ? true : isMember === "no" ? false : null,
+        parentUserId: parentUserId || null,
+        priceAmount: priceNum != null && !Number.isNaN(priceNum) ? priceNum : null,
       }});
       toast.success(res.emailQueued ? "Eingebucht & E-Mail versendet" : "Eingebucht");
       setSelected(null);
@@ -88,6 +128,7 @@ function AnfragenAdmin() {
       toast.error(e.message || "Fehler");
     } finally { setBusy(false); }
   }
+
 
   return (
     <div className="max-w-6xl">
@@ -184,10 +225,50 @@ function AnfragenAdmin() {
                     Bestätigungs-E-Mail an Eltern senden
                   </label>
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Mitglied?</Label>
+                    <Select value={isMember} onValueChange={(v: any) => { setIsMember(v); setPriceTouched(false); }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Ja, Mitglied</SelectItem>
+                        <SelectItem value="no">Nein</SelectItem>
+                        <SelectItem value="unknown">Unklar / prüfen</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Kursgebühr (€)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={priceAmount}
+                      onChange={e => { setPriceAmount(e.target.value); setPriceTouched(true); }}
+                      placeholder="z.B. 150"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Elternkonto verknüpfen</Label>
+                  {parentUserId ? (
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <Badge className="bg-green-600 hover:bg-green-700">verknüpft</Badge>
+                      <span>{parentLabel || parentUserId}</span>
+                      <Button variant="ghost" size="sm" onClick={() => { setParentUserId(""); setParentLabel(""); }}>Entfernen</Button>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Kein passendes Eltern-Konto gefunden. Sobald sich das Elternteil mit „{selected.parent_email}" registriert, wird der Kurs automatisch verknüpft.
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <Label>Persönliche Nachricht (optional, wird in die E-Mail aufgenommen)</Label>
                   <Textarea rows={3} value={assignNotes} onChange={e => setAssignNotes(e.target.value)} placeholder="z.B. Hinweise zur ersten Stunde, Treffpunkt, Mitzubringendes…" />
                 </div>
+
                 <Button variant="accent" onClick={doAssign} disabled={busy || !assignCourseId}>
                   {busy ? "Wird gespeichert…" : (sendMail ? "Einbuchen & E-Mail senden" : "Einbuchen")}
                 </Button>

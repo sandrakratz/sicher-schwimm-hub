@@ -56,14 +56,20 @@ export type Database = {
           date_of_birth: string | null
           goal_reached: boolean | null
           id: string
+          is_member: boolean | null
+          member_confirmed: boolean
+          member_confirmed_at: string | null
+          member_confirmed_by: string | null
           notes: string | null
           paid: boolean
           paid_at: string | null
           paid_by: string | null
+          parent_user_id: string | null
           participant_email: string | null
           participant_name: string | null
           participant_phone: string | null
           payment_note: string | null
+          price_amount: number | null
           request_id: string | null
           status: Database["public"]["Enums"]["enrollment_status"]
           updated_at: string
@@ -77,14 +83,20 @@ export type Database = {
           date_of_birth?: string | null
           goal_reached?: boolean | null
           id?: string
+          is_member?: boolean | null
+          member_confirmed?: boolean
+          member_confirmed_at?: string | null
+          member_confirmed_by?: string | null
           notes?: string | null
           paid?: boolean
           paid_at?: string | null
           paid_by?: string | null
+          parent_user_id?: string | null
           participant_email?: string | null
           participant_name?: string | null
           participant_phone?: string | null
           payment_note?: string | null
+          price_amount?: number | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           updated_at?: string
@@ -98,14 +110,20 @@ export type Database = {
           date_of_birth?: string | null
           goal_reached?: boolean | null
           id?: string
+          is_member?: boolean | null
+          member_confirmed?: boolean
+          member_confirmed_at?: string | null
+          member_confirmed_by?: string | null
           notes?: string | null
           paid?: boolean
           paid_at?: string | null
           paid_by?: string | null
+          parent_user_id?: string | null
           participant_email?: string | null
           participant_name?: string | null
           participant_phone?: string | null
           payment_note?: string | null
+          price_amount?: number | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           updated_at?: string
@@ -208,6 +226,9 @@ export type Database = {
           location: string | null
           max_participants: number | null
           name: string
+          payment_due_days: number
+          price_member: number | null
+          price_non_member: number | null
           schedule: string | null
           slug: string
           starts_on: string | null
@@ -227,6 +248,9 @@ export type Database = {
           location?: string | null
           max_participants?: number | null
           name: string
+          payment_due_days?: number
+          price_member?: number | null
+          price_non_member?: number | null
           schedule?: string | null
           slug: string
           starts_on?: string | null
@@ -246,6 +270,9 @@ export type Database = {
           location?: string | null
           max_participants?: number | null
           name?: string
+          payment_due_days?: number
+          price_member?: number | null
+          price_non_member?: number | null
           schedule?: string | null
           slug?: string
           starts_on?: string | null
