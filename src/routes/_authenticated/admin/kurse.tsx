@@ -81,7 +81,11 @@ type Course = {
   ends_on: string | null;
   schedule: string | null;
   is_public: boolean;
+  price_member: number | null;
+  price_non_member: number | null;
+  payment_due_days: number | null;
 };
+
 
 const STATUS_OPTIONS = [
   { value: "planned", label: "Geplant" },
