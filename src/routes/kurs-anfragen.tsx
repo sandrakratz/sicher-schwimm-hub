@@ -15,9 +15,13 @@ import { CheckCircle2 } from "lucide-react";
 export const Route = createFileRoute("/kurs-anfragen")({
   head: () => ({
     meta: [
-      { title: "Kurs anfragen / Warteliste – Sicher Schwimmen e.V." },
-      { name: "description", content: "Setzen Sie Ihr Kind auf die Warteliste oder fragen Sie einen Schwimmkurs an." },
+      { title: "Schwimmkurs anfragen / Warteliste Hennef | Sicher Schwimmen e.V." },
+      { name: "description", content: "Schwimmkurs in Hennef anfragen oder auf die Warteliste setzen lassen – für Seepferdchen, Bronze, Silber, Gold, Wassergewöhnung und Anfängerkurse." },
+      { property: "og:title", content: "Schwimmkurs anfragen – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Setzen Sie Ihr Kind auf die Warteliste oder fragen Sie einen Schwimmkurs in Hennef an." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/kurs-anfragen" },
     ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/kurs-anfragen" }],
   }),
   component: RequestPage,
 });

@@ -2,7 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
 
 export const Route = createFileRoute("/datenschutz")({
-  head: () => ({ meta: [{ title: "Datenschutz – Sicher Schwimmen e.V." }] }),
+  head: () => ({
+    meta: [
+      { title: "Datenschutz – Sicher Schwimmen e.V." },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/datenschutz" }],
+  }),
   component: () => (
     <LegalPage title="Datenschutzerklärung">
       <p>

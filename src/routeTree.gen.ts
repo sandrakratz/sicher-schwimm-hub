@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SicherheitRouteImport } from './routes/sicherheit'
 import { Route as SatzungRouteImport } from './routes/satzung'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -62,6 +63,11 @@ const UnsubscribeRoute = UnsubscribeRouteImport.update({
 const UeberUnsRoute = UeberUnsRouteImport.update({
   id: '/ueber-uns',
   path: '/ueber-uns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SicherheitRoute = SicherheitRouteImport.update({
@@ -305,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
   '/sicherheit': typeof SicherheitRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
@@ -443,6 +452,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/satzung'
     | '/sicherheit'
+    | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
     | '/admin'
@@ -488,6 +498,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/satzung'
     | '/sicherheit'
+    | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
     | '/email/unsubscribe'
@@ -533,6 +544,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/satzung'
     | '/sicherheit'
+    | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
     | '/_authenticated/admin'
@@ -580,6 +592,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SatzungRoute: typeof SatzungRoute
   SicherheitRoute: typeof SicherheitRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UeberUnsRoute: typeof UeberUnsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
@@ -606,6 +619,13 @@ declare module '@tanstack/react-router' {
       path: '/ueber-uns'
       fullPath: '/ueber-uns'
       preLoaderRoute: typeof UeberUnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sicherheit': {
@@ -980,6 +1000,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SatzungRoute: SatzungRoute,
   SicherheitRoute: SicherheitRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UeberUnsRoute: UeberUnsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
@@ -994,13 +1015,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

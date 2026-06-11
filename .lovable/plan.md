@@ -1,76 +1,56 @@
-## Ziel
+## SEO-Status
 
-Die Kurszuteilung-Email enthält künftig korrekte Dauer, Preis je nach Mitgliedschaft, Zahlungsdaten, Hinweise zu Kursordnung & AGB. Im Admin lässt sich beim Einbuchen Mitgliedstatus und Elternkonto wählen (mit automatischem Vorschlag). Bestätigte Kurse erscheinen im Elternportal.
+Was bereits gut ist:
+- Jede Seite hat einen eigenen `<title>` und `<meta name="description">`
+- Open-Graph- und Twitter-Card-Tags sind gesetzt
+- Semantische Struktur (H1, H2) auf allen Seiten
 
-## 1. Datenbank-Erweiterungen (Migration)
+Was fehlt für gute Auffindbarkeit:
 
-**`courses`** – neue Felder:
-- `price_member` (numeric) – z.B. 150
-- `price_non_member` (numeric) – z.B. 200
-- `payment_due_days` (int, default 14)
+1. **Keine `sitemap.xml`** — Google findet so neue Seiten langsamer
+2. **Keine `robots.txt`** — keine Crawler-Steuerung, kein Sitemap-Hinweis
+3. **Keine `<link rel="canonical">`** — Risiko von Duplicate Content (z. B. sicher-schwimmen.com vs. www. vs. lovable.app)
+4. **Kein strukturiertes Datenmodell (JSON-LD)** — Google zeigt damit Adresse, Öffnungszeiten, FAQ direkt im Suchergebnis
+5. **`<html lang="en">`** statt `"de"` — falsches Sprach-Signal an Google
+6. **Lokale Keywords fehlen** in vielen Descriptions (Hennef, Rhein-Sieg-Kreis, Sankt Augustin, Siegburg, Bonn-Umland, „Schwimmen lernen", „Seepferdchen Kurs")
+7. **`og:image` im Root** überschreibt alle Kinderseiten (sollte nur auf Leaf-Routes liegen)
 
-**`course_participants`** – neue Felder:
-- `is_member` (boolean, nullable) – Mitgliedsstatus zum Zeitpunkt der Buchung
-- `member_confirmed` (boolean, default false) – von Buchhaltung bestätigt
-- `member_confirmed_at`, `member_confirmed_by`
-- `price_amount` (numeric) – fixierter Preis (Snapshot)
-- `parent_user_id` (uuid, fk auf auth.users, nullable) – verknüpftes Elternkonto
+## Plan
 
-**Indizes / RLS-Update**: Policy „Users view own enrollments" erweitern, sodass auch `parent_user_id = auth.uid()` sieht (= Eltern sehen ihre Kinder-Kurse).
+### 1. Sitemap & Crawler
+- `src/routes/sitemap[.]xml.ts` als Server-Route mit allen öffentlichen Routen (/, /kurse, /mitgliedschaft, /ueber-uns, /sicherheit, /kontakt, /faq, /news, /kurs-anfragen, /kursbedingungen, /satzung, /mitgliedsordnung, /datenschutz, /impressum)
+- `public/robots.txt` mit `Allow: /`, `Disallow: /portal/`, `/admin/`, `/auth`, `/reset-password`, `/lovable/`, `/api/` und `Sitemap: https://sicher-schwimmen.com/sitemap.xml`
 
-## 2. Admin „In Kurs einbuchen" Dialog (`anfragen.tsx` + `course-assignment.functions.ts`)
+### 2. Canonical URLs
+- Pro öffentlicher Leaf-Route ein `<link rel="canonical" href="https://sicher-schwimmen.com/...">` über `head().links`
+- Zusätzlich `og:url` pro Seite
 
-Neue Felder im Einbuch-Dialog:
-- **Mitglied?** Dropdown „Ja / Nein / Unklar" – vorbelegt per E-Mail-Match auf `memberships.email` (status=active) ODER `profiles.email`. Server prüft das in der Assignment-Funktion und gibt einen Vorschlag zurück.
-- **Elternkonto verknüpfen** Combobox aller Profile, vorbelegt per E-Mail-Match auf `profiles.email`. „Keines" möglich – dann läuft Verknüpfung später automatisch beim Registrieren über `handle_new_user`-Trigger (E-Mail-Match).
-- **Preis (€)** wird automatisch aus `is_member` × Kurs-Preisen vorbelegt, editierbar.
+### 3. Strukturierte Daten (JSON-LD)
+- **Root**: `SportsClub` / `Organization` (Name, URL, Logo, Adresse Hennef, Kontakt-E-Mail, Vorstandsmitglieder)
+- **Kontakt**: `LocalBusiness` mit Adresse, Telefon, E-Mail, Servicegebiet (Hennef + Rhein-Sieg-Kreis)
+- **FAQ**: `FAQPage` aus den bestehenden Fragen — kann direkt in den Google-Ergebnissen angezeigt werden
+- **Kurse**: `Course`-Einträge pro angebotenem Kurs
 
-Server-Fn schreibt diese Felder in `course_participants` und übergibt Preis + Mitgliedstatus + Zahlungsfrist + Bankdaten + Verwendungszweck an das Email-Template.
+### 4. Lokale Keywords stärken
+Descriptions und H1/H2 dezent erweitern um lokale Begriffe — ohne Keyword-Stuffing:
+- Hennef, Rhein-Sieg-Kreis, Sankt Augustin, Siegburg, Bonn
+- „Schwimmkurs für Kinder", „Seepferdchen-Kurs", „Wassergewöhnung", „Schwimmen lernen"
+- Betroffene Seiten: Index, Kurse, Kontakt, Über uns, Sicherheit
 
-## 3. Admin-Kursverwaltung (`admin/kurse.tsx`)
+### 5. Technische Korrekturen
+- `<html lang="en">` → `<html lang="de">` in `__root.tsx`
+- `og:image` aus `__root.tsx` entfernen und stattdessen auf Leaf-Routes setzen (Home: Pool-Bild; Über uns: Vorstandsbild; etc.) — sonst hat jede Seite das gleiche Vorschaubild
+- `theme-color` Meta-Tag (Vereinsfarbe) für mobile Browser
 
-- Kurs-Bearbeitung: Felder `price_member`, `price_non_member`, `payment_due_days`.
-- Teilnehmer-Edit-Dialog: zusätzliches Feld „Mitglied bestätigt" (Buchhaltung), Eltern-Verknüpfung änderbar, Preis editierbar.
-- Teilnehmer-Tabelle: neue Spalte „Mitglied" (Badge: Mitglied/Nicht-Mitglied/offen, grün wenn bestätigt).
+### 6. Optional (nach Bestätigung)
+- **Semrush-Check** für Keyword-Volumen rund um "Schwimmkurs Hennef", "Seepferdchen Rhein-Sieg" — damit wir Descriptions auf tatsächlich gesuchte Begriffe ausrichten
+- Google Search Console Verifikation (Meta-Tag) — gibst du mir den Code, baue ich ihn ein
 
-## 4. Email-Template `course-assignment.tsx`
+## Technische Details
 
-Erweiterungen:
-- „Dauer: **5 Wochen**" (Wort „Wochen" anhängen, sofern Eingabe nur eine Zahl ist; alternativ direkt im Datenbankfeld so eingetragen lassen – wir hängen das Suffix nur an, wenn es eine reine Zahl ist).
-- Neuer Abschnitt **Zahlungsinformationen**:
-  - Mitgliedsstatus-Anzeige (Mitglied / Nicht-Mitglied)
-  - Betrag in € fett
-  - Zahlungsfrist: „bitte innerhalb von 14 Tagen ab Erhalt dieser E-Mail"
-  - Empfänger / IBAN / BIC (Platzhalter `{{IBAN}}` etc., bleibt zunächst leer – als Hinweis „wird in Kürze ergänzt")
-  - Verwendungszweck: `{Kursname} – {Kindname}`
-- Neuer Abschnitt **Wichtige Hinweise**:
-  - Link zur Kursordnung (`/kursbedingungen`)
-  - Link zu den AGB / Datenschutz
-  - Hinweis: „Mit der Anmeldung gelten Kursordnung und AGB als akzeptiert."
+- Sitemap ist eine TanStack-Server-Route, nicht eine statische Datei — bleibt mit den Routen synchron
+- JSON-LD wird über `head().scripts` als `application/ld+json` ausgeliefert (SSR, also crawler-sichtbar)
+- Canonicals werden NUR auf Leaf-Routes gesetzt (TanStack Router #6719 — Root + Leaf würde Duplikate emittieren)
+- Keine Backend-/Logik-Änderungen, reine SEO/Frontend-Arbeit
 
-Bankdaten kommen aus einer kleinen Config (z.B. `src/lib/config.server.ts` oder neue Datei `src/lib/billing-config.ts`) – zunächst leere Strings, leicht später zu füllen.
-
-## 5. Elternportal – „Meine Kurse" (`portal/kurse.tsx`)
-
-Placeholder ersetzen durch echte Liste:
-- Query: `course_participants` wo `parent_user_id = auth.uid()` ODER `user_id = auth.uid()`, mit Join auf `courses`.
-- Karten pro Kurs mit: Kursname, Kind (`participant_name`), Zeitraum, Ort, Zeiten, Status, Zahlungsstatus (offen/bezahlt), Mitgliedstatus, Preis.
-- Dashboard `portal/index.tsx`: Statistik-Kachel „Kurse" hinzufügen (Count) und Link.
-
-## 6. Auto-Verknüpfung bestehender/neuer Eltern-Accounts
-
-Trigger-Erweiterung in `handle_new_user`: nach Registrierung wird `course_participants` durchsucht, wo `parent_user_id IS NULL AND participant_email = NEW.email` und dort `parent_user_id = NEW.id` gesetzt. So tauchen Kurse rückwirkend im Portal auf, sobald sich das Elternteil registriert.
-
-## Reihenfolge der Umsetzung
-
-1. Migration (Felder, RLS, Trigger-Update)
-2. `course-assignment.functions.ts` (Mitglieds- & Eltern-Match, Preis-Snapshot, neue Template-Variablen)
-3. `anfragen.tsx` Einbuch-Dialog erweitern
-4. `admin/kurse.tsx` Preise + Mitglied bestätigt + Eltern-Verknüpfung
-5. `course-assignment.tsx` Email-Template
-6. `portal/kurse.tsx` Liste + Dashboard-Kachel
-
-## Offen / Hinweis an den Nutzer
-
-- Bankverbindung bleibt im Email-Template aktuell als leere Platzhalterzeilen („Empfänger: ___ / IBAN: ___ / BIC: ___") mit Hinweis „wird in Kürze ergänzt". Sobald du die Daten hast, trage ich sie zentral in einer Konfigurationsdatei ein.
-- Preise (150 € Mitglied / 200 € Nicht-Mitglied) werden bei neuen Kursen als Default vorgeschlagen, sind aber pro Kurs änderbar.
+Soll ich so umsetzen, oder etwas weglassen/erweitern (z. B. Semrush-Recherche vorab)?

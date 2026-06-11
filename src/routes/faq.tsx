@@ -3,10 +3,28 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/faq")({
-  head: () => ({ meta: [
-    { title: "FAQ – Häufige Fragen | Sicher Schwimmen e.V." },
-    { name: "description", content: "Antworten auf häufige Fragen rund um Schwimmkurse, Mitgliedschaft und unseren Verein." },
-  ]}),
+  head: () => ({
+    meta: [
+      { title: "FAQ – Häufige Fragen zu Schwimmkursen | Sicher Schwimmen e.V." },
+      { name: "description", content: "Antworten auf häufige Fragen rund um Schwimmkurse, Mitgliedschaft, Sicherheit und unseren Schwimmverein in Hennef." },
+      { property: "og:title", content: "FAQ – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Antworten auf häufige Fragen rund um Schwimmkurse und Mitgliedschaft." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/faq" },
+    ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/faq" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }),
+    }],
+  }),
   component: Page,
 });
 

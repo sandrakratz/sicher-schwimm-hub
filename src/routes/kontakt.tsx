@@ -13,10 +13,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/kontakt")({
-  head: () => ({ meta: [
-    { title: "Kontakt – Sicher Schwimmen e.V." },
-    { name: "description", content: "Kontaktieren Sie unseren Schwimmverein in Hennef." },
-  ]}),
+  head: () => ({
+    meta: [
+      { title: "Kontakt – Sicher Schwimmen e.V. Hennef" },
+      { name: "description", content: "Kontakt zum Schwimmverein Sicher Schwimmen e.V. in Hennef (Rhein-Sieg-Kreis). E-Mail info@sicher-schwimmen.com, Telefon 0178 / 1142945." },
+      { property: "og:title", content: "Kontakt – Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Sprechen Sie uns an – wir helfen bei Fragen zu Schwimmkursen, Mitgliedschaft und Vereinsaktivitäten in Hennef." },
+      { property: "og:url", content: "https://sicher-schwimmen.com/kontakt" },
+    ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/kontakt" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        name: "Sicher Schwimmen e.V.",
+        url: "https://sicher-schwimmen.com",
+        email: "info@sicher-schwimmen.com",
+        telephone: "+49-178-1142945",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Hennef (Sieg)",
+          addressRegion: "Nordrhein-Westfalen",
+          addressCountry: "DE",
+        },
+        areaServed: [
+          { "@type": "City", name: "Hennef" },
+          { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
+        ],
+      }),
+    }],
+  }),
   component: Page,
 });
 

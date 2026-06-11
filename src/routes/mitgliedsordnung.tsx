@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
 
 export const Route = createFileRoute("/mitgliedsordnung")({
-  head: () => ({ meta: [{ title: "Mitgliedsordnung – Sicher Schwimmen e.V." }] }),
+  head: () => ({
+    meta: [{ title: "Mitgliedsordnung – Sicher Schwimmen e.V." }],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/mitgliedsordnung" }],
+  }),
   component: () => (
     <LegalPage title="Mitglieds-, Beitrags- und Kursordnung">
       <p>

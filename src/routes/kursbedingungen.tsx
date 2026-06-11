@@ -7,6 +7,7 @@ export const Route = createFileRoute("/kursbedingungen")({
       { title: "Kursteilnahmebedingungen – Sicher Schwimmen e.V." },
       { name: "description", content: "Teilnahmebedingungen für Schwimmkurse beim Sicher Schwimmen e.V. in Hennef: Anmeldung, Zahlung, Rücktritt, Aufsichtspflicht und Haftung." },
     ],
+    links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/kursbedingungen" }],
   }),
   component: KursbedingungenPage,
 });
