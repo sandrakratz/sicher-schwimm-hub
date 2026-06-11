@@ -34,7 +34,13 @@ type Participant = {
   paid: boolean;
   paid_at: string | null;
   payment_note: string | null;
+  is_member: boolean | null;
+  member_confirmed: boolean;
+  member_confirmed_at: string | null;
+  price_amount: number | null;
+  parent_user_id: string | null;
 };
+
 
 const ENROLL_STATUS = [
   { value: "confirmed", label: "Bestätigt" },
