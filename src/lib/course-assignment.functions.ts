@@ -84,6 +84,30 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       const subject = typeof tpl.subject === 'function' ? tpl.subject(templateData) : tpl.subject
       const messageId = crypto.randomUUID()
 
+      // Get or create unsubscribe token for this recipient (required by email API)
+      const normalizedEmail = req.parent_email.toLowerCase()
+      let unsubscribeToken: string
+      const { data: existingToken } = await supabaseAdmin
+        .from('email_unsubscribe_tokens')
+        .select('token, used_at')
+        .eq('email', normalizedEmail)
+        .maybeSingle()
+      if (existingToken && !existingToken.used_at) {
+        unsubscribeToken = existingToken.token
+      } else {
+        unsubscribeToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+        await supabaseAdmin.from('email_unsubscribe_tokens').upsert(
+          { token: unsubscribeToken, email: normalizedEmail },
+          { onConflict: 'email', ignoreDuplicates: true }
+        )
+        const { data: stored } = await supabaseAdmin
+          .from('email_unsubscribe_tokens')
+          .select('token')
+          .eq('email', normalizedEmail)
+          .maybeSingle()
+        if (stored?.token) unsubscribeToken = stored.token
+      }
+
       await supabaseAdmin.from('email_send_log').insert({
         message_id: messageId,
         template_name: 'course-assignment',
@@ -104,9 +128,11 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
           purpose: 'transactional',
           label: 'course-assignment',
           idempotency_key: `course-assign-${req.id}-${course.id}-${Date.now()}`,
+          unsubscribe_token: unsubscribeToken,
           queued_at: new Date().toISOString(),
         },
       })
+
       if (enqErr) {
         await supabaseAdmin.from('email_send_log').insert({
           message_id: messageId,
