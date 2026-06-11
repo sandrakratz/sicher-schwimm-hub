@@ -225,10 +225,50 @@ function AnfragenAdmin() {
                     Bestätigungs-E-Mail an Eltern senden
                   </label>
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Mitglied?</Label>
+                    <Select value={isMember} onValueChange={(v: any) => { setIsMember(v); setPriceTouched(false); }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Ja, Mitglied</SelectItem>
+                        <SelectItem value="no">Nein</SelectItem>
+                        <SelectItem value="unknown">Unklar / prüfen</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Kursgebühr (€)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={priceAmount}
+                      onChange={e => { setPriceAmount(e.target.value); setPriceTouched(true); }}
+                      placeholder="z.B. 150"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Elternkonto verknüpfen</Label>
+                  {parentUserId ? (
+                    <div className="flex items-center gap-2 text-xs mt-1">
+                      <Badge className="bg-green-600 hover:bg-green-700">verknüpft</Badge>
+                      <span>{parentLabel || parentUserId}</span>
+                      <Button variant="ghost" size="sm" onClick={() => { setParentUserId(""); setParentLabel(""); }}>Entfernen</Button>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Kein passendes Eltern-Konto gefunden. Sobald sich das Elternteil mit „{selected.parent_email}" registriert, wird der Kurs automatisch verknüpft.
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <Label>Persönliche Nachricht (optional, wird in die E-Mail aufgenommen)</Label>
                   <Textarea rows={3} value={assignNotes} onChange={e => setAssignNotes(e.target.value)} placeholder="z.B. Hinweise zur ersten Stunde, Treffpunkt, Mitzubringendes…" />
                 </div>
+
                 <Button variant="accent" onClick={doAssign} disabled={busy || !assignCourseId}>
                   {busy ? "Wird gespeichert…" : (sendMail ? "Einbuchen & E-Mail senden" : "Einbuchen")}
                 </Button>
