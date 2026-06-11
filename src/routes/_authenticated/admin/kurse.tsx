@@ -151,6 +151,26 @@ function Page() {
     if (partCourse) await openParticipants(partCourse);
     await load();
   }
+  async function savePart() {
+    if (!editPart) return;
+    if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
+    const { error } = await supabase.from("course_participants").update({
+      participant_name: editPart.participant_name.trim(),
+      participant_email: editPart.participant_email?.trim() || null,
+      participant_phone: editPart.participant_phone?.trim() || null,
+      date_of_birth: editPart.date_of_birth || null,
+      status: editPart.status,
+      notes: editPart.notes?.trim() || null,
+      goal_reached: editPart.goal_reached,
+      achievement: editPart.achievement?.trim() || null,
+      badge: editPart.badge?.trim() || null,
+    }).eq("id", editPart.id);
+    if (error) return toast.error(error.message);
+    toast.success("Gespeichert");
+    setEditPart(null);
+    if (partCourse) await openParticipants(partCourse);
+    await load();
+  }
 
 
   function startNew() { setEditing({ status: "planned", is_public: true }); setOpen(true); }
