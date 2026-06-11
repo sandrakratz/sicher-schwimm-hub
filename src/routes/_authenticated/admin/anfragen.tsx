@@ -6,6 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useServerFn } from "@tanstack/react-start";
+import { assignRequestToCourse } from "@/lib/course-assignment.functions";
 import { toast } from "sonner";
 
 type Item = {
@@ -14,7 +20,11 @@ type Item = {
   child_name: string | null; child_dob: string | null; swimming_level: string | null;
   desired_course: string | null; health_info: string | null; message: string | null;
   gdpr_consent: boolean; contact_permission: boolean;
+  assigned_course_id?: string | null;
 };
+
+type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null };
+
 
 export const Route = createFileRoute("/_authenticated/admin/anfragen")({
   component: AnfragenAdmin,
@@ -32,16 +42,53 @@ const STATUS_LABEL: Record<string, string> = {
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
+  const [courses, setCourses] = useState<CourseOpt[]>([]);
+  const [assignCourseId, setAssignCourseId] = useState<string>("");
+  const [assignStatus, setAssignStatus] = useState<"confirmed" | "waiting">("confirmed");
+  const [assignNotes, setAssignNotes] = useState("");
+  const [sendMail, setSendMail] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const assignFn = useServerFn(assignRequestToCourse);
+
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
+    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on").order("starts_on", { ascending: true, nullsFirst: false });
+    setCourses((cs as CourseOpt[]) || []);
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (selected) {
+      setAssignCourseId(selected.assigned_course_id || "");
+      setAssignStatus("confirmed");
+      setAssignNotes("");
+      setSendMail(true);
+    }
+  }, [selected?.id]);
   async function setStatus(id: string, status: "new" | "contacted" | "accepted" | "rejected" | "under_review" | "waiting_list") {
     const { error } = await supabase.from("course_requests").update({ status }).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Aktualisiert"); setSelected(s => s && s.id === id ? { ...s, status } : s); load(); }
   }
+  async function doAssign() {
+    if (!selected || !assignCourseId) return toast.error("Bitte Kurs auswählen");
+    setBusy(true);
+    try {
+      const res = await assignFn({ data: {
+        requestId: selected.id,
+        courseId: assignCourseId,
+        status: assignStatus,
+        sendEmail: sendMail,
+        adminNotes: assignNotes || undefined,
+      }});
+      toast.success(res.emailQueued ? "Eingebucht & E-Mail versendet" : "Eingebucht");
+      setSelected(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Fehler");
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="max-w-6xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Kursanfragen</h1>
@@ -103,8 +150,51 @@ function AnfragenAdmin() {
               <hr />
               <Row label="Datenschutz akzeptiert" value={selected.gdpr_consent ? "Ja" : "Nein"} />
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
+
+              <hr />
+              <h3 className="font-semibold">In Kurs einbuchen</h3>
+              <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                <div>
+                  <Label>Kurs auswählen</Label>
+                  <Select value={assignCourseId} onValueChange={setAssignCourseId}>
+                    <SelectTrigger><SelectValue placeholder="Kurs wählen…" /></SelectTrigger>
+                    <SelectContent>
+                      {courses.length === 0 && <div className="p-2 text-xs text-muted-foreground">Keine Kurse vorhanden.</div>}
+                      {courses.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}{c.starts_on ? ` · ab ${new Date(c.starts_on).toLocaleDateString("de-DE")}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={assignStatus} onValueChange={(v: any) => setAssignStatus(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="confirmed">Bestätigt</SelectItem>
+                        <SelectItem value="waiting">Warteliste</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <label className="flex items-end gap-2 text-sm pb-2">
+                    <Checkbox checked={sendMail} onCheckedChange={v => setSendMail(!!v)} />
+                    Bestätigungs-E-Mail an Eltern senden
+                  </label>
+                </div>
+                <div>
+                  <Label>Persönliche Nachricht (optional, wird in die E-Mail aufgenommen)</Label>
+                  <Textarea rows={3} value={assignNotes} onChange={e => setAssignNotes(e.target.value)} placeholder="z.B. Hinweise zur ersten Stunde, Treffpunkt, Mitzubringendes…" />
+                </div>
+                <Button variant="accent" onClick={doAssign} disabled={busy || !assignCourseId}>
+                  {busy ? "Wird gespeichert…" : (sendMail ? "Einbuchen & E-Mail senden" : "Einbuchen")}
+                </Button>
+              </div>
             </div>
           )}
+
           <DialogFooter className="flex-wrap gap-2">
             {selected && <>
               <Button variant="outline" onClick={() => setStatus(selected.id, "contacted")}>Kontaktiert</Button>
