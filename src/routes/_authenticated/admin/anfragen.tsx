@@ -150,8 +150,51 @@ function AnfragenAdmin() {
               <hr />
               <Row label="Datenschutz akzeptiert" value={selected.gdpr_consent ? "Ja" : "Nein"} />
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
+
+              <hr />
+              <h3 className="font-semibold">In Kurs einbuchen</h3>
+              <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                <div>
+                  <Label>Kurs auswählen</Label>
+                  <Select value={assignCourseId} onValueChange={setAssignCourseId}>
+                    <SelectTrigger><SelectValue placeholder="Kurs wählen…" /></SelectTrigger>
+                    <SelectContent>
+                      {courses.length === 0 && <div className="p-2 text-xs text-muted-foreground">Keine Kurse vorhanden.</div>}
+                      {courses.map(c => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}{c.starts_on ? ` · ab ${new Date(c.starts_on).toLocaleDateString("de-DE")}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={assignStatus} onValueChange={(v: any) => setAssignStatus(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="confirmed">Bestätigt</SelectItem>
+                        <SelectItem value="waiting">Warteliste</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <label className="flex items-end gap-2 text-sm pb-2">
+                    <Checkbox checked={sendMail} onCheckedChange={v => setSendMail(!!v)} />
+                    Bestätigungs-E-Mail an Eltern senden
+                  </label>
+                </div>
+                <div>
+                  <Label>Persönliche Nachricht (optional, wird in die E-Mail aufgenommen)</Label>
+                  <Textarea rows={3} value={assignNotes} onChange={e => setAssignNotes(e.target.value)} placeholder="z.B. Hinweise zur ersten Stunde, Treffpunkt, Mitzubringendes…" />
+                </div>
+                <Button variant="accent" onClick={doAssign} disabled={busy || !assignCourseId}>
+                  {busy ? "Wird gespeichert…" : (sendMail ? "Einbuchen & E-Mail senden" : "Einbuchen")}
+                </Button>
+              </div>
             </div>
           )}
+
           <DialogFooter className="flex-wrap gap-2">
             {selected && <>
               <Button variant="outline" onClick={() => setStatus(selected.id, "contacted")}>Kontaktiert</Button>
