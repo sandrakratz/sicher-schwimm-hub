@@ -57,9 +57,13 @@ export type Database = {
           goal_reached: boolean | null
           id: string
           notes: string | null
+          paid: boolean
+          paid_at: string | null
+          paid_by: string | null
           participant_email: string | null
           participant_name: string | null
           participant_phone: string | null
+          payment_note: string | null
           request_id: string | null
           status: Database["public"]["Enums"]["enrollment_status"]
           updated_at: string
@@ -74,9 +78,13 @@ export type Database = {
           goal_reached?: boolean | null
           id?: string
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          paid_by?: string | null
           participant_email?: string | null
           participant_name?: string | null
           participant_phone?: string | null
+          payment_note?: string | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           updated_at?: string
@@ -91,9 +99,13 @@ export type Database = {
           goal_reached?: boolean | null
           id?: string
           notes?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          paid_by?: string | null
           participant_email?: string | null
           participant_name?: string | null
           participant_phone?: string | null
+          payment_note?: string | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           updated_at?: string
