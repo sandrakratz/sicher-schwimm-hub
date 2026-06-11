@@ -31,6 +31,9 @@ type Participant = {
   goal_reached: boolean | null;
   achievement: string | null;
   badge: string | null;
+  paid: boolean;
+  paid_at: string | null;
+  payment_note: string | null;
 };
 
 const ENROLL_STATUS = [
