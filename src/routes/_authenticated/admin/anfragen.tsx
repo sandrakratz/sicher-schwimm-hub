@@ -49,24 +49,58 @@ function AnfragenAdmin() {
   const [assignStatus, setAssignStatus] = useState<"confirmed" | "waiting">("confirmed");
   const [assignNotes, setAssignNotes] = useState("");
   const [sendMail, setSendMail] = useState(true);
+  const [isMember, setIsMember] = useState<"yes" | "no" | "unknown">("unknown");
+  const [parentUserId, setParentUserId] = useState<string>("");
+  const [parentLabel, setParentLabel] = useState<string>("");
+  const [priceAmount, setPriceAmount] = useState<string>("");
+  const [priceTouched, setPriceTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const assignFn = useServerFn(assignRequestToCourse);
+  const suggestFn = useServerFn(suggestMatchForRequest);
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
-    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on").order("starts_on", { ascending: true, nullsFirst: false });
+    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on,price_member,price_non_member").order("starts_on", { ascending: true, nullsFirst: false });
     setCourses((cs as CourseOpt[]) || []);
   }
   useEffect(() => { load(); }, []);
+
+  // Beim Öffnen einer Anfrage: Vorschläge holen
   useEffect(() => {
-    if (selected) {
-      setAssignCourseId(selected.assigned_course_id || "");
-      setAssignStatus("confirmed");
-      setAssignNotes("");
-      setSendMail(true);
-    }
+    if (!selected) return;
+    setAssignCourseId(selected.assigned_course_id || "");
+    setAssignStatus("confirmed");
+    setAssignNotes("");
+    setSendMail(true);
+    setIsMember("unknown");
+    setParentUserId("");
+    setParentLabel("");
+    setPriceAmount("");
+    setPriceTouched(false);
+    (async () => {
+      try {
+        const res = await suggestFn({ data: { email: selected.parent_email } });
+        if (res.isMember === true) setIsMember("yes");
+        else if (res.isMember === false) setIsMember("no");
+        if (res.parentUserId) {
+          setParentUserId(res.parentUserId);
+          setParentLabel(res.parentLabel || "");
+        }
+      } catch {}
+    })();
   }, [selected?.id]);
+
+  // Preis automatisch aus Kurs + Mitgliedstatus ableiten (wenn nicht manuell überschrieben)
+  useEffect(() => {
+    if (priceTouched) return;
+    const c = courses.find(x => x.id === assignCourseId);
+    if (!c) { setPriceAmount(""); return; }
+    if (isMember === "yes" && c.price_member != null) setPriceAmount(String(c.price_member));
+    else if (isMember === "no" && c.price_non_member != null) setPriceAmount(String(c.price_non_member));
+    else setPriceAmount("");
+  }, [assignCourseId, isMember, courses, priceTouched]);
+
   async function setStatus(id: string, status: "new" | "contacted" | "accepted" | "rejected" | "under_review" | "waiting_list") {
     const { error } = await supabase.from("course_requests").update({ status }).eq("id", id);
     if (error) toast.error(error.message);
