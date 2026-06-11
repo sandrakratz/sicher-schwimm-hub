@@ -12,11 +12,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
 });
+
+type Participant = {
+  id: string;
+  course_id: string;
+  user_id: string | null;
+  participant_name: string | null;
+  participant_email: string | null;
+  participant_phone: string | null;
+  status: "confirmed" | "waiting" | "cancelled";
+  notes: string | null;
+};
+
+const ENROLL_STATUS = [
+  { value: "confirmed", label: "Bestätigt" },
+  { value: "waiting", label: "Warteliste" },
+  { value: "cancelled", label: "Abgesagt" },
+];
+const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(ENROLL_STATUS.map(o => [o.value, o.label]));
+
 
 type Course = {
   id: string;
@@ -52,12 +71,64 @@ function Page() {
   const [rows, setRows] = useState<Course[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
+  const [counts, setCounts] = useState<Record<string, { confirmed: number; waiting: number }>>({});
+  const [partOpen, setPartOpen] = useState(false);
+  const [partCourse, setPartCourse] = useState<Course | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
-    setRows((data as Course[]) || []);
+    const list = (data as Course[]) || [];
+    setRows(list);
+    const { data: parts } = await supabase.from("course_participants").select("course_id,status");
+    const map: Record<string, { confirmed: number; waiting: number }> = {};
+    (parts || []).forEach((p: any) => {
+      map[p.course_id] = map[p.course_id] || { confirmed: 0, waiting: 0 };
+      if (p.status === "confirmed") map[p.course_id].confirmed++;
+      else if (p.status === "waiting") map[p.course_id].waiting++;
+    });
+    setCounts(map);
   }
   useEffect(() => { load(); }, []);
+
+  async function openParticipants(c: Course) {
+    setPartCourse(c); setPartOpen(true);
+    const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
+    setParticipants((data as Participant[]) || []);
+  }
+  async function addParticipant() {
+    if (!partCourse) return;
+    if (!newPart.name.trim()) return toast.error("Name erforderlich");
+    const { error } = await supabase.from("course_participants").insert({
+      course_id: partCourse.id,
+      participant_name: newPart.name.trim(),
+      participant_email: newPart.email.trim() || null,
+      participant_phone: newPart.phone.trim() || null,
+      status: newPart.status,
+      notes: newPart.notes.trim() || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Teilnehmer hinzugefügt");
+    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
+    await openParticipants(partCourse);
+    await load();
+  }
+  async function updatePartStatus(p: Participant, status: "confirmed" | "waiting" | "cancelled") {
+    const { error } = await supabase.from("course_participants").update({ status }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    if (partCourse) await openParticipants(partCourse);
+    await load();
+  }
+  async function removePart(p: Participant) {
+    if (!confirm(`Teilnehmer "${p.participant_name}" entfernen?`)) return;
+    const { error } = await supabase.from("course_participants").delete().eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success("Entfernt");
+    if (partCourse) await openParticipants(partCourse);
+    await load();
+  }
+
 
   function startNew() { setEditing({ status: "planned", is_public: true }); setOpen(true); }
   function startEdit(c: Course) { setEditing(c); setOpen(true); }
@@ -120,19 +191,29 @@ function Page() {
             </TableHeader>
             <TableBody>
               {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kurse.</TableCell></TableRow>}
-              {rows.map(c => (
+              {rows.map(c => {
+                const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
+                const max = c.max_participants;
+                const full = max != null && cnt.confirmed >= max;
+                return (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}</TableCell>
                   <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
-                  <TableCell className="text-xs">{c.max_participants ?? "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    <span className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}</span>
+                    {max != null ? <> / {max}</> : null}
+                    {cnt.waiting > 0 && <span className="ml-2 text-muted-foreground">(+{cnt.waiting} WL)</span>}
+                  </TableCell>
                   <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
+
             </TableBody>
           </Table>
         </CardContent>
@@ -172,6 +253,82 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={partOpen} onOpenChange={setPartOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Teilnehmer: {partCourse?.name}</DialogTitle>
+          </DialogHeader>
+          {partCourse && (() => {
+            const cnt = counts[partCourse.id] || { confirmed: 0, waiting: 0 };
+            const max = partCourse.max_participants;
+            const free = max != null ? Math.max(0, max - cnt.confirmed) : null;
+            return (
+              <div className="text-sm text-muted-foreground mb-2">
+                Bestätigt: <span className="font-semibold text-foreground">{cnt.confirmed}</span>
+                {max != null && <> von {max} · Frei: <span className="font-semibold text-foreground">{free}</span></>}
+                {cnt.waiting > 0 && <> · Warteliste: <span className="font-semibold text-foreground">{cnt.waiting}</span></>}
+              </div>
+            );
+          })()}
+          <div className="border rounded-md overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Kontakt</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Notiz</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {participants.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium text-sm">{p.participant_name || "—"}</TableCell>
+                    <TableCell className="text-xs">{p.participant_email || "—"}{p.participant_phone && <><br />{p.participant_phone}</>}</TableCell>
+                    <TableCell>
+                      <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
+                        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
+                    <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="border-t pt-4 mt-4 space-y-3">
+            <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
+              <div><Label>E-Mail</Label><Input type="email" value={newPart.email} onChange={e => setNewPart(p => ({ ...p, email: e.target.value }))} /></div>
+              <div><Label>Telefon</Label><Input value={newPart.phone} onChange={e => setNewPart(p => ({ ...p, phone: e.target.value }))} /></div>
+              <div>
+                <Label>Status</Label>
+                <Select value={newPart.status} onValueChange={(v: any) => setNewPart(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="confirmed">Bestätigt</SelectItem>
+                    <SelectItem value="waiting">Warteliste</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
+            <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPartOpen(false)}>Schließen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
