@@ -72,9 +72,18 @@ function Page() {
     });
     if (!parsed.success) { toast.error("Bitte Eingaben prüfen"); return; }
     setLoading(true);
-    const { error } = await supabase.from("messages").insert(parsed.data);
+    const { data: inserted, error } = await supabase.from("messages").insert(parsed.data).select("id, created_at").maybeSingle();
     setLoading(false);
     if (error) { toast.error("Nachricht konnte nicht gesendet werden"); return; }
+    fetch("/api/public/notify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        templateName: "contact-message",
+        idempotencyKey: inserted?.id ? `contact-message-${inserted.id}` : undefined,
+        templateData: { ...parsed.data, created_at: inserted?.created_at || new Date().toISOString() },
+      }),
+    }).catch(() => {});
     setDone(true);
   }
 

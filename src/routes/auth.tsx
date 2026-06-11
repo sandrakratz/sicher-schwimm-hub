@@ -66,17 +66,29 @@ function AuthPage() {
   async function onSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const first_name = String(fd.get("first_name") || "");
+    const last_name = String(fd.get("last_name") || "");
+    const email = String(fd.get("email") || "");
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: String(fd.get("email")),
+    const { data: signUpData, error } = await supabase.auth.signUp({
+      email,
       password: String(fd.get("password")),
       options: {
         emailRedirectTo: window.location.origin + "/portal",
-        data: { first_name: fd.get("first_name"), last_name: fd.get("last_name") },
+        data: { first_name, last_name },
       },
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
+    fetch("/api/public/notify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        templateName: "new-registration",
+        idempotencyKey: signUpData.user?.id ? `new-registration-${signUpData.user.id}` : undefined,
+        templateData: { first_name, last_name, email, created_at: new Date().toISOString() },
+      }),
+    }).catch(() => {});
     toast.success("Registrierung eingegangen. Dein Konto wird nach Bestätigung der E-Mail durch einen Administrator freigeschaltet.");
   }
 

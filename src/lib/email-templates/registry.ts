@@ -2,6 +2,8 @@ import type { ComponentType } from 'react'
 import { template as membershipApplication } from './membership-application'
 import { template as courseRequest } from './course-request'
 import { template as courseAssignment } from './course-assignment'
+import { template as contactMessage } from './contact-message'
+import { template as newRegistration } from './new-registration'
 
 
 export interface TemplateEntry {
@@ -17,5 +19,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'membership-application': membershipApplication,
   'course-request': courseRequest,
   'course-assignment': courseAssignment,
+  'contact-message': contactMessage,
+  'new-registration': newRegistration,
 }
 
