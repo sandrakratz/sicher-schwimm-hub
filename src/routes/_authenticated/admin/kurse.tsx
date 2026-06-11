@@ -411,6 +411,17 @@ function Page() {
                       </Select>
                     </TableCell>
                     <TableCell className="text-xs">
+                      {p.is_member === true && (
+                        <Badge className={p.member_confirmed ? "bg-green-600 hover:bg-green-700" : ""} variant={p.member_confirmed ? "default" : "outline"}>
+                          Mitglied{p.member_confirmed ? " ✓" : ""}
+                        </Badge>
+                      )}
+                      {p.is_member === false && <Badge variant="secondary">Nicht-Mitglied</Badge>}
+                      {p.is_member == null && <span className="text-muted-foreground">offen</span>}
+                      {p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
+                    </TableCell>
+
+                    <TableCell className="text-xs">
                       {p.goal_reached === true && <Badge className="bg-green-600 hover:bg-green-700"><Award className="h-3 w-3 mr-1" />Ziel erreicht</Badge>}
                       {p.goal_reached === false && <Badge variant="secondary">Ziel offen</Badge>}
                       {p.badge && <div className="mt-1">{p.badge}</div>}
