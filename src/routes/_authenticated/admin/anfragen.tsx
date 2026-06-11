@@ -25,7 +25,7 @@ type Item = {
   assigned_course_id?: string | null;
 };
 
-type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null };
+type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
 
 
 export const Route = createFileRoute("/_authenticated/admin/anfragen")({
