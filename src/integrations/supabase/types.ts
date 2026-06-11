@@ -53,21 +53,39 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
-          user_id: string
+          participant_email: string | null
+          participant_name: string | null
+          participant_phone: string | null
+          request_id: string | null
+          status: Database["public"]["Enums"]["enrollment_status"]
+          updated_at: string
+          user_id: string | null
         }
         Insert: {
           course_id: string
           created_at?: string
           id?: string
           notes?: string | null
-          user_id: string
+          participant_email?: string | null
+          participant_name?: string | null
+          participant_phone?: string | null
+          request_id?: string | null
+          status?: Database["public"]["Enums"]["enrollment_status"]
+          updated_at?: string
+          user_id?: string | null
         }
         Update: {
           course_id?: string
           created_at?: string
           id?: string
           notes?: string | null
-          user_id?: string
+          participant_email?: string | null
+          participant_name?: string | null
+          participant_phone?: string | null
+          request_id?: string | null
+          status?: Database["public"]["Enums"]["enrollment_status"]
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -75,6 +93,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_participants_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "course_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -694,6 +719,7 @@ export type Database = {
         | "waiting_list"
         | "fully_booked"
         | "completed"
+      enrollment_status: "confirmed" | "waiting" | "cancelled"
       membership_status: "pending" | "active" | "suspended" | "terminated"
       membership_type: "children_youth" | "adult" | "family" | "supporting"
       request_status:
@@ -840,6 +866,7 @@ export const Constants = {
         "fully_booked",
         "completed",
       ],
+      enrollment_status: ["confirmed", "waiting", "cancelled"],
       membership_status: ["pending", "active", "suspended", "terminated"],
       membership_type: ["children_youth", "adult", "family", "supporting"],
       request_status: [
