@@ -49,9 +49,12 @@ export type Database = {
       }
       course_participants: {
         Row: {
+          achievement: string | null
+          badge: string | null
           course_id: string
           created_at: string
           date_of_birth: string | null
+          goal_reached: boolean | null
           id: string
           notes: string | null
           participant_email: string | null
@@ -63,9 +66,12 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          achievement?: string | null
+          badge?: string | null
           course_id: string
           created_at?: string
           date_of_birth?: string | null
+          goal_reached?: boolean | null
           id?: string
           notes?: string | null
           participant_email?: string | null
@@ -77,9 +83,12 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          achievement?: string | null
+          badge?: string | null
           course_id?: string
           created_at?: string
           date_of_birth?: string | null
+          goal_reached?: boolean | null
           id?: string
           notes?: string | null
           participant_email?: string | null
