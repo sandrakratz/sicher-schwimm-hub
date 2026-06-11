@@ -92,7 +92,7 @@ function Page() {
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
+  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
