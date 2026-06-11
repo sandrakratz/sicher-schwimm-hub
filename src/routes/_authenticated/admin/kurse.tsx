@@ -295,6 +295,7 @@ function Page() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Geburtsdatum</TableHead>
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Notiz</TableHead>
@@ -302,10 +303,22 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
-                {participants.map(p => (
+                {participants.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.map(p => {
+                  const age = ageAt(p.date_of_birth, partCourse?.starts_on);
+                  return (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium text-sm">{p.participant_name || "—"}</TableCell>
+                    <TableCell className="text-xs">
+                      {p.date_of_birth ? (
+                        <>
+                          {fmtDate(p.date_of_birth)}
+                          {age != null && (
+                            <div className="text-muted-foreground">{age} J. {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div>
+                          )}
+                        </>
+                      ) : "—"}
+                    </TableCell>
                     <TableCell className="text-xs">{p.participant_email || "—"}{p.participant_phone && <><br />{p.participant_phone}</>}</TableCell>
                     <TableCell>
                       <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
@@ -316,7 +329,7 @@ function Page() {
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </div>
@@ -325,6 +338,14 @@ function Page() {
             <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
+              <div>
+                <Label>Geburtsdatum</Label>
+                <Input type="date" value={newPart.date_of_birth} onChange={e => setNewPart(p => ({ ...p, date_of_birth: e.target.value }))} />
+                {newPart.date_of_birth && (() => {
+                  const a = ageAt(newPart.date_of_birth, partCourse?.starts_on);
+                  return a != null ? <div className="text-xs text-muted-foreground mt-1">{a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div> : null;
+                })()}
+              </div>
               <div><Label>E-Mail</Label><Input type="email" value={newPart.email} onChange={e => setNewPart(p => ({ ...p, email: e.target.value }))} /></div>
               <div><Label>Telefon</Label><Input value={newPart.phone} onChange={e => setNewPart(p => ({ ...p, phone: e.target.value }))} /></div>
               <div>
@@ -338,6 +359,7 @@ function Page() {
                 </Select>
               </div>
             </div>
+
             <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
             <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
           </div>
