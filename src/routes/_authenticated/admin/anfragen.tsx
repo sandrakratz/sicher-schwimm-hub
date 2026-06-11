@@ -6,6 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useServerFn } from "@tanstack/react-start";
+import { assignRequestToCourse } from "@/lib/course-assignment.functions";
 import { toast } from "sonner";
 
 type Item = {
@@ -14,7 +20,11 @@ type Item = {
   child_name: string | null; child_dob: string | null; swimming_level: string | null;
   desired_course: string | null; health_info: string | null; message: string | null;
   gdpr_consent: boolean; contact_permission: boolean;
+  assigned_course_id?: string | null;
 };
+
+type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null };
+
 
 export const Route = createFileRoute("/_authenticated/admin/anfragen")({
   component: AnfragenAdmin,
