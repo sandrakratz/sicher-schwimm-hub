@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { TEMPLATES } from '@/lib/email-templates/registry'
 
-const SITE_NAME = 'sicher-schwimm-hub'
+const SITE_NAME = 'Sicher Schwimmen e.V.'
 const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
 const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
 

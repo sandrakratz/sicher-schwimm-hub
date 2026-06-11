@@ -31,7 +31,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "sicher-schwimm-hub"
+const SITE_NAME = "Sicher Schwimmen e.V."
 const SENDER_DOMAIN = "notify.sicher-schwimmen.com"
 const ROOT_DOMAIN = "sicher-schwimmen.com"
 const FROM_DOMAIN = "notify.sicher-schwimmen.com"
