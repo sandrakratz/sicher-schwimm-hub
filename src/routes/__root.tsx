@@ -77,23 +77,45 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#0a4d8c" },
       { title: "Sicher Schwimmen e.V. – Schwimmkurse in Hennef" },
       { name: "description", content: "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
       { name: "author", content: "Sicher Schwimmen e.V." },
-      { property: "og:title", content: "Sicher Schwimmen e.V. – Schwimmkurse in Hennef" },
-      { property: "og:description", content: "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
+      { property: "og:site_name", content: "Sicher Schwimmen e.V." },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "de_DE" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Sicher Schwimmen e.V. – Schwimmkurse in Hennef" },
-      { name: "twitter:description", content: "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/78e81e66-96c6-4604-a8d1-9e2454423cb6" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/78e81e66-96c6-4604-a8d1-9e2454423cb6" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Nunito:wght@400;500;600;700;800&display=swap" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SportsClub",
+          name: "Sicher Schwimmen e.V.",
+          alternateName: "Sicher Schwimmen",
+          url: "https://sicher-schwimmen.com",
+          email: "info@sicher-schwimmen.com",
+          telephone: "+49-178-1142945",
+          sport: "Swimming",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Hennef (Sieg)",
+            addressRegion: "Nordrhein-Westfalen",
+            addressCountry: "DE",
+          },
+          areaServed: [
+            { "@type": "City", name: "Hennef" },
+            { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
+          ],
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -104,7 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="de">
       <head>
         <HeadContent />
       </head>
