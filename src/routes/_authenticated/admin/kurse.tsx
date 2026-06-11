@@ -27,6 +27,7 @@ type Participant = {
   participant_phone: string | null;
   status: "confirmed" | "waiting" | "cancelled";
   notes: string | null;
+  date_of_birth: string | null;
 };
 
 const ENROLL_STATUS = [
@@ -35,6 +36,22 @@ const ENROLL_STATUS = [
   { value: "cancelled", label: "Abgesagt" },
 ];
 const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(ENROLL_STATUS.map(o => [o.value, o.label]));
+
+function ageAt(dobStr: string | null | undefined, refStr: string | null | undefined): number | null {
+  if (!dobStr) return null;
+  const dob = new Date(dobStr);
+  const ref = refStr ? new Date(refStr) : new Date();
+  if (isNaN(dob.getTime()) || isNaN(ref.getTime())) return null;
+  let age = ref.getFullYear() - dob.getFullYear();
+  const m = ref.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
+  return age;
+}
+function fmtDate(s: string | null | undefined) {
+  if (!s) return "—";
+  try { return new Date(s).toLocaleDateString("de-DE"); } catch { return s; }
+}
+
 
 
 type Course = {
