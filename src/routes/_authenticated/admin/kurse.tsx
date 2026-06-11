@@ -71,12 +71,64 @@ function Page() {
   const [rows, setRows] = useState<Course[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
+  const [counts, setCounts] = useState<Record<string, { confirmed: number; waiting: number }>>({});
+  const [partOpen, setPartOpen] = useState(false);
+  const [partCourse, setPartCourse] = useState<Course | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
-    setRows((data as Course[]) || []);
+    const list = (data as Course[]) || [];
+    setRows(list);
+    const { data: parts } = await supabase.from("course_participants").select("course_id,status");
+    const map: Record<string, { confirmed: number; waiting: number }> = {};
+    (parts || []).forEach((p: any) => {
+      map[p.course_id] = map[p.course_id] || { confirmed: 0, waiting: 0 };
+      if (p.status === "confirmed") map[p.course_id].confirmed++;
+      else if (p.status === "waiting") map[p.course_id].waiting++;
+    });
+    setCounts(map);
   }
   useEffect(() => { load(); }, []);
+
+  async function openParticipants(c: Course) {
+    setPartCourse(c); setPartOpen(true);
+    const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
+    setParticipants((data as Participant[]) || []);
+  }
+  async function addParticipant() {
+    if (!partCourse) return;
+    if (!newPart.name.trim()) return toast.error("Name erforderlich");
+    const { error } = await supabase.from("course_participants").insert({
+      course_id: partCourse.id,
+      participant_name: newPart.name.trim(),
+      participant_email: newPart.email.trim() || null,
+      participant_phone: newPart.phone.trim() || null,
+      status: newPart.status,
+      notes: newPart.notes.trim() || null,
+    });
+    if (error) return toast.error(error.message);
+    toast.success("Teilnehmer hinzugefügt");
+    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "" });
+    await openParticipants(partCourse);
+    await load();
+  }
+  async function updatePartStatus(p: Participant, status: "confirmed" | "waiting" | "cancelled") {
+    const { error } = await supabase.from("course_participants").update({ status }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    if (partCourse) await openParticipants(partCourse);
+    await load();
+  }
+  async function removePart(p: Participant) {
+    if (!confirm(`Teilnehmer "${p.participant_name}" entfernen?`)) return;
+    const { error } = await supabase.from("course_participants").delete().eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success("Entfernt");
+    if (partCourse) await openParticipants(partCourse);
+    await load();
+  }
+
 
   function startNew() { setEditing({ status: "planned", is_public: true }); setOpen(true); }
   function startEdit(c: Course) { setEditing(c); setOpen(true); }
