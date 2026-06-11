@@ -320,7 +320,22 @@ function Page() {
               </div>
             </div>
             <div><Label>Zeitplan</Label><Input value={editing.schedule || ""} onChange={e => setEditing(p => ({ ...p, schedule: e.target.value }))} placeholder="z.B. Mo & Mi 17:00–18:00" /></div>
+            <div className="grid grid-cols-3 gap-3 border-t pt-3">
+              <div>
+                <Label>Preis Mitglied (€)</Label>
+                <Input type="number" step="0.01" value={editing.price_member ?? ""} onChange={e => setEditing(p => ({ ...p, price_member: e.target.value ? Number(e.target.value) : null }))} placeholder="150" />
+              </div>
+              <div>
+                <Label>Preis Nicht-Mitglied (€)</Label>
+                <Input type="number" step="0.01" value={editing.price_non_member ?? ""} onChange={e => setEditing(p => ({ ...p, price_non_member: e.target.value ? Number(e.target.value) : null }))} placeholder="200" />
+              </div>
+              <div>
+                <Label>Zahlungsfrist (Tage)</Label>
+                <Input type="number" value={editing.payment_due_days ?? 14} onChange={e => setEditing(p => ({ ...p, payment_due_days: e.target.value ? Number(e.target.value) : 14 }))} />
+              </div>
+            </div>
             <label className="flex items-center gap-2 text-sm"><Checkbox checked={editing.is_public ?? true} onCheckedChange={v => setEditing(p => ({ ...p, is_public: !!v }))} /> Öffentlich sichtbar</label>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
