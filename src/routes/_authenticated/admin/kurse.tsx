@@ -191,19 +191,29 @@ function Page() {
             </TableHeader>
             <TableBody>
               {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kurse.</TableCell></TableRow>}
-              {rows.map(c => (
+              {rows.map(c => {
+                const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
+                const max = c.max_participants;
+                const full = max != null && cnt.confirmed >= max;
+                return (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}</TableCell>
                   <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
-                  <TableCell className="text-xs">{c.max_participants ?? "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    <span className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}</span>
+                    {max != null ? <> / {max}</> : null}
+                    {cnt.waiting > 0 && <span className="ml-2 text-muted-foreground">(+{cnt.waiting} WL)</span>}
+                  </TableCell>
                   <TableCell className="text-right space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
+
             </TableBody>
           </Table>
         </CardContent>
