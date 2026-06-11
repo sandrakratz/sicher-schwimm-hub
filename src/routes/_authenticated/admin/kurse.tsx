@@ -482,6 +482,18 @@ function Page() {
                 </div>
                 <div className="mt-3"><Label>Geschafft / Anmerkungen zum Ergebnis</Label><Textarea rows={3} placeholder="z.B. 25m geschwommen, Sprung vom Beckenrand …" value={editPart.achievement || ""} onChange={e => setEditPart(p => p && { ...p, achievement: e.target.value })} /></div>
               </div>
+
+              <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Euro className="h-4 w-4" /> Zahlung (Buchhaltung)</div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={editPart.paid} onCheckedChange={v => setEditPart(p => p && { ...p, paid: !!v, paid_at: v ? (p.paid_at || new Date().toISOString()) : null })} />
+                  Kursgebühr bezahlt
+                </label>
+                {editPart.paid && editPart.paid_at && (
+                  <div className="text-xs text-muted-foreground mt-1">Bestätigt am {fmtDate(editPart.paid_at)}</div>
+                )}
+                <div className="mt-3"><Label>Zahlungsnotiz</Label><Textarea rows={2} placeholder="z.B. Überweisung, Bar, Rechnungsnr. …" value={editPart.payment_note || ""} onChange={e => setEditPart(p => p && { ...p, payment_note: e.target.value })} /></div>
+              </div>
             </div>
           )}
           <DialogFooter>
