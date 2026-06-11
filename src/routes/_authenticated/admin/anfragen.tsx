@@ -42,16 +42,53 @@ const STATUS_LABEL: Record<string, string> = {
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
+  const [courses, setCourses] = useState<CourseOpt[]>([]);
+  const [assignCourseId, setAssignCourseId] = useState<string>("");
+  const [assignStatus, setAssignStatus] = useState<"confirmed" | "waiting">("confirmed");
+  const [assignNotes, setAssignNotes] = useState("");
+  const [sendMail, setSendMail] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const assignFn = useServerFn(assignRequestToCourse);
+
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
+    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on").order("starts_on", { ascending: true, nullsFirst: false });
+    setCourses((cs as CourseOpt[]) || []);
   }
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (selected) {
+      setAssignCourseId(selected.assigned_course_id || "");
+      setAssignStatus("confirmed");
+      setAssignNotes("");
+      setSendMail(true);
+    }
+  }, [selected?.id]);
   async function setStatus(id: string, status: "new" | "contacted" | "accepted" | "rejected" | "under_review" | "waiting_list") {
     const { error } = await supabase.from("course_requests").update({ status }).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Aktualisiert"); setSelected(s => s && s.id === id ? { ...s, status } : s); load(); }
   }
+  async function doAssign() {
+    if (!selected || !assignCourseId) return toast.error("Bitte Kurs auswählen");
+    setBusy(true);
+    try {
+      const res = await assignFn({ data: {
+        requestId: selected.id,
+        courseId: assignCourseId,
+        status: assignStatus,
+        sendEmail: sendMail,
+        adminNotes: assignNotes || undefined,
+      }});
+      toast.success(res.emailQueued ? "Eingebucht & E-Mail versendet" : "Eingebucht");
+      setSelected(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || "Fehler");
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="max-w-6xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Kursanfragen</h1>
