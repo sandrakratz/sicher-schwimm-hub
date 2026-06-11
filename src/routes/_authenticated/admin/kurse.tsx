@@ -201,7 +201,7 @@ function Page() {
   }
 
 
-  function startNew() { setEditing({ status: "planned", is_public: true }); setOpen(true); }
+  function startNew() { setEditing({ status: "planned", is_public: true, price_member: 150, price_non_member: 200, payment_due_days: 14 }); setOpen(true); }
   function startEdit(c: Course) { setEditing(c); setOpen(true); }
 
   async function save() {
@@ -220,7 +220,11 @@ function Page() {
       ends_on: editing.ends_on || null,
       schedule: editing.schedule || null,
       is_public: editing.is_public ?? true,
+      price_member: editing.price_member ?? null,
+      price_non_member: editing.price_non_member ?? null,
+      payment_due_days: editing.payment_due_days ?? 14,
     };
+
     const res = editing.id
       ? await supabase.from("courses").update(payload).eq("id", editing.id)
       : await supabase.from("courses").insert(payload);
