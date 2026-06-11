@@ -12,11 +12,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
 });
+
+type Participant = {
+  id: string;
+  course_id: string;
+  user_id: string | null;
+  participant_name: string | null;
+  participant_email: string | null;
+  participant_phone: string | null;
+  status: "confirmed" | "waiting" | "cancelled";
+  notes: string | null;
+};
+
+const ENROLL_STATUS = [
+  { value: "confirmed", label: "Bestätigt" },
+  { value: "waiting", label: "Warteliste" },
+  { value: "cancelled", label: "Abgesagt" },
+];
+const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(ENROLL_STATUS.map(o => [o.value, o.label]));
+
 
 type Course = {
   id: string;
