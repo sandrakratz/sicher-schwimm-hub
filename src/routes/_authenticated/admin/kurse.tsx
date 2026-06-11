@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
@@ -31,6 +31,9 @@ type Participant = {
   goal_reached: boolean | null;
   achievement: string | null;
   badge: string | null;
+  paid: boolean;
+  paid_at: string | null;
+  payment_note: string | null;
 };
 
 const ENROLL_STATUS = [
@@ -164,12 +167,27 @@ function Page() {
       goal_reached: editPart.goal_reached,
       achievement: editPart.achievement?.trim() || null,
       badge: editPart.badge?.trim() || null,
+      paid: editPart.paid,
+      paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
+      paid_by: editPart.paid ? (await supabase.auth.getUser()).data.user?.id ?? null : null,
+      payment_note: editPart.payment_note?.trim() || null,
     }).eq("id", editPart.id);
     if (error) return toast.error(error.message);
     toast.success("Gespeichert");
     setEditPart(null);
     if (partCourse) await openParticipants(partCourse);
     await load();
+  }
+  async function togglePaid(p: Participant, paid: boolean) {
+    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
+    const { error } = await supabase.from("course_participants").update({
+      paid,
+      paid_at: paid ? new Date().toISOString() : null,
+      paid_by: paid ? userId : null,
+    }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success(paid ? "Als bezahlt markiert" : "Zahlung zurückgesetzt");
+    if (partCourse) await openParticipants(partCourse);
   }
 
 
@@ -323,12 +341,13 @@ function Page() {
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ergebnis</TableHead>
+                  <TableHead>Bezahlt</TableHead>
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
@@ -357,6 +376,16 @@ function Page() {
                       {p.badge && <div className="mt-1">{p.badge}</div>}
                       {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
                       {p.goal_reached == null && !p.badge && !p.achievement && "—"}
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
+                        {p.paid ? (
+                          <span className="text-green-700 font-medium">Bezahlt{p.paid_at && <div className="text-muted-foreground font-normal">{fmtDate(p.paid_at)}</div>}</span>
+                        ) : (
+                          <span className="text-muted-foreground">offen</span>
+                        )}
+                      </label>
                     </TableCell>
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">
@@ -452,6 +481,18 @@ function Page() {
                   <div><Label>Abzeichen</Label><Input placeholder="z.B. Seepferdchen, Bronze" value={editPart.badge || ""} onChange={e => setEditPart(p => p && { ...p, badge: e.target.value })} /></div>
                 </div>
                 <div className="mt-3"><Label>Geschafft / Anmerkungen zum Ergebnis</Label><Textarea rows={3} placeholder="z.B. 25m geschwommen, Sprung vom Beckenrand …" value={editPart.achievement || ""} onChange={e => setEditPart(p => p && { ...p, achievement: e.target.value })} /></div>
+              </div>
+
+              <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Euro className="h-4 w-4" /> Zahlung (Buchhaltung)</div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox checked={editPart.paid} onCheckedChange={v => setEditPart(p => p && { ...p, paid: !!v, paid_at: v ? (p.paid_at || new Date().toISOString()) : null })} />
+                  Kursgebühr bezahlt
+                </label>
+                {editPart.paid && editPart.paid_at && (
+                  <div className="text-xs text-muted-foreground mt-1">Bestätigt am {fmtDate(editPart.paid_at)}</div>
+                )}
+                <div className="mt-3"><Label>Zahlungsnotiz</Label><Textarea rows={2} placeholder="z.B. Überweisung, Bar, Rechnungsnr. …" value={editPart.payment_note || ""} onChange={e => setEditPart(p => p && { ...p, payment_note: e.target.value })} /></div>
               </div>
             </div>
           )}
