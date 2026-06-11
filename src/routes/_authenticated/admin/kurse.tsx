@@ -341,12 +341,13 @@ function Page() {
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ergebnis</TableHead>
+                  <TableHead>Bezahlt</TableHead>
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
