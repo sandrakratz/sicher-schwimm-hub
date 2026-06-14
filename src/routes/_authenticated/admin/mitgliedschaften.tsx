@@ -123,6 +123,13 @@ function Page() {
     else { toast.success("Aktualisiert"); load(); setSelected(null); }
   }
 
+  async function deleteMembership(id: string) {
+    if (!confirm("Diese Mitgliedschaft wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
+    const { error } = await supabase.from("memberships").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Mitgliedschaft gelöscht"); setSelected(null); load(); }
+  }
+
   async function saveFamily(family_members: FamilyMembers) {
     if (!selected) return;
     const { error } = await supabase.from("memberships").update({ family_members: family_members as any }).eq("id", selected.id);
@@ -156,6 +163,7 @@ function Page() {
                   <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" onClick={() => { setSelected(r); setEditingFamily(false); }}>Details</Button>
                     {r.status !== "active" && <Button size="sm" variant="accent" onClick={() => setStatus(r.id, "active")}>Genehmigen</Button>}
+                    <Button size="sm" variant="ghost" onClick={() => deleteMembership(r.id)} aria-label="Löschen"><Trash2 className="h-3.5 w-3.5" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -248,6 +256,7 @@ function Page() {
                 {selected.status !== "active" && <Button variant="accent" onClick={() => setStatus(selected.id, "active")}>Genehmigen</Button>}
                 {selected.status !== "suspended" && <Button variant="outline" onClick={() => setStatus(selected.id, "suspended")}>Pausieren</Button>}
                 {selected.status !== "terminated" && <Button variant="outline" onClick={() => setStatus(selected.id, "terminated")}>Ablehnen / Beenden</Button>}
+                <Button variant="destructive" onClick={() => deleteMembership(selected.id)}><Trash2 className="h-3.5 w-3.5 mr-1" />Löschen</Button>
                 <Button variant="ghost" onClick={() => { setSelected(null); setEditingFamily(false); }} className="ml-auto">Schließen</Button>
               </div>
             </div>
