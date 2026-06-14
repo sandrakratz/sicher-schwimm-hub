@@ -163,6 +163,7 @@ function Page() {
                   <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" onClick={() => { setSelected(r); setEditingFamily(false); }}>Details</Button>
                     {r.status !== "active" && <Button size="sm" variant="accent" onClick={() => setStatus(r.id, "active")}>Genehmigen</Button>}
+                    <Button size="sm" variant="ghost" onClick={() => deleteMembership(r.id)} aria-label="Löschen"><Trash2 className="h-3.5 w-3.5" /></Button>
                   </TableCell>
                 </TableRow>
               ))}
