@@ -215,5 +215,13 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       }
     }
 
+    const { logAudit } = await import('@/lib/audit.server')
+    await logAudit(supabase, userId, {
+      action: 'course.participant.assigned',
+      entity: 'course_participants',
+      entity_id: req.id,
+      metadata: { course_id: course.id, status: data.status, request_id: req.id },
+    })
+
     return { ok: true, emailQueued }
   })
