@@ -7,38 +7,57 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { assertIsStaff } from "@/lib/admin-guard.functions";
+import { getMyAdminRoles } from "@/lib/admin-guard.functions";
+
+type Role = "admin" | "board" | "trainer" | "member" | "parent";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
-    // Server-side enforcement: cannot be bypassed by editing client JS.
+    let roles: Role[] = [];
     try {
-      await assertIsStaff();
+      const res = await getMyAdminRoles();
+      roles = res.roles as Role[];
     } catch {
       throw redirect({ to: "/portal" });
     }
+    const isStaff = roles.includes("admin") || roles.includes("board");
+    // Trainer ohne Staff-Rolle hat keine /admin Übersicht: leite auf Mitgliederliste
+    if (!isStaff && roles.includes("trainer") && location.pathname === "/admin") {
+      throw redirect({ to: "/admin/benutzer" });
+    }
+    return { adminRoles: roles };
   },
   component: AdminLayout,
 });
 
-const adminNav = [
-  { to: "/admin", icon: Shield, label: "Übersicht", exact: true },
-  { to: "/admin/benutzer", icon: Users, label: "Benutzer" },
-  { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften" },
-  { to: "/admin/kurse", icon: BookOpen, label: "Kurse" },
-  { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen" },
-  { to: "/admin/news", icon: Newspaper, label: "News" },
-  { to: "/admin/dokumente", icon: FileText, label: "Dokumente" },
-  { to: "/admin/events", icon: Calendar, label: "Events" },
-  { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten" },
-  { to: "/admin/audit", icon: ScrollText, label: "Audit-Log" },
+type NavItem = {
+  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/audit";
+  icon: typeof Shield;
+  label: string;
+  exact?: boolean;
+  allow: Role[];
+};
+
+const adminNav: NavItem[] = [
+  { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
+  { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board", "trainer"] },
+  { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
+  { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
+  { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen", allow: ["admin", "board"] },
+  { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
+  { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
+  { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
+  { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten", allow: ["admin", "board"] },
+  { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
 ];
 
 function AdminLayout() {
   const navigate = useNavigate();
+  const { adminRoles } = Route.useRouteContext();
+  const roles = (adminRoles ?? []) as Role[];
   const [name, setName] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -52,6 +71,8 @@ function AdminLayout() {
     navigate({ to: "/" });
   }
 
+  const visibleNav = adminNav.filter(n => n.allow.some(r => roles.includes(r)));
+
   const navContent = (
     <>
       <div className="p-4 border-b border-white/10 flex items-center gap-3">
@@ -61,7 +82,7 @@ function AdminLayout() {
         </div>
       </div>
       <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-        {adminNav.map(n => (
+        {visibleNav.map(n => (
           <Link key={n.to} to={n.to} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 transition"
             activeProps={{ className: "bg-accent text-accent-foreground" }}
             activeOptions={{ exact: n.exact }}>
