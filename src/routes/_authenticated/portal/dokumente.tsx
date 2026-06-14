@@ -7,6 +7,7 @@ import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/portal/dokumente")({
   component: Page,
@@ -81,7 +82,7 @@ function Page() {
                   </TableCell>
                   <TableCell className="text-xs">{d.version || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[d.visibility] || d.visibility}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("de-DE")}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDateBerlin(d.created_at)}</TableCell>
                   <TableCell className="text-right">
                     {d.file_url && (
                       <Button variant="ghost" size="sm" onClick={() => download(d)}>

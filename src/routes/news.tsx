@@ -3,6 +3,7 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/news")({
   head: () => ({
@@ -63,7 +64,7 @@ function Page() {
                     {n.category}
                     {n.published_at && (
                       <span className="ml-2 text-muted-foreground normal-case font-normal">
-                        {new Date(n.published_at).toLocaleDateString("de-DE")}
+                        {formatDateBerlin(n.published_at)}
                       </span>
                     )}
                   </div>
