@@ -1,10 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, ListChecks, MailOpen } from "lucide-react";
+import { assertHasAnyRole } from "@/lib/admin-guard.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
+  beforeLoad: async () => {
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/admin/benutzer" });
+    }
+  },
   component: AdminDashboard,
 });
 
