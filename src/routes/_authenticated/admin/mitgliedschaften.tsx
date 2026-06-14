@@ -12,6 +12,12 @@ import { Plus, Trash2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/mitgliedschaften")({
+  beforeLoad: async () => {
+    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { redirect } = await import("@tanstack/react-router");
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
+    catch { throw redirect({ to: "/admin/benutzer" }); }
+  },
   component: Page,
 });
 
