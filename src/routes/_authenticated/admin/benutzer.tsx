@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { deleteUser } from "@/lib/admin-users.functions";
+import { deleteUser, setUserRole, setUserStatus } from "@/lib/admin-users.functions";
 import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/benutzer")({
@@ -57,17 +57,23 @@ type Profile = {
 };
 
 function Page() {
+  const { adminRoles } = Route.useRouteContext() as { adminRoles?: Role[] };
+  const roles = (adminRoles ?? []) as Role[];
+  const canManage = roles.includes("admin") || roles.includes("board");
+
   const [rows, setRows] = useState<Profile[]>([]);
-  const [roles, setRoles] = useState<Record<string, Role[]>>({});
+  const [rolesByUser, setRolesByUser] = useState<Record<string, Role[]>>({});
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [toDelete, setToDelete] = useState<Profile | null>(null);
   const [deleting, setDeleting] = useState(false);
   const deleteUserFn = useServerFn(deleteUser);
+  const setUserRoleFn = useServerFn(setUserRole);
+  const setUserStatusFn = useServerFn(setUserStatus);
 
   async function confirmDelete() {
-    if (!toDelete) return;
+    if (!toDelete || !canManage) return;
     setDeleting(true);
     try {
       await deleteUserFn({ data: { userId: toDelete.id } });
@@ -93,32 +99,41 @@ function Page() {
     (ur || []).forEach((r: any) => {
       map[r.user_id] = [...(map[r.user_id] || []), r.role];
     });
-    setRoles(map);
+    setRolesByUser(map);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
 
   async function setStatus(id: string, status: Status) {
-    const { error } = await supabase.from("profiles").update({ status }).eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Status aktualisiert");
-    await load();
-    setSelected(s => s && s.id === id ? { ...s, status } : s);
+    if (!canManage) return;
+    try {
+      await setUserStatusFn({ data: { userId: id, status } });
+      toast.success("Status aktualisiert");
+      await load();
+      setSelected(s => s && s.id === id ? { ...s, status } : s);
+    } catch (e: any) {
+      toast.error(e?.message || "Fehler");
+    }
   }
 
   async function toggleRole(userId: string, role: Role, has: boolean) {
-    if (has) {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
-      if (error) return toast.error(error.message);
-    } else {
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
-      if (error) return toast.error(error.message);
+    if (!canManage) return;
+    try {
+      await setUserRoleFn({ data: { userId, role, enabled: !has } });
+      toast.success("Rolle aktualisiert");
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Fehler");
     }
-    toast.success("Rolle aktualisiert");
-    await load();
   }
 
-  const filtered = rows.filter(r => {
+  // Trainer-Modus: nur aktive Mitglieder (Rolle „member") anzeigen
+  const visibleRows = useMemo(() => {
+    if (canManage) return rows;
+    return rows.filter(p => p.status === "active" && (rolesByUser[p.id] || []).includes("member"));
+  }, [rows, rolesByUser, canManage]);
+
+  const filtered = visibleRows.filter(r => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return [r.email, r.first_name, r.last_name].filter(Boolean).join(" ").toLowerCase().includes(q);
@@ -128,8 +143,14 @@ function Page() {
     <div className="max-w-7xl space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary-deep">Benutzerverwaltung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Konten, Status und Rollen verwalten.</p>
+          <h1 className="font-display text-3xl font-bold text-primary-deep">
+            {canManage ? "Benutzerverwaltung" : "Mitgliederliste"}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {canManage
+              ? "Konten, Status und Rollen verwalten."
+              : "Übersicht der aktiven Vereinsmitglieder (nur Anzeige)."}
+          </p>
         </div>
         <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="Suche nach Name oder E-Mail…" className="max-w-xs" />
       </div>
@@ -141,28 +162,32 @@ function Page() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>E-Mail</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Rollen</TableHead>
-                <TableHead>Registriert</TableHead>
-                <TableHead></TableHead>
+                {canManage && <TableHead>Status</TableHead>}
+                {canManage ? <TableHead>Rollen</TableHead> : <TableHead>Telefon</TableHead>}
+                <TableHead>{canManage ? "Registriert" : "Mitglied seit"}</TableHead>
+                {canManage && <TableHead></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Lade…</TableCell></TableRow>}
-              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Keine Benutzer gefunden.</TableCell></TableRow>}
+              {loading && <TableRow><TableCell colSpan={canManage ? 6 : 4} className="text-center py-8 text-muted-foreground">Lade…</TableCell></TableRow>}
+              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={canManage ? 6 : 4} className="text-center py-8 text-muted-foreground">Keine Einträge gefunden.</TableCell></TableRow>}
               {filtered.map(p => (
-                <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelected(p)}>
+                <TableRow key={p.id} className={canManage ? "cursor-pointer" : ""} onClick={() => canManage && setSelected(p)}>
                   <TableCell className="font-medium">{[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
                   <TableCell className="text-sm">{p.email}</TableCell>
-                  <TableCell><Badge className={STATUS_COLOR[p.status]} variant="secondary">{STATUS_LABEL[p.status]}</Badge></TableCell>
-                  <TableCell className="text-xs">{(roles[p.id] || []).map(r => ROLE_LABEL[r]).join(", ") || <span className="text-muted-foreground">—</span>}</TableCell>
+                  {canManage && <TableCell><Badge className={STATUS_COLOR[p.status]} variant="secondary">{STATUS_LABEL[p.status]}</Badge></TableCell>}
+                  {canManage
+                    ? <TableCell className="text-xs">{(rolesByUser[p.id] || []).map(r => ROLE_LABEL[r]).join(", ") || <span className="text-muted-foreground">—</span>}</TableCell>
+                    : <TableCell className="text-sm">{p.phone || <span className="text-muted-foreground">—</span>}</TableCell>}
                   <TableCell className="text-xs text-muted-foreground">{formatDateBerlin(p.created_at)}</TableCell>
-                  <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
-                    <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>Details</Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                  {canManage && (
+                    <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>Details</Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -170,70 +195,74 @@ function Page() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
-        <DialogContent className="max-w-2xl">
-          {selected && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{[selected.first_name, selected.last_name].filter(Boolean).join(" ") || selected.email}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="text-sm grid grid-cols-2 gap-2">
-                  <div><span className="text-muted-foreground">E-Mail:</span> {selected.email}</div>
-                  <div><span className="text-muted-foreground">Telefon:</span> {selected.phone || "—"}</div>
-                </div>
+      {canManage && (
+        <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+          <DialogContent className="max-w-2xl">
+            {selected && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>{[selected.first_name, selected.last_name].filter(Boolean).join(" ") || selected.email}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="text-sm grid grid-cols-2 gap-2">
+                    <div><span className="text-muted-foreground">E-Mail:</span> {selected.email}</div>
+                    <div><span className="text-muted-foreground">Telefon:</span> {selected.phone || "—"}</div>
+                  </div>
 
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Status</div>
-                  <div className="flex flex-wrap gap-2">
-                    {STATUSES.map(s => (
-                      <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => setStatus(selected.id, s)}>{STATUS_LABEL[s]}</Button>
-                    ))}
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Status</div>
+                    <div className="flex flex-wrap gap-2">
+                      {STATUSES.map(s => (
+                        <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => setStatus(selected.id, s)}>{STATUS_LABEL[s]}</Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Rollen</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ROLES.map(r => {
+                        const has = (rolesByUser[selected.id] || []).includes(r);
+                        return (
+                          <label key={r} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
+                            <Checkbox checked={has} onCheckedChange={() => toggleRole(selected.id, r, has)} />
+                            <span>{ROLE_LABEL[r]}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
+                <DialogFooter className="gap-2 sm:justify-between">
+                  <Button variant="destructive" onClick={() => setToDelete(selected)}>
+                    <Trash2 className="h-4 w-4" />Benutzer löschen
+                  </Button>
+                  <Button variant="outline" onClick={() => setSelected(null)}>Schließen</Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
 
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Rollen</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {ROLES.map(r => {
-                      const has = (roles[selected.id] || []).includes(r);
-                      return (
-                        <label key={r} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
-                          <Checkbox checked={has} onCheckedChange={() => toggleRole(selected.id, r, has)} />
-                          <span>{ROLE_LABEL[r]}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="gap-2 sm:justify-between">
-                <Button variant="destructive" onClick={() => setToDelete(selected)}>
-                  <Trash2 className="h-4 w-4" />Benutzer löschen
-                </Button>
-                <Button variant="outline" onClick={() => setSelected(null)}>Schließen</Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!toDelete} onOpenChange={o => !o && !deleting && setToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Benutzer endgültig löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {toDelete && (<>Das Konto von <strong>{[toDelete.first_name, toDelete.last_name].filter(Boolean).join(" ") || toDelete.email}</strong> wird unwiderruflich gelöscht – inklusive Profil, Rollen und zugehörigen Daten.</>)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction disabled={deleting} onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {deleting ? "Lösche…" : "Endgültig löschen"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {canManage && (
+        <AlertDialog open={!!toDelete} onOpenChange={o => !o && !deleting && setToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Benutzer endgültig löschen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {toDelete && (<>Das Konto von <strong>{[toDelete.first_name, toDelete.last_name].filter(Boolean).join(" ") || toDelete.email}</strong> wird unwiderruflich gelöscht – inklusive Profil, Rollen und zugehörigen Daten.</>)}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction disabled={deleting} onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {deleting ? "Lösche…" : "Endgültig löschen"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

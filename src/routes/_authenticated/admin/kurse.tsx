@@ -15,6 +15,12 @@ import { toast } from "sonner";
 import { Plus, Trash2, Users, Pencil, Award, Euro } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
+  beforeLoad: async () => {
+    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { redirect } = await import("@tanstack/react-router");
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
+    catch { throw redirect({ to: "/portal" }); }
+  },
   component: Page,
 });
 

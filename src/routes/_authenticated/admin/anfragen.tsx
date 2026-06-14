@@ -30,6 +30,12 @@ type CourseOpt = { id: string; name: string; status: string; max_participants: n
 
 
 export const Route = createFileRoute("/_authenticated/admin/anfragen")({
+  beforeLoad: async () => {
+    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { redirect } = await import("@tanstack/react-router");
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
+    catch { throw redirect({ to: "/admin/benutzer" }); }
+  },
   component: AnfragenAdmin,
 });
 

@@ -15,6 +15,12 @@ import { Plus, Trash2 } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/events")({
+  beforeLoad: async () => {
+    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { redirect } = await import("@tanstack/react-router");
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
+    catch { throw redirect({ to: "/admin/benutzer" }); }
+  },
   component: Page,
 });
 
