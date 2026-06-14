@@ -387,6 +387,18 @@ function Page() {
                     <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a>. *</span>
                   </label>
                 </div>
+
+                <div className="border-t pt-5">
+                  <h3 className="font-semibold text-primary-deep mb-1">Mitgliederkonto (optional)</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Wir legen für Sie automatisch ein Konto für den Mitgliederbereich an. Sie können hier direkt ein Passwort vergeben — oder das Feld leer lassen, dann erhalten Sie per E-Mail einen Link, um Ihr Passwort selbst zu setzen. Die Freischaltung erfolgt nach Prüfung durch den Vereinsvorstand.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div><Label htmlFor="account_password">Passwort (mind. 8 Zeichen, optional)</Label><Input id="account_password" type="password" name="account_password" minLength={8} autoComplete="new-password" /></div>
+                    <div><Label htmlFor="account_password_confirm">Passwort wiederholen</Label><Input id="account_password_confirm" type="password" name="account_password_confirm" minLength={8} autoComplete="new-password" /></div>
+                  </div>
+                </div>
+
                 <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
                   {loading ? "Wird gesendet..." : "Mitgliedsantrag absenden"}
                 </Button>
