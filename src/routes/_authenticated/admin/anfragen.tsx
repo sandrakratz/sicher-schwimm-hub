@@ -129,6 +129,15 @@ function AnfragenAdmin() {
     } finally { setBusy(false); }
   }
 
+  async function doDelete(id: string) {
+    if (!confirm("Diese Kursanfrage wirklich endgültig löschen?")) return;
+    const { error } = await supabase.from("course_requests").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Anfrage gelöscht");
+    setSelected(null);
+    await load();
+  }
+
 
   return (
     <div className="max-w-6xl">
@@ -282,6 +291,7 @@ function AnfragenAdmin() {
               <Button variant="outline" onClick={() => setStatus(selected.id, "waiting_list")}>Warteliste</Button>
               <Button variant="accent" onClick={() => setStatus(selected.id, "accepted")}>Akzeptieren</Button>
               <Button variant="destructive" onClick={() => setStatus(selected.id, "rejected")}>Ablehnen</Button>
+              <Button variant="destructive" onClick={() => doDelete(selected.id)}>Löschen</Button>
               <Button variant="ghost" onClick={() => setSelected(null)}>Schließen</Button>
             </>}
           </DialogFooter>
