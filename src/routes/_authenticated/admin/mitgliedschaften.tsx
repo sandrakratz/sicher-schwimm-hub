@@ -123,6 +123,13 @@ function Page() {
     else { toast.success("Aktualisiert"); load(); setSelected(null); }
   }
 
+  async function deleteMembership(id: string) {
+    if (!confirm("Diese Mitgliedschaft wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
+    const { error } = await supabase.from("memberships").delete().eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Mitgliedschaft gelöscht"); setSelected(null); load(); }
+  }
+
   async function saveFamily(family_members: FamilyMembers) {
     if (!selected) return;
     const { error } = await supabase.from("memberships").update({ family_members: family_members as any }).eq("id", selected.id);
