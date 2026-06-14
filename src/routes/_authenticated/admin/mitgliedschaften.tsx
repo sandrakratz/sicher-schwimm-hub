@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { setMembershipStatus, deleteMembership as deleteMembershipFn } from "@/lib/membership.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/mitgliedschaften")({
   beforeLoad: async () => {
@@ -109,6 +111,8 @@ function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [editingFamily, setEditingFamily] = useState(false);
+  const setStatusFn = useServerFn(setMembershipStatus);
+  const deleteFn = useServerFn(deleteMembershipFn);
 
   async function load() {
     const { data } = await supabase.from("memberships").select("*").order("created_at", { ascending: false });
@@ -121,19 +125,22 @@ function Page() {
   useEffect(() => { load(); }, []);
 
   async function setStatus(id: string, status: "pending" | "active" | "suspended" | "terminated") {
-    const { error } = await supabase.from("memberships").update({
-      status,
-      approved_at: status === "active" ? new Date().toISOString() : null,
-    }).eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Aktualisiert"); load(); setSelected(null); }
+    try {
+      await setStatusFn({ data: { id, status } });
+      toast.success("Aktualisiert"); load(); setSelected(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Fehler");
+    }
   }
 
   async function deleteMembership(id: string) {
     if (!confirm("Diese Mitgliedschaft wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.")) return;
-    const { error } = await supabase.from("memberships").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Mitgliedschaft gelöscht"); setSelected(null); load(); }
+    try {
+      await deleteFn({ data: { id } });
+      toast.success("Mitgliedschaft gelöscht"); setSelected(null); load();
+    } catch (e: any) {
+      toast.error(e?.message || "Fehler");
+    }
   }
 
   async function saveFamily(family_members: FamilyMembers) {
