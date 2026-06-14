@@ -256,6 +256,7 @@ function Page() {
                 {selected.status !== "active" && <Button variant="accent" onClick={() => setStatus(selected.id, "active")}>Genehmigen</Button>}
                 {selected.status !== "suspended" && <Button variant="outline" onClick={() => setStatus(selected.id, "suspended")}>Pausieren</Button>}
                 {selected.status !== "terminated" && <Button variant="outline" onClick={() => setStatus(selected.id, "terminated")}>Ablehnen / Beenden</Button>}
+                <Button variant="destructive" onClick={() => deleteMembership(selected.id)}><Trash2 className="h-3.5 w-3.5 mr-1" />Löschen</Button>
                 <Button variant="ghost" onClick={() => { setSelected(null); setEditingFamily(false); }} className="ml-auto">Schließen</Button>
               </div>
             </div>
