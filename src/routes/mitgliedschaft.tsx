@@ -12,6 +12,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useServerFn } from "@tanstack/react-start";
+import { submitMembershipSignup } from "@/lib/membership-signup.functions";
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
@@ -79,15 +81,20 @@ function Page() {
   const [tier, setTier] = useState("family");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [submitted, setSubmitted] = useState<{ email: string; first_name: string; last_name: string } | null>(null);
-  const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [signupLoading, setSignupLoading] = useState(false);
-  const [signupResult, setSignupResult] = useState<"idle" | "ok" | "exists">("idle");
+  const [accountResult, setAccountResult] = useState<"none" | "created" | "created_no_password" | "exists" | "failed">("none");
+  const signupFn = useServerFn(submitMembershipSignup);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const rawPassword = String(fd.get("account_password") || "").trim();
+    const rawPasswordConfirm = String(fd.get("account_password_confirm") || "").trim();
+
+    if (rawPassword || rawPasswordConfirm) {
+      if (rawPassword.length < 8) { toast.error("Passwort muss mindestens 8 Zeichen lang sein."); return; }
+      if (rawPassword !== rawPasswordConfirm) { toast.error("Passwörter stimmen nicht überein."); return; }
+    }
+
     const obj: Record<string, unknown> = {
       membership_type: tier,
       first_name: fd.get("first_name"),
@@ -132,8 +139,8 @@ function Page() {
       family_members,
       consent_at: createdAt,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       console.warn("[memberships.insert]", error.code, error.message);
       toast.error("Antrag konnte nicht gesendet werden.");
       return;
@@ -156,40 +163,26 @@ function Page() {
         },
       }),
     }).catch(() => {});
-    setSubmitted({
-      email: parsed.data.email,
-      first_name: parsed.data.first_name,
-      last_name: parsed.data.last_name,
-    });
+
+    // Konto automatisch anlegen (pending bis Admin-Freigabe)
+    try {
+      const result = await signupFn({
+        data: {
+          email: parsed.data.email,
+          first_name: parsed.data.first_name,
+          last_name: parsed.data.last_name,
+          password: rawPassword || undefined,
+        },
+      });
+      setAccountResult(result.status);
+    } catch (err) {
+      console.warn("[membership-signup]", err);
+      setAccountResult("failed");
+    }
+
+    setLoading(false);
     setDone(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function onCreateAccount() {
-    if (!submitted) return;
-    if (password.length < 8) { toast.error("Passwort muss mind. 8 Zeichen lang sein."); return; }
-    if (password !== passwordConfirm) { toast.error("Passwörter stimmen nicht überein."); return; }
-    setSignupLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: submitted.email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin + "/portal",
-        data: { first_name: submitted.first_name, last_name: submitted.last_name },
-      },
-    });
-    setSignupLoading(false);
-    if (error) {
-      if (/already|registered|exists/i.test(error.message)) {
-        setSignupResult("exists");
-      } else {
-        toast.error(error.message);
-      }
-      return;
-    }
-    setSignupResult("ok");
-    setPassword("");
-    setPasswordConfirm("");
   }
 
   return (
@@ -203,47 +196,33 @@ function Page() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {submitted && signupResult === "idle" && (
-            <div className="mt-2 rounded-md border bg-muted/30 p-4 space-y-3">
-              <div>
-                <h4 className="font-semibold text-primary-deep">Konto anlegen (empfohlen)</h4>
-                <p className="text-xs text-muted-foreground">
-                  Legen Sie direkt Ihr Konto an, um nach der Freischaltung Zugang zum Mitgliederbereich zu erhalten.
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="acct_email">E-Mail</Label>
-                <Input id="acct_email" type="email" value={submitted.email} readOnly className="bg-muted" />
-              </div>
-              <div>
-                <Label htmlFor="acct_pw">Passwort (mind. 8 Zeichen)</Label>
-                <Input id="acct_pw" type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} autoComplete="new-password" />
-              </div>
-              <div>
-                <Label htmlFor="acct_pw2">Passwort wiederholen</Label>
-                <Input id="acct_pw2" type="password" value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} minLength={8} autoComplete="new-password" />
-              </div>
-              <Button onClick={onCreateAccount} disabled={signupLoading} variant="accent" className="w-full">
-                {signupLoading ? "Wird angelegt…" : "Konto erstellen"}
-              </Button>
-            </div>
-          )}
-
-          {signupResult === "ok" && (
+          {accountResult === "created" && (
             <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-              Konto wurde angelegt. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade gesendet haben. Die Freischaltung erfolgt anschließend durch einen Administrator.
+              Ihr Konto wurde angelegt. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade gesendet haben. Die Freischaltung erfolgt anschließend durch den Vereinsvorstand.
             </div>
           )}
 
-          {signupResult === "exists" && (
+          {accountResult === "created_no_password" && (
+            <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+              Ihr Konto wurde angelegt. Wir haben Ihnen eine E-Mail gesendet, mit der Sie Ihr Passwort vergeben können. Nach Bestätigung Ihrer E-Mail wird Ihr Konto vom Vereinsvorstand freigeschaltet.
+            </div>
+          )}
+
+          {accountResult === "exists" && (
             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 space-y-2">
-              <p>Für diese E-Mail existiert bereits ein Konto.</p>
+              <p>Für diese E-Mail existiert bereits ein Konto. Sie können sich direkt anmelden.</p>
               <Button asChild variant="outline" size="sm"><a href="/auth">Zum Login</a></Button>
             </div>
           )}
 
+          {accountResult === "failed" && (
+            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              Ihr Antrag wurde gespeichert, das automatische Anlegen Ihres Kontos ist jedoch fehlgeschlagen. Der Vorstand wird Sie kontaktieren.
+            </div>
+          )}
+
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setDone(false); setSignupResult("idle"); }}>Schließen</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setDone(false); setAccountResult("none"); }}>Schließen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -408,6 +387,18 @@ function Page() {
                     <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a>. *</span>
                   </label>
                 </div>
+
+                <div className="border-t pt-5">
+                  <h3 className="font-semibold text-primary-deep mb-1">Mitgliederkonto (optional)</h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Wir legen für Sie automatisch ein Konto für den Mitgliederbereich an. Sie können hier direkt ein Passwort vergeben — oder das Feld leer lassen, dann erhalten Sie per E-Mail einen Link, um Ihr Passwort selbst zu setzen. Die Freischaltung erfolgt nach Prüfung durch den Vereinsvorstand.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div><Label htmlFor="account_password">Passwort (mind. 8 Zeichen, optional)</Label><Input id="account_password" type="password" name="account_password" minLength={8} autoComplete="new-password" /></div>
+                    <div><Label htmlFor="account_password_confirm">Passwort wiederholen</Label><Input id="account_password_confirm" type="password" name="account_password_confirm" minLength={8} autoComplete="new-password" /></div>
+                  </div>
+                </div>
+
                 <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
                   {loading ? "Wird gesendet..." : "Mitgliedsantrag absenden"}
                 </Button>
