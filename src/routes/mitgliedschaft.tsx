@@ -12,6 +12,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useServerFn } from "@tanstack/react-start";
+import { submitMembershipSignup } from "@/lib/membership-signup.functions";
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
@@ -79,15 +81,20 @@ function Page() {
   const [tier, setTier] = useState("family");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [submitted, setSubmitted] = useState<{ email: string; first_name: string; last_name: string } | null>(null);
-  const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [signupLoading, setSignupLoading] = useState(false);
-  const [signupResult, setSignupResult] = useState<"idle" | "ok" | "exists">("idle");
+  const [accountResult, setAccountResult] = useState<"none" | "created" | "created_no_password" | "exists" | "failed">("none");
+  const signupFn = useServerFn(submitMembershipSignup);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const rawPassword = String(fd.get("account_password") || "").trim();
+    const rawPasswordConfirm = String(fd.get("account_password_confirm") || "").trim();
+
+    if (rawPassword || rawPasswordConfirm) {
+      if (rawPassword.length < 8) { toast.error("Passwort muss mindestens 8 Zeichen lang sein."); return; }
+      if (rawPassword !== rawPasswordConfirm) { toast.error("Passwörter stimmen nicht überein."); return; }
+    }
+
     const obj: Record<string, unknown> = {
       membership_type: tier,
       first_name: fd.get("first_name"),
@@ -132,8 +139,8 @@ function Page() {
       family_members,
       consent_at: createdAt,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       console.warn("[memberships.insert]", error.code, error.message);
       toast.error("Antrag konnte nicht gesendet werden.");
       return;
@@ -156,40 +163,26 @@ function Page() {
         },
       }),
     }).catch(() => {});
-    setSubmitted({
-      email: parsed.data.email,
-      first_name: parsed.data.first_name,
-      last_name: parsed.data.last_name,
-    });
+
+    // Konto automatisch anlegen (pending bis Admin-Freigabe)
+    try {
+      const result = await signupFn({
+        data: {
+          email: parsed.data.email,
+          first_name: parsed.data.first_name,
+          last_name: parsed.data.last_name,
+          password: rawPassword || undefined,
+        },
+      });
+      setAccountResult(result.status);
+    } catch (err) {
+      console.warn("[membership-signup]", err);
+      setAccountResult("failed");
+    }
+
+    setLoading(false);
     setDone(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  async function onCreateAccount() {
-    if (!submitted) return;
-    if (password.length < 8) { toast.error("Passwort muss mind. 8 Zeichen lang sein."); return; }
-    if (password !== passwordConfirm) { toast.error("Passwörter stimmen nicht überein."); return; }
-    setSignupLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: submitted.email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin + "/portal",
-        data: { first_name: submitted.first_name, last_name: submitted.last_name },
-      },
-    });
-    setSignupLoading(false);
-    if (error) {
-      if (/already|registered|exists/i.test(error.message)) {
-        setSignupResult("exists");
-      } else {
-        toast.error(error.message);
-      }
-      return;
-    }
-    setSignupResult("ok");
-    setPassword("");
-    setPasswordConfirm("");
   }
 
   return (
