@@ -1,31 +1,42 @@
-## Problem
+## Ziel
 
-Bei den öffentlichen Formularen (Kursanfrage/Warteliste, Mitgliedsantrag, Kontakt) passiert nach „Absenden" sichtbar nichts und die Anfrage taucht nicht im Admin-Panel auf.
+Reihenfolge erzwingen: zuerst Mitgliedsantrag, dann (optional sofort) Kontoanlage. Freie Registrierung auf `/auth` wird gesperrt, neue Konten entstehen ausschließlich aus dem Mitgliedsantrag-Flow heraus.
 
-## Ursache
+## Änderungen
 
-Alle drei Formulare führen nach `insert` ein `.select("id, created_at").maybeSingle()` aus. Die RLS-Policies erlauben anonymen Besuchern nur INSERT, **nicht SELECT** (`Staff view requests` etc. sind auf `authenticated` + `is_staff` beschränkt). Damit liefert PostgREST nach erfolgreichem Insert einen RLS-Fehler beim Zurücklesen → `error` ist gesetzt → die Funktion bricht mit `toast.error` ab und das Bestätigungs-Dialogfenster (`setDone(true)`) wird nie ausgelöst. Je nach Race kann sogar der Insert komplett zurückrollen, sodass im Admin nichts erscheint.
+### 1. `/auth` — Registrierung sichtbar, aber gesperrt
+- Bestehende Tabs „Anmelden | Registrieren" bleiben.
+- Im Tab „Registrieren" wird das Formular durch eine Hinweis-Card ersetzt:
+  > „Eine Registrierung ist nur über einen Mitgliedsantrag möglich. Bitte stellen Sie zuerst Ihren Mitgliedsantrag — direkt im Anschluss können Sie Ihr Konto anlegen."
+  - Button „Zum Mitgliedsantrag" → `/mitgliedschaft`.
+- Bestehender `signUp`-Code und `signupDone`-Dialog werden entfernt (Dead Code), damit niemand das Formular per DevTools nutzen kann.
+- „Passwort vergessen" bleibt unverändert verfügbar.
 
-Belege:
-- `course_requests` Policies: nur `is_staff` darf SELECT, anon nur INSERT.
-- `messages`, `memberships`: gleiches Muster.
-- Datenbank zeigt nur 2 alte Einträge in `course_requests` (vermutlich durch eingeloggte Staff-Tests).
+### 2. `/mitgliedschaft` — Konto-Erstellung im Erfolgsdialog
+- Nach erfolgreichem Insert öffnet wie bisher der `AlertDialog` „Mitgliedsantrag eingegangen".
+- Neuer Inhalt im Dialog: zusätzlicher Abschnitt **„Konto anlegen (optional, empfohlen)"** mit
+  - vorbelegtem, schreibgeschütztem E-Mail-Feld (`parsed.data.email`),
+  - zwei Passwortfeldern (`password`, `password_confirm`, min. 8 Zeichen),
+  - Button **„Konto erstellen"** → `supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + "/portal", data: { first_name, last_name } } })`.
+- Erfolg: Statusmeldung „Konto wurde angelegt. Bitte bestätigen Sie Ihre E-Mail-Adresse. Die Freischaltung erfolgt durch einen Admin." + Button „OK".
+- Bei Fehler `User already registered`: freundlicher Hinweis „Für diese E-Mail existiert bereits ein Konto" + Link „Zum Login".
+- Sekundär-Button „Überspringen / Schließen" bleibt — Antrag ist ja schon gespeichert.
 
-## Fix
+### 3. Admin-Benachrichtigung
+- Bestehender `notify-admin` Aufruf (Template `membership-application`) bleibt unverändert.
+- Die separate `new-registration`-Mail (aus `auth.tsx`) entfällt ersatzlos — sie wurde nur vom alten Registrierungs-Flow getriggert; der Mitgliedsantrag deckt das ab.
 
-Bei anonymen Inserts kein `.select()` anhängen. Stattdessen idempotency key clientseitig erzeugen und `created_at` lokal setzen. Damit gelingt der Insert ohne SELECT-Berechtigung, der Bestätigungsdialog erscheint, und die Admin-Benachrichtigung wird trotzdem in die Queue gestellt.
+### 4. Keine Backend-/Policy-Änderungen
+- `auth.signUp` bleibt serverseitig erlaubt (Supabase Auth Setting wird **nicht** auf `disable_signup` gestellt), sonst würde der Mitgliedsantrag-Flow scheitern.
+- Schutz „nur über Antrag" ist eine UI-Konvention; Power-User könnten technisch noch `auth.signUp` aufrufen — das ist akzeptabel, da die Admin-Freischaltung über Rollen/Mitgliedschaft den Zugriff aufs Portal weiterhin steuert.
 
-### Änderungen
+## Dateien
 
-1. **`src/routes/kurs-anfragen.tsx`** — `insert(...).select(...).maybeSingle()` ersetzen durch reines `insert(...)`. `idempotencyKey` aus `crypto.randomUUID()` und `created_at: new Date().toISOString()` an `notify-admin` übergeben.
-2. **`src/routes/mitgliedschaft.tsx`** — gleicher Umbau am Insert-Aufruf.
-3. **`src/routes/kontakt.tsx`** — gleicher Umbau am Insert-Aufruf.
-4. **Diagnose-Log** — bei `error` einmalig `console.warn` mit Code/Message, damit zukünftige RLS-Probleme im Browser-Log sichtbar sind (nicht nur generischer Toast).
-
-Keine Änderung an Policies, kein neues Backend, keine UI-Änderungen außer der bereits vorhandenen Erfolgsdialoge — die feuern danach zuverlässig.
+- `src/routes/auth.tsx` — Registrierungs-Tab durch Hinweis-Card ersetzen, Signup-Code/`signupDone`-Dialog entfernen.
+- `src/routes/mitgliedschaft.tsx` — Erfolgsdialog erweitern: optionaler „Konto anlegen"-Block mit Passwortfeldern + `supabase.auth.signUp`.
 
 ## Verifikation
 
-- Im Inkognito-Modus jedes der drei Formulare ausfüllen → Bestätigungsdialog erscheint.
-- `SELECT count(*)` auf `course_requests`, `messages`, `memberships` zeigt die neuen Zeilen.
-- `email_send_log` enthält `pending`/`sent` für `course-request`, `contact-message`, `membership-application`.
+- `/auth` → Tab „Registrieren": zeigt Hinweis + Link, kein Formular.
+- `/mitgliedschaft` ausfüllen → Dialog erscheint, Passwort setzen → Konto wird in `auth.users` angelegt, Bestätigungs-E-Mail geht raus, Admin-Mail für Antrag kommt an.
+- Mit bereits existierender E-Mail im Antrag: Antrag wird gespeichert, Konto-Schritt zeigt freundlichen Fehler.
