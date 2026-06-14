@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Waves, ArrowLeft } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Waves, ArrowLeft, Info } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 
@@ -20,7 +19,6 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [signupDone, setSignupDone] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -41,7 +39,6 @@ function AuthPage() {
     });
     if (error) { setLoading(false); toast.error(error.message); return; }
 
-    // Status-Check: nur freigeschaltete Konten dürfen ins Portal
     const userId = signIn.user?.id;
     if (userId) {
       const { data: profile } = await supabase
@@ -65,35 +62,6 @@ function AuthPage() {
     navigate({ to: "/portal" });
   }
 
-  async function onSignup(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const first_name = String(fd.get("first_name") || "");
-    const last_name = String(fd.get("last_name") || "");
-    const email = String(fd.get("email") || "");
-    setLoading(true);
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email,
-      password: String(fd.get("password")),
-      options: {
-        emailRedirectTo: window.location.origin + "/portal",
-        data: { first_name, last_name },
-      },
-    });
-    setLoading(false);
-    if (error) { toast.error(error.message); return; }
-    fetch("/api/public/notify-admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        templateName: "new-registration",
-        idempotencyKey: signUpData.user?.id ? `new-registration-${signUpData.user.id}` : undefined,
-        templateData: { first_name, last_name, email, created_at: new Date().toISOString() },
-      }),
-    }).catch(() => {});
-    setSignupDone(true);
-  }
-
   async function onReset() {
     const email = prompt("E-Mail-Adresse für Passwort-Reset:");
     if (!email) return;
@@ -106,19 +74,6 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen bg-hero flex items-center justify-center p-4">
-      <AlertDialog open={signupDone}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Registrierung vorgemerkt</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ihre Registrierung ist vorgemerkt und wird durch einen Administrator freigeschaltet. Sie erhalten eine E-Mail, sobald Ihr Konto aktiv ist. Bitte bestätigen Sie zunächst Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade gesendet haben.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setSignupDone(false)}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <div className="absolute top-4 left-4">
         <Button asChild variant="heroOutline" size="sm"><Link to="/"><ArrowLeft className="h-4 w-4" />Zur Webseite</Link></Button>
       </div>
@@ -143,16 +98,22 @@ function AuthPage() {
               </form>
             </TabsContent>
             <TabsContent value="signup">
-              <form onSubmit={onSignup} className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label htmlFor="first_name">Vorname</Label><Input id="first_name" name="first_name" required /></div>
-                  <div><Label htmlFor="last_name">Nachname</Label><Input id="last_name" name="last_name" required /></div>
+              <div className="pt-4 space-y-4">
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
+                  <div className="flex gap-2 items-start">
+                    <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-primary-deep mb-1">Registrierung nur über Mitgliedsantrag</p>
+                      <p className="text-muted-foreground">
+                        Eine direkte Registrierung ist nicht möglich. Bitte stellen Sie zuerst Ihren Mitgliedsantrag — am Ende des Formulars können Sie Ihr Konto direkt anlegen.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div><Label htmlFor="signup_email">E-Mail</Label><Input id="signup_email" type="email" name="email" required /></div>
-                <div><Label htmlFor="signup_password">Passwort (min. 8 Zeichen)</Label><Input id="signup_password" type="password" name="password" required minLength={8} /></div>
-                <Button type="submit" variant="accent" className="w-full" disabled={loading}>Registrieren</Button>
-                <p className="text-xs text-muted-foreground text-center">Nach der E-Mail-Bestätigung muss dein Konto noch von einem Administrator freigeschaltet werden.</p>
-              </form>
+                <Button asChild variant="accent" className="w-full">
+                  <Link to="/mitgliedschaft">Zum Mitgliedsantrag</Link>
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
