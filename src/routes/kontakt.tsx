@@ -73,16 +73,22 @@ function Page() {
     });
     if (!parsed.success) { toast.error("Bitte Eingaben prüfen"); return; }
     setLoading(true);
-    const { data: inserted, error } = await supabase.from("messages").insert(parsed.data).select("id, created_at").maybeSingle();
+    const idem = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    const createdAt = new Date().toISOString();
+    const { error } = await supabase.from("messages").insert(parsed.data);
     setLoading(false);
-    if (error) { toast.error("Nachricht konnte nicht gesendet werden"); return; }
+    if (error) {
+      console.warn("[messages.insert]", error.code, error.message);
+      toast.error("Nachricht konnte nicht gesendet werden");
+      return;
+    }
     fetch("/api/public/notify-admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         templateName: "contact-message",
-        idempotencyKey: inserted?.id ? `contact-message-${inserted.id}` : undefined,
-        templateData: { ...parsed.data, created_at: inserted?.created_at || new Date().toISOString() },
+        idempotencyKey: `contact-message-${idem}`,
+        templateData: { ...parsed.data, created_at: createdAt },
       }),
     }).catch(() => {});
     setDone(true);

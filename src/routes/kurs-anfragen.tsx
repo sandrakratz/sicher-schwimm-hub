@@ -67,12 +67,15 @@ function RequestPage() {
       return;
     }
     setLoading(true);
-    const { data: inserted, error } = await supabase.from("course_requests").insert({
+    const idem = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    const createdAt = new Date().toISOString();
+    const { error } = await supabase.from("course_requests").insert({
       ...parsed.data,
       child_dob: parsed.data.child_dob || null,
-    }).select("id, created_at").maybeSingle();
+    });
     setLoading(false);
     if (error) {
+      console.warn("[course_requests.insert]", error.code, error.message);
       toast.error("Anfrage konnte nicht gesendet werden");
       return;
     }
@@ -81,8 +84,8 @@ function RequestPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         templateName: "course-request",
-        idempotencyKey: inserted?.id ? `course-request-${inserted.id}` : undefined,
-        templateData: { ...parsed.data, created_at: inserted?.created_at || new Date().toISOString() },
+        idempotencyKey: `course-request-${idem}`,
+        templateData: { ...parsed.data, created_at: createdAt },
       }),
     }).catch(() => {});
     setDone(true);

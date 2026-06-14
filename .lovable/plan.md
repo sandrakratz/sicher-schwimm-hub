@@ -1,42 +1,31 @@
-# Plan: Vier offene Punkte beheben
+## Problem
 
-## 1. Bestätigungs-Dialog nach Formularversand (Kontakt, Mitgliedsantrag, Kursanfrage)
+Bei den öffentlichen Formularen (Kursanfrage/Warteliste, Mitgliedsantrag, Kontakt) passiert nach „Absenden" sichtbar nichts und die Anfrage taucht nicht im Admin-Panel auf.
 
-Die Formulare funktionieren bereits ohne Login (RLS-Policies erlauben `anon` INSERT auf `messages`, `memberships`, `course_requests`). Aktuell wird nach erfolgreichem Versand nur die Karte ausgetauscht — der Nutzer übersieht das leicht.
+## Ursache
 
-Änderung: einen modalen Dialog (`AlertDialog` aus `@/components/ui/alert-dialog`) öffnen, sobald `done = true`. Inhalt jeweils:
+Alle drei Formulare führen nach `insert` ein `.select("id, created_at").maybeSingle()` aus. Die RLS-Policies erlauben anonymen Besuchern nur INSERT, **nicht SELECT** (`Staff view requests` etc. sind auf `authenticated` + `is_staff` beschränkt). Damit liefert PostgREST nach erfolgreichem Insert einen RLS-Fehler beim Zurücklesen → `error` ist gesetzt → die Funktion bricht mit `toast.error` ab und das Bestätigungs-Dialogfenster (`setDone(true)`) wird nie ausgelöst. Je nach Race kann sogar der Insert komplett zurückrollen, sodass im Admin nichts erscheint.
 
-- **Kontakt** (`src/routes/kontakt.tsx`): „Vielen Dank! Ihre Nachricht ist bei uns eingegangen und wird von unserem Team bearbeitet. Wir melden uns so schnell wie möglich."
-- **Mitgliedsantrag** (`src/routes/mitgliedschaft.tsx`): „Ihr Mitgliedsantrag ist eingegangen. Er wird vom Vereinsvorstand geprüft. Sie erhalten eine Rückmeldung per E-Mail."
-- **Kursanfrage / Warteliste** (`src/routes/kurs-anfragen.tsx`): „Ihre Kursanfrage ist eingegangen und wird bearbeitet. Wir melden uns mit den nächsten Schritten."
+Belege:
+- `course_requests` Policies: nur `is_staff` darf SELECT, anon nur INSERT.
+- `messages`, `memberships`: gleiches Muster.
+- Datenbank zeigt nur 2 alte Einträge in `course_requests` (vermutlich durch eingeloggte Staff-Tests).
 
-Dialog enthält einen „OK / Zur Startseite"-Button. Bestehende Inline-Erfolgskarten bleiben als Fallback nach Dialog-Close stehen.
+## Fix
 
-## 2. Bestätigungs-Dialog nach Registrierung
+Bei anonymen Inserts kein `.select()` anhängen. Stattdessen idempotency key clientseitig erzeugen und `created_at` lokal setzen. Damit gelingt der Insert ohne SELECT-Berechtigung, der Bestätigungsdialog erscheint, und die Admin-Benachrichtigung wird trotzdem in die Queue gestellt.
 
-In `src/routes/auth.tsx` nach erfolgreichem `supabase.auth.signUp`: gleichen `AlertDialog` zeigen mit Text „Ihre Registrierung ist vorgemerkt und wird durch einen Administrator freigeschaltet. Sie erhalten eine E-Mail, sobald Ihr Konto aktiv ist." Erst nach Klick auf „OK" wird auf den Login-Tab gewechselt.
+### Änderungen
 
-## 3. Admin-Benachrichtigungs-E-Mails reparieren
+1. **`src/routes/kurs-anfragen.tsx`** — `insert(...).select(...).maybeSingle()` ersetzen durch reines `insert(...)`. `idempotencyKey` aus `crypto.randomUUID()` und `created_at: new Date().toISOString()` an `notify-admin` übergeben.
+2. **`src/routes/mitgliedschaft.tsx`** — gleicher Umbau am Insert-Aufruf.
+3. **`src/routes/kontakt.tsx`** — gleicher Umbau am Insert-Aufruf.
+4. **Diagnose-Log** — bei `error` einmalig `console.warn` mit Code/Message, damit zukünftige RLS-Probleme im Browser-Log sichtbar sind (nicht nur generischer Toast).
 
-**Ursache:** Im `email_send_log` schlagen alle Admin-Mails (Templates `new-registration`, `membership-application`, künftig `contact-message`, `course-request`) mit `400 missing_unsubscribe — Transactional emails must include an unsubscribe_token` fehl. Die Datei `src/routes/api/public/notify-admin.ts` legt die Nachricht in die Queue, ohne vorher einen Unsubscribe-Token zu erzeugen.
+Keine Änderung an Policies, kein neues Backend, keine UI-Änderungen außer der bereits vorhandenen Erfolgsdialoge — die feuern danach zuverlässig.
 
-**Fix:** `notify-admin.ts` analog zu `src/routes/lovable/email/transactional/send.ts` erweitern:
-1. Empfänger `template.to` normalisieren.
-2. `suppressed_emails` prüfen (fail-closed).
-3. Vorhandenen Token in `email_unsubscribe_tokens` lesen oder per `upsert` neu anlegen.
-4. `unsubscribe_token` im Queue-Payload mitliefern.
+## Verifikation
 
-Damit gehen Mails an `info@sicher-schwimmen.com` für Kontaktnachrichten, Kursanfragen, Mitgliedsanträge und Neuregistrierungen wieder raus. Push-Nachrichten benötigen zusätzliche Infrastruktur (Service Worker + Web-Push-Subscription, FCM-Setup), deshalb bleibt es bei der einfacheren E-Mail-Lösung — falls Push gewünscht ist, separat planen.
-
-Verifizieren: nach Deploy einen Testkontakt absenden und `SELECT … FROM email_send_log ORDER BY created_at DESC LIMIT 3` prüfen — Status `sent` erwartet.
-
-## 4. Beschriftung im Admin-Dashboard
-
-In `src/routes/_authenticated/admin/index.tsx` Zeile 28: Label `"Aktive Mitglieder"` → `"Aktive Benutzer"`. Sonst keine Änderung; die Stat-Quelle (`stats.members`) bleibt.
-
-## Technische Details
-
-- Neue Datei nicht nötig — `AlertDialog` ist bereits installiert (`src/components/ui/alert-dialog.tsx`).
-- `notify-admin.ts` darf `crypto.getRandomValues` verwenden (in Worker-Runtime verfügbar).
-- Keine Migration nötig (RLS- und Storage-Policies sind unverändert).
-- `templateData` für `contact-message` und `course-request` müssen die jeweiligen Felder unverändert beibehalten.
+- Im Inkognito-Modus jedes der drei Formulare ausfüllen → Bestätigungsdialog erscheint.
+- `SELECT count(*)` auf `course_requests`, `messages`, `memberships` zeigt die neuen Zeilen.
+- `email_send_log` enthält `pending`/`sent` für `course-request`, `contact-message`, `membership-application`.
