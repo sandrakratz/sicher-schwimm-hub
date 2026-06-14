@@ -11,6 +11,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/kurs-anfragen")({
   head: () => ({
@@ -90,6 +91,19 @@ function RequestPage() {
   if (done) {
     return (
       <PublicLayout>
+        <AlertDialog open={done}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Anfrage eingegangen</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ihre Kursanfrage ist eingegangen und wird bearbeitet. Wir melden uns mit den nächsten Schritten per E-Mail.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setDone(false)}>OK</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <section className="container mx-auto px-4 py-24 text-center max-w-xl">
           <CheckCircle2 className="h-16 w-16 text-success mx-auto mb-6" />
           <h1 className="font-display text-4xl font-bold text-primary-deep mb-4">Vielen Dank!</h1>

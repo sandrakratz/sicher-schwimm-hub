@@ -25,7 +25,7 @@ function AdminDashboard() {
   const cards = [
     { icon: ListChecks, label: "Neue Kursanfragen", value: stats.requests, to: "/admin/anfragen" as const },
     { icon: Users, label: "Mitgliedsanträge offen", value: stats.memberships, to: "/admin/mitgliedschaften" as const },
-    { icon: Users, label: "Aktive Mitglieder", value: stats.members, to: "/admin/benutzer" as const },
+    { icon: Users, label: "Aktive Benutzer", value: stats.members, to: "/admin/benutzer" as const },
     { icon: MailOpen, label: "Offene Nachrichten", value: stats.messages, to: "/admin/nachrichten" as const },
   ];
   return (

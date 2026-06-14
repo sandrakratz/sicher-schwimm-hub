@@ -11,6 +11,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/kontakt")({
   head: () => ({
@@ -89,6 +90,19 @@ function Page() {
 
   return (
     <PublicLayout>
+      <AlertDialog open={done}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Nachricht eingegangen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vielen Dank! Ihre Nachricht ist bei uns eingegangen und wird von unserem Team bearbeitet. Wir melden uns so schnell wie möglich.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setDone(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <section className="bg-hero text-white py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="font-display text-5xl font-bold mb-3">Kontakt</h1>

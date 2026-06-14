@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Waves, ArrowLeft } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [signupDone, setSignupDone] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -89,7 +91,7 @@ function AuthPage() {
         templateData: { first_name, last_name, email, created_at: new Date().toISOString() },
       }),
     }).catch(() => {});
-    toast.success("Registrierung eingegangen. Dein Konto wird nach Bestätigung der E-Mail durch einen Administrator freigeschaltet.");
+    setSignupDone(true);
   }
 
   async function onReset() {
@@ -104,6 +106,19 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen bg-hero flex items-center justify-center p-4">
+      <AlertDialog open={signupDone}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrierung vorgemerkt</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ihre Registrierung ist vorgemerkt und wird durch einen Administrator freigeschaltet. Sie erhalten eine E-Mail, sobald Ihr Konto aktiv ist. Bitte bestätigen Sie zunächst Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade gesendet haben.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setSignupDone(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <div className="absolute top-4 left-4">
         <Button asChild variant="heroOutline" size="sm"><Link to="/"><ArrowLeft className="h-4 w-4" />Zur Webseite</Link></Button>
       </div>
