@@ -79,6 +79,11 @@ function Page() {
   const [tier, setTier] = useState("family");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [submitted, setSubmitted] = useState<{ email: string; first_name: string; last_name: string } | null>(null);
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupResult, setSignupResult] = useState<"idle" | "ok" | "exists">("idle");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
