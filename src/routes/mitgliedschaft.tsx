@@ -119,21 +119,27 @@ function Page() {
         .filter(c => c.name.trim())
         .map(c => ({ name: c.name.trim(), date_of_birth: c.date_of_birth || null })),
     } : null;
-    const { data: inserted, error } = await supabase.from("memberships").insert({
+    const idem = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    const createdAt = new Date().toISOString();
+    const { error } = await supabase.from("memberships").insert({
       ...parsed.data,
       date_of_birth: parsed.data.date_of_birth || null,
       family_members,
-      consent_at: new Date().toISOString(),
-    }).select("id, created_at").maybeSingle();
+      consent_at: createdAt,
+    });
     setLoading(false);
-    if (error) { toast.error("Antrag konnte nicht gesendet werden."); return; }
+    if (error) {
+      console.warn("[memberships.insert]", error.code, error.message);
+      toast.error("Antrag konnte nicht gesendet werden.");
+      return;
+    }
     // Fire-and-forget admin notification email
     fetch("/api/public/notify-admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         templateName: "membership-application",
-        idempotencyKey: inserted?.id ? `membership-${inserted.id}` : undefined,
+        idempotencyKey: `membership-${idem}`,
         templateData: {
           full_name: `${parsed.data.first_name} ${parsed.data.last_name}`,
           email: parsed.data.email,
@@ -141,7 +147,7 @@ function Page() {
           city: parsed.data.address_city,
           membership_type: parsed.data.membership_type,
           iban: parsed.data.sepa_iban,
-          created_at: inserted?.created_at || new Date().toISOString(),
+          created_at: createdAt,
         },
       }),
     }).catch(() => {});
