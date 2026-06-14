@@ -156,22 +156,94 @@ function Page() {
         },
       }),
     }).catch(() => {});
+    setSubmitted({
+      email: parsed.data.email,
+      first_name: parsed.data.first_name,
+      last_name: parsed.data.last_name,
+    });
     setDone(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function onCreateAccount() {
+    if (!submitted) return;
+    if (password.length < 8) { toast.error("Passwort muss mind. 8 Zeichen lang sein."); return; }
+    if (password !== passwordConfirm) { toast.error("Passwörter stimmen nicht überein."); return; }
+    setSignupLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email: submitted.email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin + "/portal",
+        data: { first_name: submitted.first_name, last_name: submitted.last_name },
+      },
+    });
+    setSignupLoading(false);
+    if (error) {
+      if (/already|registered|exists/i.test(error.message)) {
+        setSignupResult("exists");
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+    setSignupResult("ok");
+    setPassword("");
+    setPasswordConfirm("");
   }
 
   return (
     <PublicLayout>
       <AlertDialog open={done}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Mitgliedsantrag eingegangen</AlertDialogTitle>
             <AlertDialogDescription>
               Ihr Mitgliedsantrag ist eingegangen. Er wird vom Vereinsvorstand geprüft. Sie erhalten eine Rückmeldung per E-Mail.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {submitted && signupResult === "idle" && (
+            <div className="mt-2 rounded-md border bg-muted/30 p-4 space-y-3">
+              <div>
+                <h4 className="font-semibold text-primary-deep">Konto anlegen (empfohlen)</h4>
+                <p className="text-xs text-muted-foreground">
+                  Legen Sie direkt Ihr Konto an, um nach der Freischaltung Zugang zum Mitgliederbereich zu erhalten.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="acct_email">E-Mail</Label>
+                <Input id="acct_email" type="email" value={submitted.email} readOnly className="bg-muted" />
+              </div>
+              <div>
+                <Label htmlFor="acct_pw">Passwort (mind. 8 Zeichen)</Label>
+                <Input id="acct_pw" type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={8} autoComplete="new-password" />
+              </div>
+              <div>
+                <Label htmlFor="acct_pw2">Passwort wiederholen</Label>
+                <Input id="acct_pw2" type="password" value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} minLength={8} autoComplete="new-password" />
+              </div>
+              <Button onClick={onCreateAccount} disabled={signupLoading} variant="accent" className="w-full">
+                {signupLoading ? "Wird angelegt…" : "Konto erstellen"}
+              </Button>
+            </div>
+          )}
+
+          {signupResult === "ok" && (
+            <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+              Konto wurde angelegt. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen gerade gesendet haben. Die Freischaltung erfolgt anschließend durch einen Administrator.
+            </div>
+          )}
+
+          {signupResult === "exists" && (
+            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 space-y-2">
+              <p>Für diese E-Mail existiert bereits ein Konto.</p>
+              <Button asChild variant="outline" size="sm"><a href="/auth">Zum Login</a></Button>
+            </div>
+          )}
+
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setDone(false)}>OK</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setDone(false); setSignupResult("idle"); }}>Schließen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
