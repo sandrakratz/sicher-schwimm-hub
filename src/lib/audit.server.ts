@@ -25,7 +25,7 @@ export async function logAudit(
       action: entry.action,
       entity: entry.entity,
       entity_id: entry.entity_id ?? null,
-      metadata: entry.metadata ?? null,
+      metadata: (entry.metadata ?? null) as never,
     });
   } catch (err) {
     // Never let audit write failure break the originating operation.
