@@ -8,6 +8,12 @@ const SITE_NAME = 'Sicher Schwimmen e.V.'
 const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
 const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
 
+function generateToken(): string {
+  const bytes = new Uint8Array(32)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 // Public endpoint that sends a notification email to the fixed admin recipient
 // defined in the template (`template.to`). Only templates that declare a
 // fixed `to` address are accepted, so this endpoint cannot be abused to send
@@ -42,6 +48,62 @@ export const Route = createFileRoute('/api/public/notify-admin')({
         const messageId = crypto.randomUUID()
         const idem = idempotencyKey || messageId
         const recipient = template.to
+        const normalizedEmail = recipient.toLowerCase()
+
+        // Suppression check (fail-closed)
+        const { data: suppressed, error: suppressionError } = await supabase
+          .from('suppressed_emails')
+          .select('id')
+          .eq('email', normalizedEmail)
+          .maybeSingle()
+        if (suppressionError) {
+          return Response.json({ error: 'Failed to verify suppression status' }, { status: 500 })
+        }
+        if (suppressed) {
+          await supabase.from('email_send_log').insert({
+            message_id: messageId,
+            template_name: templateName,
+            recipient_email: recipient,
+            status: 'suppressed',
+          })
+          return Response.json({ success: false, reason: 'email_suppressed' })
+        }
+
+        // Get or create unsubscribe token (one per email)
+        let unsubscribeToken: string
+        const { data: existingToken, error: tokenLookupError } = await supabase
+          .from('email_unsubscribe_tokens')
+          .select('token, used_at')
+          .eq('email', normalizedEmail)
+          .maybeSingle()
+        if (tokenLookupError) {
+          return Response.json({ error: 'Failed to prepare email' }, { status: 500 })
+        }
+        if (existingToken && !existingToken.used_at) {
+          unsubscribeToken = existingToken.token
+        } else if (!existingToken) {
+          unsubscribeToken = generateToken()
+          const { error: tokenError } = await supabase
+            .from('email_unsubscribe_tokens')
+            .upsert(
+              { token: unsubscribeToken, email: normalizedEmail },
+              { onConflict: 'email', ignoreDuplicates: true },
+            )
+          if (tokenError) {
+            return Response.json({ error: 'Failed to prepare email' }, { status: 500 })
+          }
+          const { data: storedToken } = await supabase
+            .from('email_unsubscribe_tokens')
+            .select('token')
+            .eq('email', normalizedEmail)
+            .maybeSingle()
+          if (!storedToken) {
+            return Response.json({ error: 'Failed to prepare email' }, { status: 500 })
+          }
+          unsubscribeToken = storedToken.token
+        } else {
+          return Response.json({ success: false, reason: 'email_suppressed' })
+        }
 
         const element = React.createElement(template.component, templateData)
         const html = await render(element)
@@ -68,6 +130,7 @@ export const Route = createFileRoute('/api/public/notify-admin')({
             purpose: 'transactional',
             label: templateName,
             idempotency_key: idem,
+            unsubscribe_token: unsubscribeToken,
             queued_at: new Date().toISOString(),
           },
         })
