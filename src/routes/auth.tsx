@@ -32,12 +32,37 @@ function AuthPage() {
   async function onLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const email = String(fd.get("email"));
     setLoading(true);
     const { data: signIn, error } = await supabase.auth.signInWithPassword({
-      email: String(fd.get("email")),
+      email,
       password: String(fd.get("password")),
     });
-    if (error) { setLoading(false); toast.error(error.message); return; }
+    if (error) {
+      setLoading(false);
+      const code = (error as any).code || "";
+      if (code === "email_not_confirmed" || /not confirmed/i.test(error.message)) {
+        toast.error("E-Mail-Adresse noch nicht bestätigt.", {
+          description: "Bitte bestätige zuerst deine E-Mail-Adresse über den Link, den wir dir zugeschickt haben.",
+          duration: 10000,
+          action: {
+            label: "Erneut senden",
+            onClick: async () => {
+              const { error: rErr } = await supabase.auth.resend({ type: "signup", email });
+              if (rErr) toast.error(rErr.message);
+              else toast.success("Bestätigungs-E-Mail wurde erneut gesendet.");
+            },
+          },
+        });
+        return;
+      }
+      if (code === "invalid_credentials" || /invalid login credentials/i.test(error.message)) {
+        toast.error("Anmeldung fehlgeschlagen", { description: "E-Mail oder Passwort ist falsch.", duration: 8000 });
+        return;
+      }
+      toast.error("Anmeldung fehlgeschlagen", { description: error.message, duration: 8000 });
+      return;
+    }
 
     const userId = signIn.user?.id;
     if (userId) {

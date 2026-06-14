@@ -1,13 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Public server fn invoked from /mitgliedschaft right after the membership
- * application is stored. Creates an auth account in 'pending' status.
+ * application is stored. Creates an auth account that requires email
+ * confirmation. After the user confirms, the admin can activate the profile.
  *
  * NOT auth-protected: the antragsteller is not signed in. We mitigate abuse
  * by requiring a matching memberships row created within the last 10 minutes
- * for the supplied email — i.e. the public form is the only entry point.
+ * for the supplied email.
  */
 export const submitMembershipSignup = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
@@ -42,20 +44,30 @@ export const submitMembershipSignup = createServerFn({ method: "POST" })
     const userProvidedPassword = !!data.password;
     const password = data.password ?? `${crypto.randomUUID()}${crypto.randomUUID()}`;
 
-    const { error } = await supabaseAdmin.auth.admin.createUser({
+    // Use the standard signUp() flow via an anon client so the auth hook
+    // sends the German signup confirmation email. admin.createUser() does
+    // NOT trigger any email, which is why no confirmation arrived previously.
+    const SUPABASE_URL = process.env.SUPABASE_URL!;
+    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY!;
+    const anon = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { error } = await anon.auth.signUp({
       email: data.email,
       password,
-      email_confirm: false,
-      user_metadata: { first_name: data.first_name, last_name: data.last_name },
+      options: {
+        data: { first_name: data.first_name, last_name: data.last_name },
+        emailRedirectTo: "https://sicher-schwimmen.com/auth?pending=1",
+      },
     });
     if (error) {
-      console.error("[membership-signup.createUser]", error);
+      console.error("[membership-signup.signUp]", error);
       throw new Response(error.message, { status: 500 });
     }
 
-    // handle_new_user trigger inserts the profile row with status='pending' by default.
-    // Trigger a recovery email so the user can set their password (covers both
-    // user-supplied and generated-password cases — they may want to change it).
+    // If user did NOT supply a password, also send a recovery email so they
+    // can set their own password after confirming.
     if (!userProvidedPassword) {
       await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
         redirectTo: "https://sicher-schwimmen.com/reset-password",
