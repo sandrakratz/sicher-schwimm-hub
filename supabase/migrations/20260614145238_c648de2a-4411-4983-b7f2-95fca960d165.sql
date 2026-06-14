@@ -1,0 +1,1 @@
+CREATE POLICY "Staff delete requests" ON public.course_requests FOR DELETE TO authenticated USING (is_staff(auth.uid()));
