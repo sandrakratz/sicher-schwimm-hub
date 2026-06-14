@@ -39,9 +39,11 @@ const STATUS_LABEL: Record<string, { label: string; variant: "default" | "second
   cancelled: { label: "Abgesagt", variant: "destructive" },
 };
 
+import { formatDateBerlin } from "@/lib/format";
+
 function fmt(d: string | null) {
   if (!d) return null;
-  try { return new Date(d).toLocaleDateString("de-DE"); } catch { return d; }
+  return formatDateBerlin(d);
 }
 function fmtDuration(d: string | null) {
   if (!d) return null;

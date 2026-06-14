@@ -59,9 +59,10 @@ function ageAt(dobStr: string | null | undefined, refStr: string | null | undefi
   if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
   return age;
 }
+import { formatDateBerlin } from "@/lib/format";
+
 function fmtDate(s: string | null | undefined) {
-  if (!s) return "—";
-  try { return new Date(s).toLocaleDateString("de-DE"); } catch { return s; }
+  return formatDateBerlin(s);
 }
 
 

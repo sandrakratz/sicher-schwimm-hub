@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from '@react-email/components'
 import type { TemplateEntry } from './registry'
+import { formatDateBerlin } from '@/lib/format'
 
 interface Props {
   parent_name?: string
@@ -30,8 +31,7 @@ interface Props {
 }
 
 function fmtDate(d?: string) {
-  if (!d) return '—'
-  try { return new Date(d).toLocaleDateString('de-DE') } catch { return d }
+  return formatDateBerlin(d)
 }
 function fmtDuration(d?: string) {
   if (!d) return undefined

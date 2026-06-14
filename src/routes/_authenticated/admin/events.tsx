@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { formatDateTimeBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/events")({
   component: Page,
@@ -108,7 +109,7 @@ function Page() {
               {rows.map(e => (
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">{e.title}</TableCell>
-                  <TableCell className="text-sm">{new Date(e.starts_at).toLocaleString("de-DE")}</TableCell>
+                  <TableCell className="text-sm">{formatDateTimeBerlin(e.starts_at)}</TableCell>
                   <TableCell className="text-sm">{e.location || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[e.visibility] || e.visibility}</Badge></TableCell>
                   <TableCell className="text-right space-x-1">

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Mail, Reply, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { formatDateTimeBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   component: Page,
@@ -112,7 +113,7 @@ function Page() {
 function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void; onDelete: (id: string) => void }) {
   const [notes, setNotes] = useState(m.internal_notes || "");
   const replySubject = encodeURIComponent(`Re: ${m.subject || "Ihre Nachricht"}`);
-  const replyBody = encodeURIComponent(`\n\n--- Ursprüngliche Nachricht ---\nVon: ${m.from_name} <${m.from_email}>\nGesendet: ${new Date(m.created_at).toLocaleString("de-DE")}\nBetreff: ${m.subject || "—"}\n\n${m.body}`);
+  const replyBody = encodeURIComponent(`\n\n--- Ursprüngliche Nachricht ---\nVon: ${m.from_name} <${m.from_email}>\nGesendet: ${formatDateTimeBerlin(m.created_at)}\nBetreff: ${m.subject || "—"}\n\n${m.body}`);
   const mailto = `mailto:${m.from_email}?subject=${replySubject}&body=${replyBody}`;
 
   return (
@@ -123,7 +124,7 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge>
               <Badge variant={m.status === "new" ? "default" : "outline"}>{STATUS_LABEL[m.status] || m.status}</Badge>
-              <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("de-DE")}</span>
+              <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(m.created_at)}</span>
             </div>
             <h2 className="font-display text-xl font-bold text-primary-deep mt-2">{m.subject || "(Kein Betreff)"}</h2>
             <div className="text-sm mt-1">
