@@ -151,6 +151,19 @@ function Page() {
 
   return (
     <PublicLayout>
+      <AlertDialog open={done}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mitgliedsantrag eingegangen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ihr Mitgliedsantrag ist eingegangen. Er wird vom Vereinsvorstand geprüft. Sie erhalten eine Rückmeldung per E-Mail.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setDone(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <section className="bg-hero text-white py-20">
         <div className="container mx-auto px-4 text-center max-w-3xl">
           <Heart className="h-12 w-12 mx-auto text-accent mb-4" />
