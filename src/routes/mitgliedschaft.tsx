@@ -11,6 +11,7 @@ import { Check, Users, Heart, User, HandHeart, Waves, Euro, Star, Vote } from "l
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
