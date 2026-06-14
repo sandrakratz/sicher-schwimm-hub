@@ -1,34 +1,42 @@
-# Admin-E-Mails für alle Eingänge
+# Plan: Vier offene Punkte beheben
 
-## Status heute
+## 1. Bestätigungs-Dialog nach Formularversand (Kontakt, Mitgliedsantrag, Kursanfrage)
 
-| Ereignis | E-Mail an info@sicher-schwimmen.com? |
-|---|---|
-| Kursanfrage (`/kurs-anfragen`) | ✅ ja (`course-request`) |
-| Mitgliedsantrag (`/mitgliedschaft`) | ✅ ja (`membership-application`) |
-| Kontaktnachricht (`/kontakt`) | ❌ **nein** – wird nur in DB gespeichert |
-| Neuregistrierung (Konto anlegen `/auth`) | ❌ **nein** |
+Die Formulare funktionieren bereits ohne Login (RLS-Policies erlauben `anon` INSERT auf `messages`, `memberships`, `course_requests`). Aktuell wird nach erfolgreichem Versand nur die Karte ausgetauscht — der Nutzer übersieht das leicht.
 
-Die ersten beiden funktionieren also bereits. Fehlend sind **Kontakt** und **Registrierung**.
+Änderung: einen modalen Dialog (`AlertDialog` aus `@/components/ui/alert-dialog`) öffnen, sobald `done = true`. Inhalt jeweils:
 
-## Was ich umsetzen würde
+- **Kontakt** (`src/routes/kontakt.tsx`): „Vielen Dank! Ihre Nachricht ist bei uns eingegangen und wird von unserem Team bearbeitet. Wir melden uns so schnell wie möglich."
+- **Mitgliedsantrag** (`src/routes/mitgliedschaft.tsx`): „Ihr Mitgliedsantrag ist eingegangen. Er wird vom Vereinsvorstand geprüft. Sie erhalten eine Rückmeldung per E-Mail."
+- **Kursanfrage / Warteliste** (`src/routes/kurs-anfragen.tsx`): „Ihre Kursanfrage ist eingegangen und wird bearbeitet. Wir melden uns mit den nächsten Schritten."
 
-### 1. Neue E-Mail-Vorlage „Kontaktnachricht"
-- Datei `src/lib/email-templates/contact-message.tsx` (Empfänger fest auf info@sicher-schwimmen.com, Betreff „Neue Kontaktnachricht – {Name}")
-- Inhalt: Name, E-Mail, Kategorie, Betreff, Nachricht, Zeitstempel
-- Registrierung in `src/lib/email-templates/registry.ts`
-- `src/routes/kontakt.tsx`: nach erfolgreichem Insert in `messages` → `fetch('/api/public/notify-admin', { templateName: 'contact-message', … })`
+Dialog enthält einen „OK / Zur Startseite"-Button. Bestehende Inline-Erfolgskarten bleiben als Fallback nach Dialog-Close stehen.
 
-### 2. Neue E-Mail-Vorlage „Neue Registrierung"
-- Datei `src/lib/email-templates/new-registration.tsx` (Empfänger fest auf info@sicher-schwimmen.com)
-- Inhalt: Name, E-Mail, Zeitpunkt
-- Registrierung in `registry.ts`
-- Trigger in `src/routes/auth.tsx` direkt nach erfolgreichem `signUp`-Aufruf → `fetch('/api/public/notify-admin', …)` mit Idempotenzschlüssel `signup-{userId}`
+## 2. Bestätigungs-Dialog nach Registrierung
 
-### Hinweise
-- Das bestehende öffentliche Endpoint `/api/public/notify-admin` kann unverändert genutzt werden – es akzeptiert nur Templates mit fest gesetztem `to`, also kein Missbrauchsrisiko.
-- Absender bleibt „Sicher Schwimmen e.V. <noreply@notify.sicher-schwimmen.com>".
-- Keine Backend-/DB-Trigger nötig; alles läuft über die vorhandene Queue.
+In `src/routes/auth.tsx` nach erfolgreichem `supabase.auth.signUp`: gleichen `AlertDialog` zeigen mit Text „Ihre Registrierung ist vorgemerkt und wird durch einen Administrator freigeschaltet. Sie erhalten eine E-Mail, sobald Ihr Konto aktiv ist." Erst nach Klick auf „OK" wird auf den Login-Tab gewechselt.
 
-## Offene Frage
-Soll die Registrierungs-E-Mail **bei jedem** neuen Konto rausgehen, oder nur wenn jemand zusätzlich einen Mitgliedsantrag/Kursanfrage stellt? (Eltern, die ihr Kind nur einem Kurs zuordnen, legen ja auch ein Konto an.)
+## 3. Admin-Benachrichtigungs-E-Mails reparieren
+
+**Ursache:** Im `email_send_log` schlagen alle Admin-Mails (Templates `new-registration`, `membership-application`, künftig `contact-message`, `course-request`) mit `400 missing_unsubscribe — Transactional emails must include an unsubscribe_token` fehl. Die Datei `src/routes/api/public/notify-admin.ts` legt die Nachricht in die Queue, ohne vorher einen Unsubscribe-Token zu erzeugen.
+
+**Fix:** `notify-admin.ts` analog zu `src/routes/lovable/email/transactional/send.ts` erweitern:
+1. Empfänger `template.to` normalisieren.
+2. `suppressed_emails` prüfen (fail-closed).
+3. Vorhandenen Token in `email_unsubscribe_tokens` lesen oder per `upsert` neu anlegen.
+4. `unsubscribe_token` im Queue-Payload mitliefern.
+
+Damit gehen Mails an `info@sicher-schwimmen.com` für Kontaktnachrichten, Kursanfragen, Mitgliedsanträge und Neuregistrierungen wieder raus. Push-Nachrichten benötigen zusätzliche Infrastruktur (Service Worker + Web-Push-Subscription, FCM-Setup), deshalb bleibt es bei der einfacheren E-Mail-Lösung — falls Push gewünscht ist, separat planen.
+
+Verifizieren: nach Deploy einen Testkontakt absenden und `SELECT … FROM email_send_log ORDER BY created_at DESC LIMIT 3` prüfen — Status `sent` erwartet.
+
+## 4. Beschriftung im Admin-Dashboard
+
+In `src/routes/_authenticated/admin/index.tsx` Zeile 28: Label `"Aktive Mitglieder"` → `"Aktive Benutzer"`. Sonst keine Änderung; die Stat-Quelle (`stats.members`) bleibt.
+
+## Technische Details
+
+- Neue Datei nicht nötig — `AlertDialog` ist bereits installiert (`src/components/ui/alert-dialog.tsx`).
+- `notify-admin.ts` darf `crypto.getRandomValues` verwenden (in Worker-Runtime verfügbar).
+- Keine Migration nötig (RLS- und Storage-Policies sind unverändert).
+- `templateData` für `contact-message` und `course-request` müssen die jeweiligen Felder unverändert beibehalten.
