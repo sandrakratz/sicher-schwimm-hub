@@ -13,6 +13,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteUser } from "@/lib/admin-users.functions";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/benutzer")({
   component: Page,
@@ -155,7 +156,7 @@ function Page() {
                   <TableCell className="text-sm">{p.email}</TableCell>
                   <TableCell><Badge className={STATUS_COLOR[p.status]} variant="secondary">{STATUS_LABEL[p.status]}</Badge></TableCell>
                   <TableCell className="text-xs">{(roles[p.id] || []).map(r => ROLE_LABEL[r]).join(", ") || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("de-DE")}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDateBerlin(p.created_at)}</TableCell>
                   <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
                     <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>Details</Button>
                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">

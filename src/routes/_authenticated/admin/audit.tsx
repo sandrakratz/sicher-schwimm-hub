@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateTimeBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/audit")({
   component: Page,
@@ -22,7 +23,7 @@ function Page() {
               {rows.map(r => (
                 <li key={r.id} className="py-3 text-sm flex justify-between">
                   <span><strong>{r.action}</strong> · {r.entity}</span>
-                  <span className="text-muted-foreground text-xs">{new Date(r.created_at).toLocaleString("de-DE")}</span>
+                  <span className="text-muted-foreground text-xs">{formatDateTimeBerlin(r.created_at)}</span>
                 </li>
               ))}
             </ul>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, FileText, Newspaper, User as UserIcon } from "lucide-react";
 import { getMyMembership } from "@/lib/membership.functions";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 
 const MEMBERSHIP_STATUS_LABEL: Record<string, string> = {
   active: "Aktiv",
@@ -58,8 +59,8 @@ function Dashboard() {
   }, []);
 
 
-  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-  const fmtDateTime = (iso: string) => new Date(iso).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const fmtDate = formatDateBerlin;
+  const fmtDateTime = formatDateTimeBerlin;
 
   return (
     <div className="space-y-8 max-w-6xl">

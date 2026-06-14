@@ -14,6 +14,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { assignRequestToCourse, suggestMatchForRequest } from "@/lib/course-assignment.functions";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 
 
 type Item = {
@@ -159,7 +160,7 @@ function AnfragenAdmin() {
               {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">Noch keine Anfragen.</TableCell></TableRow>}
               {rows.map(r => (
                 <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
-                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleDateString("de-DE")}</TableCell>
+                  <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
                   <TableCell>
                     <div className="font-semibold">{r.parent_name}</div>
                     <div className="text-xs text-muted-foreground">{r.parent_email}</div>
@@ -180,7 +181,7 @@ function AnfragenAdmin() {
           <DialogHeader><DialogTitle>Kursanfrage</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4 text-sm">
-              <Row label="Eingegangen" value={new Date(selected.created_at).toLocaleString("de-DE")} />
+              <Row label="Eingegangen" value={formatDateTimeBerlin(selected.created_at)} />
               <Row label="Status" value={<Badge variant="outline">{STATUS_LABEL[selected.status] || selected.status}</Badge>} />
               <hr />
               <h3 className="font-semibold">Eltern / Erziehungsberechtigte</h3>
@@ -212,7 +213,7 @@ function AnfragenAdmin() {
                       {courses.length === 0 && <div className="p-2 text-xs text-muted-foreground">Keine Kurse vorhanden.</div>}
                       {courses.map(c => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.name}{c.starts_on ? ` · ab ${new Date(c.starts_on).toLocaleDateString("de-DE")}` : ""}
+                          {c.name}{c.starts_on ? ` · ab ${formatDateBerlin(c.starts_on)}` : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>

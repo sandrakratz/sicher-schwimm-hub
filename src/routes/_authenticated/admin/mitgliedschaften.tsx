@@ -32,9 +32,10 @@ const STATUS_LABEL: Record<string, string> = {
 type Member = { name: string; date_of_birth: string | null };
 type FamilyMembers = { partner?: Member | null; children?: Member[] } | null;
 
+import { formatDateBerlin } from "@/lib/format";
+
 function fmtDate(d?: string | null) {
-  if (!d) return "—";
-  try { return new Date(d).toLocaleDateString("de-DE"); } catch { return d; }
+  return formatDateBerlin(d);
 }
 
 function Row({ label, value }: { label: string; value?: React.ReactNode }) {

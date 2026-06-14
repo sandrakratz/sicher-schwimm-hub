@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/news")({
   component: Page,
@@ -115,7 +116,7 @@ function Page() {
                   <TableCell className="text-xs">{n.category}</TableCell>
                   <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[n.visibility] || n.visibility}</Badge></TableCell>
                   <TableCell>{n.published ? <Badge className="bg-emerald-100 text-emerald-900">Veröffentlicht</Badge> : <Badge variant="secondary">Entwurf</Badge>}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{n.published_at ? new Date(n.published_at).toLocaleDateString("de-DE") : "—"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{n.published_at ? formatDateBerlin(n.published_at) : "—"}</TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>Bearbeiten</Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(n)}><Trash2 className="h-4 w-4 text-destructive" /></Button>

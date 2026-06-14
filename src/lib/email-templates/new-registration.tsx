@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Body, Container, Head, Heading, Hr, Html, Preview, Section, Text } from '@react-email/components'
 import type { TemplateEntry } from './registry'
+import { formatDateTimeBerlin } from '@/lib/format'
 
 interface Props {
   first_name?: string
@@ -21,7 +22,7 @@ const Email = (p: Props) => (
         <Section>
           <Text><strong>Name:</strong> {[p.first_name, p.last_name].filter(Boolean).join(' ') || '—'}</Text>
           <Text><strong>E-Mail:</strong> {p.email || '—'}</Text>
-          <Text><strong>Registriert am:</strong> {p.created_at ? new Date(p.created_at).toLocaleString('de-DE') : '—'}</Text>
+          <Text><strong>Registriert am:</strong> {formatDateTimeBerlin(p.created_at)}</Text>
         </Section>
         <Hr />
         <Text style={{ fontSize: '12px', color: '#64748b' }}>

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Download, Trash2, Upload, Plus } from "lucide-react";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/dokumente")({
   component: Page,
@@ -139,7 +140,7 @@ function Page() {
                   <TableCell className="text-xs">{d.version || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{VISIBILITY_OPTIONS.find(o => o.value === d.visibility)?.label || d.visibility}</Badge></TableCell>
                   <TableCell>{d.file_url ? <Button variant="ghost" size="sm" onClick={() => download(d)}><Download className="h-4 w-4" /></Button> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("de-DE")}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{formatDateBerlin(d.created_at)}</TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => startEdit(d)}>Bearbeiten</Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(d)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
