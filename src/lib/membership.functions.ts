@@ -56,11 +56,12 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
-    const patch: Record<string, unknown> = { status: data.status };
-    patch.approved_at = data.status === "active" ? new Date().toISOString() : null;
     const { error } = await context.supabase
       .from("memberships")
-      .update(patch)
+      .update({
+        status: data.status,
+        approved_at: data.status === "active" ? new Date().toISOString() : null,
+      })
       .eq("id", data.id);
     if (error) throw new Response(error.message, { status: 500 });
     const { logAudit } = await import("@/lib/audit.server");
