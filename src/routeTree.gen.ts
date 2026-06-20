@@ -33,6 +33,7 @@ import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
@@ -175,6 +176,12 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSubmitCancellationRoute =
+  ApiPublicSubmitCancellationRouteImport.update({
+    id: '/api/public/submit-cancellation',
+    path: '/api/public/submit-cancellation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicNotifyAdminRoute = ApiPublicNotifyAdminRouteImport.update({
   id: '/api/public/notify-admin',
   path: '/api/public/notify-admin',
@@ -332,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
+  '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
@@ -377,6 +385,7 @@ export interface FileRoutesByTo {
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
+  '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
@@ -425,6 +434,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
+  '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
@@ -473,6 +483,7 @@ export interface FileRouteTypes {
     | '/portal/news'
     | '/portal/profil'
     | '/api/public/notify-admin'
+    | '/api/public/submit-cancellation'
     | '/lovable/email/suppression'
     | '/admin/'
     | '/portal/'
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/portal/news'
     | '/portal/profil'
     | '/api/public/notify-admin'
+    | '/api/public/submit-cancellation'
     | '/lovable/email/suppression'
     | '/admin'
     | '/portal'
@@ -565,6 +577,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/news'
     | '/_authenticated/portal/profil'
     | '/api/public/notify-admin'
+    | '/api/public/submit-cancellation'
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
@@ -597,6 +610,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
+  ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -773,6 +787,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/suppression'
       fullPath: '/lovable/email/suppression'
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/submit-cancellation': {
+      id: '/api/public/submit-cancellation'
+      path: '/api/public/submit-cancellation'
+      fullPath: '/api/public/submit-cancellation'
+      preLoaderRoute: typeof ApiPublicSubmitCancellationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/notify-admin': {
@@ -1005,6 +1026,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
+  ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

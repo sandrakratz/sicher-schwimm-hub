@@ -42,7 +42,11 @@ export const listCancellations = createServerFn({ method: "POST" })
     }
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return { rows: rows ?? [] };
+    const normalized = (rows ?? []).map((r: any) => ({
+      ...r,
+      ip_address: r.ip_address == null ? null : String(r.ip_address),
+    }));
+    return { rows: normalized as Array<Record<string, any>> };
   });
 
 export const setCancellationStatus = createServerFn({ method: "POST" })
