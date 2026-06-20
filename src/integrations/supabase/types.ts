@@ -47,6 +47,63 @@ export type Database = {
         }
         Relationships: []
       }
+      cancellation_requests: {
+        Row: {
+          booking_date: string
+          child_name: string
+          course_name: string
+          created_at: string
+          email: string
+          id: string
+          ip_address: unknown
+          notes: string | null
+          parent_first_name: string
+          parent_last_name: string
+          phone: string
+          reference_number: string
+          revocation_text: string
+          status: Database["public"]["Enums"]["cancellation_status"]
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          booking_date: string
+          child_name: string
+          course_name: string
+          created_at?: string
+          email: string
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          parent_first_name: string
+          parent_last_name: string
+          phone: string
+          reference_number: string
+          revocation_text: string
+          status?: Database["public"]["Enums"]["cancellation_status"]
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          booking_date?: string
+          child_name?: string
+          course_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          parent_first_name?: string
+          parent_last_name?: string
+          phone?: string
+          reference_number?: string
+          revocation_text?: string
+          status?: Database["public"]["Enums"]["cancellation_status"]
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       course_participants: {
         Row: {
           achievement: string | null
@@ -764,6 +821,7 @@ export type Database = {
     Enums: {
       account_status: "pending" | "active" | "disabled" | "archived"
       app_role: "admin" | "board" | "trainer" | "member" | "parent"
+      cancellation_status: "eingegangen" | "in_bearbeitung" | "abgeschlossen"
       course_status:
         | "planned"
         | "open"
@@ -910,6 +968,7 @@ export const Constants = {
     Enums: {
       account_status: ["pending", "active", "disabled", "archived"],
       app_role: ["admin", "board", "trainer", "member", "parent"],
+      cancellation_status: ["eingegangen", "in_bearbeitung", "abgeschlossen"],
       course_status: [
         "planned",
         "open",
