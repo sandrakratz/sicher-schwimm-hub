@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WiderrufRouteImport } from './routes/widerruf'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -41,6 +42,7 @@ import { Route as AuthenticatedPortalKurseRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPortalKontaktRouteImport } from './routes/_authenticated/portal/kontakt'
 import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal/events'
 import { Route as AuthenticatedPortalDokumenteRouteImport } from './routes/_authenticated/portal/dokumente'
+import { Route as AuthenticatedAdminWiderrufeRouteImport } from './routes/_authenticated/admin/widerrufe'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
 import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
 import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
@@ -56,6 +58,11 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
+const WiderrufRoute = WiderrufRouteImport.update({
+  id: '/widerruf',
+  path: '/widerruf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
@@ -222,6 +229,12 @@ const AuthenticatedPortalDokumenteRoute =
     path: '/portal/dokumente',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminWiderrufeRoute =
+  AuthenticatedAdminWiderrufeRouteImport.update({
+    id: '/widerrufe',
+    path: '/widerrufe',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminNewsRoute = AuthenticatedAdminNewsRouteImport.update({
   id: '/news',
   path: '/news',
@@ -321,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/widerruf': typeof WiderrufRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
@@ -332,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -368,6 +383,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/widerruf': typeof WiderrufRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -378,6 +394,7 @@ export interface FileRoutesByTo {
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -416,6 +433,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/widerruf': typeof WiderrufRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
@@ -427,6 +445,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/_authenticated/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/_authenticated/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
   '/_authenticated/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -465,6 +484,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/widerruf'
     | '/admin'
     | '/email/unsubscribe'
     | '/admin/anfragen'
@@ -476,6 +496,7 @@ export interface FileRouteTypes {
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
+    | '/admin/widerrufe'
     | '/portal/dokumente'
     | '/portal/events'
     | '/portal/kontakt'
@@ -512,6 +533,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/widerruf'
     | '/email/unsubscribe'
     | '/admin/anfragen'
     | '/admin/audit'
@@ -522,6 +544,7 @@ export interface FileRouteTypes {
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
+    | '/admin/widerrufe'
     | '/portal/dokumente'
     | '/portal/events'
     | '/portal/kontakt'
@@ -559,6 +582,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/widerruf'
     | '/_authenticated/admin'
     | '/email/unsubscribe'
     | '/_authenticated/admin/anfragen'
@@ -570,6 +594,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/mitgliedschaften'
     | '/_authenticated/admin/nachrichten'
     | '/_authenticated/admin/news'
+    | '/_authenticated/admin/widerrufe'
     | '/_authenticated/portal/dokumente'
     | '/_authenticated/portal/events'
     | '/_authenticated/portal/kontakt'
@@ -608,6 +633,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UeberUnsRoute: typeof UeberUnsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  WiderrufRoute: typeof WiderrufRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
@@ -621,6 +647,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/widerruf': {
+      id: '/widerruf'
+      path: '/widerruf'
+      fullPath: '/widerruf'
+      preLoaderRoute: typeof WiderrufRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/unsubscribe': {
       id: '/unsubscribe'
       path: '/unsubscribe'
@@ -845,6 +878,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPortalDokumenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/widerrufe': {
+      id: '/_authenticated/admin/widerrufe'
+      path: '/widerrufe'
+      fullPath: '/admin/widerrufe'
+      preLoaderRoute: typeof AuthenticatedAdminWiderrufeRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/news': {
       id: '/_authenticated/admin/news'
       path: '/news'
@@ -956,6 +996,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
   AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
+  AuthenticatedAdminWiderrufeRoute: typeof AuthenticatedAdminWiderrufeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -971,6 +1012,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminMitgliedschaftenRoute,
     AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
     AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
+    AuthenticatedAdminWiderrufeRoute: AuthenticatedAdminWiderrufeRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
 
@@ -1024,6 +1066,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UeberUnsRoute: UeberUnsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  WiderrufRoute: WiderrufRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
