@@ -1,88 +1,110 @@
+
 ## Ziel
+Vollständige Widerrufs-Lösung für Eltern, um zugeteilte/gebuchte Schwimmkurse rechtssicher zu widerrufen — Frontend-Seite, Backend-Funktionen, DB-Tabelle, E-Mail-Versand und Admin-Verwaltung.
 
-1. Jede Admin-Route bekommt einen serverseitigen Auth-Guard, der nur die wirklich nötigen Rollen zulässt (Minimalprinzip).
-2. Trainer dürfen einen reduzierten Adminbereich sehen: nur die Mitgliederliste (read-only) und die Kursverwaltung.
-3. Mitglieder und Eltern haben keinerlei Zugriff auf `/admin/*` – auch nicht via direkter URL.
-4. Audit-Log: nur Admin. Wird ab jetzt bei relevanten Aktionen automatisch gefüllt.
+## 1. Datenbank (Migration)
 
-## Rollenmatrix
+Neue Tabelle `public.cancellation_requests`:
+- `reference_number` (text, unique) — Format `SW-WID-YYYYMMDD-XXXXX`
+- `parent_first_name`, `parent_last_name`, `email`, `phone`
+- `child_name`, `course_name`, `booking_date` (date)
+- `notes` (nullable), `revocation_text`
+- `ip_address` (inet, nullable), `user_agent` (text, nullable)
+- `status` (enum: `eingegangen` | `in_bearbeitung` | `abgeschlossen`, default `eingegangen`)
+- Standardfelder: `id`, `created_at`, `updated_at`
 
+RLS:
+- Nur `admin`/`board` dürfen SELECT/UPDATE (über `is_staff`)
+- INSERT erfolgt ausschließlich über Server-Function mit `supabaseAdmin` (kein anon-/authenticated-INSERT-Policy)
+- GRANTs entsprechend (authenticated SELECT/UPDATE, service_role ALL)
 
-| Route                     | admin    | board    | trainer                         | member/parent |
-| ------------------------- | -------- | -------- | ------------------------------- | ------------- |
-| `/admin` (Übersicht)      | ✓        | ✓        | – (Redirect auf `/admin/kurse`) | ✗             |
-| `/admin/benutzer`         | ✓ (voll) | ✓ (voll) | ✗                               | ✗             |
-| `/admin/mitgliedschaften` | ✓        | ✓        | ✗                               | ✗             |
-| `/admin/kurse`            | ✓        | ✓        | ✓                               | ✗             |
-| `/admin/anfragen`         | ✓        | ✓        | ✗                               | ✗             |
-| `/admin/news`             | ✓        | ✓        | ✓                               | ✗             |
-| `/admin/dokumente`        | ✓        | ✓        | ✓                               | ✗             |
-| `/admin/events`           | ✓        | ✓        | ✗                               | ✗             |
-| `/admin/nachrichten`      | ✓        | ✓        | ✗                               | ✗             |
-| `/admin/audit`            | ✓        | ✗        | ✗                               | ✗             |
+Audit-Log-Integration: Statusänderungen werden in `audit_logs` protokolliert.
 
+## 2. Server-Funktionen
 
-Nicht autorisierte Aufrufe → Redirect auf `/portal`.
+`src/lib/cancellation.functions.ts`:
+- `submitCancellation` (public, ohne Auth) — Zod-Validierung, Honeypot-Spamcheck, Rate-Limit pro IP (max 3/h via DB-Check letzte Einträge), Referenznummer-Generierung, Insert via `supabaseAdmin`, beide E-Mails enqueuen, gibt Referenznummer zurück
+- `listCancellations` (admin/board) — Liste mit Filter (status, suche, datum)
+- `setCancellationStatus` (admin/board) — Statusänderung + audit log
+- `exportCancellationsCsv` (admin/board) — CSV-Export
 
-## Umsetzung
+## 3. E-Mail-Templates
 
-### 1. Server-Guards (`src/lib/admin-guard.functions.ts`)
+Zwei neue Templates in `src/lib/email-templates/`:
+- `cancellation-internal.tsx` — interne Benachrichtigung an `widerruf@sicher-schwimmen.com` (alle Formulardaten + Eingangsdatum/IP/Referenz)
+- `cancellation-confirmation.tsx` — Eingangsbestätigung an Eltern mit Referenznummer
 
-Neben `assertIsStaff` ergänzen:
+Registrierung in `registry.ts`. Versand über bestehende Queue `/lovable/email/transactional/send` mit `idempotencyKey = reference_number + template`.
 
-- `assertHasAnyRole(roles: app_role[])` – generischer Guard, wirft 403 wenn der eingeloggte Nutzer keine der Rollen hat.
-- `getAdminRoles()` – gibt dem Client die Rollenmenge des aktuellen Users zurück (für Sidebar-Filter und Read-only-UI in `benutzer.tsx`).
-- `assertIsAdmin()` – Convenience für reine Admin-Routen (Audit).
+## 4. Frontend-Seite `/widerruf`
 
-Jede Admin-Route ruft im `beforeLoad` den passenden Guard auf. Die Layout-Route `_authenticated/admin/route.tsx` öffnet sich für `admin | board | trainer`; feinere Differenzierung passiert in den Kind-Routen.
+`src/routes/widerruf.tsx`:
+- PublicLayout, SEO-Metadaten
+- **Widerrufsbelehrung**-Sektion (deutsches Verbraucherrecht §355 BGB): Widerrufsfrist, Folgen, Kontaktmöglichkeiten, Hinweis Online-Übermittlung
+- **Muster-Widerrufsformular** mit react-hook-form + Zod:
+  - Pflichtfelder: Vorname, Nachname, E-Mail, Telefon, Name des Kindes, Kursname, Buchungsdatum
+  - Optional: Bemerkungen
+  - Vorbefüllter Widerrufstext (editierbar)
+  - Pflicht-Checkbox „Ich erkläre hiermit den Widerruf …"
+  - Honeypot-Feld (versteckt) gegen Bots
+  - Inline-Fehlermeldungen
+- **Datenschutzhinweis** unter Formular + Link zu `/datenschutz`, Hinweis Aufbewahrungsdauer (3 Jahre, gesetzliche Frist)
+- **Erfolgsmeldung** mit Referenznummer ersetzt Formular nach Submit
 
-### 2. RLS-Migration
+## 5. Wiederverwendbare Widerruf-Button-Komponente
 
-- `audit_logs`: `INSERT` für `authenticated` erlauben (Logger schreibt im Auth-Kontext), SELECT bleibt auf Staff – zusätzlich auf **nur Admin** verschärfen via `has_role(auth.uid(),'admin')`.
-- `courses` und `course_participants`: `is_staff` reicht für Trainer nicht. Neue Policies: Trainer dürfen lesen + schreiben (`has_role(auth.uid(),'trainer') OR is_staff(...)`).
-- `profiles`: SELECT zusätzlich für Trainer auf aktive Mitglieder erlauben: `is_staff(auth.uid()) OR (has_role(auth.uid(),'trainer') AND status='active')`.
-- `user_roles`: Trainer darf SELECT (für Anzeige in Mitgliederliste); UPDATE/DELETE bleibt Staff.
-- GRANT-Statements werden mitgeliefert.
+`src/components/CancellationButton.tsx` — Link-Button „Vertrag widerrufen" zu `/widerruf`, variant=outline, barrierefrei (aria-label).
 
-### 3. Audit-Logger
+Eingebunden in:
+- `SiteFooter.tsx` (Rechtliches-Sektion)
+- `routes/kurse.tsx` (am Ende)
+- `routes/kurs-anfragen.tsx` (am Ende)
+- `email-templates/course-assignment.tsx` (Link zur Widerrufsseite in der Zuteilungs-E-Mail)
+- Header-Dropdown „Rechtliches" in `SiteHeader.tsx`
 
-Neuer Server-Helper `src/lib/audit.server.ts` mit `logAudit({ action, entity, entity_id?, metadata? })`. Wird aufgerufen in:
+## 6. Admin-Bereich `/admin/widerrufe`
 
-- `admin-users.functions.ts` → `user.deleted`
-- `membership.functions.ts` → `membership.approved`, `membership.rejected`, `membership.deleted`
-- `course-assignment.functions.ts` → `course.participant.assigned`
-- Rollen-Änderungen in `benutzer.tsx` → neuer Server-Fn `setUserRole` / `setUserStatus`, der Audit schreibt (statt direktem `supabase.from('user_roles')`-Call vom Client). So sind die wichtigsten Mutationen serverseitig protokollierbar.
+`src/routes/_authenticated/admin/widerrufe.tsx`:
+- Auth-Guard via `assertHasAnyRole(['admin','board'])` in `beforeLoad`
+- Tabelle: Referenz, Datum, Eltern, Kind, Kurs, Status
+- Filter: Status-Dropdown, Suche (Name/Email/Referenz), Zeitraum
+- Status-Dropdown pro Zeile (mit `setCancellationStatus`)
+- CSV-Export-Button
+- Detail-Dialog mit allen Feldern inkl. Widerrufstext, IP, Bemerkungen
+- Sidebar-Eintrag in `admin/route.tsx` (nur admin/board sichtbar)
 
-### 4. UI-Anpassungen
+## 7. Sicherheit & DSGVO
 
-`**_authenticated/admin/route.tsx**`
+- Server-Validierung mit Zod (Längenlimits, E-Mail-Format)
+- IP nur bei explizitem Hinweis im Datenschutztext gespeichert
+- Honeypot + einfaches Rate-Limit (DB-basiert, kein externer Dienst)
+- Fehler in `console.error` (Worker-Logs)
+- HTTPS via Hosting bereits gegeben
 
-- `beforeLoad` ruft `getAdminRoles()` und speichert die Rollenmenge im Route-Context.
-- Sidebar filtert `adminNav` nach Rollen: Trainer sieht nur „Benutzer" (umbenannt zu „Mitglieder") und „Kurse". Admin sieht zusätzlich „Audit-Log".
-- Falls Trainer auf `/admin` landet → Redirect auf `/admin/benutzer`.
+## Technische Details
 
-`**_authenticated/admin/benutzer.tsx**`
+```text
+Dateien (neu):
+  src/routes/widerruf.tsx
+  src/routes/_authenticated/admin/widerrufe.tsx
+  src/components/CancellationButton.tsx
+  src/lib/cancellation.functions.ts
+  src/lib/email-templates/cancellation-internal.tsx
+  src/lib/email-templates/cancellation-confirmation.tsx
+  supabase/migrations/<ts>_cancellation_requests.sql
 
-- Liest Rollen aus Route-Context via `Route.useRouteContext()`.
-- Trainer-Modus: Liste filtert auf `status='active'` und Rollen enthält `member`, Spalten reduziert (Name, E-Mail, Telefon), keine Delete-/Status-/Rollen-Buttons, kein Detail-Edit-Dialog (nur Anzeige). Suchfeld bleibt.
-- Admin/Board: unverändert, zusätzlich Aufrufe gehen über neue Server-Fns (`setUserRole`, `setUserStatus`) mit Audit.
+Dateien (geändert):
+  src/components/SiteFooter.tsx        (+ Widerruf-Link)
+  src/components/SiteHeader.tsx        (+ Widerruf in Rechtliches)
+  src/routes/kurse.tsx                 (+ CancellationButton)
+  src/routes/kurs-anfragen.tsx         (+ CancellationButton)
+  src/lib/email-templates/registry.ts  (+ 2 Templates)
+  src/lib/email-templates/course-assignment.tsx (+ Widerruf-Hinweis)
+  src/routes/_authenticated/admin/route.tsx  (+ Sidebar-Eintrag)
+```
 
-**Übrige Admin-Routen**
+Referenznummer: `SW-WID-${YYYYMMDD}-${5-stellig zufällig}`, Eindeutigkeit per DB-Constraint + Retry.
 
-- `beforeLoad` mit `assertHasAnyRole([...])` gemäß Matrix. Keine UI-Änderungen.
-
-### 5. Edge Cases
-
-- Layout-Route ist `ssr:false`; Guards laufen client-seitig + werden vom serverseitigen `assertHasAnyRole` bei jeder Server-Fn-Aktion zusätzlich erzwungen. Selbst manipuliertes JS kann keine geschützte Aktion auslösen.
-- Bestehender Test, dass nicht-Staff weiterhin auf `/portal` umgeleitet wird, bleibt durch `_authenticated/route.tsx` (status-check) gewahrt.
-
-## Geänderte / neue Dateien
-
-- `supabase/migrations/<neu>.sql` (RLS + GRANTs)
-- `src/lib/admin-guard.functions.ts` (erweitert)
-- `src/lib/audit.server.ts` (neu)
-- `src/lib/admin-users.functions.ts` (Audit + neue `setUserRole`, `setUserStatus`)
-- `src/lib/membership.functions.ts` (Audit bei approve/reject/delete – falls noch nicht serverseitig, dann neu)
-- `src/routes/_authenticated/admin/route.tsx` (Rollen im Context, Sidebar-Filter, Redirect)
-- `src/routes/_authenticated/admin/{index,mitgliedschaften,kurse,anfragen,news,dokumente,events,nachrichten,audit}.tsx` (jeweils `beforeLoad` mit passendem Guard)
-- `src/routes/_authenticated/admin/benutzer.tsx` (Trainer-Read-only-Modus + Server-Fn-Aufrufe)
+## Offene Punkte
+1. Existiert die Adresse `widerruf@sicher-schwimmen.com` als Mailbox? Falls nein, soll ich stattdessen `info@sicher-schwimmen.com` verwenden?
+2. Aufbewahrungsdauer der Widerrufsdaten — 3 Jahre (Standard nach §195 BGB) ok?
