@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Users, Tag } from "lucide-react";
+import { CancellationButton } from "@/components/CancellationButton";
 
 export const Route = createFileRoute("/kurse")({
   head: () => ({
@@ -124,6 +125,9 @@ function KursePage() {
           </Link>
           {" "}(Zahlung, Rücktritt, Aufsicht, Haftung).
         </p>
+        <div className="flex justify-center mt-6">
+          <CancellationButton />
+        </div>
       </section>
     </PublicLayout>
   );
