@@ -11,6 +11,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
+import { CancellationButton } from "@/components/CancellationButton";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/kurs-anfragen")({
@@ -201,6 +202,10 @@ function RequestPage() {
             </form>
           </CardContent>
         </Card>
+        <div className="max-w-3xl mx-auto mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+          <p>Sie haben bereits gebucht und möchten widerrufen?</p>
+          <CancellationButton variant="outline" size="sm" />
+        </div>
       </section>
     </PublicLayout>
   );
