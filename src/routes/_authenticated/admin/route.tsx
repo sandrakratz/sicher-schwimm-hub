@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type NavItem = {
-  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/audit";
+  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
   exact?: boolean;
@@ -51,6 +51,7 @@ const adminNav: NavItem[] = [
   { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
   { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
   { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten", allow: ["admin", "board"] },
+  { to: "/admin/widerrufe", icon: FileText, label: "Widerrufe", allow: ["admin", "board"] },
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
 ];
 

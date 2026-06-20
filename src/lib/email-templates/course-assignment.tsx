@@ -135,6 +135,10 @@ const Email = (p: Props) => {
         <Text style={{ margin: '4px 0' }}>
           Bitte beachten Sie unsere <Link href={`${base}/kursbedingungen`} style={{ color: '#0c4a6e' }}>Kursordnung &amp; AGB</Link> sowie unsere <Link href={`${base}/datenschutz`} style={{ color: '#0c4a6e' }}>Datenschutzerklärung</Link>. Mit der verbindlichen Buchung gelten diese als akzeptiert.
         </Text>
+        <Text style={{ margin: '4px 0' }}>
+          Widerrufsrecht: Sie können den Vertrag innerhalb von 14 Tagen ohne Angabe von Gründen widerrufen.{' '}
+          <Link href={`${base}/widerruf`} style={{ color: '#0c4a6e' }}>Zum Widerrufsformular</Link>
+        </Text>
 
         <Hr />
         <Text>Sollten Sie Fragen haben oder den Platz nicht wahrnehmen können, antworten Sie bitte einfach auf diese E-Mail.</Text>

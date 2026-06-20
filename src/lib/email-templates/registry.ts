@@ -4,6 +4,8 @@ import { template as courseRequest } from './course-request'
 import { template as courseAssignment } from './course-assignment'
 import { template as contactMessage } from './contact-message'
 import { template as newRegistration } from './new-registration'
+import { template as cancellationInternal } from './cancellation-internal'
+import { template as cancellationConfirmation } from './cancellation-confirmation'
 
 
 export interface TemplateEntry {
@@ -21,5 +23,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'course-assignment': courseAssignment,
   'contact-message': contactMessage,
   'new-registration': newRegistration,
+  'cancellation-internal': cancellationInternal,
+  'cancellation-confirmation': cancellationConfirmation,
 }
-
