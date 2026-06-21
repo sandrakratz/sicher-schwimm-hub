@@ -68,7 +68,7 @@ function AnfragenAdmin() {
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
-    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on,price_member,price_non_member").order("starts_on", { ascending: true, nullsFirst: false });
+    const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on,price_member,price_non_member").is("archived_at", null).order("starts_on", { ascending: true, nullsFirst: false });
     setCourses((cs as CourseOpt[]) || []);
   }
   useEffect(() => { load(); }, []);

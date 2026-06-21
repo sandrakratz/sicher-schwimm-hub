@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { generateCourseListXlsx } from "@/lib/course-sessions.functions";
 
@@ -93,6 +93,7 @@ type Course = {
   price_member: number | null;
   price_non_member: number | null;
   payment_due_days: number | null;
+  archived_at: string | null;
 };
 
 
@@ -111,6 +112,7 @@ function slugify(s: string) {
 
 function Page() {
   const [rows, setRows] = useState<Course[]>([]);
+  const [view, setView] = useState<"active" | "archived">("active");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
   const [counts, setCounts] = useState<Record<string, { confirmed: number; waiting: number }>>({});
@@ -314,6 +316,19 @@ function Page() {
     toast.success("Gelöscht"); await load();
   }
 
+  async function archive(c: Course) {
+    if (!confirm(`Kurs "${c.name}" archivieren?`)) return;
+    const { error } = await supabase.from("courses").update({ archived_at: new Date().toISOString() }).eq("id", c.id);
+    if (error) return toast.error(error.message);
+    toast.success("Kurs archiviert"); await load();
+  }
+
+  async function unarchive(c: Course) {
+    const { error } = await supabase.from("courses").update({ archived_at: null }).eq("id", c.id);
+    if (error) return toast.error(error.message);
+    toast.success("Kurs wiederhergestellt"); await load();
+  }
+
   return (
     <div className="max-w-7xl space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -322,6 +337,25 @@ function Page() {
           <p className="text-muted-foreground mt-1 text-sm">Schwimmkurse anlegen und verwalten.</p>
         </div>
         <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
+      </div>
+
+      <div className="inline-flex rounded-md border bg-muted/30 p-1 gap-1">
+        <Button
+          type="button"
+          size="sm"
+          variant={view === "active" ? "default" : "ghost"}
+          onClick={() => setView("active")}
+        >
+          Aktive Kurse ({rows.filter(r => !r.archived_at).length})
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={view === "archived" ? "default" : "ghost"}
+          onClick={() => setView("archived")}
+        >
+          <Archive className="h-4 w-4" /> Erledigte Kurse ({rows.filter(r => !!r.archived_at).length})
+        </Button>
       </div>
 
       <Card className="border-0 shadow-soft">
@@ -338,14 +372,18 @@ function Page() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kurse.</TableCell></TableRow>}
-              {rows.map(c => {
+              {(() => {
+                const filtered = rows.filter(r => view === "archived" ? !!r.archived_at : !r.archived_at);
+                if (filtered.length === 0) {
+                  return <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{view === "archived" ? "Keine erledigten Kurse im Archiv." : "Noch keine Kurse."}</TableCell></TableRow>;
+                }
+                return filtered.map(c => {
                 const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
                 const max = c.max_participants;
                 const full = max != null && cnt.confirmed >= max;
                 return (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}</TableCell>
+                <TableRow key={c.id} className={c.archived_at ? "opacity-75" : ""}>
+                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}{c.archived_at && <Badge variant="outline" className="ml-2 text-xs">Archiviert</Badge>}</TableCell>
                   <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
@@ -359,10 +397,14 @@ function Page() {
                     <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
                     <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel-Kursliste"}</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
+                    {c.archived_at
+                      ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /> Wiederherstellen</Button>
+                      : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /> Archivieren</Button>}
                     <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
-              )})}
+              )});
+              })()}
 
             </TableBody>
           </Table>
