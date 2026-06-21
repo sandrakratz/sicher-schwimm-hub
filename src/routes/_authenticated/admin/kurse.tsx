@@ -653,6 +653,27 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={sessOpen} onOpenChange={setSessOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Bis zu 10 Termine. Diese werden auf der Excel-Kursliste als Spaltenüberschriften ausgegeben.</p>
+          <div className="space-y-2">
+            {sessions.length === 0 && <div className="text-sm text-muted-foreground">Noch keine Termine.</div>}
+            {sessions.map(s => (
+              <div key={s.id} className="flex items-center gap-2">
+                <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
+                <Input type="date" value={s.session_date} onChange={e => updateSessionDate(s.id, e.target.value)} />
+                <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSessOpen(false)}>Schließen</Button>
+            <Button onClick={addSession} disabled={sessions.length >= 10}><Plus className="h-4 w-4" /> Termin hinzufügen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
