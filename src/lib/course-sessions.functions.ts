@@ -35,7 +35,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     const { data: partsData } = await supabase
       .from("course_participants")
-      .select("participant_name,participant_phone,date_of_birth,status")
+      .select("participant_name,participant_phone,date_of_birth,notes,status")
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
     const participants = (partsData || []).slice().sort((a, b) =>
