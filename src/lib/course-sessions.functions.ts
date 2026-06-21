@@ -122,10 +122,15 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     // Data rows
     const dataRowsStart = headerRow.number + 1;
+    const formatName = (n: string | null): string =>
+      (n || "")
+        .replace(/[,;]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
     participants.forEach((p, idx) => {
       const row = ws.addRow([
         idx + 1,
-        p.participant_name || "",
+        formatName(p.participant_name),
         "",
         "",
         "", "", "", "", "", "", "", "", "", "",
