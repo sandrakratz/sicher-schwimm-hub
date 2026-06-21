@@ -271,6 +271,44 @@ export type Database = {
           },
         ]
       }
+      course_sessions: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          note: string | null
+          session_date: string
+          session_index: number
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_date: string
+          session_index: number
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_date?: string
+          session_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           age_range: string | null
