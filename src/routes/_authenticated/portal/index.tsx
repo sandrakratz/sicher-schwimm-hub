@@ -126,11 +126,14 @@ function Dashboard() {
               <ul className="space-y-3">
                 {events.map(e => (
                   <li key={e.id} className="border-b last:border-0 pb-3 last:pb-0">
-                    <div className="font-semibold text-primary-deep">{e.title}</div>
-                    <div className="text-xs text-muted-foreground">{fmtDateTime(e.starts_at)}{e.location ? ` · ${e.location}` : ""}</div>
+                    <Link to="/portal/events" className="block group">
+                      <div className="font-semibold text-primary-deep group-hover:text-accent">{e.title}</div>
+                      <div className="text-xs text-muted-foreground">{fmtDateTime(e.starts_at)}{e.location ? ` · ${e.location}` : ""}</div>
+                    </Link>
                   </li>
                 ))}
               </ul>
+
             )}
           </CardContent>
         </Card>
