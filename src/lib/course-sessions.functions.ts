@@ -35,7 +35,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     const { data: partsData } = await supabase
       .from("course_participants")
-      .select("participant_name,participant_phone,date_of_birth,status")
+      .select("participant_name,participant_phone,date_of_birth,notes,status")
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
     const participants = (partsData || []).slice().sort((a, b) =>
@@ -90,7 +90,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         : "";
     const titleRow = ws.addRow([`Kursliste: ${course.name}`]);
     titleRow.font = { bold: true, size: 14 };
-    ws.mergeCells(titleRow.number, 1, titleRow.number, 17);
+    ws.mergeCells(titleRow.number, 1, titleRow.number, 18);
 
     const metaRow = ws.addRow([
       [period && `Zeitraum: ${period}`, course.location && `Ort: ${course.location}`, course.schedule && `Zeitplan: ${course.schedule}`]
@@ -98,7 +98,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         .join("    ·    "),
     ]);
     metaRow.font = { italic: true, size: 10 };
-    ws.mergeCells(metaRow.number, 1, metaRow.number, 17);
+    ws.mergeCells(metaRow.number, 1, metaRow.number, 18);
 
     ws.addRow([]);
 
@@ -114,6 +114,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       }),
       "Telefonnummer",
       "Alter bei Kursbeginn",
+      "Notiz",
     ];
     const headerRow = ws.addRow(headers);
     headerRow.font = { bold: true };
@@ -136,6 +137,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         "", "", "", "", "", "", "", "", "", "",
         p.participant_phone || "",
         ageAt(p.date_of_birth, firstSessionDate),
+        p.notes || "",
       ]);
       row.alignment = { vertical: "middle", wrapText: true };
       row.height = 22;
@@ -143,14 +145,14 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     // Ensure at least a few blank rows for printing if no participants
     if (participants.length === 0) {
-      for (let i = 0; i < 5; i++) ws.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      for (let i = 0; i < 5; i++) ws.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
 
     const lastRow = ws.lastRow!.number;
     const totalCols = headers.length;
 
     // Column widths
-    const widths = [4, 28, 8, 7, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 16, 8];
+    const widths = [4, 28, 8, 7, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 16, 8, 24];
     widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
 
     // Borders on all body cells
