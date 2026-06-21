@@ -1,0 +1,1 @@
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ; CREATE INDEX IF NOT EXISTS courses_archived_at_idx ON public.courses (archived_at);
