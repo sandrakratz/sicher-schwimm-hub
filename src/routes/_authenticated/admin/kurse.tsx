@@ -12,7 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { generateCourseListXlsx } from "@/lib/course-sessions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -117,6 +119,61 @@ function Page() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [sessOpen, setSessOpen] = useState(false);
+  const [sessCourse, setSessCourse] = useState<Course | null>(null);
+  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const exportXlsx = useServerFn(generateCourseListXlsx);
+
+  async function openSessions(c: Course) {
+    setSessCourse(c); setSessOpen(true);
+    const { data } = await supabase.from("course_sessions")
+      .select("id,session_index,session_date")
+      .eq("course_id", c.id).order("session_index", { ascending: true });
+    setSessions((data as any) || []);
+  }
+  async function addSession() {
+    if (!sessCourse) return;
+    if (sessions.length >= 10) return toast.error("Maximal 10 Termine");
+    const nextIndex = (sessions.reduce((m, s) => Math.max(m, s.session_index), 0) || 0) + 1;
+    const today = new Date().toISOString().slice(0, 10);
+    const { error } = await supabase.from("course_sessions").insert({
+      course_id: sessCourse.id, session_index: nextIndex, session_date: today,
+    });
+    if (error) return toast.error(error.message);
+    await openSessions(sessCourse);
+  }
+  async function updateSessionDate(id: string, date: string) {
+    const { error } = await supabase.from("course_sessions").update({ session_date: date }).eq("id", id);
+    if (error) return toast.error(error.message);
+    if (sessCourse) await openSessions(sessCourse);
+  }
+  async function removeSession(id: string) {
+    const { error } = await supabase.from("course_sessions").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    if (sessCourse) await openSessions(sessCourse);
+  }
+
+  async function exportCourseList(c: Course) {
+    setExporting(c.id);
+    try {
+      const res = await exportXlsx({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Excel-Kursliste erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExporting(null);
+    }
+  }
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
@@ -299,6 +356,8 @@ function Page() {
                   </TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
+                    <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
+                    <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel-Kursliste"}</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
                     <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
@@ -591,6 +650,27 @@ function Page() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditPart(null)}>Abbrechen</Button>
             <Button onClick={savePart}>Speichern</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={sessOpen} onOpenChange={setSessOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Bis zu 10 Termine. Diese werden auf der Excel-Kursliste als Spaltenüberschriften ausgegeben.</p>
+          <div className="space-y-2">
+            {sessions.length === 0 && <div className="text-sm text-muted-foreground">Noch keine Termine.</div>}
+            {sessions.map(s => (
+              <div key={s.id} className="flex items-center gap-2">
+                <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
+                <Input type="date" value={s.session_date} onChange={e => updateSessionDate(s.id, e.target.value)} />
+                <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSessOpen(false)}>Schließen</Button>
+            <Button onClick={addSession} disabled={sessions.length >= 10}><Plus className="h-4 w-4" /> Termin hinzufügen</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
