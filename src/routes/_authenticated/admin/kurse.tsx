@@ -372,14 +372,18 @@ function Page() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kurse.</TableCell></TableRow>}
-              {rows.map(c => {
+              {(() => {
+                const filtered = rows.filter(r => view === "archived" ? !!r.archived_at : !r.archived_at);
+                if (filtered.length === 0) {
+                  return <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{view === "archived" ? "Keine erledigten Kurse im Archiv." : "Noch keine Kurse."}</TableCell></TableRow>;
+                }
+                return filtered.map(c => {
                 const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
                 const max = c.max_participants;
                 const full = max != null && cnt.confirmed >= max;
                 return (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}</TableCell>
+                <TableRow key={c.id} className={c.archived_at ? "opacity-75" : ""}>
+                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}{c.archived_at && <Badge variant="outline" className="ml-2 text-xs">Archiviert</Badge>}</TableCell>
                   <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
@@ -393,10 +397,14 @@ function Page() {
                     <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
                     <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel-Kursliste"}</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
+                    {c.archived_at
+                      ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /> Wiederherstellen</Button>
+                      : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /> Archivieren</Button>}
                     <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
-              )})}
+              )});
+              })()}
 
             </TableBody>
           </Table>
