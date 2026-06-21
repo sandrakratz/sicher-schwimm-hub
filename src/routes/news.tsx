@@ -30,8 +30,18 @@ type News = {
   published_at: string | null;
 };
 
+type EventItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  starts_at: string;
+  ends_at: string | null;
+};
+
 function Page() {
   const [items, setItems] = useState<News[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   useEffect(() => {
     supabase
       .from("news")
@@ -40,7 +50,15 @@ function Page() {
       .eq("visibility", "public")
       .order("published_at", { ascending: false })
       .then(({ data }) => setItems((data as News[]) || []));
+    supabase
+      .from("events")
+      .select("id,title,description,location,starts_at,ends_at")
+      .eq("visibility", "public")
+      .gte("starts_at", new Date().toISOString())
+      .order("starts_at", { ascending: true })
+      .then(({ data }) => setEvents((data as EventItem[]) || []));
   }, []);
+
 
   return (
     <PublicLayout>
