@@ -339,6 +339,25 @@ function Page() {
         <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
       </div>
 
+      <div className="inline-flex rounded-md border bg-muted/30 p-1 gap-1">
+        <Button
+          type="button"
+          size="sm"
+          variant={view === "active" ? "default" : "ghost"}
+          onClick={() => setView("active")}
+        >
+          Aktive Kurse ({rows.filter(r => !r.archived_at).length})
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={view === "archived" ? "default" : "ghost"}
+          onClick={() => setView("archived")}
+        >
+          <Archive className="h-4 w-4" /> Erledigte Kurse ({rows.filter(r => !!r.archived_at).length})
+        </Button>
+      </div>
+
       <Card className="border-0 shadow-soft">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
