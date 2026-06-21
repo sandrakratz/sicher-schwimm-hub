@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { generateCourseListXlsx } from "@/lib/course-sessions.functions";
 
@@ -93,6 +93,7 @@ type Course = {
   price_member: number | null;
   price_non_member: number | null;
   payment_due_days: number | null;
+  archived_at: string | null;
 };
 
 
