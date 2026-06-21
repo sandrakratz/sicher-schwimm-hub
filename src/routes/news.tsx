@@ -3,7 +3,9 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { Calendar, MapPin } from "lucide-react";
+
 
 export const Route = createFileRoute("/news")({
   head: () => ({
