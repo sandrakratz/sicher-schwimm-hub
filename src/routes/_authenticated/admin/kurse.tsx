@@ -112,6 +112,7 @@ function slugify(s: string) {
 
 function Page() {
   const [rows, setRows] = useState<Course[]>([]);
+  const [view, setView] = useState<"active" | "archived">("active");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
   const [counts, setCounts] = useState<Record<string, { confirmed: number; waiting: number }>>({});
@@ -313,6 +314,19 @@ function Page() {
     const { error } = await supabase.from("courses").delete().eq("id", c.id);
     if (error) return toast.error(error.message);
     toast.success("Gelöscht"); await load();
+  }
+
+  async function archive(c: Course) {
+    if (!confirm(`Kurs "${c.name}" archivieren?`)) return;
+    const { error } = await supabase.from("courses").update({ archived_at: new Date().toISOString() }).eq("id", c.id);
+    if (error) return toast.error(error.message);
+    toast.success("Kurs archiviert"); await load();
+  }
+
+  async function unarchive(c: Course) {
+    const { error } = await supabase.from("courses").update({ archived_at: null }).eq("id", c.id);
+    if (error) return toast.error(error.message);
+    toast.success("Kurs wiederhergestellt"); await load();
   }
 
   return (
