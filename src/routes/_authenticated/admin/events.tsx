@@ -44,8 +44,16 @@ type Ev = {
 function toLocal(s?: string | null) {
   if (!s) return "";
   const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
   const off = d.getTimezoneOffset();
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+}
+
+function fromLocal(v: string): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 function Page() {
