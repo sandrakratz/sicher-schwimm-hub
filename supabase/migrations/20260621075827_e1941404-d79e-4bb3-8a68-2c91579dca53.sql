@@ -1,0 +1,3 @@
+GRANT EXECUTE ON FUNCTION public.has_active_membership(uuid) TO anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO anon;
+GRANT EXECUTE ON FUNCTION public.is_staff(uuid) TO anon;
