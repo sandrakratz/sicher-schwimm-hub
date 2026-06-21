@@ -119,6 +119,61 @@ function Page() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [sessOpen, setSessOpen] = useState(false);
+  const [sessCourse, setSessCourse] = useState<Course | null>(null);
+  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const exportXlsx = useServerFn(generateCourseListXlsx);
+
+  async function openSessions(c: Course) {
+    setSessCourse(c); setSessOpen(true);
+    const { data } = await supabase.from("course_sessions")
+      .select("id,session_index,session_date")
+      .eq("course_id", c.id).order("session_index", { ascending: true });
+    setSessions((data as any) || []);
+  }
+  async function addSession() {
+    if (!sessCourse) return;
+    if (sessions.length >= 10) return toast.error("Maximal 10 Termine");
+    const nextIndex = (sessions.reduce((m, s) => Math.max(m, s.session_index), 0) || 0) + 1;
+    const today = new Date().toISOString().slice(0, 10);
+    const { error } = await supabase.from("course_sessions").insert({
+      course_id: sessCourse.id, session_index: nextIndex, session_date: today,
+    });
+    if (error) return toast.error(error.message);
+    await openSessions(sessCourse);
+  }
+  async function updateSessionDate(id: string, date: string) {
+    const { error } = await supabase.from("course_sessions").update({ session_date: date }).eq("id", id);
+    if (error) return toast.error(error.message);
+    if (sessCourse) await openSessions(sessCourse);
+  }
+  async function removeSession(id: string) {
+    const { error } = await supabase.from("course_sessions").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    if (sessCourse) await openSessions(sessCourse);
+  }
+
+  async function exportCourseList(c: Course) {
+    setExporting(c.id);
+    try {
+      const res = await exportXlsx({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Excel-Kursliste erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExporting(null);
+    }
+  }
 
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
