@@ -68,16 +68,37 @@ function Page() {
           <p className="text-white/85 text-lg">Aktuelles aus dem Verein.</p>
         </div>
       </section>
-      <section className="container mx-auto px-4 py-16 max-w-4xl">
-        {items.length === 0 ? (
-          <Card className="border-0 shadow-soft">
-            <CardContent className="p-10 text-center text-muted-foreground">
-              Aktuell keine öffentlichen Beiträge.
-            </CardContent>
-          </Card>
-        ) : (
+      <section className="container mx-auto px-4 py-16 max-w-4xl space-y-12">
+        {events.length > 0 && (
           <div className="space-y-4">
-            {items.map((n) => (
+            <h2 className="font-display text-2xl font-bold text-primary-deep">Kommende Termine</h2>
+            {events.map((e) => (
+              <Card key={e.id} className="border-0 shadow-soft">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <h3 className="font-display text-xl font-bold text-primary-deep">{e.title}</h3>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" />{formatDateTimeBerlin(e.starts_at)}{e.ends_at ? ` – ${formatDateTimeBerlin(e.ends_at)}` : ""}</span>
+                    {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{e.location}</span>}
+                  </div>
+                  {e.description && <p className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{e.description}</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <h2 className="font-display text-2xl font-bold text-primary-deep">Aktuelles</h2>
+          {items.length === 0 ? (
+            <Card className="border-0 shadow-soft">
+              <CardContent className="p-10 text-center text-muted-foreground">
+                Aktuell keine öffentlichen Beiträge.
+              </CardContent>
+            </Card>
+          ) : (
+            items.map((n) => (
               <Card key={n.id} className="border-0 shadow-soft">
                 <CardContent className="p-6">
                   <div className="text-xs text-accent uppercase font-semibold tracking-wider">
@@ -97,10 +118,11 @@ function Page() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </section>
+
     </PublicLayout>
   );
 }
