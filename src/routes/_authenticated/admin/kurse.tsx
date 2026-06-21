@@ -12,7 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { generateCourseListXlsx } from "@/lib/course-sessions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
