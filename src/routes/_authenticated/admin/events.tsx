@@ -44,8 +44,16 @@ type Ev = {
 function toLocal(s?: string | null) {
   if (!s) return "";
   const d = new Date(s);
+  if (isNaN(d.getTime())) return "";
   const off = d.getTimezoneOffset();
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
+}
+
+function fromLocal(v: string): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 function Page() {
@@ -137,8 +145,8 @@ function Page() {
             <div><Label>Beschreibung</Label><Textarea rows={3} value={editing.description || ""} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} /></div>
             <div><Label>Ort</Label><Input value={editing.location || ""} onChange={e => setEditing(p => ({ ...p, location: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Start *</Label><Input type="datetime-local" value={toLocal(editing.starts_at)} onChange={e => setEditing(p => ({ ...p, starts_at: new Date(e.target.value).toISOString() }))} /></div>
-              <div><Label>Ende</Label><Input type="datetime-local" value={toLocal(editing.ends_at)} onChange={e => setEditing(p => ({ ...p, ends_at: e.target.value ? new Date(e.target.value).toISOString() : null }))} /></div>
+              <div><Label>Start *</Label><Input type="datetime-local" value={toLocal(editing.starts_at)} onChange={e => setEditing(p => ({ ...p, starts_at: fromLocal(e.target.value) || p.starts_at }))} /></div>
+              <div><Label>Ende</Label><Input type="datetime-local" value={toLocal(editing.ends_at)} onChange={e => setEditing(p => ({ ...p, ends_at: fromLocal(e.target.value) }))} /></div>
             </div>
             <div>
               <Label>Sichtbarkeit</Label>
