@@ -165,41 +165,64 @@ function AnfragenAdmin() {
   }
 
 
+  const grouped = COURSE_GROUPS
+    .map(g => ({ ...g, items: rows.filter(r => groupKeyFor(r.desired_course) === g.key) }))
+    .filter(g => g.items.length > 0);
+  const openGroups = grouped.map(g => g.key);
+
   return (
     <div className="max-w-6xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Kursanfragen</h1>
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Datum</TableHead>
-                <TableHead>Eltern</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Kurs</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">Noch keine Anfragen.</TableCell></TableRow>}
-              {rows.map(r => (
-                <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
-                  <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
-                  <TableCell>
-                    <div className="font-semibold">{r.parent_name}</div>
-                    <div className="text-xs text-muted-foreground">{r.parent_email}</div>
-                  </TableCell>
-                  <TableCell>{r.child_name || "—"}</TableCell>
-                  <TableCell>{r.desired_course || "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
-                  <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {rows.length === 0 ? (
+        <Card className="border-0 shadow-soft"><CardContent className="text-center text-muted-foreground py-10">Noch keine Anfragen.</CardContent></Card>
+      ) : (
+        <Accordion type="multiple" defaultValue={openGroups} className="space-y-3">
+          {grouped.map(g => (
+            <AccordionItem key={g.key} value={g.key} className="border-0">
+              <Card className="border-0 shadow-soft">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <span className="font-display text-lg font-semibold text-primary-deep">{g.label}</span>
+                    <Badge variant="secondary">{g.items.length}</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Datum</TableHead>
+                          <TableHead>Eltern</TableHead>
+                          <TableHead>Kind</TableHead>
+                          <TableHead>Kurs</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {g.items.map(r => (
+                          <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
+                            <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
+                            <TableCell>
+                              <div className="font-semibold">{r.parent_name}</div>
+                              <div className="text-xs text-muted-foreground">{r.parent_email}</div>
+                            </TableCell>
+                            <TableCell>{r.child_name || "—"}</TableCell>
+                            <TableCell>{r.desired_course || "—"}</TableCell>
+                            <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
+                            <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
+
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
