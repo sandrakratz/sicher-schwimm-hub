@@ -15,6 +15,25 @@ import { assignRequestToCourse, suggestMatchForRequest } from "@/lib/course-assi
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const COURSE_GROUPS: { key: string; label: string; match: (v: string) => boolean }[] = [
+  { key: "wassergewoehnung", label: "Wassergewöhnung", match: v => v.includes("wassergew") },
+  { key: "schwimmen-lernen", label: "Schwimmen lernen", match: v => v.includes("schwimmen lernen") || v.includes("schwimmenlernen") },
+  { key: "seepferdchen-vorbereitung", label: "Seepferdchen-Vorbereitung", match: v => v.includes("seepferdchen") && (v.includes("vorbereit") || v.includes("vorb")) },
+  { key: "seepferdchen", label: "Seepferdchen", match: v => v.includes("seepferdchen") },
+  { key: "bronze", label: "Bronze", match: v => v.includes("bronze") },
+  { key: "silber", label: "Silber", match: v => v.includes("silber") },
+  { key: "gold", label: "Gold", match: v => v.includes("gold") },
+  { key: "sonstige", label: "Sonstige / Unbekannt", match: () => true },
+];
+
+function groupKeyFor(desired: string | null): string {
+  const v = (desired || "").toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+  if (!v) return "sonstige";
+  for (const g of COURSE_GROUPS) if (g.match(v)) return g.key;
+  return "sonstige";
+}
 
 
 type Item = {
