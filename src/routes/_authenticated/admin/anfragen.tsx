@@ -15,6 +15,25 @@ import { assignRequestToCourse, suggestMatchForRequest } from "@/lib/course-assi
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const COURSE_GROUPS: { key: string; label: string; match: (v: string) => boolean }[] = [
+  { key: "wassergewoehnung", label: "Wassergewöhnung", match: v => v.includes("wassergew") },
+  { key: "schwimmen-lernen", label: "Schwimmen lernen", match: v => v.includes("schwimmen lernen") || v.includes("schwimmenlernen") },
+  { key: "seepferdchen-vorbereitung", label: "Seepferdchen-Vorbereitung", match: v => v.includes("seepferdchen") && (v.includes("vorbereit") || v.includes("vorb")) },
+  { key: "seepferdchen", label: "Seepferdchen", match: v => v.includes("seepferdchen") },
+  { key: "bronze", label: "Bronze", match: v => v.includes("bronze") },
+  { key: "silber", label: "Silber", match: v => v.includes("silber") },
+  { key: "gold", label: "Gold", match: v => v.includes("gold") },
+  { key: "sonstige", label: "Sonstige / Unbekannt", match: () => true },
+];
+
+function groupKeyFor(desired: string | null): string {
+  const v = (desired || "").toLowerCase().replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+  if (!v) return "sonstige";
+  for (const g of COURSE_GROUPS) if (g.match(v)) return g.key;
+  return "sonstige";
+}
 
 
 type Item = {
@@ -66,7 +85,7 @@ function AnfragenAdmin() {
   const suggestFn = useServerFn(suggestMatchForRequest);
 
   async function load() {
-    const { data } = await supabase.from("course_requests").select("*").order("desired_course", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false });
+    const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
     const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on,price_member,price_non_member").is("archived_at", null).order("starts_on", { ascending: true, nullsFirst: false });
     setCourses((cs as CourseOpt[]) || []);
@@ -146,41 +165,64 @@ function AnfragenAdmin() {
   }
 
 
+  const grouped = COURSE_GROUPS
+    .map(g => ({ ...g, items: rows.filter(r => groupKeyFor(r.desired_course) === g.key) }))
+    .filter(g => g.items.length > 0);
+  const openGroups = grouped.map(g => g.key);
+
   return (
     <div className="max-w-6xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Kursanfragen</h1>
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Datum</TableHead>
-                <TableHead>Eltern</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Kurs</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">Noch keine Anfragen.</TableCell></TableRow>}
-              {rows.map(r => (
-                <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
-                  <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
-                  <TableCell>
-                    <div className="font-semibold">{r.parent_name}</div>
-                    <div className="text-xs text-muted-foreground">{r.parent_email}</div>
-                  </TableCell>
-                  <TableCell>{r.child_name || "—"}</TableCell>
-                  <TableCell>{r.desired_course || "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
-                  <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {rows.length === 0 ? (
+        <Card className="border-0 shadow-soft"><CardContent className="text-center text-muted-foreground py-10">Noch keine Anfragen.</CardContent></Card>
+      ) : (
+        <Accordion type="multiple" defaultValue={openGroups} className="space-y-3">
+          {grouped.map(g => (
+            <AccordionItem key={g.key} value={g.key} className="border-0">
+              <Card className="border-0 shadow-soft">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <span className="font-display text-lg font-semibold text-primary-deep">{g.label}</span>
+                    <Badge variant="secondary">{g.items.length}</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Datum</TableHead>
+                          <TableHead>Eltern</TableHead>
+                          <TableHead>Kind</TableHead>
+                          <TableHead>Kurs</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {g.items.map(r => (
+                          <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
+                            <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
+                            <TableCell>
+                              <div className="font-semibold">{r.parent_name}</div>
+                              <div className="text-xs text-muted-foreground">{r.parent_email}</div>
+                            </TableCell>
+                            <TableCell>{r.child_name || "—"}</TableCell>
+                            <TableCell>{r.desired_course || "—"}</TableCell>
+                            <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
+                            <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
+
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
