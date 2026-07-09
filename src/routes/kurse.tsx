@@ -78,6 +78,9 @@ function KursePage() {
       </section>
 
       <section className="container mx-auto px-4 py-16">
+        <div className="mb-8 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary-deep">
+          <strong>Hinweis:</strong> Wir befinden uns derzeit in der finalen Abstimmung der Wasserzeiten mit mehreren Schwimmbädern. Daher wird der genaue Kursort jedem Kurs nach der endgültigen Beckenvergabe zugeordnet und allen Teilnehmenden rechtzeitig bzw. bei Kursbestätigung mitgeteilt.
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((c) => (
             <Card key={c.name} className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
