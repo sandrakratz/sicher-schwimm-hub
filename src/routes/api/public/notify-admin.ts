@@ -89,6 +89,14 @@ export const Route = createFileRoute('/api/public/notify-admin')({
         if (!template) return Response.json({ error: 'Unknown template' }, { status: 404 })
         if (!template.to) return Response.json({ error: 'Template has no fixed recipient' }, { status: 400 })
 
+        const schema = TEMPLATE_DATA_SCHEMAS[templateName]
+        if (!schema) return Response.json({ error: 'Template not permitted via this endpoint' }, { status: 403 })
+        const parsed = schema.safeParse(templateData)
+        if (!parsed.success) {
+          return Response.json({ error: 'Invalid templateData' }, { status: 400 })
+        }
+        templateData = parsed.data as Record<string, any>
+
         const supabase = createClient(supabaseUrl, serviceKey)
         const messageId = crypto.randomUUID()
         const idem = idempotencyKey || messageId
