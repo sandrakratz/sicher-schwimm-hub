@@ -101,7 +101,9 @@ async function enqueueTemplate(
   await supabase.from('email_send_log').insert({
     message_id: messageId, template_name: templateName,
     recipient_email: recipient, status: 'pending',
+    subject, body_html: html, body_text: text,
   })
+
 
   const { error } = await supabase.rpc('enqueue_email', {
     queue_name: 'transactional_emails',
