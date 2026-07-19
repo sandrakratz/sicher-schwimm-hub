@@ -87,6 +87,8 @@ function AnfragenAdmin() {
   const [replySubject, setReplySubject] = useState("");
   const [replyBody, setReplyBody] = useState("");
   const [replyBusy, setReplyBusy] = useState(false);
+  const [conversationReloadKey, setConversationReloadKey] = useState(0);
+
   const assignFn = useServerFn(assignRequestToCourse);
   const suggestFn = useServerFn(suggestMatchForRequest);
   const replyFn = useServerFn(replyToCourseRequest);
