@@ -168,7 +168,11 @@ export const Route = createFileRoute('/api/public/notify-admin')({
           template_name: templateName,
           recipient_email: recipient,
           status: 'pending',
+          subject,
+          body_html: html,
+          body_text: text,
         })
+
 
         const { error: enqueueError } = await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
