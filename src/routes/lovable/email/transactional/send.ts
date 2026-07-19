@@ -271,7 +271,12 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           template_name: templateName,
           recipient_email: effectiveRecipient,
           status: 'pending',
+          subject: resolvedSubject,
+          body_html: html,
+          body_text: plainText,
+          sender_user_id: user.id,
         })
+
 
         const { error: enqueueError } = await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
