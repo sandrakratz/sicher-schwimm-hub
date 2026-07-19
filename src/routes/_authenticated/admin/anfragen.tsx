@@ -171,6 +171,21 @@ function AnfragenAdmin() {
     await load();
   }
 
+  async function doReply() {
+    if (!selected) return;
+    if (replyBody.trim().length < 2) { toast.error("Bitte Nachricht eingeben"); return; }
+    setReplyBusy(true);
+    try {
+      await replyFn({ data: { requestId: selected.id, body: replyBody, subject: replySubject } });
+      toast.success("E-Mail gesendet – Status auf Kontaktiert gesetzt");
+      setReplyBody("");
+      setSelected(s => s ? { ...s, status: "contacted" } : s);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "E-Mail konnte nicht gesendet werden");
+    } finally { setReplyBusy(false); }
+  }
+
 
   const grouped = COURSE_GROUPS
     .map(g => ({ ...g, items: rows.filter(r => groupKeyFor(r.desired_course) === g.key) }))
