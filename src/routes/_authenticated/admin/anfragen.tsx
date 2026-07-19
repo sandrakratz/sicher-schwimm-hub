@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
+
 
 const COURSE_GROUPS: { key: string; label: string; match: (v: string) => boolean }[] = [
   { key: "wassergewoehnung", label: "Wassergewöhnung", match: v => v.includes("wassergew") },
@@ -85,6 +87,8 @@ function AnfragenAdmin() {
   const [replySubject, setReplySubject] = useState("");
   const [replyBody, setReplyBody] = useState("");
   const [replyBusy, setReplyBusy] = useState(false);
+  const [conversationReloadKey, setConversationReloadKey] = useState(0);
+
   const assignFn = useServerFn(assignRequestToCourse);
   const suggestFn = useServerFn(suggestMatchForRequest);
   const replyFn = useServerFn(replyToCourseRequest);
@@ -180,7 +184,9 @@ function AnfragenAdmin() {
       toast.success("E-Mail gesendet – Status auf Kontaktiert gesetzt");
       setReplyBody("");
       setSelected(s => s ? { ...s, status: "contacted" } : s);
+      setConversationReloadKey(k => k + 1);
       await load();
+
     } catch (e: any) {
       toast.error(e?.message || "E-Mail konnte nicht gesendet werden");
     } finally { setReplyBusy(false); }
@@ -273,7 +279,25 @@ function AnfragenAdmin() {
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
 
               <hr />
+              <ConversationTimeline
+                kind="course-request"
+                id={selected.id}
+                original={{
+                  title: `Kursanfrage${selected.child_name ? ` – ${selected.child_name}` : ""}`,
+                  when: selected.created_at,
+                  from: `${selected.parent_name} <${selected.parent_email}>`,
+                  body: [
+                    selected.desired_course ? `Gewünschter Kurs: ${selected.desired_course}` : null,
+                    selected.swimming_level ? `Schwimmlevel: ${selected.swimming_level}` : null,
+                    selected.message ? `\n${selected.message}` : null,
+                  ].filter(Boolean).join("\n"),
+                }}
+                reloadKey={conversationReloadKey}
+              />
+
+              <hr />
               <h3 className="font-semibold">Rückfrage per E-Mail senden</h3>
+
               <div className="space-y-3 rounded-md border bg-muted/30 p-3">
                 <p className="text-xs text-muted-foreground">
                   Sendet eine E-Mail an {selected.parent_email} und setzt den Status automatisch auf „Kontaktiert".

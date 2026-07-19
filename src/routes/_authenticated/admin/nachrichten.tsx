@@ -9,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, Reply, Trash2 } from "lucide-react";
+import { Reply, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { replyToMessage } from "@/lib/messages.functions";
+import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
+
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   beforeLoad: async () => {
@@ -126,6 +128,7 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
   const [replySubject, setReplySubject] = useState(`Re: ${m.subject || "Ihre Nachricht"}`);
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   async function sendReply() {
     if (replyBody.trim().length < 2) { toast.error("Bitte Antworttext eingeben"); return; }
@@ -136,12 +139,14 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
       setReplyOpen(false);
       setReplyBody("");
       onStatus(m.id, "replied");
+      setReloadKey(k => k + 1);
     } catch (e: any) {
       toast.error(e?.message || "Antwort konnte nicht gesendet werden");
     } finally {
       setSending(false);
     }
   }
+
 
   return (
     <Card className="border-0 shadow-soft">
@@ -221,10 +226,18 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
         </div>
 
 
-        <div className="rounded-lg bg-muted/40 p-4">
-          <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Mail className="h-3 w-3" />Nachricht</div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.body}</p>
-        </div>
+        <ConversationTimeline
+          kind="message"
+          id={m.id}
+          original={{
+            title: m.subject || "(Kein Betreff)",
+            when: m.created_at,
+            from: `${m.from_name} <${m.from_email}>`,
+            body: m.body,
+          }}
+          reloadKey={reloadKey}
+        />
+
 
         <div>
           <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Interne Notizen</label>
