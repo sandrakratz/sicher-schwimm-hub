@@ -273,6 +273,25 @@ function AnfragenAdmin() {
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
 
               <hr />
+              <h3 className="font-semibold">Rückfrage per E-Mail senden</h3>
+              <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Sendet eine E-Mail an {selected.parent_email} und setzt den Status automatisch auf „Kontaktiert".
+                </p>
+                <div>
+                  <Label>Betreff</Label>
+                  <Input value={replySubject} onChange={e => setReplySubject(e.target.value)} maxLength={300} />
+                </div>
+                <div>
+                  <Label>Nachricht</Label>
+                  <Textarea rows={6} value={replyBody} onChange={e => setReplyBody(e.target.value)} placeholder="Ihre Rückfrage an die Eltern …" />
+                </div>
+                <Button variant="default" onClick={doReply} disabled={replyBusy || replyBody.trim().length < 2}>
+                  {replyBusy ? "Wird gesendet …" : "E-Mail senden & als Kontaktiert markieren"}
+                </Button>
+              </div>
+
+              <hr />
               <h3 className="font-semibold">In Kurs einbuchen</h3>
               <div className="space-y-3 rounded-md border bg-muted/30 p-3">
                 <div>
