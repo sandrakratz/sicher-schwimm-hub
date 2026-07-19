@@ -84,14 +84,15 @@ export const backfillEmailBodies = createServerFn({ method: 'POST' })
           if (match) data = match
         } else if (tplName === 'membership-application' && recipient) {
           const { data: apps } = await supabaseAdmin.from('memberships')
-            .select('full_name:member_first_name, first:member_first_name, last:member_last_name, email:contact_email, membership_type, phone:contact_phone, city:contact_city, iban, created_at')
+            .select('first_name, last_name, email, membership_type, phone, address_city, sepa_iban, created_at')
             .order('created_at', { ascending: false }).limit(200)
           const match = findClosestByTime(apps || [], ts) as any
           if (match) data = {
-            full_name: [match.first, match.last].filter(Boolean).join(' ').trim() || undefined,
+            full_name: [match.first_name, match.last_name].filter(Boolean).join(' ').trim() || undefined,
             email: match.email, membership_type: match.membership_type,
-            phone: match.phone, city: match.city, iban: match.iban, created_at: match.created_at,
+            phone: match.phone, city: match.address_city, iban: match.sepa_iban, created_at: match.created_at,
           }
+
         } else if (tplName === 'new-registration') {
           const { data: profs } = await supabaseAdmin.from('profiles')
             .select('first_name, last_name, email, created_at')
