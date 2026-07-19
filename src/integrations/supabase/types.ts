@@ -416,33 +416,45 @@ export type Database = {
       }
       email_send_log: {
         Row: {
+          body_html: string | null
+          body_text: string | null
           created_at: string
           error_message: string | null
           id: string
           message_id: string | null
           metadata: Json | null
           recipient_email: string
+          sender_user_id: string | null
           status: string
+          subject: string | null
           template_name: string
         }
         Insert: {
+          body_html?: string | null
+          body_text?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           message_id?: string | null
           metadata?: Json | null
           recipient_email: string
+          sender_user_id?: string | null
           status: string
+          subject?: string | null
           template_name: string
         }
         Update: {
+          body_html?: string | null
+          body_text?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
           message_id?: string | null
           metadata?: Json | null
           recipient_email?: string
+          sender_user_id?: string | null
           status?: string
+          subject?: string | null
           template_name?: string
         }
         Relationships: []
