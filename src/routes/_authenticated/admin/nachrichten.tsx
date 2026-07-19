@@ -128,6 +128,7 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
   const [replySubject, setReplySubject] = useState(`Re: ${m.subject || "Ihre Nachricht"}`);
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   async function sendReply() {
     if (replyBody.trim().length < 2) { toast.error("Bitte Antworttext eingeben"); return; }
@@ -138,12 +139,14 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
       setReplyOpen(false);
       setReplyBody("");
       onStatus(m.id, "replied");
+      setReloadKey(k => k + 1);
     } catch (e: any) {
       toast.error(e?.message || "Antwort konnte nicht gesendet werden");
     } finally {
       setSending(false);
     }
   }
+
 
   return (
     <Card className="border-0 shadow-soft">
