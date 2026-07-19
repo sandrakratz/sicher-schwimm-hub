@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, MailOpen, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
+import { Shield, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, MailOpen, Send, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type NavItem = {
-  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/widerrufe" | "/admin/audit";
+  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
   exact?: boolean;
@@ -51,6 +51,8 @@ const adminNav: NavItem[] = [
   { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
   { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
   { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten", allow: ["admin", "board"] },
+  { to: "/admin/emails", icon: Send, label: "Gesendete E-Mails", allow: ["admin", "board"] },
+
   { to: "/admin/widerrufe", icon: FileText, label: "Widerrufe", allow: ["admin", "board"] },
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
 ];

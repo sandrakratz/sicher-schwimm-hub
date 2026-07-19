@@ -48,6 +48,7 @@ import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
 import { Route as AuthenticatedAdminKurseRouteImport } from './routes/_authenticated/admin/kurse'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
+import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin/emails'
 import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authenticated/admin/dokumente'
 import { Route as AuthenticatedAdminBenutzerRouteImport } from './routes/_authenticated/admin/benutzer'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
@@ -263,6 +264,12 @@ const AuthenticatedAdminEventsRoute =
     path: '/events',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminEmailsRoute =
+  AuthenticatedAdminEmailsRouteImport.update({
+    id: '/emails',
+    path: '/emails',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminDokumenteRoute =
   AuthenticatedAdminDokumenteRouteImport.update({
     id: '/dokumente',
@@ -341,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
+  '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -389,6 +397,7 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
+  '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -440,6 +449,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
   '/_authenticated/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
+  '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/kurse': typeof AuthenticatedAdminKurseRoute
   '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -491,6 +501,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/benutzer'
     | '/admin/dokumente'
+    | '/admin/emails'
     | '/admin/events'
     | '/admin/kurse'
     | '/admin/mitgliedschaften'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/benutzer'
     | '/admin/dokumente'
+    | '/admin/emails'
     | '/admin/events'
     | '/admin/kurse'
     | '/admin/mitgliedschaften'
@@ -589,6 +601,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
     | '/_authenticated/admin/dokumente'
+    | '/_authenticated/admin/emails'
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/kurse'
     | '/_authenticated/admin/mitgliedschaften'
@@ -920,6 +933,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/emails': {
+      id: '/_authenticated/admin/emails'
+      path: '/emails'
+      fullPath: '/admin/emails'
+      preLoaderRoute: typeof AuthenticatedAdminEmailsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/dokumente': {
       id: '/_authenticated/admin/dokumente'
       path: '/dokumente'
@@ -991,6 +1011,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminBenutzerRoute: typeof AuthenticatedAdminBenutzerRoute
   AuthenticatedAdminDokumenteRoute: typeof AuthenticatedAdminDokumenteRoute
+  AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminKurseRoute: typeof AuthenticatedAdminKurseRoute
   AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -1006,6 +1027,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
     AuthenticatedAdminBenutzerRoute: AuthenticatedAdminBenutzerRoute,
     AuthenticatedAdminDokumenteRoute: AuthenticatedAdminDokumenteRoute,
+    AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
     AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
     AuthenticatedAdminKurseRoute: AuthenticatedAdminKurseRoute,
     AuthenticatedAdminMitgliedschaftenRoute:
@@ -1080,13 +1102,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
