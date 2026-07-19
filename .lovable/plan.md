@@ -1,37 +1,35 @@
 ## Ziel
-Alle über die Webseite versandten E-Mails (Antworten auf Nachrichten, Rückfragen zu Kursanfragen, Kurszuweisungen, Widerrufsbestätigungen, Admin-Benachrichtigungen etc.) sollen im Adminbereich mit vollem Inhalt nachlesbar sein.
+- Option 3: Alle künftig versandten App-E-Mails speichern Betreff + HTML + Textinhalt in `email_send_log`, damit sie im Adminbereich vollständig nachlesbar sind.
+- Option 2: Für die Altbestände, bei denen wir die Quelldaten noch haben, die Inhalte einmalig aus den ursprünglichen Templates rekonstruieren.
 
-## Umsetzung
+## Option 3 – Ab jetzt vollständig loggen
+Zentraler Punkt ist der Sende-Choke-Point. Zusätzlich zu den bereits erledigten Reply-Funktionen erweitern wir:
 
-### 1. Vollen Inhalt speichern
-Aktuell speichert `email_send_log` nur `template_name`, `recipient_email`, `status` und `error_message` — nicht Betreff/Body. Damit man nachlesen kann, was besprochen wurde, brauchen wir den Inhalt.
+1. **`src/routes/lovable/email/transactional/send.ts`** – beim `pending`-Insert (Zeile 269) `subject`, `body_html`, `body_text` mitschreiben. Betroffen sind damit automatisch: `course-assignment`, `cancellation-confirmation`, `membership-application`-Bestätigungen etc. (alles was den generellen Sende-Weg nutzt).
+2. **`src/routes/api/public/notify-admin.ts`** – analog beim Insert des Log-Eintrags Betreff und gerenderten HTML/Text ergänzen. Damit werden alle Admin-Benachrichtigungen (Kontakt, Kursanfrage, Mitgliedsantrag, Neuregistrierung) inhaltlich gespeichert.
+3. **`src/routes/api/public/submit-cancellation.ts`** – für die intern und an den Nutzer versendete Widerrufs-Mail gleichermaßen.
+4. **`src/lib/course-assignment.functions.ts`** – falls dort direkt in `email_send_log` geschrieben wird, ebenfalls Inhalte mitspeichern.
 
-- Migration: neue Spalten `subject text`, `body_text text`, `body_html text`, `sender_user_id uuid` in `email_send_log` ergänzen (nullable, keine Änderung an bestehendem Queue-Flow).
-- In den beiden manuell versandten Reply-Funktionen den Inhalt beim `pending`-Insert mitschreiben:
-  - `src/lib/messages.functions.ts` (`replyToMessage`)
-  - `src/lib/course-requests.functions.ts` (`replyToCourseRequest`)
-- Für später automatisch versandte Templates (Kurszuweisung, Widerruf, Admin-Notify usw.) optional in einem Folgeschritt — wir starten mit den beiden „Gespräch"-Fällen, weil dort der Nachlese-Bedarf entsteht.
+Bewusst **nicht** eingebunden:
+- Auth-Mails (`src/routes/lovable/email/auth/webhook.ts`): enthalten Einmal-Tokens und dürfen nicht persistiert werden.
+- Queue-Prozessor & Suppression-Route: schreiben nur Statusänderungen, keine neuen Templates.
 
-### 2. Neue Adminseite „Gesendete E-Mails"
-Neue Route `src/routes/_authenticated/admin/emails.tsx`, Zugriff für `admin` + `board` (Guard wie `nachrichten.tsx`).
+## Option 2 – Einmalige Rekonstruktion von Altbeständen
+Ein neuer Server-Endpunkt (Admin-only Button in `/admin/emails`), der einmalig ausgeführt wird und pro Alt-Zeile in `email_send_log` — sofern `body_html` noch NULL ist — folgendes tut:
 
-Features (folgt dem Email-Dashboard-Standard):
-- Zeitraum-Filter (24h / 7 Tage / 30 Tage / custom), Default 7 Tage.
-- Filter nach Template (Dropdown mit distinct `template_name`).
-- Statusfilter (Alle / Gesendet / Fehlgeschlagen / Unterdrückt) mit farbigen Badges.
-- Summary-Cards: Gesamt, Gesendet, Fehlgeschlagen, Unterdrückt — dedupliziert per `message_id`.
-- Tabelle: eine Zeile pro E-Mail (dedupliziert, letzter Status pro `message_id`), Spalten Template, Empfänger, Status, Zeit (Europe/Berlin via `formatDateTimeBerlin`), Aktion „Ansehen".
-- „Ansehen"-Dialog zeigt Betreff, Empfänger, Zeitpunkt, gerenderten HTML-Body (sicher in Sandbox-`iframe` mit `srcDoc`) plus Text-Fallback und ggf. Fehlermeldung.
-- Paginierung ab 50 Einträgen, Standardsortierung Zeit absteigend.
+- `contact-message`, `course-request`, `membership-application`, `new-registration`, `course-assignment`, `cancellation-internal`, `cancellation-confirmation`:  
+  Passenden Quelldatensatz per `recipient_email` + Zeitfenster (`created_at ± wenige Minuten`) finden, `templateData` daraus zusammenbauen, mit dem existierenden React-Email-Template rendern und Betreff + HTML + Text in die Log-Zeile schreiben.
+- `message-reply`, `course-request-reply`:  
+  Der eigentlich getippte Antworttext ist verloren. Wir schreiben stattdessen einen deutlich gekennzeichneten Platzhalter („⚠️ Antworttext nicht mehr verfügbar – nur Kontext rekonstruiert“) plus die Originalanfrage aus `messages` / `course_requests`. So sieht man wenigstens, worum es ging.
+- Auth-Templates (`signup`, `recovery`, …): bleiben ohne Inhalt (Tokens dürfen nicht rekonstruiert werden). Bekommen einen kurzen Hinweistext im `body_text`, damit der Detail-Dialog nicht leer wirkt.
+- Falls kein Quelldatensatz gefunden wird, bleibt die Zeile unverändert.
 
-### 3. Verlinkung im Kontext
-- In `admin/nachrichten.tsx`: pro Nachricht Link „Gesendete Antworten anzeigen" → filtert die Emailseite auf Empfänger.
-- In `admin/anfragen.tsx`: im Detail-Dialog analoger Link.
-
-### 4. Sichtbarkeit / RLS
-`email_send_log` hat bereits Policies; Lesezugriff für `admin`/`board` prüfen und ggf. per neuer Policy freigeben (nur SELECT, kein INSERT/UPDATE für Nutzer).
+Umsetzung:
+- Neue Datei `src/lib/email-backfill.functions.ts` mit `backfillEmailBodies` (`requireSupabaseAuth`, Admin-Rollen-Check über `has_role`).
+- Kleiner Button „Alte E-Mails rekonstruieren“ im Kopfbereich von `src/routes/_authenticated/admin/emails.tsx`, sichtbar für Admins; zeigt danach eine Toast-Zusammenfassung („X aktualisiert, Y ohne Quelle, Z übersprungen“).
+- Der Endpunkt läuft in Batches (z. B. 200 pro Aufruf), damit lange Historien nicht in einen Request-Timeout laufen; Fortschritt wird über den Toast wiederholbar angezeigt („Weiter rekonstruieren“ falls noch Zeilen offen sind).
 
 ## Nicht im Scope
-- Keine Änderung am Queue-/Sende-Flow selbst.
-- Keine Rendering-Kopien für Auth-Mails (Passwort-Reset etc.) — diese enthalten Tokens und werden weiterhin nur mit Status geloggt.
-- Keine Volltextsuche (kann später ergänzt werden).
+- Kein neues E-Mail-Schema jenseits der bereits vorhandenen Spalten (`subject`, `body_text`, `body_html`, `sender_user_id`).
+- Keine Rekonstruktion von Auth-Mail-Inhalten mit echten Tokens.
+- Kein Backfill des tatsächlichen freien Antworttexts früherer manueller Antworten (Daten existieren nicht mehr).
