@@ -84,7 +84,12 @@ export const replyToMessage = createServerFn({ method: 'POST' })
       template_name: 'message-reply',
       recipient_email: recipient,
       status: 'pending',
+      subject,
+      body_text: text,
+      body_html: html,
+      sender_user_id: userId,
     })
+
 
     const { error: enqErr } = await supabaseAdmin.rpc('enqueue_email', {
       queue_name: 'transactional_emails',
