@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type NavItem = {
-  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/widerrufe" | "/admin/audit";
+  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
   exact?: boolean;
