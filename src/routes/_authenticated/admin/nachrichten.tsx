@@ -169,9 +169,37 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
                 <SelectItem value="archived">Archiviert</SelectItem>
               </SelectContent>
             </Select>
-            <Button asChild size="sm" variant="default">
-              <a href={mailto}><Reply className="h-4 w-4 mr-1" />Antworten</a>
+            <Button size="sm" variant="default" onClick={() => setReplyOpen(true)}>
+              <Reply className="h-4 w-4 mr-1" />Antworten
             </Button>
+            <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Antwort an {m.from_name}</DialogTitle>
+                  <DialogDescription>
+                    Die Antwort wird direkt per E-Mail an {m.from_email} gesendet.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor={`subj-${m.id}`}>Betreff</Label>
+                    <Input id={`subj-${m.id}`} value={replySubject} onChange={(e) => setReplySubject(e.target.value)} maxLength={300} />
+                  </div>
+                  <div>
+                    <Label htmlFor={`body-${m.id}`}>Nachricht</Label>
+                    <Textarea id={`body-${m.id}`} value={replyBody} onChange={(e) => setReplyBody(e.target.value)} rows={8} placeholder="Ihre Antwort …" />
+                  </div>
+                  <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+                    <div className="font-semibold mb-1">Ursprüngliche Nachricht:</div>
+                    <div className="whitespace-pre-wrap">{m.body}</div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setReplyOpen(false)} disabled={sending}>Abbrechen</Button>
+                  <Button onClick={sendReply} disabled={sending}>{sending ? "Wird gesendet …" : "Senden"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="destructive" aria-label="Nachricht löschen"><Trash2 className="h-4 w-4" /></Button>
