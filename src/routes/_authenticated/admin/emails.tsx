@@ -142,14 +142,16 @@ function Page() {
     <div className="max-w-6xl space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-bold text-primary-deep">Gesendete E-Mails</h1>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {(["24h", "7d", "30d", "all"] as RangeKey[]).map(k => (
             <Button key={k} size="sm" variant={range === k ? "default" : "outline"} onClick={() => setRange(k)}>
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
+          <BackfillButton />
         </div>
       </div>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Gesamt" value={stats.total} />
