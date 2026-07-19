@@ -226,10 +226,18 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
         </div>
 
 
-        <div className="rounded-lg bg-muted/40 p-4">
-          <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2 flex items-center gap-1"><Mail className="h-3 w-3" />Nachricht</div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.body}</p>
-        </div>
+        <ConversationTimeline
+          kind="message"
+          id={m.id}
+          original={{
+            title: m.subject || "(Kein Betreff)",
+            when: m.created_at,
+            from: `${m.from_name} <${m.from_email}>`,
+            body: m.body,
+          }}
+          reloadKey={reloadKey}
+        />
+
 
         <div>
           <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Interne Notizen</label>
