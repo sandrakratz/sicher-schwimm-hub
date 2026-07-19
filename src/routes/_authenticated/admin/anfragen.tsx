@@ -184,7 +184,9 @@ function AnfragenAdmin() {
       toast.success("E-Mail gesendet – Status auf Kontaktiert gesetzt");
       setReplyBody("");
       setSelected(s => s ? { ...s, status: "contacted" } : s);
+      setConversationReloadKey(k => k + 1);
       await load();
+
     } catch (e: any) {
       toast.error(e?.message || "E-Mail konnte nicht gesendet werden");
     } finally { setReplyBusy(false); }
