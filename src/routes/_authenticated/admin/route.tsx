@@ -51,6 +51,8 @@ const adminNav: NavItem[] = [
   { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
   { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
   { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten", allow: ["admin", "board"] },
+  { to: "/admin/emails", icon: Send, label: "Gesendete E-Mails", allow: ["admin", "board"] },
+
   { to: "/admin/widerrufe", icon: FileText, label: "Widerrufe", allow: ["admin", "board"] },
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
 ];
