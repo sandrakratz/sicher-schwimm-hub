@@ -5,11 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Mail, Reply, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTimeBerlin } from "@/lib/format";
+import { replyToMessage } from "@/lib/messages.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   beforeLoad: async () => {
@@ -118,9 +122,26 @@ function Page() {
 
 function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void; onDelete: (id: string) => void }) {
   const [notes, setNotes] = useState(m.internal_notes || "");
-  const replySubject = encodeURIComponent(`Re: ${m.subject || "Ihre Nachricht"}`);
-  const replyBody = encodeURIComponent(`\n\n--- Ursprüngliche Nachricht ---\nVon: ${m.from_name} <${m.from_email}>\nGesendet: ${formatDateTimeBerlin(m.created_at)}\nBetreff: ${m.subject || "—"}\n\n${m.body}`);
-  const mailto = `mailto:${m.from_email}?subject=${replySubject}&body=${replyBody}`;
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replySubject, setReplySubject] = useState(`Re: ${m.subject || "Ihre Nachricht"}`);
+  const [replyBody, setReplyBody] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function sendReply() {
+    if (replyBody.trim().length < 2) { toast.error("Bitte Antworttext eingeben"); return; }
+    setSending(true);
+    try {
+      await replyToMessage({ data: { messageId: m.id, body: replyBody, subject: replySubject } });
+      toast.success("Antwort gesendet");
+      setReplyOpen(false);
+      setReplyBody("");
+      onStatus(m.id, "replied");
+    } catch (e: any) {
+      toast.error(e?.message || "Antwort konnte nicht gesendet werden");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <Card className="border-0 shadow-soft">
@@ -148,9 +169,37 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
                 <SelectItem value="archived">Archiviert</SelectItem>
               </SelectContent>
             </Select>
-            <Button asChild size="sm" variant="default">
-              <a href={mailto}><Reply className="h-4 w-4 mr-1" />Antworten</a>
+            <Button size="sm" variant="default" onClick={() => setReplyOpen(true)}>
+              <Reply className="h-4 w-4 mr-1" />Antworten
             </Button>
+            <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Antwort an {m.from_name}</DialogTitle>
+                  <DialogDescription>
+                    Die Antwort wird direkt per E-Mail an {m.from_email} gesendet.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor={`subj-${m.id}`}>Betreff</Label>
+                    <Input id={`subj-${m.id}`} value={replySubject} onChange={(e) => setReplySubject(e.target.value)} maxLength={300} />
+                  </div>
+                  <div>
+                    <Label htmlFor={`body-${m.id}`}>Nachricht</Label>
+                    <Textarea id={`body-${m.id}`} value={replyBody} onChange={(e) => setReplyBody(e.target.value)} rows={8} placeholder="Ihre Antwort …" />
+                  </div>
+                  <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+                    <div className="font-semibold mb-1">Ursprüngliche Nachricht:</div>
+                    <div className="whitespace-pre-wrap">{m.body}</div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setReplyOpen(false)} disabled={sending}>Abbrechen</Button>
+                  <Button onClick={sendReply} disabled={sending}>{sending ? "Wird gesendet …" : "Senden"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="destructive" aria-label="Nachricht löschen"><Trash2 className="h-4 w-4" /></Button>
