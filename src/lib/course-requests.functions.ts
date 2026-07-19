@@ -100,7 +100,12 @@ export const replyToCourseRequest = createServerFn({ method: 'POST' })
       template_name: 'course-request-reply',
       recipient_email: recipient,
       status: 'pending',
+      subject,
+      body_text: text,
+      body_html: html,
+      sender_user_id: userId,
     })
+
 
     const { error: enqErr } = await supabaseAdmin.rpc('enqueue_email', {
       queue_name: 'transactional_emails',
