@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, MailOpen, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
+import { Shield, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, MailOpen, Send, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
