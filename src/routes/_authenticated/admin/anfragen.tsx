@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useServerFn } from "@tanstack/react-start";
 import { assignRequestToCourse, suggestMatchForRequest } from "@/lib/course-assignment.functions";
+import { replyToCourseRequest } from "@/lib/course-requests.functions";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
@@ -81,8 +82,12 @@ function AnfragenAdmin() {
   const [priceAmount, setPriceAmount] = useState<string>("");
   const [priceTouched, setPriceTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [replySubject, setReplySubject] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [replyBusy, setReplyBusy] = useState(false);
   const assignFn = useServerFn(assignRequestToCourse);
   const suggestFn = useServerFn(suggestMatchForRequest);
+  const replyFn = useServerFn(replyToCourseRequest);
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
@@ -104,6 +109,8 @@ function AnfragenAdmin() {
     setParentLabel("");
     setPriceAmount("");
     setPriceTouched(false);
+    setReplySubject(`Rückfrage zu Ihrer Kursanfrage${selected.child_name ? ` – ${selected.child_name}` : ""}`);
+    setReplyBody("");
     (async () => {
       try {
         const res = await suggestFn({ data: { email: selected.parent_email } });
@@ -162,6 +169,21 @@ function AnfragenAdmin() {
     toast.success("Anfrage gelöscht");
     setSelected(null);
     await load();
+  }
+
+  async function doReply() {
+    if (!selected) return;
+    if (replyBody.trim().length < 2) { toast.error("Bitte Nachricht eingeben"); return; }
+    setReplyBusy(true);
+    try {
+      await replyFn({ data: { requestId: selected.id, body: replyBody, subject: replySubject } });
+      toast.success("E-Mail gesendet – Status auf Kontaktiert gesetzt");
+      setReplyBody("");
+      setSelected(s => s ? { ...s, status: "contacted" } : s);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "E-Mail konnte nicht gesendet werden");
+    } finally { setReplyBusy(false); }
   }
 
 
@@ -249,6 +271,25 @@ function AnfragenAdmin() {
               <hr />
               <Row label="Datenschutz akzeptiert" value={selected.gdpr_consent ? "Ja" : "Nein"} />
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
+
+              <hr />
+              <h3 className="font-semibold">Rückfrage per E-Mail senden</h3>
+              <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Sendet eine E-Mail an {selected.parent_email} und setzt den Status automatisch auf „Kontaktiert".
+                </p>
+                <div>
+                  <Label>Betreff</Label>
+                  <Input value={replySubject} onChange={e => setReplySubject(e.target.value)} maxLength={300} />
+                </div>
+                <div>
+                  <Label>Nachricht</Label>
+                  <Textarea rows={6} value={replyBody} onChange={e => setReplyBody(e.target.value)} placeholder="Ihre Rückfrage an die Eltern …" />
+                </div>
+                <Button variant="default" onClick={doReply} disabled={replyBusy || replyBody.trim().length < 2}>
+                  {replyBusy ? "Wird gesendet …" : "E-Mail senden & als Kontaktiert markieren"}
+                </Button>
+              </div>
 
               <hr />
               <h3 className="font-semibold">In Kurs einbuchen</h3>
