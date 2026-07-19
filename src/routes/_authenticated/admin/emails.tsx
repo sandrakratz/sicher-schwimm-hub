@@ -304,3 +304,34 @@ function StatCard({ label, value, tone }: { label: string; value: number; tone?:
     </Card>
   );
 }
+
+function BackfillButton() {
+  const run = useServerFn(backfillEmailBodies);
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    try {
+      let totalUpdated = 0, totalSkipped = 0, remaining = 0, iterations = 0;
+      while (iterations < 20) {
+        const res: any = await run({});
+        totalUpdated += res.updated || 0;
+        totalSkipped += res.skipped || 0;
+        remaining = res.remaining || 0;
+        iterations++;
+        if ((res.updated || 0) + (res.skipped || 0) === 0) break;
+      }
+      toast.success(`Rekonstruktion abgeschlossen: ${totalUpdated} aktualisiert, ${totalSkipped} übersprungen, ${remaining} verbleibend`);
+      window.location.reload();
+    } catch (e: any) {
+      toast.error(e?.message || "Rekonstruktion fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button size="sm" variant="secondary" onClick={go} disabled={busy}>
+      {busy ? "Rekonstruiere …" : "Inhalte rekonstruieren"}
+    </Button>
+  );
+}
+
