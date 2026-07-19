@@ -82,8 +82,12 @@ function AnfragenAdmin() {
   const [priceAmount, setPriceAmount] = useState<string>("");
   const [priceTouched, setPriceTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [replySubject, setReplySubject] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [replyBusy, setReplyBusy] = useState(false);
   const assignFn = useServerFn(assignRequestToCourse);
   const suggestFn = useServerFn(suggestMatchForRequest);
+  const replyFn = useServerFn(replyToCourseRequest);
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
