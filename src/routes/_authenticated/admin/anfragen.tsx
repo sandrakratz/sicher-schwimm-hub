@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
+
 
 const COURSE_GROUPS: { key: string; label: string; match: (v: string) => boolean }[] = [
   { key: "wassergewoehnung", label: "Wassergewöhnung", match: v => v.includes("wassergew") },
