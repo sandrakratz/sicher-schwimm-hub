@@ -9,6 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Eye } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
+import { useServerFn } from "@tanstack/react-start";
+import { backfillEmailBodies } from "@/lib/email-backfill.functions";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/admin/emails")({
   beforeLoad: async () => {
@@ -138,14 +142,16 @@ function Page() {
     <div className="max-w-6xl space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-bold text-primary-deep">Gesendete E-Mails</h1>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {(["24h", "7d", "30d", "all"] as RangeKey[]).map(k => (
             <Button key={k} size="sm" variant={range === k ? "default" : "outline"} onClick={() => setRange(k)}>
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
+          <BackfillButton />
         </div>
       </div>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Gesamt" value={stats.total} />
@@ -298,3 +304,34 @@ function StatCard({ label, value, tone }: { label: string; value: number; tone?:
     </Card>
   );
 }
+
+function BackfillButton() {
+  const run = useServerFn(backfillEmailBodies);
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    try {
+      let totalUpdated = 0, totalSkipped = 0, remaining = 0, iterations = 0;
+      while (iterations < 20) {
+        const res: any = await run({});
+        totalUpdated += res.updated || 0;
+        totalSkipped += res.skipped || 0;
+        remaining = res.remaining || 0;
+        iterations++;
+        if ((res.updated || 0) + (res.skipped || 0) === 0) break;
+      }
+      toast.success(`Rekonstruktion abgeschlossen: ${totalUpdated} aktualisiert, ${totalSkipped} übersprungen, ${remaining} verbleibend`);
+      window.location.reload();
+    } catch (e: any) {
+      toast.error(e?.message || "Rekonstruktion fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button size="sm" variant="secondary" onClick={go} disabled={busy}>
+      {busy ? "Rekonstruiere …" : "Inhalte rekonstruieren"}
+    </Button>
+  );
+}
+
