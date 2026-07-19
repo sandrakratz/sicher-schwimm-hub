@@ -122,9 +122,26 @@ function Page() {
 
 function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id: string, s: string) => void; onNotes: (id: string, n: string) => void; onDelete: (id: string) => void }) {
   const [notes, setNotes] = useState(m.internal_notes || "");
-  const replySubject = encodeURIComponent(`Re: ${m.subject || "Ihre Nachricht"}`);
-  const replyBody = encodeURIComponent(`\n\n--- Ursprüngliche Nachricht ---\nVon: ${m.from_name} <${m.from_email}>\nGesendet: ${formatDateTimeBerlin(m.created_at)}\nBetreff: ${m.subject || "—"}\n\n${m.body}`);
-  const mailto = `mailto:${m.from_email}?subject=${replySubject}&body=${replyBody}`;
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replySubject, setReplySubject] = useState(`Re: ${m.subject || "Ihre Nachricht"}`);
+  const [replyBody, setReplyBody] = useState("");
+  const [sending, setSending] = useState(false);
+
+  async function sendReply() {
+    if (replyBody.trim().length < 2) { toast.error("Bitte Antworttext eingeben"); return; }
+    setSending(true);
+    try {
+      await replyToMessage({ data: { messageId: m.id, body: replyBody, subject: replySubject } });
+      toast.success("Antwort gesendet");
+      setReplyOpen(false);
+      setReplyBody("");
+      onStatus(m.id, "replied");
+    } catch (e: any) {
+      toast.error(e?.message || "Antwort konnte nicht gesendet werden");
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <Card className="border-0 shadow-soft">
