@@ -13,7 +13,7 @@ export const Route = createFileRoute("/impressum")({
     <LegalPage title="Impressum">
       <h2 className="font-display text-2xl font-bold text-primary-deep">Angaben gemäß § 5 TMG</h2>
       <p>
-        Sicher Schwimmen e.V. (in Gründung)<br />
+        Sicher Schwimmen e.V.<br />
         Hennef, Rhein-Sieg-Kreis<br />
         Deutschland
       </p>
@@ -36,9 +36,11 @@ export const Route = createFileRoute("/impressum")({
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Vereinsregister & Steuer</h2>
       <p>
-        Der Verein befindet sich derzeit in Gründung. Die Eintragung in das Vereinsregister beim
-        zuständigen Amtsgericht sowie die Vergabe der Steuernummer durch das Finanzamt werden
-        nach Abschluss des Gründungsverfahrens hier ergänzt.
+        Registergericht: Amtsgericht Siegburg<br />
+        Registernummer: VR 4149
+      </p>
+      <p>
+        Die Steuernummer wird nach Vergabe durch das Finanzamt hier ergänzt.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>

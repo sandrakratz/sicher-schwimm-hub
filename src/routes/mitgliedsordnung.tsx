@@ -9,7 +9,7 @@ export const Route = createFileRoute("/mitgliedsordnung")({
   component: () => (
     <LegalPage title="Mitglieds-, Beitrags- und Kursordnung">
       <p>
-        Diese Ordnung fasst die für Mitglieder relevanten Regelungen aus dem Gründungshandbuch
+        Diese Ordnung fasst die für Mitglieder relevanten Regelungen aus dem Vereinshandbuch
         (Teile 3 und 6) zusammen und konkretisiert §§ 6 und 7 der Vereinssatzung.
       </p>
 
