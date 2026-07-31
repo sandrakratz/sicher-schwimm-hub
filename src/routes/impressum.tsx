@@ -75,11 +75,19 @@ export const Route = createFileRoute("/impressum")({
         schriftlichen Zustimmung des Vereins.
       </p>
 
+      <h2 id="bildnachweise" className="scroll-mt-24 font-display text-2xl font-bold text-primary-deep">Bildnachweise</h2>
+      <p>
+        Ein Teil der auf dieser Website verwendeten Bilder wurde mit Hilfe künstlicher Intelligenz (KI) erstellt.
+        Diese Abbildungen dienen ausschließlich der Illustration und zeigen keine realen Personen, Veranstaltungen
+        oder Kursorte des Vereins.
+      </p>
+
       <h2 className="font-display text-2xl font-bold text-primary-deep">Widerrufsrecht</h2>
       <p>
         Informationen zum Widerrufsrecht sowie das Muster-Widerrufsformular finden Sie unter{" "}
         <a href="/widerruf" className="text-primary underline">Widerruf</a>.
       </p>
+
 
       <p className="text-sm text-muted-foreground">Stand: Juli 2026</p>
     </LegalPage>

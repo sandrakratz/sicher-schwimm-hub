@@ -131,7 +131,12 @@ function KursePage() {
         <div className="flex justify-center mt-6">
           <CancellationButton />
         </div>
+        <p className="mt-8 text-center text-xs text-muted-foreground">
+          Abbildungen auf dieser Website sind teilweise KI-generiert – siehe{" "}
+          <Link to="/impressum" hash="bildnachweise" className="underline">Bildnachweise</Link>.
+        </p>
       </section>
+
     </PublicLayout>
   );
 }
