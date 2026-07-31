@@ -57,6 +57,8 @@ export function SiteFooter() {
             <Link to="/mitgliedsordnung" className="hover:text-accent">Mitgliedsordnung</Link>
             <Link to="/kursbedingungen" className="hover:text-accent">Kursbedingungen</Link>
             <Link to="/widerruf" className="hover:text-accent">Widerruf</Link>
+            <Link to="/impressum" hash="bildnachweise" className="hover:text-accent">Bildnachweise</Link>
+
           </div>
         </div>
       </div>
