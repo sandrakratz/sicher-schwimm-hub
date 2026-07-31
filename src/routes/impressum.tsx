@@ -20,7 +20,7 @@ export const Route = createFileRoute("/impressum")({
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Vertretungsberechtigter Vorstand (§ 26 BGB)</h2>
       <ul className="list-disc pl-5">
-        <li>1. Vorsitzender: Michael Kratz</li>
+        <li>1. Vorsitzender: Michael Kratz, Bergstr. 67a, 53773 Hennef</li>
         <li>2. Vorsitzende: Sandra Kratz</li>
         <li>Kassenwart: Manuela Scholz-Ornowski</li>
       </ul>
