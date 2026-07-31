@@ -193,7 +193,8 @@ function Page() {
                   </p>
                   <p className="mt-2">
                     Um Ihr Widerrufsrecht auszuüben, müssen Sie uns – Sicher
-                    Schwimmen e.V., Hennef (Sieg), E-Mail{" "}
+                    Schwimmen e.V., c/o Michael Kratz, Bergstr. 67a, 53773
+                    Hennef, Telefon 0178 / 1142945, E-Mail{" "}
                     <a
                       className="text-primary-deep underline"
                       href="mailto:widerruf@sicher-schwimmen.com"
