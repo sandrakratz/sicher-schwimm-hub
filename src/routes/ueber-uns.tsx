@@ -133,8 +133,8 @@ function Page() {
           ))}
         </div>
         <p className="text-sm text-muted-foreground text-center max-w-2xl mx-auto">
-          Der Verein befindet sich in Gründung. Vereinsregister-Nummer und Steuernummer werden nach
-          Abschluss des Gründungsverfahrens ergänzt.
+          Sicher Schwimmen e.V. ist im Vereinsregister beim Amtsgericht Siegburg unter der
+          Register-Nr. VR 4149 eingetragen.
         </p>
       </section>
 

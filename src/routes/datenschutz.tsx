@@ -13,13 +13,13 @@ export const Route = createFileRoute("/datenschutz")({
     <LegalPage title="Datenschutzerklärung">
       <p>
         Diese Datenschutzerklärung beruht auf der Datenschutzordnung des Vereins (Teil 5 des
-        Gründungshandbuchs) und informiert über die Verarbeitung personenbezogener Daten gemäß
+        Vereinshandbuchs) und informiert über die Verarbeitung personenbezogener Daten gemäß
         der Datenschutz-Grundverordnung (DSGVO) sowie dem Bundesdatenschutzgesetz (BDSG).
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">1. Verantwortlicher</h2>
       <p>
-        Sicher Schwimmen e.V. (in Gründung), vertreten durch den Vorstand<br />
+        Sicher Schwimmen e.V., vertreten durch den Vorstand<br />
         Hennef, Rhein-Sieg-Kreis<br />
         E-Mail: info@sicher-schwimmen.com
       </p>

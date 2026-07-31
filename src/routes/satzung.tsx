@@ -9,14 +9,14 @@ export const Route = createFileRoute("/satzung")({
   component: () => (
     <LegalPage title="Vereinssatzung">
       <p className="text-sm text-muted-foreground">
-        Endfassung gemäß Gründungshandbuch. Die Satzung tritt mit Eintragung in das Vereinsregister in Kraft.
+        Endfassung gemäß Vereinshandbuch. Die Satzung ist mit der Eintragung in das Vereinsregister beim Amtsgericht Siegburg (VR 4149) in Kraft getreten.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">§ 1 Name, Sitz, Geschäftsjahr</h2>
       <ol className="list-decimal pl-5 space-y-1">
         <li>Der Verein führt den Namen „Sicher Schwimmen e. V.".</li>
         <li>Der Verein hat seinen Sitz in Hennef im Rhein-Sieg-Kreis.</li>
-        <li>Der Verein soll in das Vereinsregister beim zuständigen Amtsgericht eingetragen werden.</li>
+        <li>Der Verein ist in das Vereinsregister beim Amtsgericht Siegburg eingetragen (Register-Nr. VR 4149).</li>
         <li>Das Geschäftsjahr des Vereins ist das Kalenderjahr.</li>
       </ol>
 
@@ -171,7 +171,7 @@ export const Route = createFileRoute("/satzung")({
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">§ 17 Inkrafttreten</h2>
-      <p>Diese Satzung wurde am Tag der Gründungsversammlung errichtet und tritt mit der Eintragung in das Vereinsregister in Kraft.</p>
+      <p>Diese Satzung wurde am Tag der Gründungsversammlung errichtet und ist mit der Eintragung in das Vereinsregister beim Amtsgericht Siegburg (VR 4149) in Kraft getreten.</p>
     </LegalPage>
   ),
 });
