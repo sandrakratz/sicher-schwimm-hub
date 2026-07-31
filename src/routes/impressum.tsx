@@ -34,13 +34,10 @@ export const Route = createFileRoute("/impressum")({
       <h2 className="font-display text-2xl font-bold text-primary-deep">Kontakt</h2>
       <p>E-Mail: info@sicher-schwimmen.com</p>
 
-      <h2 className="font-display text-2xl font-bold text-primary-deep">Vereinsregister & Steuer</h2>
+      <h2 className="font-display text-2xl font-bold text-primary-deep">Vereinsregister</h2>
       <p>
         Registergericht: Amtsgericht Siegburg<br />
         Registernummer: VR 4149
-      </p>
-      <p>
-        Die Steuernummer wird nach Vergabe durch das Finanzamt hier ergänzt.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
