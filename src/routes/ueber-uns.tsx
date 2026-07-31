@@ -32,7 +32,13 @@ function Page() {
       </section>
 
       <section className="container mx-auto px-4 py-16 grid lg:grid-cols-2 gap-12 items-center">
-        <img src={parentChild} alt="" className="rounded-3xl shadow-card" width={1024} height={768} loading="lazy" />
+        <div>
+          <img src={parentChild} alt="" className="rounded-3xl shadow-card" width={1024} height={768} loading="lazy" />
+          <p className="mt-4 text-xs text-muted-foreground">
+            Abbildungen teilweise KI-generiert – siehe <Link to="/impressum" hash="bildnachweise" className="underline">Bildnachweise</Link>.
+          </p>
+        </div>
+
         <div className="space-y-4">
           <div className="text-accent font-semibold uppercase tracking-wider text-sm">Unsere Mission</div>
           <h2 className="font-display text-4xl font-bold text-primary-deep">Schwimmen können rettet Leben</h2>

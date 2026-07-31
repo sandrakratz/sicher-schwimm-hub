@@ -172,12 +172,16 @@ function Home() {
       {/* Safety section */}
       <section className="container mx-auto px-4 py-20 grid lg:grid-cols-2 gap-12 items-center">
         <div className="relative">
-          <img src={kids} alt="Kinder im Schwimmkurs" className="rounded-3xl shadow-card" width={1280} height={896} loading="lazy" />
+          <img src={kids} alt="Kinder im Schwimmkurs (KI-generierte Illustration)" className="rounded-3xl shadow-card" width={1280} height={896} loading="lazy" />
           <div className="absolute -bottom-6 -right-6 bg-accent text-accent-foreground rounded-2xl p-5 shadow-glow hidden md:block">
             <div className="font-display font-bold text-3xl">100%</div>
             <div className="text-xs font-semibold">Kinderschutzkonzept</div>
           </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Abbildungen teilweise KI-generiert – siehe <Link to="/impressum" hash="bildnachweise" className="underline">Bildnachweise</Link>.
+          </p>
         </div>
+
         <div>
           <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">Sicherheit & Schutz</div>
           <h2 className="text-4xl md:text-5xl font-bold text-primary-deep mb-6">Vertrauen ist unsere Grundlage</h2>
