@@ -59,7 +59,9 @@ export const Route = createFileRoute("/datenschutz")({
         Einwilligung oder auf einer anderweitig tragfähigen Rechtsgrundlage. Betroffene haben
         insbesondere das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
         Datenübertragbarkeit sowie Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft.
-        Es besteht ein Beschwerderecht bei der zuständigen Aufsichtsbehörde.
+        Es besteht ein Beschwerderecht bei der zuständigen Aufsichtsbehörde: Landesbeauftragte für
+        Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestr. 2–4,
+        40213 Düsseldorf.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">6. Technisch-organisatorische Maßnahmen (TOMs)</h2>
