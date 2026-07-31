@@ -11,10 +11,12 @@ export const Route = createFileRoute("/impressum")({
   }),
   component: () => (
     <LegalPage title="Impressum">
-      <h2 className="font-display text-2xl font-bold text-primary-deep">Angaben gemäß § 5 TMG</h2>
+      <h2 className="font-display text-2xl font-bold text-primary-deep">Angaben gemäß § 5 DDG</h2>
       <p>
         Sicher Schwimmen e.V.<br />
-        Hennef, Rhein-Sieg-Kreis<br />
+        c/o Michael Kratz<br />
+        Bergstr. 67a<br />
+        53773 Hennef (Rhein-Sieg-Kreis)<br />
         Deutschland
       </p>
 
@@ -32,7 +34,10 @@ export const Route = createFileRoute("/impressum")({
       <p>Anja Brauer-Walbe</p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Kontakt</h2>
-      <p>E-Mail: info@sicher-schwimmen.com</p>
+      <p>
+        E-Mail: <a href="mailto:info@sicher-schwimmen.com" className="text-primary underline">info@sicher-schwimmen.com</a><br />
+        Telefon: 0178 / 1142945
+      </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Vereinsregister</h2>
       <p>
@@ -41,14 +46,42 @@ export const Route = createFileRoute("/impressum")({
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
-      <p>Der Vorstand, Anschrift wie oben.</p>
+      <p>Michael Kratz, Bergstr. 67a, 53773 Hennef</p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">Verbraucherstreitbeilegung</h2>
+      <p>
+        Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer
+        Verbraucherschlichtungsstelle teilzunehmen (§ 36 VSBG).
+      </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">Haftung für Inhalte</h2>
       <p>
         Als Diensteanbieter sind wir für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich
-        (§ 7 Abs. 1 TMG). Für fremde Informationen, die wir lediglich übermitteln oder speichern, sind wir nach §§ 8–10 TMG
-        nicht verantwortlich.
+        (§ 7 Abs. 1 DDG). Für fremde Informationen, die wir lediglich übermitteln oder speichern, sind wir nach
+        §§ 8–10 DDG nicht verantwortlich.
       </p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">Haftung für Links</h2>
+      <p>
+        Unser Angebot enthält ggf. Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben.
+        Für diese fremden Inhalte ist stets der jeweilige Anbieter verantwortlich. Bei Bekanntwerden von
+        Rechtsverletzungen entfernen wir derartige Links umgehend.
+      </p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">Urheberrecht</h2>
+      <p>
+        Die durch den Verein erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht.
+        Eine Vervielfältigung, Bearbeitung oder Verbreitung außerhalb der Grenzen des Urheberrechts bedarf der
+        schriftlichen Zustimmung des Vereins.
+      </p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">Widerrufsrecht</h2>
+      <p>
+        Informationen zum Widerrufsrecht sowie das Muster-Widerrufsformular finden Sie unter{" "}
+        <a href="/widerruf" className="text-primary underline">Widerruf</a>.
+      </p>
+
+      <p className="text-sm text-muted-foreground">Stand: Juli 2026</p>
     </LegalPage>
   ),
 });

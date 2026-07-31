@@ -20,8 +20,10 @@ export const Route = createFileRoute("/datenschutz")({
       <h2 className="font-display text-2xl font-bold text-primary-deep">1. Verantwortlicher</h2>
       <p>
         Sicher Schwimmen e.V., vertreten durch den Vorstand<br />
-        Hennef, Rhein-Sieg-Kreis<br />
-        E-Mail: info@sicher-schwimmen.com
+        c/o Michael Kratz, Bergstr. 67a<br />
+        53773 Hennef (Rhein-Sieg-Kreis)<br />
+        E-Mail: info@sicher-schwimmen.com<br />
+        Telefon: 0178 / 1142945
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">2. Zwecke und Rechtsgrundlagen der Verarbeitung</h2>
@@ -57,7 +59,9 @@ export const Route = createFileRoute("/datenschutz")({
         Einwilligung oder auf einer anderweitig tragfähigen Rechtsgrundlage. Betroffene haben
         insbesondere das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
         Datenübertragbarkeit sowie Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft.
-        Es besteht ein Beschwerderecht bei der zuständigen Aufsichtsbehörde.
+        Es besteht ein Beschwerderecht bei der zuständigen Aufsichtsbehörde: Landesbeauftragte für
+        Datenschutz und Informationsfreiheit Nordrhein-Westfalen (LDI NRW), Kavalleriestr. 2–4,
+        40213 Düsseldorf.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">6. Technisch-organisatorische Maßnahmen (TOMs)</h2>
@@ -75,12 +79,42 @@ export const Route = createFileRoute("/datenschutz")({
         soweit erforderlich – unter Abschluss eines Vertrages zur Auftragsverarbeitung gemäß Art. 28 DSGVO.
       </p>
 
-      <h2 className="font-display text-2xl font-bold text-primary-deep">8. Datenschutzkontakt</h2>
+      <h2 className="font-display text-2xl font-bold text-primary-deep">8. Hosting & Server-Logfiles</h2>
+      <p>
+        Diese Webseite wird bei einem Dienstleister betrieben, der die Daten in unserem Auftrag
+        verarbeitet. Beim Aufruf der Seiten werden automatisch technische Zugriffsdaten
+        (u. a. IP-Adresse, Datum und Uhrzeit, abgerufene Seite, Browsertyp) verarbeitet, die für
+        den sicheren und störungsfreien Betrieb erforderlich sind. Rechtsgrundlage ist Art. 6
+        Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren Betrieb). Die Übertragung
+        erfolgt verschlüsselt (TLS/HTTPS).
+      </p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">9. Formulare, Benutzerkonto & E-Mail-Versand</h2>
+      <p>
+        Bei Kontakt-, Kursanfrage-, Mitgliedsantrags-, Warteliste- und Widerrufsformularen
+        verarbeiten wir die von Ihnen eingegebenen Daten ausschließlich zur Bearbeitung Ihres
+        Anliegens (Art. 6 Abs. 1 lit. b bzw. lit. f DSGVO). Für den Mitglieder- und Kursbereich
+        legen wir ein Benutzerkonto mit E-Mail-Adresse, Namen und Rolle an. Zur Bestätigung,
+        Terminabstimmung und Beantwortung Ihrer Anfragen versenden wir E-Mails; Versandzeitpunkt
+        und Inhalt werden zu Nachweiszwecken protokolliert. Newsletter- bzw. Informationsmails
+        können jederzeit über den Abmeldelink abbestellt werden.
+      </p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">10. Cookies & Reichweitenmessung</h2>
+      <p>
+        Wir setzen ausschließlich technisch notwendige Cookies bzw. vergleichbare Speichertechniken
+        ein, die für Anmeldung und Sitzungsverwaltung erforderlich sind (§ 25 Abs. 2 TDDDG).
+        Tracking-, Werbe- oder Analysedienste Dritter werden auf dieser Webseite nicht eingesetzt.
+      </p>
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep">11. Datenschutzkontakt</h2>
       <p>
         Datenschutzanfragen richten Sie bitte an den Vorstand unter info@sicher-schwimmen.com.
         Sollte gesetzlich die Pflicht zur Benennung eines Datenschutzbeauftragten bestehen, wird
         dieser gesondert benannt.
       </p>
+
+      <p className="text-sm text-muted-foreground">Stand: Juli 2026</p>
     </LegalPage>
   ),
 });
