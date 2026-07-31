@@ -73,9 +73,9 @@ function Page() {
               { icon: Users, label: "Jugendförderung" },
               { icon: Accessibility, label: "Inklusion" },
             ].map(i => (
-              <div key={i.label} className="bg-card p-6 rounded-2xl shadow-soft">
+              <div key={i.label} className="bg-card p-5 sm:p-6 rounded-2xl shadow-soft overflow-hidden">
                 <i.icon className="h-8 w-8 text-primary mx-auto mb-2" />
-                <div className="font-semibold text-primary-deep">{i.label}</div>
+                <div lang="de" className="font-semibold text-primary-deep break-words hyphens-auto">{i.label}</div>
               </div>
             ))}
           </div>
