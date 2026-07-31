@@ -20,8 +20,10 @@ export const Route = createFileRoute("/datenschutz")({
       <h2 className="font-display text-2xl font-bold text-primary-deep">1. Verantwortlicher</h2>
       <p>
         Sicher Schwimmen e.V., vertreten durch den Vorstand<br />
-        Hennef, Rhein-Sieg-Kreis<br />
-        E-Mail: info@sicher-schwimmen.com
+        c/o Michael Kratz, Bergstr. 67a<br />
+        53773 Hennef (Rhein-Sieg-Kreis)<br />
+        E-Mail: info@sicher-schwimmen.com<br />
+        Telefon: 0178 / 1142945
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">2. Zwecke und Rechtsgrundlagen der Verarbeitung</h2>
