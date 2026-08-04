@@ -47,7 +47,35 @@ type Participant = {
   member_confirmed_at: string | null;
   price_amount: number | null;
   parent_user_id: string | null;
+  request_id: string | null;
 };
+
+type CourseRequest = {
+  id: string;
+  created_at: string;
+  status: string;
+  parent_name: string;
+  parent_email: string;
+  parent_phone: string | null;
+  child_name: string | null;
+  child_dob: string | null;
+  swimming_level: string | null;
+  desired_course: string | null;
+  health_info: string | null;
+  message: string | null;
+  admin_notes: string | null;
+  contact_permission: boolean;
+};
+
+const REQUEST_STATUS_LABEL: Record<string, string> = {
+  new: "Neu",
+  under_review: "In Prüfung",
+  contacted: "Kontaktiert",
+  accepted: "Angenommen",
+  waiting_list: "Warteliste",
+  rejected: "Abgelehnt",
+};
+
 
 
 const ENROLL_STATUS = [
@@ -67,7 +95,7 @@ function ageAt(dobStr: string | null | undefined, refStr: string | null | undefi
   if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
   return age;
 }
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 
 function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
@@ -121,6 +149,10 @@ function Page() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [reqOpen, setReqOpen] = useState(false);
+  const [reqLoading, setReqLoading] = useState(false);
+  const [reqRow, setReqRow] = useState<CourseRequest | null>(null);
+
   const [sessOpen, setSessOpen] = useState(false);
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
   const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
@@ -192,7 +224,23 @@ function Page() {
   }
   useEffect(() => { load(); }, []);
 
+  async function openRequest(requestId: string) {
+    setReqOpen(true);
+    setReqRow(null);
+    setReqLoading(true);
+    const { data, error } = await supabase
+      .from("course_requests")
+      .select("id,created_at,status,parent_name,parent_email,parent_phone,child_name,child_dob,swimming_level,desired_course,health_info,message,admin_notes,contact_permission")
+      .eq("id", requestId)
+      .maybeSingle();
+    setReqLoading(false);
+    if (error) { toast.error(error.message); return; }
+    if (!data) { toast.error("Anfrage nicht gefunden"); return; }
+    setReqRow(data as CourseRequest);
+  }
+
   async function openParticipants(c: Course) {
+
     setPartCourse(c); setPartOpen(true);
     const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
@@ -462,7 +510,7 @@ function Page() {
       </Dialog>
 
       <Dialog open={partOpen} onOpenChange={setPartOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[1400px] sm:max-w-[1400px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Teilnehmer: {partCourse?.name}</DialogTitle>
           </DialogHeader>
@@ -500,7 +548,21 @@ function Page() {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium text-sm">{p.participant_name || "—"}</TableCell>
+                    <TableCell className="font-medium text-sm">
+                      {p.request_id ? (
+                        <button
+                          type="button"
+                          onClick={() => openRequest(p.request_id!)}
+                          className="text-left text-primary underline underline-offset-2 hover:opacity-80"
+                          title="Kursanfrage anzeigen"
+                        >
+                          {p.participant_name || "—"}
+                        </button>
+                      ) : (
+                        <span title="Manuell angelegt (keine Kursanfrage)">{p.participant_name || "—"}</span>
+                      )}
+                    </TableCell>
+
                     <TableCell className="text-xs">
                       {p.date_of_birth ? (
                         <>
@@ -592,6 +654,46 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={reqOpen} onOpenChange={setReqOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Kursanfrage</DialogTitle></DialogHeader>
+          {reqLoading && <div className="text-sm text-muted-foreground">Wird geladen …</div>}
+          {!reqLoading && !reqRow && <div className="text-sm text-muted-foreground">Keine Anfrage gefunden.</div>}
+          {reqRow && (
+            <div className="space-y-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{REQUEST_STATUS_LABEL[reqRow.status] || reqRow.status}</Badge>
+                <span className="text-muted-foreground">Eingegangen: {formatDateTimeBerlin(reqRow.created_at)}</span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div><div className="text-xs text-muted-foreground">Eltern / Kontakt</div><div className="font-medium">{reqRow.parent_name}</div></div>
+                <div><div className="text-xs text-muted-foreground">E-Mail</div><div className="font-medium break-all">{reqRow.parent_email}</div></div>
+                <div><div className="text-xs text-muted-foreground">Telefon</div><div className="font-medium">{reqRow.parent_phone || "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Kontaktaufnahme erlaubt</div><div className="font-medium">{reqRow.contact_permission ? "Ja" : "Nein"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Kind</div><div className="font-medium">{reqRow.child_name || "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Geburtsdatum</div><div className="font-medium">{reqRow.child_dob ? fmtDate(reqRow.child_dob) : "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Gewünschter Kurs</div><div className="font-medium">{reqRow.desired_course || "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Schwimmniveau</div><div className="font-medium">{reqRow.swimming_level || "—"}</div></div>
+              </div>
+              {reqRow.health_info && (
+                <div><div className="text-xs text-muted-foreground">Gesundheitshinweise</div><div className="whitespace-pre-wrap">{reqRow.health_info}</div></div>
+              )}
+              {reqRow.message && (
+                <div><div className="text-xs text-muted-foreground">Nachricht</div><div className="whitespace-pre-wrap">{reqRow.message}</div></div>
+              )}
+              {reqRow.admin_notes && (
+                <div><div className="text-xs text-muted-foreground">Interne Notizen</div><div className="whitespace-pre-wrap">{reqRow.admin_notes}</div></div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReqOpen(false)}>Schließen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       <Dialog open={!!editPart} onOpenChange={v => !v && setEditPart(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
