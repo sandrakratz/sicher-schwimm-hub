@@ -510,7 +510,7 @@ function Page() {
       </Dialog>
 
       <Dialog open={partOpen} onOpenChange={setPartOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[1400px] sm:max-w-[1400px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Teilnehmer: {partCourse?.name}</DialogTitle>
           </DialogHeader>
