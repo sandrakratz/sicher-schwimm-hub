@@ -47,7 +47,35 @@ type Participant = {
   member_confirmed_at: string | null;
   price_amount: number | null;
   parent_user_id: string | null;
+  request_id: string | null;
 };
+
+type CourseRequest = {
+  id: string;
+  created_at: string;
+  status: string;
+  parent_name: string;
+  parent_email: string;
+  parent_phone: string | null;
+  child_name: string | null;
+  child_dob: string | null;
+  swimming_level: string | null;
+  desired_course: string | null;
+  health_info: string | null;
+  message: string | null;
+  admin_notes: string | null;
+  contact_permission: boolean;
+};
+
+const REQUEST_STATUS_LABEL: Record<string, string> = {
+  new: "Neu",
+  under_review: "In Prüfung",
+  contacted: "Kontaktiert",
+  accepted: "Angenommen",
+  waiting_list: "Warteliste",
+  rejected: "Abgelehnt",
+};
+
 
 
 const ENROLL_STATUS = [
