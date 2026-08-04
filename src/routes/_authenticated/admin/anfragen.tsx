@@ -212,21 +212,28 @@ function AnfragenAdmin() {
   const grouped = COURSE_GROUPS
     .map(g => {
       const items = rows.filter(r => groupKeyFor(r.desired_course) === g.key);
+      const rejected = items.filter(r => r.status === "rejected");
+      const rest = items.filter(r => r.status !== "rejected");
       return {
         ...g,
         items,
-        open: items.filter(r => !r.assigned_course_id),
-        assigned: items.filter(r => !!r.assigned_course_id),
+        open: rest.filter(r => !r.assigned_course_id),
+        assigned: rest.filter(r => !!r.assigned_course_id),
+        rejected,
       };
     })
     .filter(g => g.items.length > 0);
   const openGroups = grouped.map(g => g.key);
 
-  function RequestTable({ items, mode }: { items: Item[]; mode: "open" | "assigned" }) {
+  function RequestTable({ items, mode }: { items: Item[]; mode: "open" | "assigned" | "rejected" }) {
     if (items.length === 0) {
       return (
         <div className="px-4 py-6 text-sm text-muted-foreground text-center">
-          {mode === "open" ? "Keine offenen Anfragen in dieser Kategorie." : "Noch keine Anfrage einem Kurs zugewiesen."}
+          {mode === "open"
+            ? "Keine offenen Anfragen in dieser Kategorie."
+            : mode === "assigned"
+              ? "Noch keine Anfrage einem Kurs zugewiesen."
+              : "Keine abgelehnten Anfragen."}
         </div>
       );
     }
