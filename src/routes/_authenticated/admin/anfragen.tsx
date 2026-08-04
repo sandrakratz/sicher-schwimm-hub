@@ -199,10 +199,79 @@ function AnfragenAdmin() {
   }
 
 
+  const courseById = new Map(allCourses.map(c => [c.id, c]));
+  function courseLabel(id: string | null | undefined) {
+    if (!id) return null;
+    const c = courseById.get(id);
+    if (!c) return null;
+    const period = [c.starts_on ? formatDateBerlin(c.starts_on) : null, c.ends_on ? formatDateBerlin(c.ends_on) : null]
+      .filter(Boolean).join(" – ");
+    return { name: c.name, period };
+  }
+
   const grouped = COURSE_GROUPS
-    .map(g => ({ ...g, items: rows.filter(r => groupKeyFor(r.desired_course) === g.key) }))
+    .map(g => {
+      const items = rows.filter(r => groupKeyFor(r.desired_course) === g.key);
+      return {
+        ...g,
+        items,
+        open: items.filter(r => !r.assigned_course_id),
+        assigned: items.filter(r => !!r.assigned_course_id),
+      };
+    })
     .filter(g => g.items.length > 0);
   const openGroups = grouped.map(g => g.key);
+
+  function RequestTable({ items, mode }: { items: Item[]; mode: "open" | "assigned" }) {
+    if (items.length === 0) {
+      return (
+        <div className="px-4 py-6 text-sm text-muted-foreground text-center">
+          {mode === "open" ? "Keine offenen Anfragen in dieser Kategorie." : "Noch keine Anfrage einem Kurs zugewiesen."}
+        </div>
+      );
+    }
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Datum</TableHead>
+            <TableHead>Eltern</TableHead>
+            <TableHead>Kind</TableHead>
+            <TableHead>{mode === "assigned" ? "Zugewiesener Kurs" : "Wunschkurs"}</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map(r => {
+            const cl = mode === "assigned" ? courseLabel(r.assigned_course_id) : null;
+            return (
+              <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
+                <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
+                <TableCell>
+                  <div className="font-semibold">{r.parent_name}</div>
+                  <div className="text-xs text-muted-foreground">{r.parent_email}</div>
+                </TableCell>
+                <TableCell>{r.child_name || "—"}</TableCell>
+                <TableCell>
+                  {mode === "assigned" ? (
+                    cl ? (
+                      <div>
+                        <div className="font-medium">{cl.name}</div>
+                        {cl.period && <div className="text-xs text-muted-foreground">{cl.period}</div>}
+                      </div>
+                    ) : "—"
+                  ) : (r.desired_course || "—")}
+                </TableCell>
+                <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
+                <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  }
 
   return (
     <div className="max-w-6xl">
@@ -215,40 +284,24 @@ function AnfragenAdmin() {
             <AccordionItem key={g.key} value={g.key} className="border-0">
               <Card className="border-0 shadow-soft">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="font-display text-lg font-semibold text-primary-deep">{g.label}</span>
-                    <Badge variant="secondary">{g.items.length}</Badge>
+                    <Badge variant="secondary">{g.open.length} offen</Badge>
+                    <Badge variant="outline">{g.assigned.length} zugewiesen</Badge>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="p-0">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Datum</TableHead>
-                          <TableHead>Eltern</TableHead>
-                          <TableHead>Kind</TableHead>
-                          <TableHead>Kurs</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {g.items.map(r => (
-                          <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
-                            <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
-                            <TableCell>
-                              <div className="font-semibold">{r.parent_name}</div>
-                              <div className="text-xs text-muted-foreground">{r.parent_email}</div>
-                            </TableCell>
-                            <TableCell>{r.child_name || "—"}</TableCell>
-                            <TableCell>{r.desired_course || "—"}</TableCell>
-                            <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
-                            <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <Tabs defaultValue="open">
+                      <div className="px-4 pb-2">
+                        <TabsList>
+                          <TabsTrigger value="open">Aktuelle Anfragen ({g.open.length})</TabsTrigger>
+                          <TabsTrigger value="assigned">Zugewiesene Anfragen ({g.assigned.length})</TabsTrigger>
+                        </TabsList>
+                      </div>
+                      <TabsContent value="open"><RequestTable items={g.open} mode="open" /></TabsContent>
+                      <TabsContent value="assigned"><RequestTable items={g.assigned} mode="assigned" /></TabsContent>
+                    </Tabs>
                   </CardContent>
                 </AccordionContent>
               </Card>
@@ -256,6 +309,7 @@ function AnfragenAdmin() {
           ))}
         </Accordion>
       )}
+
 
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
