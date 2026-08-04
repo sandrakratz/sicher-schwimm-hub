@@ -655,6 +655,46 @@ function Page() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={reqOpen} onOpenChange={setReqOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Kursanfrage</DialogTitle></DialogHeader>
+          {reqLoading && <div className="text-sm text-muted-foreground">Wird geladen …</div>}
+          {!reqLoading && !reqRow && <div className="text-sm text-muted-foreground">Keine Anfrage gefunden.</div>}
+          {reqRow && (
+            <div className="space-y-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{REQUEST_STATUS_LABEL[reqRow.status] || reqRow.status}</Badge>
+                <span className="text-muted-foreground">Eingegangen: {formatDateTimeBerlin(reqRow.created_at)}</span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div><div className="text-xs text-muted-foreground">Eltern / Kontakt</div><div className="font-medium">{reqRow.parent_name}</div></div>
+                <div><div className="text-xs text-muted-foreground">E-Mail</div><div className="font-medium break-all">{reqRow.parent_email}</div></div>
+                <div><div className="text-xs text-muted-foreground">Telefon</div><div className="font-medium">{reqRow.parent_phone || "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Kontaktaufnahme erlaubt</div><div className="font-medium">{reqRow.contact_permission ? "Ja" : "Nein"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Kind</div><div className="font-medium">{reqRow.child_name || "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Geburtsdatum</div><div className="font-medium">{reqRow.child_dob ? fmtDate(reqRow.child_dob) : "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Gewünschter Kurs</div><div className="font-medium">{reqRow.desired_course || "—"}</div></div>
+                <div><div className="text-xs text-muted-foreground">Schwimmniveau</div><div className="font-medium">{reqRow.swimming_level || "—"}</div></div>
+              </div>
+              {reqRow.health_info && (
+                <div><div className="text-xs text-muted-foreground">Gesundheitshinweise</div><div className="whitespace-pre-wrap">{reqRow.health_info}</div></div>
+              )}
+              {reqRow.message && (
+                <div><div className="text-xs text-muted-foreground">Nachricht</div><div className="whitespace-pre-wrap">{reqRow.message}</div></div>
+              )}
+              {reqRow.admin_notes && (
+                <div><div className="text-xs text-muted-foreground">Interne Notizen</div><div className="whitespace-pre-wrap">{reqRow.admin_notes}</div></div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReqOpen(false)}>Schließen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       <Dialog open={!!editPart} onOpenChange={v => !v && setEditPart(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Teilnehmer bearbeiten</DialogTitle></DialogHeader>
