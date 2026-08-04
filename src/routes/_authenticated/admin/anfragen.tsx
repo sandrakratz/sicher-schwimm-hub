@@ -295,6 +295,7 @@ function AnfragenAdmin() {
                     <span className="font-display text-lg font-semibold text-primary-deep">{g.label}</span>
                     <Badge variant="secondary">{g.open.length} offen</Badge>
                     <Badge variant="outline">{g.assigned.length} zugewiesen</Badge>
+                    {g.rejected.length > 0 && <Badge variant="destructive">{g.rejected.length} abgelehnt</Badge>}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -304,10 +305,12 @@ function AnfragenAdmin() {
                         <TabsList>
                           <TabsTrigger value="open">Aktuelle Anfragen ({g.open.length})</TabsTrigger>
                           <TabsTrigger value="assigned">Zugewiesene Anfragen ({g.assigned.length})</TabsTrigger>
+                          <TabsTrigger value="rejected">Abgelehnt ({g.rejected.length})</TabsTrigger>
                         </TabsList>
                       </div>
                       <TabsContent value="open"><RequestTable items={g.open} mode="open" /></TabsContent>
                       <TabsContent value="assigned"><RequestTable items={g.assigned} mode="assigned" /></TabsContent>
+                      <TabsContent value="rejected"><RequestTable items={g.rejected} mode="rejected" /></TabsContent>
                     </Tabs>
                   </CardContent>
                 </AccordionContent>
