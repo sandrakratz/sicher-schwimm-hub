@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
+import { BILLING } from "@/lib/billing-config";
 
 export const Route = createFileRoute("/kursbedingungen")({
   head: () => ({
