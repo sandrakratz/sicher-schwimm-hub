@@ -77,6 +77,7 @@ function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
   const [courses, setCourses] = useState<CourseOpt[]>([]);
+  const [allCourses, setAllCourses] = useState<CourseInfo[]>([]);
   const [assignCourseId, setAssignCourseId] = useState<string>("");
   const [assignStatus, setAssignStatus] = useState<"confirmed" | "waiting">("confirmed");
   const [assignNotes, setAssignNotes] = useState("");
