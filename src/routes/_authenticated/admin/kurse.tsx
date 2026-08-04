@@ -224,7 +224,23 @@ function Page() {
   }
   useEffect(() => { load(); }, []);
 
+  async function openRequest(requestId: string) {
+    setReqOpen(true);
+    setReqRow(null);
+    setReqLoading(true);
+    const { data, error } = await supabase
+      .from("course_requests")
+      .select("id,created_at,status,parent_name,parent_email,parent_phone,child_name,child_dob,swimming_level,desired_course,health_info,message,admin_notes,contact_permission")
+      .eq("id", requestId)
+      .maybeSingle();
+    setReqLoading(false);
+    if (error) { toast.error(error.message); return; }
+    if (!data) { toast.error("Anfrage nicht gefunden"); return; }
+    setReqRow(data as CourseRequest);
+  }
+
   async function openParticipants(c: Course) {
+
     setPartCourse(c); setPartOpen(true);
     const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
