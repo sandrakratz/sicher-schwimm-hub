@@ -95,7 +95,7 @@ function ageAt(dobStr: string | null | undefined, refStr: string | null | undefi
   if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
   return age;
 }
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 
 function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
