@@ -51,6 +51,8 @@ type Item = {
 
 type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
 
+type CourseInfo = { id: string; name: string; starts_on: string | null; ends_on: string | null };
+
 
 export const Route = createFileRoute("/_authenticated/admin/anfragen")({
   beforeLoad: async () => {
