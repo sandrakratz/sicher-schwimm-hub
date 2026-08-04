@@ -548,7 +548,21 @@ function Page() {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
                   <TableRow key={p.id}>
-                    <TableCell className="font-medium text-sm">{p.participant_name || "—"}</TableCell>
+                    <TableCell className="font-medium text-sm">
+                      {p.request_id ? (
+                        <button
+                          type="button"
+                          onClick={() => openRequest(p.request_id!)}
+                          className="text-left text-primary underline underline-offset-2 hover:opacity-80"
+                          title="Kursanfrage anzeigen"
+                        >
+                          {p.participant_name || "—"}
+                        </button>
+                      ) : (
+                        <span title="Manuell angelegt (keine Kursanfrage)">{p.participant_name || "—"}</span>
+                      )}
+                    </TableCell>
+
                     <TableCell className="text-xs">
                       {p.date_of_birth ? (
                         <>
