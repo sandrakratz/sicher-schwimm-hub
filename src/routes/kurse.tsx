@@ -121,6 +121,21 @@ function KursePage() {
         </div>
 
 
+        <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
+          <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Die Kursgebühr wird erst nach unserer schriftlichen Bestätigung fällig:
+            innerhalb von 14 Tagen nach der Bestätigung, spätestens jedoch einen Tag vor Kursbeginn.
+          </p>
+          <dl className="grid sm:grid-cols-[auto,1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="font-semibold text-foreground">Kontoinhaber</dt><dd className="text-muted-foreground">{BILLING.recipient}</dd>
+            <dt className="font-semibold text-foreground">IBAN</dt><dd className="text-muted-foreground">{BILLING.iban}</dd>
+            <dt className="font-semibold text-foreground">BIC</dt><dd className="text-muted-foreground">{BILLING.bic}</dd>
+            <dt className="font-semibold text-foreground">Bank</dt><dd className="text-muted-foreground">{BILLING.bankName}</dd>
+            <dt className="font-semibold text-foreground">Verwendungszweck</dt><dd className="text-muted-foreground">Kursname + Name des Kindes</dd>
+          </dl>
+        </div>
+
         <p className="text-center text-sm text-muted-foreground mt-10">
           Mit der Anmeldung gelten unsere{" "}
           <Link to="/kursbedingungen" className="text-primary underline font-semibold hover:text-primary-deep">
