@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 
 
