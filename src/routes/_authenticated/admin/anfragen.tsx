@@ -319,6 +319,10 @@ function AnfragenAdmin() {
             <div className="space-y-4 text-sm">
               <Row label="Eingegangen" value={formatDateTimeBerlin(selected.created_at)} />
               <Row label="Status" value={<Badge variant="outline">{STATUS_LABEL[selected.status] || selected.status}</Badge>} />
+              {selected.assigned_course_id && (() => {
+                const cl = courseLabel(selected.assigned_course_id);
+                return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;
+              })()}
               <hr />
               <h3 className="font-semibold">Eltern / Erziehungsberechtigte</h3>
               <Row label="Name" value={selected.parent_name} />
