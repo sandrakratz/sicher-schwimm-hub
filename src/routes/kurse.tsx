@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Users, Tag } from "lucide-react";
 import { CancellationButton } from "@/components/CancellationButton";
+import { BILLING } from "@/lib/billing-config";
 
 export const Route = createFileRoute("/kurse")({
   head: () => ({
