@@ -102,6 +102,8 @@ function AnfragenAdmin() {
     setRows((data as Item[]) || []);
     const { data: cs } = await supabase.from("courses").select("id,name,status,max_participants,starts_on,price_member,price_non_member").is("archived_at", null).order("starts_on", { ascending: true, nullsFirst: false });
     setCourses((cs as CourseOpt[]) || []);
+    const { data: allCs } = await supabase.from("courses").select("id,name,starts_on,ends_on");
+    setAllCourses((allCs as CourseInfo[]) || []);
   }
   useEffect(() => { load(); }, []);
 
