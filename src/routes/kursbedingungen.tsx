@@ -31,12 +31,22 @@ function KursbedingungenPage() {
         Die Kursgebühr beträgt <strong>200 € für Nichtmitglieder</strong> bzw.
         <strong> 150 € für Vereinsmitglieder</strong> und umfasst in der Regel
         10 Einheiten à 45 Minuten. Die Gebühr ist innerhalb von
-        <strong> 14 Tagen nach Bestätigung</strong> per Überweisung auf das in
-        der Bestätigungsmail genannte Vereinskonto zu zahlen. Beginnt der Kurs
+        <strong> 14 Tagen nach Bestätigung</strong> per Überweisung auf das
+        folgende Vereinskonto zu zahlen. Beginnt der Kurs
         innerhalb dieser 14 Tage, ist die Gebühr <strong>spätestens einen Tag
         vor Kursbeginn</strong> zu überweisen. Ohne fristgerechten Zahlungseingang
         kann der Kursplatz anderweitig vergeben werden.
       </p>
+      <div className="rounded-lg border bg-muted/40 p-4 my-4 not-prose">
+        <div className="font-semibold text-primary-deep mb-2">Bankverbindung</div>
+        <ul className="space-y-1 text-sm">
+          <li><strong>Kontoinhaber:</strong> {BILLING.recipient}</li>
+          <li><strong>IBAN:</strong> {BILLING.iban}</li>
+          <li><strong>BIC:</strong> {BILLING.bic}</li>
+          <li><strong>Bank:</strong> {BILLING.bankName}</li>
+          <li><strong>Verwendungszweck:</strong> Kursname + Name des Kindes</li>
+        </ul>
+      </div>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">3. Rücktritt durch die Teilnehmer:innen</h2>
       <ul className="list-disc pl-6 space-y-1">
