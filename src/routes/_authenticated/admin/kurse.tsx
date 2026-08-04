@@ -149,6 +149,10 @@ function Page() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [reqOpen, setReqOpen] = useState(false);
+  const [reqLoading, setReqLoading] = useState(false);
+  const [reqRow, setReqRow] = useState<CourseRequest | null>(null);
+
   const [sessOpen, setSessOpen] = useState(false);
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
   const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
