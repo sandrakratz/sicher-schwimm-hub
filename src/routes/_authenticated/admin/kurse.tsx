@@ -245,8 +245,52 @@ function Page() {
       else if (p.status === "waiting") map[p.course_id].waiting++;
     });
     setCounts(map);
+    const { data: progs } = await supabase.from("course_programs").select("*").order("sort_order", { ascending: true });
+    setPrograms((progs as ProgramRow[]) || []);
   }
   useEffect(() => { load(); }, []);
+
+  function startNewProgram() {
+    setEditingProg({ is_public: true, payment_due_days: 14, sort_order: (programs.at(-1)?.sort_order ?? 0) + 10, price_member: 150, price_non_member: 200 });
+    setProgOpen(true);
+  }
+  function startEditProgram(p: ProgramRow) { setEditingProg(p); setProgOpen(true); }
+
+  async function saveProgram() {
+    if (!editingProg.name) return toast.error("Name erforderlich");
+    const payload: any = {
+      name: editingProg.name,
+      slug: editingProg.slug || slugify(editingProg.name),
+      target_group: editingProg.target_group || null,
+      age_range: editingProg.age_range || null,
+      min_age_years: editingProg.min_age_years ?? null,
+      description: editingProg.description || null,
+      requirements: editingProg.requirements || null,
+      duration: editingProg.duration || null,
+      location: editingProg.location || null,
+      price_member: editingProg.price_member ?? null,
+      price_non_member: editingProg.price_non_member ?? null,
+      payment_due_days: editingProg.payment_due_days ?? 14,
+      is_public: editingProg.is_public ?? true,
+      sort_order: editingProg.sort_order ?? 0,
+    };
+    const res = editingProg.id
+      ? await supabase.from("course_programs").update(payload).eq("id", editingProg.id)
+      : await supabase.from("course_programs").insert(payload);
+    if (res.error) return toast.error(res.error.message);
+    toast.success("Kursangebot gespeichert");
+    setProgOpen(false);
+    await load();
+  }
+
+  async function removeProgram(p: ProgramRow) {
+    if (!confirm(`Kursangebot "${p.name}" löschen? Zugeordnete Kurszeiträume bleiben erhalten.`)) return;
+    const { error } = await supabase.from("course_programs").delete().eq("id", p.id);
+    if (error) return toast.error(error.message);
+    toast.success("Gelöscht"); await load();
+  }
+
+
 
   async function openRequest(requestId: string) {
     setReqOpen(true);
