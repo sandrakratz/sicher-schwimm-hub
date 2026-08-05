@@ -414,7 +414,9 @@ function Page() {
       price_member: editing.price_member ?? null,
       price_non_member: editing.price_non_member ?? null,
       payment_due_days: editing.payment_due_days ?? 14,
+      program_id: editing.program_id || null,
     };
+
 
     const res = editing.id
       ? await supabase.from("courses").update(payload).eq("id", editing.id)
