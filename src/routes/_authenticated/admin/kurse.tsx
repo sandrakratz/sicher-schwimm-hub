@@ -122,7 +122,27 @@ type Course = {
   price_non_member: number | null;
   payment_due_days: number | null;
   archived_at: string | null;
+  program_id: string | null;
 };
+
+type ProgramRow = {
+  id: string;
+  name: string;
+  slug: string;
+  target_group: string | null;
+  age_range: string | null;
+  min_age_years: number | null;
+  description: string | null;
+  requirements: string | null;
+  duration: string | null;
+  location: string | null;
+  price_member: number | null;
+  price_non_member: number | null;
+  payment_due_days: number;
+  is_public: boolean;
+  sort_order: number;
+};
+
 
 
 const STATUS_OPTIONS = [
