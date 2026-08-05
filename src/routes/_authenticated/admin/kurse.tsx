@@ -466,140 +466,201 @@ function Page() {
     toast.success("Kurs wiederhergestellt"); await load();
   }
 
+  const detailProgram = detailId ? programs.find(p => p.id === detailId) ?? null : null;
+
+  function termsOf(programId: string | null) {
+    return rows.filter(r => (programId === null ? !r.program_id : r.program_id === programId));
+  }
+
+  function renderTermRow(c: Course) {
+    const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
+    const max = c.max_participants;
+    const full = max != null && cnt.confirmed >= max;
+    return (
+      <TableRow key={c.id} className={c.archived_at ? "opacity-70" : ""}>
+        <TableCell className="text-xs whitespace-nowrap">
+          <div className="font-medium text-sm">{fmtDate(c.starts_on) || "—"} – {fmtDate(c.ends_on) || "—"}</div>
+          <div className="text-muted-foreground">{c.name}{!c.is_public && " · intern"}{c.archived_at && " · archiviert"}</div>
+        </TableCell>
+        <TableCell className="text-xs">{c.schedule || "—"}</TableCell>
+        <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
+        <TableCell className="text-xs whitespace-nowrap">
+          <span className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}</span>
+          {max != null ? <> / {max}</> : null}
+          {cnt.waiting > 0 && <span className="ml-2 text-muted-foreground">(+{cnt.waiting} WL)</span>}
+        </TableCell>
+        <TableCell className="text-right whitespace-nowrap">
+          <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
+          <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
+          <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel"}</Button>
+          <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
+          {c.archived_at
+            ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
+            : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /></Button>}
+          <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  function renderTermTable(programId: string | null) {
+    const all = termsOf(programId);
+    const active = all.filter(t => !t.archived_at);
+    const archived = all.filter(t => !!t.archived_at);
+    const visible = showArchived ? [...active, ...archived] : active;
+    return (
+      <div className="border rounded-md overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Zeitraum</TableHead>
+              <TableHead>Zeitplan</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Plätze</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.length === 0
+              ? <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">Noch keine Kurszeiträume.</TableCell></TableRow>
+              : visible.map(renderTermRow)}
+          </TableBody>
+        </Table>
+        {archived.length > 0 && (
+          <div className="border-t p-2 text-xs">
+            <Button variant="ghost" size="sm" onClick={() => setShowArchived(v => !v)}>
+              <Archive className="h-4 w-4" /> {showArchived ? "Archivierte ausblenden" : `Archivierte anzeigen (${archived.length})`}
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const unassigned = termsOf(null);
+
   return (
     <div className="max-w-7xl space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-primary-deep">Kursverwaltung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Kursangebote und deren buchbare Zeiträume verwalten. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite.</p>
         </div>
-        {view === "programs"
-          ? <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neues Kursangebot</Button>
-          : <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Kurszeitraum</Button>}
+        <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
       </div>
 
-      <div className="inline-flex rounded-md border bg-muted/30 p-1 gap-1 flex-wrap">
-        <Button
-          type="button"
-          size="sm"
-          variant={view === "active" ? "default" : "ghost"}
-          onClick={() => setView("active")}
-        >
-          Aktive Kurse ({rows.filter(r => !r.archived_at).length})
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={view === "archived" ? "default" : "ghost"}
-          onClick={() => setView("archived")}
-        >
-          <Archive className="h-4 w-4" /> Erledigte Kurse ({rows.filter(r => !!r.archived_at).length})
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={view === "programs" ? "default" : "ghost"}
-          onClick={() => setView("programs")}
-        >
-          Kursangebote ({programs.length})
-        </Button>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {programs.length === 0 && unassigned.length === 0 && (
+          <Card className="border-0 shadow-soft md:col-span-2 xl:col-span-3">
+            <CardContent className="py-10 text-center text-muted-foreground text-sm">Noch keine Kurse angelegt.</CardContent>
+          </Card>
+        )}
+
+        {programs.map(p => {
+          const terms = termsOf(p.id).filter(t => !t.archived_at);
+          const confirmed = terms.reduce((s, t) => s + (counts[t.id]?.confirmed ?? 0), 0);
+          const capacity = terms.reduce((s, t) => s + (t.max_participants ?? 0), 0);
+          const bookable = terms.filter(t => t.max_participants == null || (counts[t.id]?.confirmed ?? 0) < t.max_participants).length;
+          return (
+            <Card
+              key={p.id}
+              className="border-0 shadow-soft cursor-pointer transition hover:shadow-lg"
+              onClick={() => { setEditingProg(p); setDetailId(p.id); }}
+            >
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-display text-lg font-semibold text-primary-deep">{p.name}</div>
+                    <div className="text-xs text-muted-foreground">{p.location || "Ort offen"}</div>
+                  </div>
+                  {!p.is_public && <Badge variant="secondary" className="text-xs">Intern</Badge>}
+                </div>
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  <div>{p.age_range || "Alter offen"}{p.min_age_years != null ? ` (min. ${p.min_age_years} J.)` : ""}</div>
+                  <div><Euro className="inline h-3 w-3 mr-1" />{p.price_non_member ?? "—"} € / {p.price_member ?? "—"} € (Mitgl.)</div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Badge variant="outline">{terms.length} Zeiträume</Badge>
+                  <Badge variant="outline">{bookable} buchbar</Badge>
+                  <Badge variant="outline">{confirmed}{capacity > 0 ? ` / ${capacity}` : ""} Plätze belegt</Badge>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setEditingProg(p); setDetailId(p.id); }}>Öffnen</Button>
+                  <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); startNewTerm(p); }}><Plus className="h-4 w-4" /> Neuer Zeitraum</Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        {unassigned.length > 0 && (
+          <Card className="border-0 shadow-soft cursor-pointer transition hover:shadow-lg" onClick={() => { setEditingProg({}); setDetailId("unassigned"); }}>
+            <CardContent className="p-5 space-y-3">
+              <div className="font-display text-lg font-semibold text-primary-deep">Ohne Kursangebot</div>
+              <p className="text-xs text-muted-foreground">Zeiträume, die keinem Kurs zugeordnet sind und daher nicht auf der Webseite erscheinen.</p>
+              <Badge variant="outline" className="text-xs">{unassigned.length} Zeiträume</Badge>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {view === "programs" ? (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="p-0 overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kursangebot</TableHead>
-                  <TableHead>Ort</TableHead>
-                  <TableHead>Alter</TableHead>
-                  <TableHead>Preise</TableHead>
-                  <TableHead>Zeiträume</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {programs.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kursangebote.</TableCell></TableRow>
-                ) : programs.map(p => {
-                  const terms = rows.filter(r => r.program_id === p.id && !r.archived_at);
-                  return (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">
-                        {p.name}
-                        {!p.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}
-                        <div className="text-xs text-muted-foreground">/kurse/{p.slug}</div>
-                      </TableCell>
-                      <TableCell className="text-xs max-w-[220px]">{p.location || "—"}</TableCell>
-                      <TableCell className="text-xs">{p.age_range || "—"}{p.min_age_years != null ? ` (min. ${p.min_age_years} J.)` : ""}</TableCell>
-                      <TableCell className="text-xs">{p.price_non_member ?? "—"} € / {p.price_member ?? "—"} € (Mitgl.)</TableCell>
-                      <TableCell className="text-xs">{terms.length}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button variant="ghost" size="sm" onClick={() => startEditProgram(p)}>Bearbeiten</Button>
-                        <Button variant="ghost" size="sm" onClick={() => removeProgram(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      ) : (
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Kursangebot</TableHead>
-                <TableHead>Zeitraum</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Plätze</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(() => {
-                const filtered = rows.filter(r => view === "archived" ? !!r.archived_at : !r.archived_at);
-                if (filtered.length === 0) {
-                  return <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{view === "archived" ? "Keine erledigten Kurse im Archiv." : "Noch keine Kurse."}</TableCell></TableRow>;
-                }
-                return filtered.map(c => {
-                const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
-                const max = c.max_participants;
-                const full = max != null && cnt.confirmed >= max;
-                return (
-                <TableRow key={c.id} className={c.archived_at ? "opacity-75" : ""}>
-                  <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}{c.archived_at && <Badge variant="outline" className="ml-2 text-xs">Archiviert</Badge>}</TableCell>
-                  <TableCell className="text-xs">{programs.find(p => p.id === c.program_id)?.name || <span className="text-muted-foreground">nicht zugeordnet</span>}</TableCell>
-                  <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
-                  <TableCell className="text-xs">
-                    <span className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}</span>
-                    {max != null ? <> / {max}</> : null}
-                    {cnt.waiting > 0 && <span className="ml-2 text-muted-foreground">(+{cnt.waiting} WL)</span>}
-                  </TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
-                    <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
-                    <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel-Kursliste"}</Button>
-                    <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>Bearbeiten</Button>
-                    {c.archived_at
-                      ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /> Wiederherstellen</Button>
-                      : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /> Archivieren</Button>}
-                    <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
-                </TableRow>
-              )});
-              })()}
+      <Dialog open={detailId !== null} onOpenChange={o => { if (!o) setDetailId(null); }}>
+        <DialogContent className="w-[95vw] max-w-[1100px] sm:max-w-[1100px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailId === "unassigned" ? "Zeiträume ohne Kursangebot" : detailProgram?.name || "Kurs"}</DialogTitle>
+          </DialogHeader>
 
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      )}
+          {detailId !== "unassigned" && detailProgram && (
+            <div className="space-y-3 border rounded-md p-4">
+              <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value }))} /></div>
+                <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /></div>
+              </div>
+              <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /></div>
+              <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /></div>
+              <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /></div>
+              <div className="grid sm:grid-cols-4 gap-3">
+                <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /></div>
+                <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /></div>
+                <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
+                <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /></div>
+              </div>
+              <div className="grid sm:grid-cols-4 gap-3 items-end">
+                <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
+                <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
+                <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /></div>
+                <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /></div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
+                  Auf der Webseite anzeigen
+                </label>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => { removeProgram(detailProgram); setDetailId(null); }}><Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen</Button>
+                  <Button onClick={saveProgram}>Kursangaben speichern</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-semibold text-sm">Kurszeiträume</div>
+              <Button size="sm" onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}>
+                <Plus className="h-4 w-4" /> Neuer Zeitraum
+              </Button>
+            </div>
+            {renderTermTable(detailId === "unassigned" ? null : detailId)}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailId(null)}>Schließen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={progOpen} onOpenChange={setProgOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
