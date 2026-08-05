@@ -628,6 +628,18 @@ function Page() {
               <div><Label>Name *</Label><Input value={editing.name || ""} onChange={e => setEditing(p => ({ ...p, name: e.target.value, slug: p.slug || slugify(e.target.value) }))} /></div>
               <div><Label>Slug</Label><Input value={editing.slug || ""} onChange={e => setEditing(p => ({ ...p, slug: e.target.value }))} /></div>
             </div>
+            <div>
+              <Label>Kursangebot (für die Webseite)</Label>
+              <Select value={editing.program_id || "none"} onValueChange={v => setEditing(p => ({ ...p, program_id: v === "none" ? null : v }))}>
+                <SelectTrigger><SelectValue placeholder="Kein Kursangebot" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Kein Kursangebot (nur intern)</SelectItem>
+                  {programs.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">Zugeordnete Zeiträume erscheinen auf der Webseite unter dem Kursangebot und können dort gebucht werden.</p>
+            </div>
+
             <div><Label>Beschreibung</Label><Textarea rows={3} value={editing.description || ""} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Zielgruppe</Label><Input value={editing.target_group || ""} onChange={e => setEditing(p => ({ ...p, target_group: e.target.value }))} /></div>
