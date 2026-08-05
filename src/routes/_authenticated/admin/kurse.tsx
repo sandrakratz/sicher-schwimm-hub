@@ -163,7 +163,8 @@ function Page() {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [progOpen, setProgOpen] = useState(false);
   const [editingProg, setEditingProg] = useState<Partial<ProgramRow>>({});
-  const [view, setView] = useState<"active" | "archived" | "programs">("active");
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
