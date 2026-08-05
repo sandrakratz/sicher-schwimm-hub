@@ -53,7 +53,7 @@ function fmtPrice(v: number | null) {
 }
 
 function KursePage() {
-  const programs = Route.useLoaderData() as Array<CourseProgram>;
+  const programs = (Route.useLoaderData() ?? []) as Array<CourseProgram>;
 
   return (
     <PublicLayout>
@@ -77,8 +77,8 @@ function KursePage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {programs.map((c) => {
-              const openTerms = c.open_terms;
-              const hasTerms = c.terms.length > 0;
+              const openTerms = c.open_terms ?? 0;
+              const hasTerms = (c.terms?.length ?? 0) > 0;
               const statusLabel = openTerms > 0 ? `${openTerms} Termin${openTerms > 1 ? "e" : ""} buchbar` : hasTerms ? "Ausgebucht" : "Warteliste";
               const statusClass =
                 openTerms > 0
