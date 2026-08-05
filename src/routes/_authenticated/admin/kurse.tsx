@@ -452,12 +452,14 @@ function Page() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-primary-deep">Kursverwaltung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Schwimmkurse anlegen und verwalten.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Kursangebote und deren buchbare Zeiträume verwalten. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite.</p>
         </div>
-        <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
+        {view === "programs"
+          ? <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neues Kursangebot</Button>
+          : <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Kurszeitraum</Button>}
       </div>
 
-      <div className="inline-flex rounded-md border bg-muted/30 p-1 gap-1">
+      <div className="inline-flex rounded-md border bg-muted/30 p-1 gap-1 flex-wrap">
         <Button
           type="button"
           size="sm"
@@ -474,15 +476,65 @@ function Page() {
         >
           <Archive className="h-4 w-4" /> Erledigte Kurse ({rows.filter(r => !!r.archived_at).length})
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={view === "programs" ? "default" : "ghost"}
+          onClick={() => setView("programs")}
+        >
+          Kursangebote ({programs.length})
+        </Button>
       </div>
 
+      {view === "programs" ? (
+        <Card className="border-0 shadow-soft">
+          <CardContent className="p-0 overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kursangebot</TableHead>
+                  <TableHead>Ort</TableHead>
+                  <TableHead>Alter</TableHead>
+                  <TableHead>Preise</TableHead>
+                  <TableHead>Zeiträume</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {programs.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Kursangebote.</TableCell></TableRow>
+                ) : programs.map(p => {
+                  const terms = rows.filter(r => r.program_id === p.id && !r.archived_at);
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">
+                        {p.name}
+                        {!p.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}
+                        <div className="text-xs text-muted-foreground">/kurse/{p.slug}</div>
+                      </TableCell>
+                      <TableCell className="text-xs max-w-[220px]">{p.location || "—"}</TableCell>
+                      <TableCell className="text-xs">{p.age_range || "—"}{p.min_age_years != null ? ` (min. ${p.min_age_years} J.)` : ""}</TableCell>
+                      <TableCell className="text-xs">{p.price_non_member ?? "—"} € / {p.price_member ?? "—"} € (Mitgl.)</TableCell>
+                      <TableCell className="text-xs">{terms.length}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => startEditProgram(p)}>Bearbeiten</Button>
+                        <Button variant="ghost" size="sm" onClick={() => removeProgram(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ) : (
       <Card className="border-0 shadow-soft">
         <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Zielgruppe</TableHead>
+                <TableHead>Kursangebot</TableHead>
                 <TableHead>Zeitraum</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Plätze</TableHead>
@@ -502,7 +554,7 @@ function Page() {
                 return (
                 <TableRow key={c.id} className={c.archived_at ? "opacity-75" : ""}>
                   <TableCell className="font-medium">{c.name}{!c.is_public && <Badge variant="secondary" className="ml-2 text-xs">Intern</Badge>}{c.archived_at && <Badge variant="outline" className="ml-2 text-xs">Archiviert</Badge>}</TableCell>
-                  <TableCell className="text-xs">{c.target_group || c.age_range || "—"}</TableCell>
+                  <TableCell className="text-xs">{programs.find(p => p.id === c.program_id)?.name || <span className="text-muted-foreground">nicht zugeordnet</span>}</TableCell>
                   <TableCell className="text-xs">{c.starts_on || "—"} – {c.ends_on || "—"}</TableCell>
                   <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
                   <TableCell className="text-xs">
@@ -528,6 +580,45 @@ function Page() {
           </Table>
         </CardContent>
       </Card>
+      )}
+
+      <Dialog open={progOpen} onOpenChange={setProgOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editingProg.id ? "Kursangebot bearbeiten" : "Neues Kursangebot"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value, slug: p.slug || slugify(e.target.value) }))} /></div>
+              <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /></div>
+            </div>
+            <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /></div>
+            <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /></div>
+              <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /></div>
+              <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
+              <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /></div>
+            </div>
+            <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /></div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
+              <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
+              <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /></div>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
+                Auf der Webseite anzeigen
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProgOpen(false)}>Abbrechen</Button>
+            <Button onClick={saveProgram}>Speichern</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
