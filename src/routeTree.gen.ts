@@ -29,7 +29,7 @@ import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as KurseSlugRouteImport } from './routes/kurse.$slug'
+import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
@@ -160,9 +160,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const KurseSlugRoute = KurseSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => KurseRoute,
+  id: '/kurse_/$slug',
+  path: '/kurse/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
@@ -337,7 +337,7 @@ export interface FileRoutesByFullPath {
   '/kontakt': typeof KontaktRoute
   '/kurs-anfragen': typeof KursAnfragenRoute
   '/kursbedingungen': typeof KursbedingungenRoute
-  '/kurse': typeof KurseRouteWithChildren
+  '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
   '/news': typeof NewsRoute
@@ -388,7 +388,7 @@ export interface FileRoutesByTo {
   '/kontakt': typeof KontaktRoute
   '/kurs-anfragen': typeof KursAnfragenRoute
   '/kursbedingungen': typeof KursbedingungenRoute
-  '/kurse': typeof KurseRouteWithChildren
+  '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
   '/news': typeof NewsRoute
@@ -440,7 +440,7 @@ export interface FileRoutesById {
   '/kontakt': typeof KontaktRoute
   '/kurs-anfragen': typeof KursAnfragenRoute
   '/kursbedingungen': typeof KursbedingungenRoute
-  '/kurse': typeof KurseRouteWithChildren
+  '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
   '/news': typeof NewsRoute
@@ -453,7 +453,7 @@ export interface FileRoutesById {
   '/widerruf': typeof WiderrufRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
-  '/kurse/$slug': typeof KurseSlugRoute
+  '/kurse_/$slug': typeof KurseSlugRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -608,7 +608,7 @@ export interface FileRouteTypes {
     | '/widerruf'
     | '/_authenticated/admin'
     | '/email/unsubscribe'
-    | '/kurse/$slug'
+    | '/kurse_/$slug'
     | '/_authenticated/admin/anfragen'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
@@ -648,7 +648,7 @@ export interface RootRouteChildren {
   KontaktRoute: typeof KontaktRoute
   KursAnfragenRoute: typeof KursAnfragenRoute
   KursbedingungenRoute: typeof KursbedingungenRoute
-  KurseRoute: typeof KurseRouteWithChildren
+  KurseRoute: typeof KurseRoute
   MitgliedschaftRoute: typeof MitgliedschaftRoute
   MitgliedsordnungRoute: typeof MitgliedsordnungRoute
   NewsRoute: typeof NewsRoute
@@ -660,6 +660,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   WiderrufRoute: typeof WiderrufRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  KurseSlugRoute: typeof KurseSlugRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
@@ -812,12 +813,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/kurse/$slug': {
-      id: '/kurse/$slug'
-      path: '/$slug'
+    '/kurse_/$slug': {
+      id: '/kurse_/$slug'
+      path: '/kurse/$slug'
       fullPath: '/kurse/$slug'
       preLoaderRoute: typeof KurseSlugRouteImport
-      parentRoute: typeof KurseRoute
+      parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
       id: '/email/unsubscribe'
@@ -1087,16 +1088,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface KurseRouteChildren {
-  KurseSlugRoute: typeof KurseSlugRoute
-}
-
-const KurseRouteChildren: KurseRouteChildren = {
-  KurseSlugRoute: KurseSlugRoute,
-}
-
-const KurseRouteWithChildren = KurseRoute._addFileChildren(KurseRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -1107,7 +1098,7 @@ const rootRouteChildren: RootRouteChildren = {
   KontaktRoute: KontaktRoute,
   KursAnfragenRoute: KursAnfragenRoute,
   KursbedingungenRoute: KursbedingungenRoute,
-  KurseRoute: KurseRouteWithChildren,
+  KurseRoute: KurseRoute,
   MitgliedschaftRoute: MitgliedschaftRoute,
   MitgliedsordnungRoute: MitgliedsordnungRoute,
   NewsRoute: NewsRoute,
@@ -1119,6 +1110,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   WiderrufRoute: WiderrufRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  KurseSlugRoute: KurseSlugRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
