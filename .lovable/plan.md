@@ -25,14 +25,17 @@ Kursangebot (Seepferdchen im Kurhaus)
 - Buchung läuft weiterhin über das bekannte Formular „Kursanfrage & Warteliste" – kein Login nötig (Login bleibt Vereinsmitgliedern vorbehalten).
 - Neu: Vom gewählten Zeitraum aus wird das Formular mit Kursangebot und Zeitraum vorbelegt und als **verbindliche Buchung** gekennzeichnet (Bestätigung der Kursbedingungen ist Pflicht).
 - Altersprüfung: Das Geburtsdatum des Kindes wird gegen das Mindestalter zum Kursstart geprüft. Ist das Mindestalter am Kursbeginn nicht erreicht, ist die verbindliche Buchung nicht möglich (Hinweis + Angebot Warteliste). Eine Altersobergrenze gibt es nicht.
-- Nach dem Absenden wie gewohnt Bestätigungsfenster; Buchungen erscheinen in der Kursverwaltung direkt beim jeweiligen Zeitraum und lösen die Admin-Benachrichtigung aus.
-- Sind die Plätze zwischenzeitlich belegt, wird die Buchung automatisch als Warteliste geführt und das dem Elternteil im Bestätigungsfenster mitgeteilt.
+- Eine verbindliche Buchung ist sofort gültig – **keine Freigabe durch das Admin-Team mehr nötig**. Der Platz wird direkt als bestätigt gebucht und der Zeitraum-Zähler sinkt sofort.
+- Direkt nach der Buchung geht automatisch eine Buchungsbestätigung per E-Mail an die Eltern: Kurs, Ort, Zeitraum, Termine, Teilnehmer, Preis (Mitglied/Nicht-Mitglied), Bankverbindung, Verwendungszweck (Kursname + Name des Kindes) und Zahlungsfrist (14 Tage nach Buchung, spätestens vor Kursbeginn) sowie Hinweis auf Kursbedingungen und Widerrufsrecht.
+- Parallel geht wie bisher eine Info-Mail an info@sicher-schwimmen.com; im Bestätigungsfenster wird dasselbe kurz zusammengefasst.
+- Sind die Plätze zwischenzeitlich belegt, wird die Anmeldung automatisch als Warteliste geführt – dann gibt es statt der Buchungsbestätigung eine Wartelisten-Bestätigung ohne Zahlungsaufforderung.
+
 
 ## Kursverwaltung (Admin)
 
 - Neuer Reiter/Ebene „Kursangebote": Angebote anlegen und bearbeiten (Name, Ort, Zielgruppe, Alter/Mindestalter, Beschreibung, Voraussetzungen, Dauer, Preise, öffentlich sichtbar ja/nein, Reihenfolge).
 - Unter jedem Angebot die Liste der Zeiträume mit Start/Ende, Zeitplan, max. Teilnehmer, Status, belegten/freien Plätzen und dem Button „Neuer Zeitraum" (übernimmt alle Angebotsdaten, nur Datum/Plätze eintragen).
-- Teilnehmerverwaltung, Excel-Export, Archivieren und die Zuordnung von Anfragen bleiben unverändert und hängen weiterhin am einzelnen Zeitraum.
+- Teilnehmerverwaltung, Excel-Export, Archivieren und die Zuordnung von Anfragen bleiben unverändert und hängen weiterhin am einzelnen Zeitraum. Verbindlich gebuchte Teilnehmer erscheinen direkt als „Bestätigt" und sind als Online-Buchung erkennbar; das Admin-Team muss nur noch den Zahlungseingang setzen.
 - Die 7 bisher fest hinterlegten Kurse werden als Kursangebote übernommen; die beiden vorhandenen Kurstermine werden dem Angebot „Seepferdchen im Kurhaus" zugeordnet.
 
 ## Technisches
@@ -40,5 +43,5 @@ Kursangebot (Seepferdchen im Kurhaus)
 - Neue Tabelle `course_programs` (Angebotsdaten inkl. `min_age_years`, `sort_order`, `is_public`), `courses` bekommt `program_id`. GRANTs plus RLS: öffentliches Lesen nur für veröffentlichte Angebote, Schreiben nur für admin/board/trainer.
 - Neue öffentliche Leseabfrage per Server-Funktion (publishable client) für Angebote inkl. freier Plätze (bestätigte Teilnehmer je Kurs), damit SSR und OG-Tags funktionieren.
 - Neue Route `src/routes/kurse.$slug.tsx` mit eigenem `head()`; `/kurse` lädt Angebote per Loader + Query statt der Konstante im Code.
-- Buchung über eine öffentliche Server-Funktion, die Platzverfügbarkeit und Mindestalter serverseitig prüft und `course_requests` + `course_participants` (confirmed/waiting) schreibt.
+- Buchung über eine öffentliche Server-Funktion, die Platzverfügbarkeit und Mindestalter serverseitig prüft, `course_participants` direkt mit Status `confirmed` (bzw. `waiting`) anlegt und die Bestätigungs-E-Mail an die Eltern in die Warteschlange stellt (neues Template `course-booking-confirmation` mit Bankdaten aus `BILLING`, plus `course-waitlist-confirmation`).
 - Migration legt Tabelle, Policies und die Startdaten der 7 Angebote als INSERTs an.
