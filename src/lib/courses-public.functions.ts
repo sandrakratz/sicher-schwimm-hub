@@ -1,0 +1,315 @@
+import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
+import { BILLING } from '@/lib/billing-config'
+
+const SITE_BASE_URL = 'https://sicher-schwimmen.com'
+
+export interface CourseTerm {
+  id: string
+  name: string
+  starts_on: string | null
+  ends_on: string | null
+  schedule: string | null
+  location: string | null
+  max_participants: number | null
+  confirmed_count: number
+  free_slots: number | null
+  is_full: boolean
+  price_member: number | null
+  price_non_member: number | null
+}
+
+export interface CourseProgram {
+  id: string
+  name: string
+  slug: string
+  target_group: string | null
+  age_range: string | null
+  min_age_years: number | null
+  description: string | null
+  requirements: string | null
+  duration: string | null
+  location: string | null
+  price_member: number | null
+  price_non_member: number | null
+  payment_due_days: number
+  sort_order: number
+  terms: Array<CourseTerm>
+  open_terms: number
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+  let programQuery = supabaseAdmin
+    .from('course_programs')
+    .select('*')
+    .eq('is_public', true)
+    .order('sort_order', { ascending: true })
+  if (slug) programQuery = programQuery.eq('slug', slug)
+
+  const { data: programs, error } = await programQuery
+  if (error) throw new Error(error.message)
+  if (!programs || programs.length === 0) return []
+
+  const programIds = programs.map((p) => p.id)
+  const today = todayIso()
+
+  const { data: courses } = await supabaseAdmin
+    .from('courses')
+    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at')
+    .in('program_id', programIds)
+    .eq('is_public', true)
+    .is('archived_at', null)
+    .order('starts_on', { ascending: true })
+
+  const relevant = (courses ?? []).filter(
+    (c) => c.status !== 'completed' && (!c.ends_on || c.ends_on >= today),
+  )
+
+  const counts = new Map<string, number>()
+  if (relevant.length > 0) {
+    const { data: parts } = await supabaseAdmin
+      .from('course_participants')
+      .select('course_id,status')
+      .in('course_id', relevant.map((c) => c.id))
+    for (const p of parts ?? []) {
+      if (p.status !== 'confirmed') continue
+      counts.set(p.course_id, (counts.get(p.course_id) ?? 0) + 1)
+    }
+  }
+
+  return programs.map((p) => {
+    const terms: Array<CourseTerm> = relevant
+      .filter((c) => c.program_id === p.id)
+      .map((c) => {
+        const confirmed = counts.get(c.id) ?? 0
+        const free = c.max_participants != null ? Math.max(0, c.max_participants - confirmed) : null
+        return {
+          id: c.id,
+          name: c.name,
+          starts_on: c.starts_on,
+          ends_on: c.ends_on,
+          schedule: c.schedule,
+          location: c.location ?? p.location,
+          max_participants: c.max_participants,
+          confirmed_count: confirmed,
+          free_slots: free,
+          is_full: free != null && free <= 0,
+          price_member: c.price_member ?? p.price_member,
+          price_non_member: c.price_non_member ?? p.price_non_member,
+        }
+      })
+
+    return {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      target_group: p.target_group,
+      age_range: p.age_range,
+      min_age_years: p.min_age_years,
+      description: p.description,
+      requirements: p.requirements,
+      duration: p.duration,
+      location: p.location,
+      price_member: p.price_member,
+      price_non_member: p.price_non_member,
+      payment_due_days: p.payment_due_days,
+      sort_order: p.sort_order,
+      terms,
+      open_terms: terms.filter((t) => !t.is_full).length,
+    }
+  })
+}
+
+export const listCoursePrograms = createServerFn({ method: 'GET' }).handler(async () => {
+  return await loadPrograms()
+})
+
+export const getCourseProgram = createServerFn({ method: 'GET' })
+  .inputValidator((input: { slug: string }) => z.object({ slug: z.string().min(1) }).parse(input))
+  .handler(async ({ data }) => {
+    const programs = await loadPrograms(data.slug)
+    return programs[0] ?? null
+  })
+
+const bookingSchema = z.object({
+  courseId: z.string().uuid(),
+  parentName: z.string().trim().min(2).max(120),
+  parentEmail: z.string().trim().email().max(200),
+  parentPhone: z.string().trim().max(60).optional().or(z.literal('')),
+  childName: z.string().trim().min(2).max(120),
+  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  healthInfo: z.string().trim().max(2000).optional().or(z.literal('')),
+  message: z.string().trim().max(2000).optional().or(z.literal('')),
+  isMember: z.boolean().default(false),
+  acceptTerms: z.literal(true),
+  gdprConsent: z.literal(true),
+  website: z.string().max(0).optional(), // Honeypot
+})
+
+function ageOn(dob: string, reference: string | null): number {
+  const ref = reference ? new Date(reference) : new Date()
+  const birth = new Date(dob)
+  let age = ref.getFullYear() - birth.getFullYear()
+  const m = ref.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && ref.getDate() < birth.getDate())) age -= 1
+  return age
+}
+
+export const bookCourseTerm = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) => bookingSchema.parse(input))
+  .handler(async ({ data }) => {
+    if (data.website) return { status: 'confirmed' as const, ok: true }
+
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+    const { data: course, error: courseErr } = await supabaseAdmin
+      .from('courses')
+      .select('*, course_programs(*)')
+      .eq('id', data.courseId)
+      .maybeSingle()
+
+    if (courseErr) throw new Error(courseErr.message)
+    if (!course || !course.is_public || course.archived_at) {
+      throw new Error('Dieser Kurs ist derzeit nicht buchbar.')
+    }
+
+    const program = (course as any).course_programs as
+      | {
+          id: string
+          name: string
+          min_age_years: number | null
+          age_range: string | null
+          target_group: string | null
+          duration: string | null
+          location: string | null
+          description: string | null
+          price_member: number | null
+          price_non_member: number | null
+          payment_due_days: number
+        }
+      | null
+
+    const minAge = program?.min_age_years ?? null
+    if (minAge != null) {
+      const age = ageOn(data.childDob, course.starts_on)
+      if (age < Number(minAge)) {
+        throw new Error(
+          `Für diesen Kurs ist ein Mindestalter von ${minAge} Jahren zu Kursbeginn erforderlich. Bitte stellen Sie stattdessen eine Kursanfrage.`,
+        )
+      }
+    }
+
+    // Belegung prüfen
+    const { data: parts } = await supabaseAdmin
+      .from('course_participants')
+      .select('id,status')
+      .eq('course_id', course.id)
+    const confirmed = (parts ?? []).filter((p) => p.status === 'confirmed').length
+    const isFull = course.max_participants != null && confirmed >= course.max_participants
+    const status: 'confirmed' | 'waiting' = isFull ? 'waiting' : 'confirmed'
+
+    const price = data.isMember
+      ? course.price_member ?? program?.price_member ?? null
+      : course.price_non_member ?? program?.price_non_member ?? null
+
+    // Anfrage-Datensatz für die Admin-Übersicht anlegen
+    const { data: request } = await supabaseAdmin
+      .from('course_requests')
+      .insert({
+        parent_name: data.parentName,
+        parent_email: data.parentEmail,
+        parent_phone: data.parentPhone || null,
+        child_name: data.childName,
+        child_dob: data.childDob,
+        desired_course: program?.name ?? course.name,
+        health_info: data.healthInfo || null,
+        message: data.message || null,
+        gdpr_consent: true,
+        contact_permission: true,
+        status: isFull ? 'waiting_list' : 'accepted',
+        assigned_course_id: course.id,
+        admin_notes: 'Online-Buchung über die Webseite',
+      })
+      .select('id')
+      .maybeSingle()
+
+    const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
+      course_id: course.id,
+      request_id: request?.id ?? null,
+      participant_name: data.childName,
+      participant_email: data.parentEmail,
+      participant_phone: data.parentPhone || null,
+      date_of_birth: data.childDob,
+      status,
+      notes: data.healthInfo || null,
+      is_member: data.isMember,
+      price_amount: price,
+      online_booking: true,
+      paid: false,
+    })
+    if (partErr) throw new Error(partErr.message)
+
+    const { queueTemplateEmail } = await import('@/lib/email-send.server')
+    const paymentReference = `${course.name} – ${data.childName}`
+
+    await queueTemplateEmail({
+      templateName: isFull ? 'course-waitlist-confirmation' : 'course-booking-confirmation',
+      recipientEmail: data.parentEmail,
+      idempotencyKey: `course-booking-${request?.id ?? course.id}-${data.parentEmail}`,
+      templateData: {
+        parent_name: data.parentName,
+        child_name: data.childName,
+        program_name: program?.name ?? course.name,
+        course_name: course.name,
+        course_target_group: program?.target_group ?? course.target_group,
+        course_age_range: program?.age_range ?? course.age_range,
+        course_duration: course.duration ?? program?.duration,
+        course_location: course.location ?? program?.location,
+        course_schedule: course.schedule,
+        course_starts_on: course.starts_on,
+        course_ends_on: course.ends_on,
+        course_description: program?.description ?? course.description,
+        waitlist: isFull,
+        is_member: data.isMember,
+        price_amount: price,
+        payment_due_days: course.payment_due_days ?? program?.payment_due_days ?? 14,
+        bank_recipient: BILLING.recipient,
+        bank_iban: BILLING.iban,
+        bank_bic: BILLING.bic,
+        bank_name: BILLING.bankName,
+        payment_reference: paymentReference,
+        site_base_url: SITE_BASE_URL,
+      },
+    })
+
+    // Interne Benachrichtigung
+    await queueTemplateEmail({
+      templateName: 'course-request',
+      idempotencyKey: `course-booking-admin-${request?.id ?? course.id}`,
+      templateData: {
+        parent_name: data.parentName,
+        parent_email: data.parentEmail,
+        parent_phone: data.parentPhone || '',
+        child_name: data.childName,
+        child_dob: data.childDob,
+        desired_course: `${program?.name ?? course.name} – ${course.name}`,
+        health_info: data.healthInfo || '',
+        message: `Online-Buchung (${isFull ? 'Warteliste' : 'verbindlich gebucht'})${data.message ? ` – ${data.message}` : ''}`,
+        submitted_at: new Date().toISOString(),
+      },
+    })
+
+    return {
+      ok: true,
+      status,
+      courseName: course.name,
+      programName: program?.name ?? course.name,
+      price,
+    }
+  })

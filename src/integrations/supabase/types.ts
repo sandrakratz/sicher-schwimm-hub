@@ -118,6 +118,7 @@ export type Database = {
           member_confirmed_at: string | null
           member_confirmed_by: string | null
           notes: string | null
+          online_booking: boolean
           paid: boolean
           paid_at: string | null
           paid_by: string | null
@@ -145,6 +146,7 @@ export type Database = {
           member_confirmed_at?: string | null
           member_confirmed_by?: string | null
           notes?: string | null
+          online_booking?: boolean
           paid?: boolean
           paid_at?: string | null
           paid_by?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           member_confirmed_at?: string | null
           member_confirmed_by?: string | null
           notes?: string | null
+          online_booking?: boolean
           paid?: boolean
           paid_at?: string | null
           paid_by?: string | null
@@ -202,6 +205,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      course_programs: {
+        Row: {
+          age_range: string | null
+          created_at: string
+          description: string | null
+          duration: string | null
+          id: string
+          is_public: boolean
+          location: string | null
+          min_age_years: number | null
+          name: string
+          payment_due_days: number
+          price_member: number | null
+          price_non_member: number | null
+          requirements: string | null
+          slug: string
+          sort_order: number
+          target_group: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          is_public?: boolean
+          location?: string | null
+          min_age_years?: number | null
+          name: string
+          payment_due_days?: number
+          price_member?: number | null
+          price_non_member?: number | null
+          requirements?: string | null
+          slug: string
+          sort_order?: number
+          target_group?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          is_public?: boolean
+          location?: string | null
+          min_age_years?: number | null
+          name?: string
+          payment_due_days?: number
+          price_member?: number | null
+          price_non_member?: number | null
+          requirements?: string | null
+          slug?: string
+          sort_order?: number
+          target_group?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       course_requests: {
         Row: {
@@ -325,6 +388,7 @@ export type Database = {
           payment_due_days: number
           price_member: number | null
           price_non_member: number | null
+          program_id: string | null
           schedule: string | null
           slug: string
           starts_on: string | null
@@ -348,6 +412,7 @@ export type Database = {
           payment_due_days?: number
           price_member?: number | null
           price_non_member?: number | null
+          program_id?: string | null
           schedule?: string | null
           slug: string
           starts_on?: string | null
@@ -371,6 +436,7 @@ export type Database = {
           payment_due_days?: number
           price_member?: number | null
           price_non_member?: number | null
+          program_id?: string | null
           schedule?: string | null
           slug?: string
           starts_on?: string | null
@@ -379,7 +445,15 @@ export type Database = {
           trainer_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "course_programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documents: {
         Row: {
