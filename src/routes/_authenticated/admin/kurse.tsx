@@ -418,7 +418,7 @@ function Page() {
     if (!editing.name) return toast.error("Name erforderlich");
     const payload: any = {
       name: editing.name,
-      slug: editing.slug || slugify(editing.name),
+      slug: editing.slug || slugify(`${editing.name}${editing.starts_on ? ` ${editing.starts_on}` : ""}`),
       description: editing.description || null,
       target_group: editing.target_group || null,
       age_range: editing.age_range || null,
