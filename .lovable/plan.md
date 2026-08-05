@@ -35,7 +35,7 @@ Kursangebot (Seepferdchen im Kurhaus)
 
 - Neuer Reiter/Ebene „Kursangebote": Angebote anlegen und bearbeiten (Name, Ort, Zielgruppe, Alter/Mindestalter, Beschreibung, Voraussetzungen, Dauer, Preise, öffentlich sichtbar ja/nein, Reihenfolge).
 - Unter jedem Angebot die Liste der Zeiträume mit Start/Ende, Zeitplan, max. Teilnehmer, Status, belegten/freien Plätzen und dem Button „Neuer Zeitraum" (übernimmt alle Angebotsdaten, nur Datum/Plätze eintragen).
-- Teilnehmerverwaltung, Excel-Export, Archivieren und die Zuordnung von Anfragen bleiben unverändert und hängen weiterhin am einzelnen Zeitraum.
+- Teilnehmerverwaltung, Excel-Export, Archivieren und die Zuordnung von Anfragen bleiben unverändert und hängen weiterhin am einzelnen Zeitraum. Verbindlich gebuchte Teilnehmer erscheinen direkt als „Bestätigt" und sind als Online-Buchung erkennbar; das Admin-Team muss nur noch den Zahlungseingang setzen.
 - Die 7 bisher fest hinterlegten Kurse werden als Kursangebote übernommen; die beiden vorhandenen Kurstermine werden dem Angebot „Seepferdchen im Kurhaus" zugeordnet.
 
 ## Technisches
