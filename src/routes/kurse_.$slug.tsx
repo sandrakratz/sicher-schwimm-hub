@@ -21,7 +21,7 @@ import { BILLING } from "@/lib/billing-config";
 import { formatDateBerlin } from "@/lib/format";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
-export const Route = createFileRoute("/kurse/$slug")({
+export const Route = createFileRoute("/kurse_/$slug")({
   loader: async ({ params }) => {
     const program = await getCourseProgram({ data: { slug: params.slug } });
     if (!program) throw notFound();
