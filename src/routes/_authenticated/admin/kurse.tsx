@@ -160,7 +160,11 @@ function slugify(s: string) {
 
 function Page() {
   const [rows, setRows] = useState<Course[]>([]);
-  const [view, setView] = useState<"active" | "archived">("active");
+  const [programs, setPrograms] = useState<ProgramRow[]>([]);
+  const [progOpen, setProgOpen] = useState(false);
+  const [editingProg, setEditingProg] = useState<Partial<ProgramRow>>({});
+  const [view, setView] = useState<"active" | "archived" | "programs">("active");
+
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
   const [counts, setCounts] = useState<Record<string, { confirmed: number; waiting: number }>>({});
