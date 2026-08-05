@@ -43,5 +43,5 @@ Kursangebot (Seepferdchen im Kurhaus)
 - Neue Tabelle `course_programs` (Angebotsdaten inkl. `min_age_years`, `sort_order`, `is_public`), `courses` bekommt `program_id`. GRANTs plus RLS: öffentliches Lesen nur für veröffentlichte Angebote, Schreiben nur für admin/board/trainer.
 - Neue öffentliche Leseabfrage per Server-Funktion (publishable client) für Angebote inkl. freier Plätze (bestätigte Teilnehmer je Kurs), damit SSR und OG-Tags funktionieren.
 - Neue Route `src/routes/kurse.$slug.tsx` mit eigenem `head()`; `/kurse` lädt Angebote per Loader + Query statt der Konstante im Code.
-- Buchung über eine öffentliche Server-Funktion, die Platzverfügbarkeit und Mindestalter serverseitig prüft und `course_requests` + `course_participants` (confirmed/waiting) schreibt.
+- Buchung über eine öffentliche Server-Funktion, die Platzverfügbarkeit und Mindestalter serverseitig prüft, `course_participants` direkt mit Status `confirmed` (bzw. `waiting`) anlegt und die Bestätigungs-E-Mail an die Eltern in die Warteschlange stellt (neues Template `course-booking-confirmation` mit Bankdaten aus `BILLING`, plus `course-waitlist-confirmation`).
 - Migration legt Tabelle, Policies und die Startdaten der 7 Angebote als INSERTs an.
