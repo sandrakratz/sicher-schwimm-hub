@@ -394,6 +394,24 @@ function Page() {
 
 
   function startNew() { setEditing({ status: "planned", is_public: true, price_member: 150, price_non_member: 200, payment_due_days: 14 }); setOpen(true); }
+  function startNewTerm(p: ProgramRow | null) {
+    setEditing({
+      status: "planned",
+      is_public: true,
+      program_id: p?.id ?? null,
+      name: p?.name ?? "",
+      slug: "",
+      description: p?.description ?? null,
+      target_group: p?.target_group ?? null,
+      age_range: p?.age_range ?? null,
+      duration: p?.duration ?? null,
+      location: p?.location ?? null,
+      price_member: p?.price_member ?? 150,
+      price_non_member: p?.price_non_member ?? 200,
+      payment_due_days: p?.payment_due_days ?? 14,
+    });
+    setOpen(true);
+  }
   function startEdit(c: Course) { setEditing(c); setOpen(true); }
 
   async function save() {
