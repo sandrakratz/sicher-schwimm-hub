@@ -236,6 +236,34 @@ function Page() {
     }
   }
 
+  async function exportTaxList(c: Course) {
+    setExportingTax(c.id);
+    try {
+      const res = await exportTaxXlsx({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Teilnehmerliste (Steuer) erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExportingTax(null);
+    }
+  }
+
+  function hasStarted(c: Course) {
+    if (c.archived_at) return true;
+    if (!c.starts_on) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return c.starts_on <= today;
+  }
+
   async function load() {
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
     const list = (data as Course[]) || [];
