@@ -523,6 +523,13 @@ function Page() {
           <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
           <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
           <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingTax === c.id || !hasStarted(c)}
+            title={hasStarted(c) ? "Teilnehmerliste mit allen Daten für die Steuer" : "ab Kursbeginn verfügbar"}
+            onClick={() => exportTaxList(c)}
+          ><Receipt className="h-4 w-4" /> {exportingTax === c.id ? "Erstelle…" : "Steuerliste"}</Button>
           <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
           {c.archived_at
             ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
