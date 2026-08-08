@@ -256,7 +256,10 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     if (partErr) throw new Error(partErr.message)
 
     const { queueTemplateEmail } = await import('@/lib/email-send.server')
-    const paymentReference = `${course.name} – ${data.childName}`
+    const { formatDateBerlin } = await import('@/lib/format')
+    const paymentReference = `${course.name} – ${data.childName}${
+      course.starts_on ? ` – Start ${formatDateBerlin(course.starts_on)}` : ''
+    }`
 
     await queueTemplateEmail({
       templateName: isFull ? 'course-waitlist-confirmation' : 'course-booking-confirmation',
