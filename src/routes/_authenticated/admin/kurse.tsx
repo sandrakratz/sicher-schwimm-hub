@@ -182,7 +182,9 @@ function Page() {
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
   const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [exportingTax, setExportingTax] = useState<string | null>(null);
   const exportXlsx = useServerFn(generateCourseListXlsx);
+  const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
 
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
