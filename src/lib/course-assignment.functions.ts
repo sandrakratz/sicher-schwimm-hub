@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { BILLING } from '@/lib/billing-config'
+import { formatDateBerlin } from '@/lib/format'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
 const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
@@ -145,7 +146,9 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         bank_iban: BILLING.iban,
         bank_bic: BILLING.bic,
         bank_name: BILLING.bankName,
-        payment_reference: `${course.name}${childPart ? ' – ' + childPart : ''}`,
+        payment_reference: `${course.name}${childPart ? ' – ' + childPart : ''}${
+          course.starts_on ? ' – Start ' + formatDateBerlin(course.starts_on) : ''
+        }`,
         site_base_url: SITE_BASE_URL,
       }
       const element = React.createElement(tpl.component, templateData)
