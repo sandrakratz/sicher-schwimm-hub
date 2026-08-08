@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { generateCourseListXlsx } from "@/lib/course-sessions.functions";
+import { generateCourseListXlsx, generateTaxParticipantListXlsx } from "@/lib/course-sessions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -182,7 +182,9 @@ function Page() {
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
   const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [exportingTax, setExportingTax] = useState<string | null>(null);
   const exportXlsx = useServerFn(generateCourseListXlsx);
+  const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
 
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
@@ -232,6 +234,34 @@ function Page() {
     } finally {
       setExporting(null);
     }
+  }
+
+  async function exportTaxList(c: Course) {
+    setExportingTax(c.id);
+    try {
+      const res = await exportTaxXlsx({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Teilnehmerliste (Steuer) erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExportingTax(null);
+    }
+  }
+
+  function hasStarted(c: Course) {
+    if (c.archived_at) return true;
+    if (!c.starts_on) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return c.starts_on <= today;
   }
 
   async function load() {
@@ -493,6 +523,13 @@ function Page() {
           <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
           <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
           <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingTax === c.id || !hasStarted(c)}
+            title={hasStarted(c) ? "Teilnehmerliste mit allen Daten für die Steuer" : "ab Kursbeginn verfügbar"}
+            onClick={() => exportTaxList(c)}
+          ><Receipt className="h-4 w-4" /> {exportingTax === c.id ? "Erstelle…" : "Steuerliste"}</Button>
           <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
           {c.archived_at
             ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
