@@ -194,3 +194,210 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     return { filename, base64 };
   });
+
+export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { courseId: string }) => {
+    if (!d || typeof d.courseId !== "string" || d.courseId.length < 8) {
+      throw new Error("courseId required");
+    }
+    return d;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const isStaff =
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+    if (!isStaff) throw new Error("Forbidden");
+
+    const { data: course, error: cErr } = await supabase
+      .from("courses")
+      .select("id,name,location,starts_on,ends_on,schedule")
+      .eq("id", data.courseId)
+      .maybeSingle();
+    if (cErr) throw cErr;
+    if (!course) throw new Error("Kurs nicht gefunden");
+
+    const { data: partsData } = await supabase
+      .from("course_participants")
+      .select(
+        "participant_name,participant_email,participant_phone,date_of_birth,status,is_member,online_booking,price_amount,paid,paid_at,payment_note,created_at,notes",
+      )
+      .eq("course_id", data.courseId);
+    const participants = (partsData || []).slice().sort((a, b) =>
+      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
+    );
+
+    function fmtDe(s: string | null): string {
+      if (!s) return "";
+      const [y, m, d] = s.split("-");
+      if (!y || !m || !d) return s;
+      return `${d}.${m}.${y}`;
+    }
+    function fmtTs(s: string | null): string {
+      if (!s) return "";
+      try {
+        return new Intl.DateTimeFormat("de-DE", {
+          timeZone: "Europe/Berlin",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(s));
+      } catch {
+        return "";
+      }
+    }
+    function ageAt(dob: string | null, ref: string | null): string {
+      if (!dob || !ref) return "";
+      const d = new Date(dob);
+      const r = new Date(ref);
+      if (isNaN(d.getTime()) || isNaN(r.getTime())) return "";
+      let a = r.getFullYear() - d.getFullYear();
+      const m = r.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && r.getDate() < d.getDate())) a--;
+      return String(a);
+    }
+    const STATUS: Record<string, string> = {
+      confirmed: "bestätigt",
+      waiting: "Warteliste",
+      cancelled: "storniert",
+    };
+
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "sicher-schwimmen.com";
+    wb.created = new Date();
+    const ws = wb.addWorksheet("Teilnehmerliste", {
+      pageSetup: { orientation: "landscape", paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+
+    const period =
+      course.starts_on || course.ends_on
+        ? `${fmtDe(course.starts_on)}${course.ends_on ? ` – ${fmtDe(course.ends_on)}` : ""}`
+        : "";
+    const titleRow = ws.addRow([`Teilnehmerliste (Steuer): ${course.name}`]);
+    titleRow.font = { bold: true, size: 14 };
+    ws.mergeCells(titleRow.number, 1, titleRow.number, 14);
+
+    const metaRow = ws.addRow([
+      [
+        period && `Zeitraum: ${period}`,
+        course.location && `Ort: ${course.location}`,
+        course.schedule && `Zeitplan: ${course.schedule}`,
+        `Erstellt: ${fmtTs(new Date().toISOString())}`,
+      ]
+        .filter(Boolean)
+        .join("    ·    "),
+    ]);
+    metaRow.font = { italic: true, size: 10 };
+    ws.mergeCells(metaRow.number, 1, metaRow.number, 14);
+    ws.addRow([]);
+
+    const headers = [
+      "Nr.",
+      "Name des Kindes",
+      "Geburtsdatum",
+      "Alter bei Kursbeginn",
+      "Kontakt / Eltern",
+      "E-Mail",
+      "Telefon",
+      "Mitglied",
+      "Status",
+      "Buchungsart",
+      "Betrag (€)",
+      "Bezahlt",
+      "Bezahlt am",
+      "Zahlungsnotiz",
+      "Anmeldung",
+    ];
+    const headerRow = ws.addRow(headers);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    headerRow.height = 32;
+
+    const firstDataRow = headerRow.number + 1;
+    participants.forEach((p, idx) => {
+      const row = ws.addRow([
+        idx + 1,
+        p.participant_name || "",
+        fmtDe(p.date_of_birth),
+        ageAt(p.date_of_birth, course.starts_on),
+        p.participant_name || "",
+        p.participant_email || "",
+        p.participant_phone || "",
+        p.is_member == null ? "" : p.is_member ? "ja" : "nein",
+        STATUS[p.status] || p.status,
+        p.online_booking ? "online gebucht" : "manuell",
+        p.price_amount != null ? Number(p.price_amount) : null,
+        p.paid ? "ja" : "nein",
+        fmtTs(p.paid_at),
+        p.payment_note || "",
+        fmtTs(p.created_at),
+      ]);
+      row.alignment = { vertical: "middle", wrapText: true };
+      row.getCell(11).numFmt = '#,##0.00 "€"';
+    });
+
+    const lastDataRow = headerRow.number + participants.length;
+    const totalCols = headers.length;
+
+    let sumRowNumber = 0;
+    if (participants.length > 0) {
+      const sumRow = ws.addRow([]);
+      sumRowNumber = sumRow.number;
+      sumRow.getCell(1).value = `Summe (${participants.length} Teilnehmer)`;
+      ws.mergeCells(sumRowNumber, 1, sumRowNumber, 10);
+      sumRow.getCell(11).value = { formula: `SUM(K${firstDataRow}:K${lastDataRow})` } as never;
+      sumRow.getCell(11).numFmt = '#,##0.00 "€"';
+      sumRow.getCell(12).value = "bezahlt:";
+      sumRow.getCell(13).value = {
+        formula: `SUMIF(L${firstDataRow}:L${lastDataRow},"ja",K${firstDataRow}:K${lastDataRow})`,
+      } as never;
+      sumRow.getCell(13).numFmt = '#,##0.00 "€"';
+      sumRow.getCell(14).value = "offen:";
+      sumRow.getCell(15).value = {
+        formula: `SUMIF(L${firstDataRow}:L${lastDataRow},"nein",K${firstDataRow}:K${lastDataRow})`,
+      } as never;
+      sumRow.getCell(15).numFmt = '#,##0.00 "€"';
+      sumRow.font = { bold: true };
+    }
+
+    const widths = [4, 26, 13, 9, 24, 30, 16, 9, 12, 14, 12, 9, 13, 24, 13];
+    widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
+
+    const lastRow = ws.lastRow!.number;
+    for (let r = headerRow.number; r <= lastRow; r++) {
+      for (let c = 1; c <= totalCols; c++) {
+        ws.getCell(r, c).border = {
+          top: { style: "thin" }, left: { style: "thin" },
+          bottom: { style: "thin" }, right: { style: "thin" },
+        };
+      }
+    }
+    for (let c = 1; c <= totalCols; c++) {
+      ws.getCell(headerRow.number, c).fill = {
+        type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F1FA" },
+      };
+    }
+    ws.views = [{ state: "frozen", ySplit: headerRow.number }];
+
+    const buf = await wb.xlsx.writeBuffer();
+    const base64 = Buffer.from(buf).toString("base64");
+    const safeName = course.name.replace(/[^\p{L}\p{N}\-_]+/gu, "_").slice(0, 60);
+    const datePart = course.starts_on || new Date().toISOString().slice(0, 10);
+    const filename = `Teilnehmerliste_Steuer_${safeName}_${datePart}.xlsx`;
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, userId, {
+        action: "tax_participant_list_exported",
+        entity: "courses",
+        entity_id: data.courseId,
+        metadata: { participants: participants.length },
+      });
+    } catch {}
+
+    return { filename, base64 };
+  });
