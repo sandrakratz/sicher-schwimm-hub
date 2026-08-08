@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { BILLING } from '@/lib/billing-config'
+import { formatDateBerlin } from '@/lib/format'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
 const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
