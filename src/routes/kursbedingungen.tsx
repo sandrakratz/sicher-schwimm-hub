@@ -45,7 +45,7 @@ function KursbedingungenPage() {
           <li><strong>IBAN:</strong> {BILLING.iban}</li>
           <li><strong>BIC:</strong> {BILLING.bic}</li>
           <li><strong>Bank:</strong> {BILLING.bankName}</li>
-          <li><strong>Verwendungszweck:</strong> Kursname + Name des Kindes</li>
+          <li><strong>Verwendungszweck:</strong> Kursname + Name des Kindes + Kursbeginn (Startdatum)</li>
         </ul>
       </div>
 
