@@ -3,7 +3,7 @@
 
 export const BILLING = {
   recipient: "Sicher-Schwimmen e.V.",
-  iban: "DE85 3805 0186 5081 0160 13",
+  iban: "DE85 3806 0186 5081 0160 13",
   bic: "GENODED1BRS",
   bankName: "VR Bank Hennef",
 };

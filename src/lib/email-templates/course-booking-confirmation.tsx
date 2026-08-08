@@ -163,7 +163,7 @@ export const template = {
     price_amount: 200,
     payment_due_days: 14,
     bank_recipient: 'Sicher-Schwimmen e.V.',
-    bank_iban: 'DE85 3805 0186 5081 0160 13',
+    bank_iban: 'DE85 3806 0186 5081 0160 13',
     bank_bic: 'GENODED1BRS',
     bank_name: 'VR Bank Hennef',
     payment_reference: 'Seepferdchen Kurhaus Oktober 2026 – Max Beispiel',
