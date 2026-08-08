@@ -149,7 +149,7 @@ function KursePage() {
             <dt className="font-semibold text-foreground">IBAN</dt><dd className="text-muted-foreground">{BILLING.iban}</dd>
             <dt className="font-semibold text-foreground">BIC</dt><dd className="text-muted-foreground">{BILLING.bic}</dd>
             <dt className="font-semibold text-foreground">Bank</dt><dd className="text-muted-foreground">{BILLING.bankName}</dd>
-            <dt className="font-semibold text-foreground">Verwendungszweck</dt><dd className="text-muted-foreground">Kursname + Name des Kindes</dd>
+            <dt className="font-semibold text-foreground">Verwendungszweck</dt><dd className="text-muted-foreground">Kursname + Name des Kindes + Kursbeginn (Startdatum)</dd>
           </dl>
         </div>
 
