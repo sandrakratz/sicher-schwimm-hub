@@ -596,6 +596,13 @@ function Page() {
             title="Kursbestätigungen einzeln als ZIP"
             onClick={() => exportConfirmations(c, "zip")}
           ><FileArchive className="h-4 w-4" /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "ZIP"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingCsv === c.id}
+            title="Rechnungsposten als CSV für WISO MeinVerein Web"
+            onClick={() => exportMeinVerein(c)}
+          ><FileDown className="h-4 w-4" /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</Button>
           <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
           {c.archived_at
             ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
