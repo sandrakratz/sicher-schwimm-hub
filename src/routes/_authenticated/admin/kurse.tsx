@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations } from "@/lib/course-sessions.functions";
+import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -188,6 +188,8 @@ function Page() {
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
   const [exportingConf, setExportingConf] = useState<string | null>(null);
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
+  const [exportingCsv, setExportingCsv] = useState<string | null>(null);
+  const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
 
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
@@ -278,6 +280,31 @@ function Page() {
       toast.error(e?.message || "Export fehlgeschlagen");
     } finally {
       setExportingConf(null);
+    }
+  }
+
+  async function exportMeinVerein(c: Course) {
+    setExportingCsv(c.id);
+    try {
+      const res = await exportMeinVereinFn({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success(
+        res.missingDocNo > 0
+          ? `CSV erstellt (${res.rows} Posten, davon ${res.missingDocNo} ohne Rechnungsnummer)`
+          : `CSV erstellt (${res.rows} Posten)`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExportingCsv(null);
     }
   }
 
@@ -569,6 +596,13 @@ function Page() {
             title="Kursbestätigungen einzeln als ZIP"
             onClick={() => exportConfirmations(c, "zip")}
           ><FileArchive className="h-4 w-4" /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "ZIP"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingCsv === c.id}
+            title="Rechnungsposten als CSV für WISO MeinVerein Web"
+            onClick={() => exportMeinVerein(c)}
+          ><FileDown className="h-4 w-4" /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</Button>
           <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
           {c.archived_at
             ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>

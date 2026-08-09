@@ -510,3 +510,145 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
 
     return { filename, base64 };
   });
+
+export const generateMeinVereinCsv = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { courseId: string }) => {
+    if (!d || typeof d.courseId !== "string" || d.courseId.length < 8) {
+      throw new Error("courseId required");
+    }
+    return d;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const isStaff =
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+    if (!isStaff) throw new Error("Forbidden");
+
+    const { data: course, error: cErr } = await supabase
+      .from("courses")
+      .select("id,name,starts_on,ends_on,payment_due_days,course_programs(name)")
+      .eq("id", data.courseId)
+      .maybeSingle();
+    if (cErr) throw cErr;
+    if (!course) throw new Error("Kurs nicht gefunden");
+    const program = (course as any).course_programs as { name: string } | null;
+
+    const { data: partsData } = await supabase
+      .from("course_participants")
+      .select(
+        "participant_name,participant_email,payer_street,payer_zip,payer_city,price_amount,document_no,document_issued_at,created_at,request_id",
+      )
+      .eq("course_id", data.courseId)
+      .eq("status", "confirmed");
+
+    const participants = (partsData || []).slice().sort((a, b) =>
+      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
+    );
+    if (participants.length === 0) throw new Error("Keine bestätigten Buchungen in diesem Zeitraum.");
+
+    const requestIds = participants.map((p) => p.request_id).filter(Boolean) as Array<string>;
+    const payerByRequest = new Map<string, string>();
+    if (requestIds.length > 0) {
+      const { data: reqs } = await supabase
+        .from("course_requests")
+        .select("id,parent_name")
+        .in("id", requestIds);
+      for (const r of reqs || []) if (r.parent_name) payerByRequest.set(r.id, r.parent_name);
+    }
+
+    const { computeDueDate } = await import("@/lib/course-confirmation");
+    const deDate = (d: Date | string | null | undefined) => {
+      if (!d) return "";
+      const dt = typeof d === "string" ? new Date(d) : d;
+      if (isNaN(dt.getTime())) return "";
+      return dt.toLocaleDateString("de-DE", { timeZone: "Europe/Berlin", day: "2-digit", month: "2-digit", year: "numeric" });
+    };
+    const deAmount = (v: number | null) => (v == null ? "" : Number(v).toFixed(2).replace(".", ","));
+    const splitName = (full: string) => {
+      const parts = (full || "").trim().split(/\s+/);
+      if (parts.length < 2) return { first: "", last: full || "" };
+      return { first: parts.slice(0, -1).join(" "), last: parts[parts.length - 1]! };
+    };
+
+    const courseTitle = program?.name || course.name;
+    const periodLabel = course.starts_on
+      ? `${deDate(course.starts_on)}${course.ends_on ? `–${deDate(course.ends_on)}` : ""}`
+      : "";
+    const dueDays = course.payment_due_days ?? 14;
+
+    const headers = [
+      "Rechnungsnummer",
+      "Rechnungsdatum",
+      "Fälligkeitsdatum",
+      "Nachname",
+      "Vorname",
+      "Straße",
+      "PLZ",
+      "Ort",
+      "E-Mail",
+      "Teilnehmer",
+      "Position",
+      "Menge",
+      "Einzelpreis",
+      "Gesamtbetrag",
+      "Steuersatz",
+      "Verwendungszweck",
+    ];
+
+    const esc = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines: Array<string> = [headers.map(esc).join(";")];
+    let missingDocNo = 0;
+
+    for (const p of participants) {
+      const issuedAt = p.document_issued_at || p.created_at;
+      const due = computeDueDate(issuedAt, dueDays, course.starts_on);
+      const payerFull = (p.request_id && payerByRequest.get(p.request_id)) || p.participant_name || "";
+      const { first, last } = splitName(payerFull);
+      const amount = p.price_amount != null ? Number(p.price_amount) : null;
+      if (!p.document_no) missingDocNo++;
+
+      lines.push(
+        [
+          p.document_no || "",
+          deDate(issuedAt),
+          deDate(due),
+          last,
+          first,
+          p.payer_street || "",
+          p.payer_zip || "",
+          p.payer_city || "",
+          p.participant_email || "",
+          p.participant_name || "",
+          `${courseTitle}${periodLabel ? `, ${periodLabel}` : ""}`,
+          "1",
+          deAmount(amount),
+          deAmount(amount),
+          "0",
+          `${p.document_no ? p.document_no + " / " : ""}${p.participant_name || ""}`,
+        ]
+          .map(esc)
+          .join(";"),
+      );
+    }
+
+    const csv = "\uFEFF" + lines.join("\r\n") + "\r\n";
+    const base64 = Buffer.from(csv, "utf8").toString("base64");
+    const safe = (s: string) => s.replace(/[^\p{L}\p{N}\-_]+/gu, "_").slice(0, 60);
+    const filename = `MeinVerein_${safe(course.name)}_${course.starts_on || new Date().toISOString().slice(0, 10)}.csv`;
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, userId, {
+        action: "meinverein_csv_exported",
+        entity: "courses",
+        entity_id: data.courseId,
+        metadata: { rows: participants.length, missing_document_no: missingDocNo },
+      });
+    } catch {}
+
+    return { filename, base64, rows: participants.length, missingDocNo };
+  });
