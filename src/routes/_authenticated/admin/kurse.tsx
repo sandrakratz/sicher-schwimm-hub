@@ -283,6 +283,31 @@ function Page() {
     }
   }
 
+  async function exportMeinVerein(c: Course) {
+    setExportingCsv(c.id);
+    try {
+      const res = await exportMeinVereinFn({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success(
+        res.missingDocNo > 0
+          ? `CSV erstellt (${res.rows} Posten, davon ${res.missingDocNo} ohne Rechnungsnummer)`
+          : `CSV erstellt (${res.rows} Posten)`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExportingCsv(null);
+    }
+  }
+
   function hasStarted(c: Course) {
     if (c.archived_at) return true;
     if (!c.starts_on) return false;
