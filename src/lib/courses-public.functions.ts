@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
-import { BILLING } from '@/lib/billing-config'
+
 
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 
@@ -142,6 +142,9 @@ const bookingSchema = z.object({
   parentName: z.string().trim().min(2).max(120),
   parentEmail: z.string().trim().email().max(200),
   parentPhone: z.string().trim().max(60).optional().or(z.literal('')),
+  parentStreet: z.string().trim().min(3).max(160),
+  parentZip: z.string().trim().min(4).max(12),
+  parentCity: z.string().trim().min(2).max(120),
   childName: z.string().trim().min(2).max(120),
   childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   healthInfo: z.string().trim().max(2000).optional().or(z.literal('')),
@@ -239,12 +242,22 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       .select('id')
       .maybeSingle()
 
+    const issuedAt = new Date().toISOString()
+    let documentNo: string | null = null
+    if (!isFull) {
+      const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
+      documentNo = (docNo as string | null) ?? null
+    }
+
     const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
       course_id: course.id,
       request_id: request?.id ?? null,
       participant_name: data.childName,
       participant_email: data.parentEmail,
       participant_phone: data.parentPhone || null,
+      payer_street: data.parentStreet,
+      payer_zip: data.parentZip,
+      payer_city: data.parentCity,
       date_of_birth: data.childDob,
       status,
       notes: data.healthInfo || null,
@@ -252,14 +265,12 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       price_amount: price,
       online_booking: true,
       paid: false,
+      document_no: documentNo,
+      document_issued_at: documentNo ? issuedAt : null,
     })
     if (partErr) throw new Error(partErr.message)
 
     const { queueTemplateEmail } = await import('@/lib/email-send.server')
-    const { formatDateBerlin } = await import('@/lib/format')
-    const paymentReference = `${course.name} – ${data.childName}${
-      course.starts_on ? ` – Start ${formatDateBerlin(course.starts_on)}` : ''
-    }`
 
     await queueTemplateEmail({
       templateName: isFull ? 'course-waitlist-confirmation' : 'course-booking-confirmation',
@@ -267,26 +278,24 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       idempotencyKey: `course-booking-${request?.id ?? course.id}-${data.parentEmail}`,
       templateData: {
         parent_name: data.parentName,
+        payer_street: data.parentStreet,
+        payer_zip: data.parentZip,
+        payer_city: data.parentCity,
         child_name: data.childName,
         program_name: program?.name ?? course.name,
         course_name: course.name,
-        course_target_group: program?.target_group ?? course.target_group,
-        course_age_range: program?.age_range ?? course.age_range,
-        course_duration: course.duration ?? program?.duration,
         course_location: course.location ?? program?.location,
         course_schedule: course.schedule,
         course_starts_on: course.starts_on,
         course_ends_on: course.ends_on,
         course_description: program?.description ?? course.description,
+        unit_count: course.unit_count ?? null,
         waitlist: isFull,
         is_member: data.isMember,
         price_amount: price,
         payment_due_days: course.payment_due_days ?? program?.payment_due_days ?? 14,
-        bank_recipient: BILLING.recipient,
-        bank_iban: BILLING.iban,
-        bank_bic: BILLING.bic,
-        bank_name: BILLING.bankName,
-        payment_reference: paymentReference,
+        document_no: documentNo ?? undefined,
+        issued_at: issuedAt,
         site_base_url: SITE_BASE_URL,
       },
     })

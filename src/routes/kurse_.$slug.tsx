@@ -225,6 +225,7 @@ function BookingDialog({
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     parentName: "", parentEmail: "", parentPhone: "",
+    parentStreet: "", parentZip: "", parentCity: "",
     childName: "", childDob: "", healthInfo: "", message: "",
     isMember: false, acceptTerms: false, gdprConsent: false, website: "",
   });
@@ -246,6 +247,9 @@ function BookingDialog({
           parentName: form.parentName,
           parentEmail: form.parentEmail,
           parentPhone: form.parentPhone,
+          parentStreet: form.parentStreet,
+          parentZip: form.parentZip,
+          parentCity: form.parentCity,
           childName: form.childName,
           childDob: form.childDob,
           healthInfo: form.healthInfo,
@@ -292,6 +296,18 @@ function BookingDialog({
             <div className="space-y-1.5">
               <Label htmlFor="parentPhone">Telefon</Label>
               <Input id="parentPhone" value={form.parentPhone} onChange={(e) => set("parentPhone", e.target.value)} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="parentStreet">Straße und Hausnummer *</Label>
+              <Input id="parentStreet" required value={form.parentStreet} onChange={(e) => set("parentStreet", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="parentZip">PLZ *</Label>
+              <Input id="parentZip" required inputMode="numeric" value={form.parentZip} onChange={(e) => set("parentZip", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="parentCity">Ort *</Label>
+              <Input id="parentCity" required value={form.parentCity} onChange={(e) => set("parentCity", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="childName">Name des Kindes *</Label>
