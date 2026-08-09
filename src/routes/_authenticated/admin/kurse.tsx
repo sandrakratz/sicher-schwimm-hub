@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
 
