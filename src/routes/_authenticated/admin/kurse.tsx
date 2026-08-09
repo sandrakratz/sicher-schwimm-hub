@@ -188,6 +188,8 @@ function Page() {
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
   const [exportingConf, setExportingConf] = useState<string | null>(null);
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
+  const [exportingCsv, setExportingCsv] = useState<string | null>(null);
+  const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
 
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
