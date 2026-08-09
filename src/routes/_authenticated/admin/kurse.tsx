@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { generateCourseListXlsx, generateTaxParticipantListXlsx } from "@/lib/course-sessions.functions";
+import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations } from "@/lib/course-sessions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -123,6 +123,7 @@ type Course = {
   payment_due_days: number | null;
   archived_at: string | null;
   program_id: string | null;
+  unit_count: number | null;
 };
 
 type ProgramRow = {
@@ -185,6 +186,8 @@ function Page() {
   const [exportingTax, setExportingTax] = useState<string | null>(null);
   const exportXlsx = useServerFn(generateCourseListXlsx);
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
+  const [exportingConf, setExportingConf] = useState<string | null>(null);
+  const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
 
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
@@ -254,6 +257,27 @@ function Page() {
       toast.error(e?.message || "Export fehlgeschlagen");
     } finally {
       setExportingTax(null);
+    }
+  }
+
+  async function exportConfirmations(c: Course, format: "pdf" | "zip") {
+    setExportingConf(`${c.id}-${format}`);
+    try {
+      const res = await exportConfirmationsFn({ data: { courseId: c.id, format } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: format === "pdf" ? "application/pdf" : "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Kursbestätigungen erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExportingConf(null);
     }
   }
 
@@ -464,6 +488,7 @@ function Page() {
       price_non_member: editing.price_non_member ?? null,
       payment_due_days: editing.payment_due_days ?? 14,
       program_id: editing.program_id || null,
+      unit_count: editing.unit_count ?? null,
     };
 
 
@@ -530,6 +555,20 @@ function Page() {
             title={hasStarted(c) ? "Teilnehmerliste mit allen Daten für die Steuer" : "ab Kursbeginn verfügbar"}
             onClick={() => exportTaxList(c)}
           ><Receipt className="h-4 w-4" /> {exportingTax === c.id ? "Erstelle…" : "Steuerliste"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingConf === `${c.id}-pdf`}
+            title="Alle Kursbestätigungen als ein PDF"
+            onClick={() => exportConfirmations(c, "pdf")}
+          ><FileText className="h-4 w-4" /> {exportingConf === `${c.id}-pdf` ? "Erstelle…" : "Bestätigungen (PDF)"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingConf === `${c.id}-zip`}
+            title="Kursbestätigungen einzeln als ZIP"
+            onClick={() => exportConfirmations(c, "zip")}
+          ><FileArchive className="h-4 w-4" /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "ZIP"}</Button>
           <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
           {c.archived_at
             ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
@@ -766,6 +805,7 @@ function Page() {
               <div><Label>Start</Label><Input type="date" value={editing.starts_on || ""} onChange={e => setEditing(p => ({ ...p, starts_on: e.target.value || null }))} /></div>
               <div><Label>Ende</Label><Input type="date" value={editing.ends_on || ""} onChange={e => setEditing(p => ({ ...p, ends_on: e.target.value || null }))} /></div>
               <div><Label>Max. Plätze</Label><Input type="number" value={editing.max_participants ?? ""} onChange={e => setEditing(p => ({ ...p, max_participants: e.target.value ? Number(e.target.value) : null }))} /></div>
+              <div><Label>Anzahl der Einheiten</Label><Input type="number" value={editing.unit_count ?? ""} onChange={e => setEditing(p => ({ ...p, unit_count: e.target.value ? Number(e.target.value) : null }))} placeholder="z.B. 12" /></div>
               <div>
                 <Label>Status</Label>
                 <Select value={editing.status} onValueChange={(v: any) => setEditing(p => ({ ...p, status: v }))}>

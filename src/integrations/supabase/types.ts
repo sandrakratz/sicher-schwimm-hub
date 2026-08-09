@@ -111,6 +111,8 @@ export type Database = {
           course_id: string
           created_at: string
           date_of_birth: string | null
+          document_issued_at: string | null
+          document_no: string | null
           goal_reached: boolean | null
           id: string
           is_member: boolean | null
@@ -126,6 +128,9 @@ export type Database = {
           participant_email: string | null
           participant_name: string | null
           participant_phone: string | null
+          payer_city: string | null
+          payer_street: string | null
+          payer_zip: string | null
           payment_note: string | null
           price_amount: number | null
           request_id: string | null
@@ -139,6 +144,8 @@ export type Database = {
           course_id: string
           created_at?: string
           date_of_birth?: string | null
+          document_issued_at?: string | null
+          document_no?: string | null
           goal_reached?: boolean | null
           id?: string
           is_member?: boolean | null
@@ -154,6 +161,9 @@ export type Database = {
           participant_email?: string | null
           participant_name?: string | null
           participant_phone?: string | null
+          payer_city?: string | null
+          payer_street?: string | null
+          payer_zip?: string | null
           payment_note?: string | null
           price_amount?: number | null
           request_id?: string | null
@@ -167,6 +177,8 @@ export type Database = {
           course_id?: string
           created_at?: string
           date_of_birth?: string | null
+          document_issued_at?: string | null
+          document_no?: string | null
           goal_reached?: boolean | null
           id?: string
           is_member?: boolean | null
@@ -182,6 +194,9 @@ export type Database = {
           participant_email?: string | null
           participant_name?: string | null
           participant_phone?: string | null
+          payer_city?: string | null
+          payer_street?: string | null
+          payer_zip?: string | null
           payment_note?: string | null
           price_amount?: number | null
           request_id?: string | null
@@ -395,6 +410,7 @@ export type Database = {
           status: Database["public"]["Enums"]["course_status"]
           target_group: string | null
           trainer_id: string | null
+          unit_count: number | null
           updated_at: string
         }
         Insert: {
@@ -419,6 +435,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           target_group?: string | null
           trainer_id?: string | null
+          unit_count?: number | null
           updated_at?: string
         }
         Update: {
@@ -443,6 +460,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           target_group?: string | null
           trainer_id?: string | null
+          unit_count?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -919,6 +937,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      generate_course_document_no: { Args: never; Returns: string }
       has_active_membership: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {

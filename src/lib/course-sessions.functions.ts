@@ -401,3 +401,112 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
 
     return { filename, base64 };
   });
+
+export const generateCourseConfirmations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { courseId: string; format: "pdf" | "zip" }) => {
+    if (!d || typeof d.courseId !== "string" || d.courseId.length < 8) {
+      throw new Error("courseId required");
+    }
+    if (d.format !== "pdf" && d.format !== "zip") throw new Error("invalid format");
+    return d;
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const isStaff =
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+    if (!isStaff) throw new Error("Forbidden");
+
+    const { data: course, error: cErr } = await supabase
+      .from("courses")
+      .select("id,name,location,starts_on,ends_on,schedule,unit_count,payment_due_days,program_id,course_programs(name,location)")
+      .eq("id", data.courseId)
+      .maybeSingle();
+    if (cErr) throw cErr;
+    if (!course) throw new Error("Kurs nicht gefunden");
+
+    const program = (course as any).course_programs as { name: string; location: string | null } | null;
+
+    const { data: partsData } = await supabase
+      .from("course_participants")
+      .select(
+        "participant_name,payer_street,payer_zip,payer_city,price_amount,document_no,document_issued_at,created_at,request_id,status",
+      )
+      .eq("course_id", data.courseId)
+      .eq("status", "confirmed");
+
+    const participants = (partsData || []).slice().sort((a, b) =>
+      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
+    );
+    if (participants.length === 0) throw new Error("Keine bestätigten Teilnehmer in diesem Zeitraum.");
+
+    const requestIds = participants.map((p) => p.request_id).filter(Boolean) as Array<string>;
+    const payerByRequest = new Map<string, string>();
+    if (requestIds.length > 0) {
+      const { data: reqs } = await supabase
+        .from("course_requests")
+        .select("id,parent_name")
+        .in("id", requestIds);
+      for (const r of reqs || []) if (r.parent_name) payerByRequest.set(r.id, r.parent_name);
+    }
+
+    const inputs = participants.map((p) => ({
+      documentNo: p.document_no,
+      issuedAt: p.document_issued_at || p.created_at,
+      payerName: (p.request_id && payerByRequest.get(p.request_id)) || p.participant_name,
+      payerStreet: p.payer_street,
+      payerZip: p.payer_zip,
+      payerCity: p.payer_city,
+      childName: p.participant_name,
+      courseName: course.name,
+      programName: program?.name ?? null,
+      startsOn: course.starts_on,
+      endsOn: course.ends_on,
+      schedule: course.schedule,
+      location: course.location ?? program?.location ?? null,
+      unitCount: course.unit_count,
+      priceAmount: p.price_amount != null ? Number(p.price_amount) : null,
+      paymentDueDays: course.payment_due_days ?? 14,
+    }));
+
+    const safe = (s: string) => s.replace(/[^\p{L}\p{N}\-_]+/gu, "_").slice(0, 60);
+    const base = `Kursbestaetigungen_${safe(course.name)}_${course.starts_on || new Date().toISOString().slice(0, 10)}`;
+
+    const { renderConfirmationPdf, renderConfirmationsPdf } = await import(
+      "@/lib/course-confirmation-pdf.server"
+    );
+
+    let bytes: Uint8Array;
+    let filename: string;
+    if (data.format === "pdf") {
+      bytes = await renderConfirmationsPdf(inputs);
+      filename = `${base}.pdf`;
+    } else {
+      const { zipSync } = await import("fflate");
+      const files: Record<string, Uint8Array> = {};
+      for (const input of inputs) {
+        const pdf = await renderConfirmationPdf(input);
+        const name = `${safe(input.documentNo || "ohne-Nr")}_${safe(input.childName || "Teilnehmer")}.pdf`;
+        files[name] = pdf;
+      }
+      bytes = zipSync(files, { level: 6 });
+      filename = `${base}.zip`;
+    }
+
+    const base64 = Buffer.from(bytes).toString("base64");
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, userId, {
+        action: "course_confirmations_exported",
+        entity: "courses",
+        entity_id: data.courseId,
+        metadata: { participants: participants.length, format: data.format },
+      });
+    } catch {}
+
+    return { filename, base64 };
+  });

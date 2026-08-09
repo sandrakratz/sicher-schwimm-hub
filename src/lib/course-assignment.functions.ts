@@ -91,6 +91,13 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       else if (isMember === false && course.price_non_member != null) priceAmount = Number(course.price_non_member)
     }
 
+    const issuedAt = new Date().toISOString()
+    let documentNo: string | null = null
+    if (data.status === 'confirmed') {
+      const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
+      documentNo = (docNo as string | null) ?? null
+    }
+
     // Insert participant
     const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
       course_id: course.id,
@@ -104,6 +111,8 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       parent_user_id: parentUserId,
       is_member: isMember,
       price_amount: priceAmount,
+      document_no: documentNo,
+      document_issued_at: documentNo ? issuedAt : null,
     })
 
     if (partErr && !String(partErr.message).toLowerCase().includes('duplicate')) {
@@ -146,9 +155,11 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         bank_iban: BILLING.iban,
         bank_bic: BILLING.bic,
         bank_name: BILLING.bankName,
-        payment_reference: `${course.name}${childPart ? ' – ' + childPart : ''}${
-          course.starts_on ? ' – Start ' + formatDateBerlin(course.starts_on) : ''
-        }`,
+        payment_reference: documentNo
+          ? `${documentNo}${childPart ? ' / ' + childPart : ''}`
+          : `${course.name}${childPart ? ' – ' + childPart : ''}${
+              course.starts_on ? ' – Start ' + formatDateBerlin(course.starts_on) : ''
+            }`,
         site_base_url: SITE_BASE_URL,
       }
       const element = React.createElement(tpl.component, templateData)
