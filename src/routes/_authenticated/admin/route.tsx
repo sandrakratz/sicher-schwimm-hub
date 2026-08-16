@@ -47,6 +47,7 @@ const adminNav: NavItem[] = [
   { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
   { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen", allow: ["admin", "board"] },
+  { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },
   { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
   { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
   { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
