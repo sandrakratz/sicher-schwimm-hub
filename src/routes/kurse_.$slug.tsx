@@ -191,7 +191,23 @@ function ProgramPage() {
         term={bookingTerm}
         onClose={() => setBookingTerm(null)}
         onSuccess={(r) => { setBookingTerm(null); setResult(r); }}
+        onBlocked={() => { setBookingTerm(null); setBlockedNotice(true); }}
       />
+
+      <AlertDialog open={blockedNotice} onOpenChange={(o) => { if (!o) { setBlockedNotice(false); window.location.reload(); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Einzelfallprüfung erforderlich</AlertDialogTitle>
+            <AlertDialogDescription>
+              Für diese Anmeldung ist eine Einzelfallprüfung durch den Vorstand erforderlich, eine direkte Buchung ist
+              daher nicht möglich. Wir haben Ihre Angaben als Kursanfrage aufgenommen und melden uns persönlich bei Ihnen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setBlockedNotice(false); window.location.reload(); }}>Alles klar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={result !== null} onOpenChange={(o) => { if (!o) { setResult(null); window.location.reload(); } }}>
         <AlertDialogContent>
@@ -210,6 +226,7 @@ function ProgramPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </PublicLayout>
   );
 }
