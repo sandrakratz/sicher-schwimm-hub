@@ -47,6 +47,56 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_blocklist: {
+        Row: {
+          active: boolean
+          child_dob: string | null
+          child_name_norm: string | null
+          created_at: string
+          created_by: string | null
+          email_norm: string | null
+          id: string
+          reason: string | null
+          request_id: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          child_dob?: string | null
+          child_name_norm?: string | null
+          created_at?: string
+          created_by?: string | null
+          email_norm?: string | null
+          id?: string
+          reason?: string | null
+          request_id?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          child_dob?: string | null
+          child_name_norm?: string | null
+          created_at?: string
+          created_by?: string | null
+          email_norm?: string | null
+          id?: string
+          reason?: string | null
+          request_id?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_blocklist_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "course_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cancellation_requests: {
         Row: {
           booking_date: string
