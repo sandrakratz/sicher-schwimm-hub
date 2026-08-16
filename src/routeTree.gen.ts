@@ -44,6 +44,7 @@ import { Route as AuthenticatedPortalKontaktRouteImport } from './routes/_authen
 import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal/events'
 import { Route as AuthenticatedPortalDokumenteRouteImport } from './routes/_authenticated/portal/dokumente'
 import { Route as AuthenticatedAdminWiderrufeRouteImport } from './routes/_authenticated/admin/widerrufe'
+import { Route as AuthenticatedAdminSperrlisteRouteImport } from './routes/_authenticated/admin/sperrliste'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
 import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
 import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
@@ -242,6 +243,12 @@ const AuthenticatedAdminWiderrufeRoute =
     path: '/widerrufe',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminSperrlisteRoute =
+  AuthenticatedAdminSperrlisteRouteImport.update({
+    id: '/sperrliste',
+    path: '/sperrliste',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminNewsRoute = AuthenticatedAdminNewsRouteImport.update({
   id: '/news',
   path: '/news',
@@ -361,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
@@ -411,6 +419,7 @@ export interface FileRoutesByTo {
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
@@ -464,6 +473,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/_authenticated/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
   '/_authenticated/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/_authenticated/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
@@ -517,6 +527,7 @@ export interface FileRouteTypes {
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
+    | '/admin/sperrliste'
     | '/admin/widerrufe'
     | '/portal/dokumente'
     | '/portal/events'
@@ -567,6 +578,7 @@ export interface FileRouteTypes {
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
+    | '/admin/sperrliste'
     | '/admin/widerrufe'
     | '/portal/dokumente'
     | '/portal/events'
@@ -619,6 +631,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/mitgliedschaften'
     | '/_authenticated/admin/nachrichten'
     | '/_authenticated/admin/news'
+    | '/_authenticated/admin/sperrliste'
     | '/_authenticated/admin/widerrufe'
     | '/_authenticated/portal/dokumente'
     | '/_authenticated/portal/events'
@@ -918,6 +931,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminWiderrufeRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/sperrliste': {
+      id: '/_authenticated/admin/sperrliste'
+      path: '/sperrliste'
+      fullPath: '/admin/sperrliste'
+      preLoaderRoute: typeof AuthenticatedAdminSperrlisteRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/news': {
       id: '/_authenticated/admin/news'
       path: '/news'
@@ -1037,6 +1057,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
   AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
+  AuthenticatedAdminSperrlisteRoute: typeof AuthenticatedAdminSperrlisteRoute
   AuthenticatedAdminWiderrufeRoute: typeof AuthenticatedAdminWiderrufeRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -1054,6 +1075,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminMitgliedschaftenRoute,
     AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
     AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
+    AuthenticatedAdminSperrlisteRoute: AuthenticatedAdminSperrlisteRoute,
     AuthenticatedAdminWiderrufeRoute: AuthenticatedAdminWiderrufeRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
