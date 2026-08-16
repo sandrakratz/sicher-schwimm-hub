@@ -72,6 +72,7 @@ function ProgramPage() {
   const program = Route.useLoaderData() as CourseProgram;
   const [bookingTerm, setBookingTerm] = useState<CourseTerm | null>(null);
   const [result, setResult] = useState<{ status: "confirmed" | "waiting"; courseName: string } | null>(null);
+  const [blockedNotice, setBlockedNotice] = useState(false);
 
   return (
     <PublicLayout>
