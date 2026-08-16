@@ -215,12 +215,13 @@ function ProgramPage() {
 }
 
 function BookingDialog({
-  program, term, onClose, onSuccess,
+  program, term, onClose, onSuccess, onBlocked,
 }: {
   program: CourseProgram;
   term: CourseTerm | null;
   onClose: () => void;
   onSuccess: (r: { status: "confirmed" | "waiting"; courseName: string }) => void;
+  onBlocked: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
