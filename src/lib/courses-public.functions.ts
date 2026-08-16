@@ -171,6 +171,23 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
 
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
 
+    // Sperrliste prüfen: Treffer bei Eltern-E-Mail ODER Kind (Name + Geburtsdatum)
+    const emailNorm = data.parentEmail.trim().toLowerCase()
+    const childNorm = data.childName.trim().replace(/\s+/g, ' ').toLowerCase()
+    const { data: blocked } = await supabaseAdmin
+      .from('booking_blocklist')
+      .select('id,email_norm,child_name_norm,child_dob')
+      .eq('active', true)
+      .or(`email_norm.eq.${emailNorm},child_name_norm.eq.${childNorm}`)
+    const isBlocked = (blocked ?? []).some(
+      (b) =>
+        b.email_norm === emailNorm ||
+        (b.child_name_norm === childNorm && b.child_dob === data.childDob),
+    )
+    if (isBlocked) {
+      return { ok: false as const, blocked: true as const }
+    }
+
     const { data: course, error: courseErr } = await supabaseAdmin
       .from('courses')
       .select('*, course_programs(*)')
@@ -181,6 +198,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     if (!course || !course.is_public || course.archived_at) {
       throw new Error('Dieser Kurs ist derzeit nicht buchbar.')
     }
+
 
     const program = (course as any).course_programs as
       | {
