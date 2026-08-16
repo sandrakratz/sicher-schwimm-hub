@@ -260,7 +260,12 @@ function BookingDialog({
           website: form.website,
         },
       });
+      if ((res as any)?.blocked) {
+        onBlocked();
+        return;
+      }
       onSuccess({ status: res.status as "confirmed" | "waiting", courseName: res.courseName ?? term.name });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Die Buchung konnte nicht abgeschlossen werden.");
     } finally {
