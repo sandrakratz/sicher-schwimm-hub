@@ -72,6 +72,7 @@ function ProgramPage() {
   const program = Route.useLoaderData() as CourseProgram;
   const [bookingTerm, setBookingTerm] = useState<CourseTerm | null>(null);
   const [result, setResult] = useState<{ status: "confirmed" | "waiting"; courseName: string } | null>(null);
+  const [blockedNotice, setBlockedNotice] = useState(false);
 
   return (
     <PublicLayout>
@@ -191,7 +192,23 @@ function ProgramPage() {
         term={bookingTerm}
         onClose={() => setBookingTerm(null)}
         onSuccess={(r) => { setBookingTerm(null); setResult(r); }}
+        onBlocked={() => { setBookingTerm(null); setBlockedNotice(true); }}
       />
+
+      <AlertDialog open={blockedNotice} onOpenChange={(o) => { if (!o) { setBlockedNotice(false); window.location.reload(); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Einzelfallprüfung erforderlich</AlertDialogTitle>
+            <AlertDialogDescription>
+              Für diese Anmeldung ist eine Einzelfallprüfung durch den Vorstand erforderlich, eine direkte Buchung ist
+              daher nicht möglich. Wir haben Ihre Angaben als Kursanfrage aufgenommen und melden uns persönlich bei Ihnen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setBlockedNotice(false); window.location.reload(); }}>Alles klar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={result !== null} onOpenChange={(o) => { if (!o) { setResult(null); window.location.reload(); } }}>
         <AlertDialogContent>
@@ -210,17 +227,19 @@ function ProgramPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
     </PublicLayout>
   );
 }
 
 function BookingDialog({
-  program, term, onClose, onSuccess,
+  program, term, onClose, onSuccess, onBlocked,
 }: {
   program: CourseProgram;
   term: CourseTerm | null;
   onClose: () => void;
   onSuccess: (r: { status: "confirmed" | "waiting"; courseName: string }) => void;
+  onBlocked: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -260,7 +279,12 @@ function BookingDialog({
           website: form.website,
         },
       });
+      if ((res as any)?.blocked) {
+        onBlocked();
+        return;
+      }
       onSuccess({ status: res.status as "confirmed" | "waiting", courseName: res.courseName ?? term.name });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Die Buchung konnte nicht abgeschlossen werden.");
     } finally {

@@ -473,6 +473,13 @@ function AnfragenAdmin() {
             </div>
           )}
 
+          {selected && (
+            <p className="text-xs text-muted-foreground">
+              Hinweis: „Ablehnen“ setzt den Teilnehmer automatisch auf die Sperrliste – eine Direktbuchung über die
+              Website ist dann nicht mehr möglich, nur noch eine Anfrage zur Einzelfallprüfung.
+            </p>
+          )}
+
           <DialogFooter className="flex-wrap gap-2">
             {selected && <>
               <Button variant="outline" onClick={() => setStatus(selected.id, "contacted")}>Kontaktiert</Button>

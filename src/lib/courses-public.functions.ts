@@ -171,6 +171,71 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
 
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
 
+    // Sperrliste prüfen: Treffer bei Eltern-E-Mail ODER Kind (Name + Geburtsdatum)
+    const emailNorm = data.parentEmail.trim().toLowerCase()
+    const childNorm = data.childName.trim().replace(/\s+/g, ' ').toLowerCase()
+    const { data: blocked } = await supabaseAdmin
+      .from('booking_blocklist')
+      .select('id,email_norm,child_name_norm,child_dob')
+      .eq('active', true)
+      .or(`email_norm.eq.${emailNorm},child_name_norm.eq.${childNorm}`)
+    const isBlocked = (blocked ?? []).some(
+      (b) =>
+        b.email_norm === emailNorm ||
+        (b.child_name_norm === childNorm && b.child_dob === data.childDob),
+    )
+    if (isBlocked) {
+      // Keine Direktbuchung: stattdessen Kursanfrage zur Einzelfallprüfung anlegen
+      const { data: courseInfo } = await supabaseAdmin
+        .from('courses')
+        .select('name, course_programs(name)')
+        .eq('id', data.courseId)
+        .maybeSingle()
+      const desired =
+        ((courseInfo as any)?.course_programs?.name as string | undefined) ??
+        courseInfo?.name ??
+        'Kursanfrage'
+
+      const { data: req } = await supabaseAdmin
+        .from('course_requests')
+        .insert({
+          parent_name: data.parentName,
+          parent_email: data.parentEmail,
+          parent_phone: data.parentPhone || null,
+          child_name: data.childName,
+          child_dob: data.childDob,
+          desired_course: desired,
+          health_info: data.healthInfo || null,
+          message: data.message || null,
+          gdpr_consent: true,
+          contact_permission: true,
+          status: 'new',
+          admin_notes: 'Sperrliste – Einzelfallprüfung durch den Vorstand erforderlich',
+        })
+        .select('id')
+        .maybeSingle()
+
+      const { queueTemplateEmail } = await import('@/lib/email-send.server')
+      await queueTemplateEmail({
+        templateName: 'course-request',
+        idempotencyKey: `course-blocked-${req?.id ?? data.courseId}-${emailNorm}`,
+        templateData: {
+          parent_name: data.parentName,
+          parent_email: data.parentEmail,
+          parent_phone: data.parentPhone || '',
+          child_name: data.childName,
+          child_dob: data.childDob,
+          desired_course: `${desired} – ${courseInfo?.name ?? ''}`,
+          health_info: data.healthInfo || '',
+          message: `SPERRLISTE – Einzelfallprüfung erforderlich (keine Direktbuchung)${data.message ? ` – ${data.message}` : ''}`,
+          submitted_at: new Date().toISOString(),
+        },
+      })
+
+      return { ok: false as const, blocked: true as const }
+    }
+
+
     const { data: course, error: courseErr } = await supabaseAdmin
       .from('courses')
       .select('*, course_programs(*)')
@@ -181,6 +246,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     if (!course || !course.is_public || course.archived_at) {
       throw new Error('Dieser Kurs ist derzeit nicht buchbar.')
     }
+
 
     const program = (course as any).course_programs as
       | {
