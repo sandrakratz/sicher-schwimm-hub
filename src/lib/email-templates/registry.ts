@@ -30,4 +30,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'cancellation-confirmation': cancellationConfirmation,
   'course-booking-confirmation': courseBooking,
   'course-waitlist-confirmation': courseWaitlist,
+  'payment-check-reminder': paymentCheckReminder,
 }
