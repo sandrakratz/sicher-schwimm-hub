@@ -188,7 +188,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       // Keine Direktbuchung: stattdessen Kursanfrage zur Einzelfallprüfung anlegen
       const { data: courseInfo } = await supabaseAdmin
         .from('courses')
-        .select('name, course_programs(name)')
+        .select('name,starts_on,ends_on,schedule,location, course_programs(name,location)')
         .eq('id', data.courseId)
         .maybeSingle()
       const desired =
