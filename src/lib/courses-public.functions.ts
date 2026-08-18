@@ -380,6 +380,14 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         health_info: data.healthInfo || '',
         message: `Online-Buchung (${isFull ? 'Warteliste' : 'verbindlich gebucht'})${data.message ? ` – ${data.message}` : ''}`,
         submitted_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        program_name: program?.name ?? course.name,
+        course_name: course.name,
+        course_starts_on: course.starts_on,
+        course_ends_on: course.ends_on,
+        course_schedule: course.schedule,
+        course_location: course.location ?? program?.location ?? null,
+        booking_status: isFull ? 'Warteliste' : 'verbindlich gebucht',
       },
     })
 
