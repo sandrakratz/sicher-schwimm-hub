@@ -37,13 +37,25 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
 
         let queued = 0
         for (const p of participants ?? []) {
+          const idempotencyKey = `payment-check-${p.id}`
+
+          // Bereits versendet? (einmalig pro Buchung)
+          const { data: existing } = await supabaseAdmin
+            .from('email_send_log')
+            .select('id')
+            .eq('template_name', 'payment-check-reminder')
+            .contains('metadata', { idempotency_key: idempotencyKey })
+            .limit(1)
+          if (existing && existing.length > 0) continue
+
           const course = (p as any).courses as
             | { name?: string; starts_on?: string | null; ends_on?: string | null; course_programs?: { name?: string } | null }
             | null
 
           const result = await queueTemplateEmail({
             templateName: 'payment-check-reminder',
-            idempotencyKey: `payment-check-${p.id}`,
+            idempotencyKey,
+            metadata: { participant_id: p.id },
             templateData: {
               child_name: p.participant_name,
               parent_email: p.participant_email,
