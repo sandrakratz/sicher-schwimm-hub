@@ -7,6 +7,7 @@ import { template as newRegistration } from './new-registration'
 import { template as cancellationInternal } from './cancellation-internal'
 import { template as cancellationConfirmation } from './cancellation-confirmation'
 import { template as courseBooking, waitlistTemplate as courseWaitlist } from './course-booking-confirmation'
+import { template as paymentCheckReminder } from './payment-check-reminder'
 
 
 
