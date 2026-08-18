@@ -60,6 +60,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
 
 const WiderrufRoute = WiderrufRouteImport.update({
   id: '/widerruf',
@@ -334,6 +335,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksPaymentCheckReminderRoute =
+  ApiPublicHooksPaymentCheckReminderRouteImport.update({
+    id: '/api/public/hooks/payment-check-reminder',
+    path: '/api/public/hooks/payment-check-reminder',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
+  '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -432,6 +440,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
+  '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -486,6 +495,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
+  '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -540,6 +550,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/admin/'
     | '/portal/'
+    | '/api/public/hooks/payment-check-reminder'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -591,6 +602,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/admin'
     | '/portal'
+    | '/api/public/hooks/payment-check-reminder'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -644,6 +656,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
+    | '/api/public/hooks/payment-check-reminder'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -677,6 +690,7 @@ export interface RootRouteChildren {
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -1043,6 +1057,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/payment-check-reminder': {
+      id: '/api/public/hooks/payment-check-reminder'
+      path: '/api/public/hooks/payment-check-reminder'
+      fullPath: '/api/public/hooks/payment-check-reminder'
+      preLoaderRoute: typeof ApiPublicHooksPaymentCheckReminderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1136,6 +1157,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicHooksPaymentCheckReminderRoute:
+    ApiPublicHooksPaymentCheckReminderRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
