@@ -74,6 +74,7 @@ export async function queueTemplateEmail(opts: {
     body_html: html,
     body_text: text,
     sender_user_id: opts.senderUserId ?? null,
+    metadata: { idempotency_key: opts.idempotencyKey, ...(opts.metadata ?? {}) },
   })
 
   const { error: enqErr } = await supabaseAdmin.rpc('enqueue_email', {
