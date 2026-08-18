@@ -17,6 +17,8 @@ export async function queueTemplateEmail(opts: {
   templateData: Record<string, unknown>
   idempotencyKey: string
   senderUserId?: string | null
+  /** Zusätzliche Metadaten im Sendeprotokoll (z. B. zur Dedupe-Prüfung). */
+  metadata?: Record<string, unknown> | null
 }): Promise<{ queued: boolean; reason?: string }> {
   const tpl = TEMPLATES[opts.templateName]
   if (!tpl) return { queued: false, reason: 'unknown_template' }
@@ -72,6 +74,7 @@ export async function queueTemplateEmail(opts: {
     body_html: html,
     body_text: text,
     sender_user_id: opts.senderUserId ?? null,
+    metadata: { idempotency_key: opts.idempotencyKey, ...(opts.metadata ?? {}) },
   })
 
   const { error: enqErr } = await supabaseAdmin.rpc('enqueue_email', {
