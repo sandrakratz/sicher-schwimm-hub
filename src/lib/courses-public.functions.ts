@@ -229,6 +229,15 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
           health_info: data.healthInfo || '',
           message: `SPERRLISTE – Einzelfallprüfung erforderlich (keine Direktbuchung)${data.message ? ` – ${data.message}` : ''}`,
           submitted_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          program_name: desired,
+          course_name: courseInfo?.name ?? null,
+          course_starts_on: courseInfo?.starts_on ?? null,
+          course_ends_on: courseInfo?.ends_on ?? null,
+          course_schedule: courseInfo?.schedule ?? null,
+          course_location:
+            courseInfo?.location ?? ((courseInfo as any)?.course_programs?.location as string | undefined) ?? null,
+          booking_status: 'Sperrliste – Einzelfallprüfung',
         },
       })
 
