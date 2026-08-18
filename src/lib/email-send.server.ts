@@ -17,6 +17,8 @@ export async function queueTemplateEmail(opts: {
   templateData: Record<string, unknown>
   idempotencyKey: string
   senderUserId?: string | null
+  /** Zusätzliche Metadaten im Sendeprotokoll (z. B. zur Dedupe-Prüfung). */
+  metadata?: Record<string, unknown> | null
 }): Promise<{ queued: boolean; reason?: string }> {
   const tpl = TEMPLATES[opts.templateName]
   if (!tpl) return { queued: false, reason: 'unknown_template' }
