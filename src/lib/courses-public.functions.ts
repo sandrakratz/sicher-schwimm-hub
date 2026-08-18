@@ -188,7 +188,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       // Keine Direktbuchung: stattdessen Kursanfrage zur Einzelfallprüfung anlegen
       const { data: courseInfo } = await supabaseAdmin
         .from('courses')
-        .select('name, course_programs(name)')
+        .select('name,starts_on,ends_on,schedule,location, course_programs(name,location)')
         .eq('id', data.courseId)
         .maybeSingle()
       const desired =
@@ -229,6 +229,15 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
           health_info: data.healthInfo || '',
           message: `SPERRLISTE – Einzelfallprüfung erforderlich (keine Direktbuchung)${data.message ? ` – ${data.message}` : ''}`,
           submitted_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          program_name: desired,
+          course_name: courseInfo?.name ?? null,
+          course_starts_on: courseInfo?.starts_on ?? null,
+          course_ends_on: courseInfo?.ends_on ?? null,
+          course_schedule: courseInfo?.schedule ?? null,
+          course_location:
+            courseInfo?.location ?? ((courseInfo as any)?.course_programs?.location as string | undefined) ?? null,
+          booking_status: 'Sperrliste – Einzelfallprüfung',
         },
       })
 
@@ -380,6 +389,14 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         health_info: data.healthInfo || '',
         message: `Online-Buchung (${isFull ? 'Warteliste' : 'verbindlich gebucht'})${data.message ? ` – ${data.message}` : ''}`,
         submitted_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        program_name: program?.name ?? course.name,
+        course_name: course.name,
+        course_starts_on: course.starts_on,
+        course_ends_on: course.ends_on,
+        course_schedule: course.schedule,
+        course_location: course.location ?? program?.location ?? null,
+        booking_status: isFull ? 'Warteliste' : 'verbindlich gebucht',
       },
     })
 
