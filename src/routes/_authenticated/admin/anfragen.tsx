@@ -47,6 +47,7 @@ type Item = {
   desired_course: string | null; health_info: string | null; message: string | null;
   gdpr_consent: boolean; contact_permission: boolean;
   assigned_course_id?: string | null;
+  admin_notes?: string | null;
 };
 
 type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
