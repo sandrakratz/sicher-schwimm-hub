@@ -47,6 +47,7 @@ type Item = {
   desired_course: string | null; health_info: string | null; message: string | null;
   gdpr_consent: boolean; contact_permission: boolean;
   assigned_course_id?: string | null;
+  admin_notes?: string | null;
 };
 
 type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
@@ -117,6 +118,20 @@ function AnfragenAdmin() {
   const unassignFn = useServerFn(unassignRequestFromCourse);
   const [unassignStatus, setUnassignStatus] = useState<"waiting_list" | "new">("waiting_list");
   const [unassignBusy, setUnassignBusy] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [notesBusy, setNotesBusy] = useState(false);
+
+  async function saveNotes() {
+    if (!selected) return;
+    setNotesBusy(true);
+    const value = notesDraft.trim() ? notesDraft : null;
+    const { error } = await supabase.from("course_requests").update({ admin_notes: value }).eq("id", selected.id);
+    setNotesBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Notiz gespeichert");
+    setSelected(s => (s && s.id === selected.id ? { ...s, admin_notes: value } : s));
+    load();
+  }
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
@@ -142,6 +157,7 @@ function AnfragenAdmin() {
     setPriceTouched(false);
     setReplySubject(`Rückfrage zu Ihrer Kursanfrage${selected.child_name ? ` – ${selected.child_name}` : ""}`);
     setReplyBody("");
+    setNotesDraft(selected.admin_notes || "");
     (async () => {
       try {
         const res = await suggestFn({ data: { email: selected.parent_email } });
@@ -281,6 +297,7 @@ function AnfragenAdmin() {
             <TableHead>Kind</TableHead>
             <TableHead>{mode === "assigned" ? "Zugewiesener Kurs" : "Wunschkurs"}</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Notiz</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -306,6 +323,13 @@ function AnfragenAdmin() {
                   ) : (r.desired_course || "—")}
                 </TableCell>
                 <TableCell><StatusBadge status={r.status} /></TableCell>
+                <TableCell className="max-w-[220px]">
+                  {r.admin_notes ? (
+                    <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
               </TableRow>
             );
@@ -408,6 +432,18 @@ function AnfragenAdmin() {
               <hr />
               <Row label="Datenschutz akzeptiert" value={selected.gdpr_consent ? "Ja" : "Nein"} />
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
+
+              <hr />
+              <h3 className="font-semibold">Interne Notizen</h3>
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Nur intern sichtbar – z.B. Telefonate, Absprachen oder sonstige Hinweise. Erscheint auch in der Übersicht.
+                </p>
+                <Textarea rows={4} value={notesDraft} onChange={e => setNotesDraft(e.target.value)} placeholder="z.B. 20.08. telefoniert – Rückruf nächste Woche" />
+                <Button variant="outline" size="sm" onClick={saveNotes} disabled={notesBusy}>
+                  {notesBusy ? "Wird gespeichert …" : "Notiz speichern"}
+                </Button>
+              </div>
 
               <hr />
               <ConversationTimeline
