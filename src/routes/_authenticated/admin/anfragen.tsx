@@ -157,6 +157,7 @@ function AnfragenAdmin() {
     setPriceTouched(false);
     setReplySubject(`Rückfrage zu Ihrer Kursanfrage${selected.child_name ? ` – ${selected.child_name}` : ""}`);
     setReplyBody("");
+    setNotesDraft(selected.admin_notes || "");
     (async () => {
       try {
         const res = await suggestFn({ data: { email: selected.parent_email } });
