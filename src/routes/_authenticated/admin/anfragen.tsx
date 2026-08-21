@@ -73,6 +73,24 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: "Abgelehnt",
 };
 
+const STATUS_CLASS: Record<string, string> = {
+  new: "bg-green-600 hover:bg-green-700 text-white border-transparent",
+  under_review: "bg-orange-500 hover:bg-orange-600 text-white border-transparent",
+  contacted: "bg-blue-600 hover:bg-blue-700 text-white border-transparent",
+  waiting_list: "bg-yellow-400 hover:bg-yellow-500 text-black border-transparent",
+  accepted: "bg-teal-700 hover:bg-teal-800 text-white border-transparent",
+  rejected: "bg-red-600 hover:bg-red-700 text-white border-transparent",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <Badge variant="outline" className={STATUS_CLASS[status] || ""}>
+      {STATUS_LABEL[status] || status}
+    </Badge>
+  );
+}
+
+
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
@@ -270,7 +288,7 @@ function AnfragenAdmin() {
                     ) : "—"
                   ) : (r.desired_course || "—")}
                 </TableCell>
-                <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
+                <TableCell><StatusBadge status={r.status} /></TableCell>
                 <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
               </TableRow>
             );
@@ -328,7 +346,7 @@ function AnfragenAdmin() {
           {selected && (
             <div className="space-y-4 text-sm">
               <Row label="Eingegangen" value={formatDateTimeBerlin(selected.created_at)} />
-              <Row label="Status" value={<Badge variant="outline">{STATUS_LABEL[selected.status] || selected.status}</Badge>} />
+              <Row label="Status" value={<StatusBadge status={selected.status} />} />
               {selected.assigned_course_id && (() => {
                 const cl = courseLabel(selected.assigned_course_id);
                 return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;
