@@ -368,6 +368,28 @@ function AnfragenAdmin() {
                 const cl = courseLabel(selected.assigned_course_id);
                 return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;
               })()}
+              {selected.assigned_course_id && (
+                <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Zuweisung aufheben: Die Anfrage erscheint wieder unter „Aktuelle Anfragen“, der Teilnehmer-Eintrag im Kurs wird storniert. Es wird keine E-Mail versendet.
+                  </p>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="w-48">
+                      <Label>Neuer Status</Label>
+                      <Select value={unassignStatus} onValueChange={(v: any) => setUnassignStatus(v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="waiting_list">Warteliste</SelectItem>
+                          <SelectItem value="new">Neu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button variant="outline" onClick={doUnassign} disabled={unassignBusy}>
+                      {unassignBusy ? "Wird aufgehoben …" : "Zuweisung aufheben"}
+                    </Button>
+                  </div>
+                </div>
+              )}
               <hr />
               <h3 className="font-semibold">Eltern / Erziehungsberechtigte</h3>
               <Row label="Name" value={selected.parent_name} />
