@@ -38,6 +38,51 @@ export const suggestMatchForRequest = createServerFn({ method: 'POST' })
     return { isMember, parentUserId, parentLabel }
   })
 
+/**
+ * Hebt die Kurszuweisung einer Anfrage auf: Teilnehmer-Eintrag wird storniert,
+ * die Anfrage wandert zurück in die aktuellen Anfragen (Warteliste oder Neu).
+ */
+export const unassignRequestFromCourse = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { requestId: string; newStatus?: 'waiting_list' | 'new' }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context
+    const { data: isStaff } = await supabase.rpc('is_staff', { _user_id: userId })
+    if (!isStaff) throw new Error('Forbidden')
+
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+    const { data: req, error: reqErr } = await supabaseAdmin
+      .from('course_requests').select('id, assigned_course_id').eq('id', data.requestId).maybeSingle()
+    if (reqErr || !req) throw new Error('Anfrage nicht gefunden')
+
+    const previousCourseId = req.assigned_course_id ?? null
+    const newStatus = data.newStatus === 'new' ? 'new' : 'waiting_list'
+
+    const { error: partErr } = await supabaseAdmin
+      .from('course_participants')
+      .update({ status: 'cancelled' })
+      .eq('request_id', req.id)
+      .neq('status', 'cancelled')
+    if (partErr) throw new Error(partErr.message)
+
+    const { error: updErr } = await supabaseAdmin
+      .from('course_requests')
+      .update({ assigned_course_id: null, status: newStatus })
+      .eq('id', req.id)
+    if (updErr) throw new Error(updErr.message)
+
+    const { logAudit } = await import('@/lib/audit.server')
+    await logAudit(supabase, userId, {
+      action: 'course.participant.unassigned',
+      entity: 'course_requests',
+      entity_id: req.id,
+      metadata: { previous_course_id: previousCourseId, new_status: newStatus },
+    })
+
+    return { ok: true, newStatus }
+  })
+
 export const assignRequestToCourse = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: {
