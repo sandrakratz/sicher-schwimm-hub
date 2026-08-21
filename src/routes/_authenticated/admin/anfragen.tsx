@@ -117,6 +117,20 @@ function AnfragenAdmin() {
   const unassignFn = useServerFn(unassignRequestFromCourse);
   const [unassignStatus, setUnassignStatus] = useState<"waiting_list" | "new">("waiting_list");
   const [unassignBusy, setUnassignBusy] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
+  const [notesBusy, setNotesBusy] = useState(false);
+
+  async function saveNotes() {
+    if (!selected) return;
+    setNotesBusy(true);
+    const value = notesDraft.trim() ? notesDraft : null;
+    const { error } = await supabase.from("course_requests").update({ admin_notes: value }).eq("id", selected.id);
+    setNotesBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Notiz gespeichert");
+    setSelected(s => (s && s.id === selected.id ? { ...s, admin_notes: value } : s));
+    load();
+  }
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
