@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useServerFn } from "@tanstack/react-start";
-import { assignRequestToCourse, suggestMatchForRequest } from "@/lib/course-assignment.functions";
+import { assignRequestToCourse, suggestMatchForRequest, unassignRequestFromCourse } from "@/lib/course-assignment.functions";
 import { replyToCourseRequest } from "@/lib/course-requests.functions";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -114,6 +114,9 @@ function AnfragenAdmin() {
   const assignFn = useServerFn(assignRequestToCourse);
   const suggestFn = useServerFn(suggestMatchForRequest);
   const replyFn = useServerFn(replyToCourseRequest);
+  const unassignFn = useServerFn(unassignRequestFromCourse);
+  const [unassignStatus, setUnassignStatus] = useState<"waiting_list" | "new">("waiting_list");
+  const [unassignBusy, setUnassignBusy] = useState(false);
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
@@ -188,6 +191,20 @@ function AnfragenAdmin() {
     } catch (e: any) {
       toast.error(e.message || "Fehler");
     } finally { setBusy(false); }
+  }
+
+  async function doUnassign() {
+    if (!selected) return;
+    if (!confirm("Zuweisung wirklich aufheben? Der Teilnehmer-Eintrag im Kurs wird storniert.")) return;
+    setUnassignBusy(true);
+    try {
+      await unassignFn({ data: { requestId: selected.id, newStatus: unassignStatus } });
+      toast.success(unassignStatus === "new" ? "Zuweisung aufgehoben – Status: Neu" : "Zuweisung aufgehoben – Status: Warteliste");
+      setSelected(s => s ? { ...s, assigned_course_id: null, status: unassignStatus } : s);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Fehler");
+    } finally { setUnassignBusy(false); }
   }
 
   async function doDelete(id: string) {
@@ -351,6 +368,28 @@ function AnfragenAdmin() {
                 const cl = courseLabel(selected.assigned_course_id);
                 return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;
               })()}
+              {selected.assigned_course_id && (
+                <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Zuweisung aufheben: Die Anfrage erscheint wieder unter „Aktuelle Anfragen“, der Teilnehmer-Eintrag im Kurs wird storniert. Es wird keine E-Mail versendet.
+                  </p>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <div className="w-48">
+                      <Label>Neuer Status</Label>
+                      <Select value={unassignStatus} onValueChange={(v: any) => setUnassignStatus(v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="waiting_list">Warteliste</SelectItem>
+                          <SelectItem value="new">Neu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button variant="outline" onClick={doUnassign} disabled={unassignBusy}>
+                      {unassignBusy ? "Wird aufgehoben …" : "Zuweisung aufheben"}
+                    </Button>
+                  </div>
+                </div>
+              )}
               <hr />
               <h3 className="font-semibold">Eltern / Erziehungsberechtigte</h3>
               <Row label="Name" value={selected.parent_name} />
