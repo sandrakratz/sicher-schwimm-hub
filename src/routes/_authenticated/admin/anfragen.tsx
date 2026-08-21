@@ -193,6 +193,20 @@ function AnfragenAdmin() {
     } finally { setBusy(false); }
   }
 
+  async function doUnassign() {
+    if (!selected) return;
+    if (!confirm("Zuweisung wirklich aufheben? Der Teilnehmer-Eintrag im Kurs wird storniert.")) return;
+    setUnassignBusy(true);
+    try {
+      await unassignFn({ data: { requestId: selected.id, newStatus: unassignStatus } });
+      toast.success(unassignStatus === "new" ? "Zuweisung aufgehoben – Status: Neu" : "Zuweisung aufgehoben – Status: Warteliste");
+      setSelected(s => s ? { ...s, assigned_course_id: null, status: unassignStatus } : s);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Fehler");
+    } finally { setUnassignBusy(false); }
+  }
+
   async function doDelete(id: string) {
     if (!confirm("Diese Kursanfrage wirklich endgültig löschen?")) return;
     const { error } = await supabase.from("course_requests").delete().eq("id", id);
