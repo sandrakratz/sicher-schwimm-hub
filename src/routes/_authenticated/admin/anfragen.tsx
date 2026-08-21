@@ -114,6 +114,9 @@ function AnfragenAdmin() {
   const assignFn = useServerFn(assignRequestToCourse);
   const suggestFn = useServerFn(suggestMatchForRequest);
   const replyFn = useServerFn(replyToCourseRequest);
+  const unassignFn = useServerFn(unassignRequestFromCourse);
+  const [unassignStatus, setUnassignStatus] = useState<"waiting_list" | "new">("waiting_list");
+  const [unassignBusy, setUnassignBusy] = useState(false);
 
   async function load() {
     const { data } = await supabase.from("course_requests").select("*").order("created_at", { ascending: false });
