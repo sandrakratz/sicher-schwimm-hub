@@ -434,6 +434,18 @@ function AnfragenAdmin() {
               <Row label="Kontakt erlaubt" value={selected.contact_permission ? "Ja" : "Nein"} />
 
               <hr />
+              <h3 className="font-semibold">Interne Notizen</h3>
+              <div className="space-y-2 rounded-md border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Nur intern sichtbar – z.B. Telefonate, Absprachen oder sonstige Hinweise. Erscheint auch in der Übersicht.
+                </p>
+                <Textarea rows={4} value={notesDraft} onChange={e => setNotesDraft(e.target.value)} placeholder="z.B. 20.08. telefoniert – Rückruf nächste Woche" />
+                <Button variant="outline" size="sm" onClick={saveNotes} disabled={notesBusy}>
+                  {notesBusy ? "Wird gespeichert …" : "Notiz speichern"}
+                </Button>
+              </div>
+
+              <hr />
               <ConversationTimeline
                 kind="course-request"
                 id={selected.id}
