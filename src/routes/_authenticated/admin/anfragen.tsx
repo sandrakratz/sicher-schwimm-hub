@@ -288,7 +288,7 @@ function AnfragenAdmin() {
                     ) : "—"
                   ) : (r.desired_course || "—")}
                 </TableCell>
-                <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
+                <TableCell><StatusBadge status={r.status} /></TableCell>
                 <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
               </TableRow>
             );
@@ -346,7 +346,7 @@ function AnfragenAdmin() {
           {selected && (
             <div className="space-y-4 text-sm">
               <Row label="Eingegangen" value={formatDateTimeBerlin(selected.created_at)} />
-              <Row label="Status" value={<Badge variant="outline">{STATUS_LABEL[selected.status] || selected.status}</Badge>} />
+              <Row label="Status" value={<StatusBadge status={selected.status} />} />
               {selected.assigned_course_id && (() => {
                 const cl = courseLabel(selected.assigned_course_id);
                 return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;
