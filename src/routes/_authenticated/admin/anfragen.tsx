@@ -323,6 +323,13 @@ function AnfragenAdmin() {
                   ) : (r.desired_course || "—")}
                 </TableCell>
                 <TableCell><StatusBadge status={r.status} /></TableCell>
+                <TableCell className="max-w-[220px]">
+                  {r.admin_notes ? (
+                    <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
               </TableRow>
             );
