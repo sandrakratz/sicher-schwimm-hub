@@ -22,7 +22,7 @@ type SessionRow = {
   assigned_trainer_id: string | null;
 };
 
-type CourseRow = { id: string; name: string; location: string | null; schedule: string | null };
+type CourseRow = { id: string; name: string; location: string | null; schedule: string | null; duration: string | null };
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
 
@@ -44,7 +44,63 @@ function icsDate(dateStr: string, addDays = 0): string {
   return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
-function buildIcs(items: Array<{ id: string; date: string; title: string; location: string; description: string }>): string {
+/** Liest "Mo 16:00-17:00", "16.00 bis 17.15" usw. aus dem Zeitplan. */
+export function parseTimeRange(schedule?: string | null, duration?: string | null): { start: string; end: string } | null {
+  const text = schedule || "";
+  const range = text.match(/(\d{1,2})[:.](\d{2})\s*(?:-|–|—|bis)\s*(\d{1,2})[:.](\d{2})/);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (range) {
+    return { start: `${pad(+range[1])}:${range[2]}`, end: `${pad(+range[3])}:${range[4]}` };
+  }
+  const single = text.match(/(\d{1,2})[:.](\d{2})/);
+  if (!single) return null;
+  const minutes = Number((duration || "").match(/(\d{1,3})\s*(?:min|Minuten)/i)?.[1] ?? 45);
+  const startMin = +single[1] * 60 + +single[2];
+  const endMin = Math.min(startMin + (isNaN(minutes) ? 45 : minutes), 23 * 60 + 59);
+  return {
+    start: `${pad(Math.floor(startMin / 60))}:${pad(startMin % 60)}`,
+    end: `${pad(Math.floor(endMin / 60))}:${pad(endMin % 60)}`,
+  };
+}
+
+function icsLocal(dateStr: string, time: string): string {
+  return `${dateStr.replace(/-/g, "")}T${time.replace(":", "")}00`;
+}
+
+/** Lokale Berliner Zeit -> UTC-Stempel (für Google-Kalender-Links). */
+function berlinToUtcStamp(dateStr: string, time: string): string {
+  const naive = Date.parse(`${dateStr}T${time}:00Z`);
+  const probe = new Date(naive);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Berlin", hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(probe).reduce<Record<string, string>>((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+  const asUtc = Date.parse(`${parts.year}-${parts.month}-${parts.day}T${parts.hour === "24" ? "00" : parts.hour}:${parts.minute}:${parts.second}Z`);
+  const offset = asUtc - naive;
+  return new Date(naive - offset).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+}
+
+const VTIMEZONE = [
+  "BEGIN:VTIMEZONE",
+  "TZID:Europe/Berlin",
+  "BEGIN:DAYLIGHT",
+  "TZOFFSETFROM:+0100",
+  "TZOFFSETTO:+0200",
+  "TZNAME:CEST",
+  "DTSTART:19700329T020000",
+  "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU",
+  "END:DAYLIGHT",
+  "BEGIN:STANDARD",
+  "TZOFFSETFROM:+0200",
+  "TZOFFSETTO:+0100",
+  "TZNAME:CET",
+  "DTSTART:19701025T030000",
+  "RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU",
+  "END:STANDARD",
+  "END:VTIMEZONE",
+];
+
+function buildIcs(items: Array<{ id: string; date: string; title: string; location: string; description: string; start?: string | null; end?: string | null }>): string {
   const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const lines = [
     "BEGIN:VCALENDAR",
@@ -53,14 +109,21 @@ function buildIcs(items: Array<{ id: string; date: string; title: string; locati
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "X-WR-CALNAME:Sicher Schwimmen – meine Kurstermine",
+    "X-WR-TIMEZONE:Europe/Berlin",
+    ...VTIMEZONE,
   ];
   for (const it of items) {
+    const timed = it.start && it.end;
     lines.push(
       "BEGIN:VEVENT",
       `UID:${it.id}@sicher-schwimmen.com`,
       `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${icsDate(it.date)}`,
-      `DTEND;VALUE=DATE:${icsDate(it.date, 1)}`,
+      timed
+        ? `DTSTART;TZID=Europe/Berlin:${icsLocal(it.date, it.start!)}`
+        : `DTSTART;VALUE=DATE:${icsDate(it.date)}`,
+      timed
+        ? `DTEND;TZID=Europe/Berlin:${icsLocal(it.date, it.end!)}`
+        : `DTEND;VALUE=DATE:${icsDate(it.date, 1)}`,
       `SUMMARY:${icsEscape(it.title)}`,
       it.location ? `LOCATION:${icsEscape(it.location)}` : "",
       it.description ? `DESCRIPTION:${icsEscape(it.description)}` : "",
@@ -98,7 +161,7 @@ function AvailabilityPage() {
     const sessionRows = (ss as SessionRow[]) || [];
     setSessions(sessionRows);
 
-    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule");
+    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule,duration");
     const map: Record<string, CourseRow> = {};
     for (const c of (cs as CourseRow[]) || []) map[c.id] = c;
     setCourses(map);
@@ -199,9 +262,12 @@ function AvailabilityPage() {
         : assign.some(a => a.session_id === s.id && a.trainer_id === me))
       .map(s => {
         const c = courses[s.course_id];
+        const t = parseTimeRange(c?.schedule, c?.duration);
         return {
           id: `${s.id}-${mode}`,
           date: s.session_date,
+          start: t?.start ?? null,
+          end: t?.end ?? null,
           title: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
           location: c?.location || "",
           description: [c?.schedule && `Zeitplan: ${c.schedule}`, mode === "assigned" ? "Du bist eingeteilt." : "Du hast zugesagt."]
@@ -224,14 +290,17 @@ function AvailabilityPage() {
 
   function googleLink(s: SessionRow): string {
     const c = courses[s.course_id];
-    const start = icsDate(s.session_date);
-    const end = icsDate(s.session_date, 1);
+    const t = parseTimeRange(c?.schedule, c?.duration);
+    const dates = t
+      ? `${berlinToUtcStamp(s.session_date, t.start)}/${berlinToUtcStamp(s.session_date, t.end)}`
+      : `${icsDate(s.session_date)}/${icsDate(s.session_date, 1)}`;
     const params = new URLSearchParams({
       action: "TEMPLATE",
       text: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
-      dates: `${start}/${end}`,
+      dates,
       details: c?.schedule ? `Zeitplan: ${c.schedule}` : "",
       location: c?.location || "",
+      ctz: "Europe/Berlin",
     });
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   }
