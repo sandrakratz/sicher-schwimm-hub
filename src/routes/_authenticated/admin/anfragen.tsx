@@ -426,6 +426,17 @@ function AnfragenAdmin() {
             <div className="space-y-4 text-sm">
               <Row label="Eingegangen" value={formatDateTimeBerlin(selected.created_at)} />
               <Row label="Status" value={<StatusBadge status={selected.status} />} />
+              <Row
+                label="Schwimmschule Sharky"
+                value={
+                  <div className="flex items-center gap-2">
+                    <SharkyButton active={!!selected.referred_sharky} busy={sharkyBusyId === selected.id} onClick={() => toggleSharky(selected)} />
+                    {selected.referred_sharky && selected.referred_sharky_at && (
+                      <span className="text-xs text-muted-foreground">verwiesen am {formatDateBerlin(selected.referred_sharky_at)}</span>
+                    )}
+                  </div>
+                }
+              />
               {selected.assigned_course_id && (() => {
                 const cl = courseLabel(selected.assigned_course_id);
                 return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;
