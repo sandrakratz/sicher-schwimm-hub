@@ -331,6 +331,7 @@ function AnfragenAdmin() {
             <TableHead>Kind</TableHead>
             <TableHead>{mode === "assigned" ? "Zugewiesener Kurs" : "Wunschkurs"}</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Sharky</TableHead>
             <TableHead>Notiz</TableHead>
             <TableHead></TableHead>
           </TableRow>
