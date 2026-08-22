@@ -94,6 +94,24 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 
+function SharkyButton({ active, busy, onClick }: { active: boolean; busy: boolean; onClick: () => void }) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      title={active ? "An Schwimmschule Sharky verwiesen – klicken zum Aufheben" : "Als „an Schwimmschule Sharky verwiesen“ markieren"}
+      className={active
+        ? "h-7 border-transparent bg-purple-600 px-2 text-xs text-white hover:bg-purple-700"
+        : "h-7 px-2 text-xs text-muted-foreground"}
+    >
+      {active ? "✓ Sharky" : "Sharky"}
+    </Button>
+  );
+}
+
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
