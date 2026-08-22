@@ -68,9 +68,16 @@ function AvailabilityPage() {
         .select("session_id,trainer_id,available")
         .in("session_id", sessionRows.map(s => s.id));
       setAvail((av as Avail[]) || []);
+      const { data: asg } = await supabase
+        .from("course_session_assignments")
+        .select("session_id,trainer_id")
+        .in("session_id", sessionRows.map(s => s.id));
+      setAssign((asg as Assign[]) || []);
     } else {
       setAvail([]);
+      setAssign([]);
     }
+
 
     try { setTrainers(await trainersFn()); } catch { /* Namen optional */ }
     setLoading(false);
