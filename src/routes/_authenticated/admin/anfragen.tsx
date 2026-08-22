@@ -48,6 +48,8 @@ type Item = {
   gdpr_consent: boolean; contact_permission: boolean;
   assigned_course_id?: string | null;
   admin_notes?: string | null;
+  referred_sharky?: boolean | null;
+  referred_sharky_at?: string | null;
 };
 
 type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
@@ -92,6 +94,24 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 
+function SharkyButton({ active, busy, onClick }: { active: boolean; busy: boolean; onClick: () => void }) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      title={active ? "An Schwimmschule Sharky verwiesen – klicken zum Aufheben" : "Als „an Schwimmschule Sharky verwiesen“ markieren"}
+      className={active
+        ? "h-7 border-transparent bg-purple-600 px-2 text-xs text-white hover:bg-purple-700"
+        : "h-7 px-2 text-xs text-muted-foreground"}
+    >
+      {active ? "✓ Sharky" : "Sharky"}
+    </Button>
+  );
+}
+
 function AnfragenAdmin() {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
@@ -120,6 +140,20 @@ function AnfragenAdmin() {
   const [unassignBusy, setUnassignBusy] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [notesBusy, setNotesBusy] = useState(false);
+
+  const [sharkyBusyId, setSharkyBusyId] = useState<string | null>(null);
+
+  async function toggleSharky(item: Item) {
+    const next = !item.referred_sharky;
+    setSharkyBusyId(item.id);
+    const patch = { referred_sharky: next, referred_sharky_at: next ? new Date().toISOString() : null };
+    const { error } = await supabase.from("course_requests").update(patch).eq("id", item.id);
+    setSharkyBusyId(null);
+    if (error) { toast.error(error.message); return; }
+    setRows(rs => rs.map(r => (r.id === item.id ? { ...r, ...patch } : r)));
+    setSelected(s => (s && s.id === item.id ? { ...s, ...patch } : s));
+    toast.success(next ? "Als an Sharky verwiesen markiert" : "Markierung entfernt");
+  }
 
   async function saveNotes() {
     if (!selected) return;
@@ -297,6 +331,7 @@ function AnfragenAdmin() {
             <TableHead>Kind</TableHead>
             <TableHead>{mode === "assigned" ? "Zugewiesener Kurs" : "Wunschkurs"}</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Sharky</TableHead>
             <TableHead>Notiz</TableHead>
             <TableHead></TableHead>
           </TableRow>
@@ -323,6 +358,9 @@ function AnfragenAdmin() {
                   ) : (r.desired_course || "—")}
                 </TableCell>
                 <TableCell><StatusBadge status={r.status} /></TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <SharkyButton active={!!r.referred_sharky} busy={sharkyBusyId === r.id} onClick={() => toggleSharky(r)} />
+                </TableCell>
                 <TableCell className="max-w-[220px]">
                   {r.admin_notes ? (
                     <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
@@ -388,6 +426,17 @@ function AnfragenAdmin() {
             <div className="space-y-4 text-sm">
               <Row label="Eingegangen" value={formatDateTimeBerlin(selected.created_at)} />
               <Row label="Status" value={<StatusBadge status={selected.status} />} />
+              <Row
+                label="Schwimmschule Sharky"
+                value={
+                  <div className="flex items-center gap-2">
+                    <SharkyButton active={!!selected.referred_sharky} busy={sharkyBusyId === selected.id} onClick={() => toggleSharky(selected)} />
+                    {selected.referred_sharky && selected.referred_sharky_at && (
+                      <span className="text-xs text-muted-foreground">verwiesen am {formatDateBerlin(selected.referred_sharky_at)}</span>
+                    )}
+                  </div>
+                }
+              />
               {selected.assigned_course_id && (() => {
                 const cl = courseLabel(selected.assigned_course_id);
                 return <Row label="Zugewiesener Kurs" value={cl ? `${cl.name}${cl.period ? ` (${cl.period})` : ""}` : "—"} />;

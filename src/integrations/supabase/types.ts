@@ -347,6 +347,8 @@ export type Database = {
           parent_email: string
           parent_name: string
           parent_phone: string | null
+          referred_sharky: boolean
+          referred_sharky_at: string | null
           status: Database["public"]["Enums"]["request_status"]
           swimming_level: string | null
           updated_at: string
@@ -366,6 +368,8 @@ export type Database = {
           parent_email: string
           parent_name: string
           parent_phone?: string | null
+          referred_sharky?: boolean
+          referred_sharky_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           swimming_level?: string | null
           updated_at?: string
@@ -385,6 +389,8 @@ export type Database = {
           parent_email?: string
           parent_name?: string
           parent_phone?: string | null
+          referred_sharky?: boolean
+          referred_sharky_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           swimming_level?: string | null
           updated_at?: string
