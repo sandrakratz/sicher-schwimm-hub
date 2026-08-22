@@ -405,8 +405,47 @@ export type Database = {
           },
         ]
       }
+      course_session_availability: {
+        Row: {
+          available: boolean
+          created_at: string
+          id: string
+          note: string | null
+          session_id: string
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          available: boolean
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_id: string
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_id?: string
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_session_availability_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "course_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_sessions: {
         Row: {
+          assigned_trainer_id: string | null
           course_id: string
           created_at: string
           id: string
@@ -416,6 +455,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_trainer_id?: string | null
           course_id: string
           created_at?: string
           id?: string
@@ -425,6 +465,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_trainer_id?: string | null
           course_id?: string
           created_at?: string
           id?: string
