@@ -34,6 +34,44 @@ function weekday(dateStr: string): string {
   return new Intl.DateTimeFormat("de-DE", { weekday: "short", timeZone: "Europe/Berlin" }).format(d);
 }
 
+function icsEscape(s: string): string {
+  return (s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+
+function icsDate(dateStr: string, addDays = 0): string {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + addDays);
+  return d.toISOString().slice(0, 10).replace(/-/g, "");
+}
+
+function buildIcs(items: Array<{ id: string; date: string; title: string; location: string; description: string }>): string {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Sicher Schwimmen e.V.//Kurstermine//DE",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:Sicher Schwimmen – meine Kurstermine",
+  ];
+  for (const it of items) {
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${it.id}@sicher-schwimmen.com`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${icsDate(it.date)}`,
+      `DTEND;VALUE=DATE:${icsDate(it.date, 1)}`,
+      `SUMMARY:${icsEscape(it.title)}`,
+      it.location ? `LOCATION:${icsEscape(it.location)}` : "",
+      it.description ? `DESCRIPTION:${icsEscape(it.description)}` : "",
+      "END:VEVENT",
+    );
+  }
+  lines.push("END:VCALENDAR");
+  return lines.filter(Boolean).join("\r\n");
+}
+
+
 function AvailabilityPage() {
   const [me, setMe] = useState<string>("");
   const [sessions, setSessions] = useState<SessionRow[]>([]);
