@@ -148,7 +148,80 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       for (let i = 0; i < 5; i++) ws.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
 
-    const lastRow = ws.lastRow!.number;
+    // Trainer-Unterschriftenblock: Namen in Spalte 1, Unterschrift je Kurstermin
+    let trainerNames: string[] = [];
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: roleRows } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id,role")
+        .in("role", ["admin", "board", "trainer"]);
+      const ids = Array.from(new Set((roleRows || []).map((r: any) => r.user_id)));
+      if (ids.length > 0) {
+        const { data: profs } = await supabaseAdmin
+          .from("profiles")
+          .select("id,first_name,last_name,email")
+          .in("id", ids);
+        trainerNames = (profs || [])
+          .map((p: any) => [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "")
+          .filter(Boolean)
+          .sort((a: string, b: string) => a.localeCompare(b, "de"));
+      }
+    } catch {}
+
+    ws.addRow([]);
+    const trainerTitle = ws.addRow(["Trainer – Anwesenheit (Unterschrift je Kurstermin)"]);
+    trainerTitle.font = { bold: true, size: 12 };
+    ws.mergeCells(trainerTitle.number, 1, trainerTitle.number, headers.length);
+
+    const trainerHeaders = [
+      "Trainer",
+      "",
+      "",
+      "",
+      ...Array.from({ length: 10 }, (_, i) => {
+        const s = sessions.find((x) => x.session_index === i + 1);
+        return s ? fmtDe(s.session_date) : `${i + 1}. Kurstermin`;
+      }),
+      "",
+      "",
+      "",
+    ];
+    const trainerHeaderRow = ws.addRow(trainerHeaders);
+    trainerHeaderRow.font = { bold: true };
+    trainerHeaderRow.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    trainerHeaderRow.height = 28;
+
+    const trainerRowsStart = trainerHeaderRow.number + 1;
+    const namesForRows = trainerNames.length > 0 ? trainerNames : ["", "", "", "", ""];
+    for (const n of namesForRows) {
+      const row = ws.addRow([n, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      row.alignment = { vertical: "middle", wrapText: true };
+      row.height = 26;
+    }
+    const trainerRowsEnd = ws.lastRow!.number;
+
+    for (let r = trainerHeaderRow.number; r <= trainerRowsEnd; r++) {
+      for (let c = 1; c <= 14; c++) {
+        ws.getCell(r, c).border = {
+          top: { style: "thin" }, left: { style: "thin" },
+          bottom: { style: "thin" }, right: { style: "thin" },
+        };
+      }
+    }
+    for (let c = 1; c <= 14; c++) {
+      ws.getCell(trainerHeaderRow.number, c).fill = {
+        type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF7EC" },
+      };
+    }
+    for (let r = trainerRowsStart; r <= trainerRowsEnd; r++) {
+      ws.mergeCells(r, 1, r, 4);
+      ws.getCell(r, 1).alignment = { vertical: "middle", wrapText: true };
+    }
+    ws.mergeCells(trainerHeaderRow.number, 1, trainerHeaderRow.number, 4);
+
+    const lastRow = headerRow.number + Math.max(participants.length, participants.length === 0 ? 5 : 0);
+
     const totalCols = headers.length;
 
     // Column widths
