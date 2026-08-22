@@ -209,20 +209,38 @@ function Page() {
         .select("session_id,trainer_id,available")
         .in("session_id", rows.map(r => r.id));
       setSessAvail((av as any) || []);
+      const { data: asg } = await supabase
+        .from("course_session_assignments")
+        .select("session_id,trainer_id")
+        .in("session_id", rows.map(r => r.id));
+      setSessAssign((asg as any) || []);
     } else {
       setSessAvail([]);
+      setSessAssign([]);
     }
     if (trainers.length === 0) {
       try { setTrainers(await trainersFn()); } catch { /* optional */ }
     }
   }
 
-  async function assignTrainer(sessionId: string, trainerId: string | null) {
-    const { error } = await supabase.from("course_sessions").update({ assigned_trainer_id: trainerId }).eq("id", sessionId);
-    if (error) return toast.error(error.message);
-    setSessions(ss => ss.map(s => (s.id === sessionId ? { ...s, assigned_trainer_id: trainerId } : s)) as any);
-    toast.success(trainerId ? "Trainer eingeteilt" : "Einteilung entfernt");
+  async function toggleAssignment(sessionId: string, trainerId: string, next: boolean) {
+    if (next) {
+      const { error } = await supabase
+        .from("course_session_assignments")
+        .insert({ session_id: sessionId, trainer_id: trainerId });
+      if (error) return toast.error(error.message);
+      setSessAssign(a => [...a, { session_id: sessionId, trainer_id: trainerId }]);
+    } else {
+      const { error } = await supabase
+        .from("course_session_assignments")
+        .delete()
+        .eq("session_id", sessionId)
+        .eq("trainer_id", trainerId);
+      if (error) return toast.error(error.message);
+      setSessAssign(a => a.filter(x => !(x.session_id === sessionId && x.trainer_id === trainerId)));
+    }
   }
+
   async function addSession() {
     if (!sessCourse) return;
     if (sessions.length >= 10) return toast.error("Maximal 10 Termine");
