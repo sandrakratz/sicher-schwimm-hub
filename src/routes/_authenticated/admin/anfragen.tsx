@@ -48,6 +48,8 @@ type Item = {
   gdpr_consent: boolean; contact_permission: boolean;
   assigned_course_id?: string | null;
   admin_notes?: string | null;
+  referred_sharky?: boolean | null;
+  referred_sharky_at?: string | null;
 };
 
 type CourseOpt = { id: string; name: string; status: string; max_participants: number | null; starts_on: string | null; price_member: number | null; price_non_member: number | null };
