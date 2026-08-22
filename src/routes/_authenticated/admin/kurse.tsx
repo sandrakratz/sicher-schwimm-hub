@@ -194,9 +194,29 @@ function Page() {
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
     const { data } = await supabase.from("course_sessions")
-      .select("id,session_index,session_date")
+      .select("id,session_index,session_date,assigned_trainer_id")
       .eq("course_id", c.id).order("session_index", { ascending: true });
-    setSessions((data as any) || []);
+    const rows = (data as any[]) || [];
+    setSessions(rows as any);
+    if (rows.length > 0) {
+      const { data: av } = await supabase
+        .from("course_session_availability")
+        .select("session_id,trainer_id,available")
+        .in("session_id", rows.map(r => r.id));
+      setSessAvail((av as any) || []);
+    } else {
+      setSessAvail([]);
+    }
+    if (trainers.length === 0) {
+      try { setTrainers(await trainersFn()); } catch { /* optional */ }
+    }
+  }
+
+  async function assignTrainer(sessionId: string, trainerId: string | null) {
+    const { error } = await supabase.from("course_sessions").update({ assigned_trainer_id: trainerId }).eq("id", sessionId);
+    if (error) return toast.error(error.message);
+    setSessions(ss => ss.map(s => (s.id === sessionId ? { ...s, assigned_trainer_id: trainerId } : s)) as any);
+    toast.success(trainerId ? "Trainer eingeteilt" : "Einteilung entfernt");
   }
   async function addSession() {
     if (!sessCourse) return;
