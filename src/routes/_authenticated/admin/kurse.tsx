@@ -1215,8 +1215,8 @@ function Page() {
               const nameOf = (id: string) => trainers.find(t => t.id === id)?.name || "Unbekannt";
               const yes = sessAvail.filter(a => a.session_id === s.id && a.available);
               const no = sessAvail.filter(a => a.session_id === s.id && !a.available);
-              const assigned = s.assigned_trainer_id || null;
-              const assignedDeclined = !!assigned && no.some(a => a.trainer_id === assigned);
+              const assignedIds = sessAssign.filter(a => a.session_id === s.id).map(a => a.trainer_id);
+              const declined = assignedIds.filter(id => no.some(n => n.trainer_id === id));
               return (
                 <div key={s.id} className="rounded-md border p-3 space-y-2">
                   <div className="flex items-center gap-2">
@@ -1229,31 +1229,43 @@ function Page() {
                     {no.map(a => <Badge key={a.trainer_id} className="border-transparent bg-red-600 text-white">{nameOf(a.trainer_id)}</Badge>)}
                     {yes.length === 0 && no.length === 0 && <span className="text-muted-foreground">Noch keine Rückmeldungen</span>}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 pl-10">
-                    <Label className="text-xs text-muted-foreground">Eingeteilt</Label>
-                    <Select value={assigned ?? "none"} onValueChange={v => assignTrainer(s.id, v === "none" ? null : v)}>
-                      <SelectTrigger className="h-8 w-[240px]"><SelectValue placeholder="Niemand" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Niemand</SelectItem>
-                        {trainers
-                          .slice()
-                          .sort((a, b) => {
-                            const rank = (id: string) => (yes.some(y => y.trainer_id === id) ? 0 : no.some(n => n.trainer_id === id) ? 2 : 1);
-                            return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de");
-                          })
-                          .map(t => (
-                            <SelectItem key={t.id} value={t.id}>
+                  <div className="space-y-1 pl-10">
+                    <Label className="text-xs text-muted-foreground">Eingeteilt (Mehrfachauswahl)</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {trainers.length === 0 && <span className="text-xs text-muted-foreground">Keine Trainer gefunden</span>}
+                      {trainers
+                        .slice()
+                        .sort((a, b) => {
+                          const rank = (id: string) => (yes.some(y => y.trainer_id === id) ? 0 : no.some(n => n.trainer_id === id) ? 2 : 1);
+                          return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de");
+                        })
+                        .map(t => {
+                          const on = assignedIds.includes(t.id);
+                          return (
+                            <Button
+                              key={t.id}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => toggleAssignment(s.id, t.id, !on)}
+                              className={on ? "border-transparent bg-primary text-primary-foreground hover:bg-primary/90" : ""}
+                            >
                               {t.name}
-                              {yes.some(y => y.trainer_id === t.id) ? " · kann" : no.some(n => n.trainer_id === t.id) ? " · kann nicht" : ""}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    {!assigned && <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>}
-                    {assignedDeclined && <span className="text-xs text-red-600">Eingeteilte Person hat abgesagt</span>}
+                              <span className="ml-1 text-[10px] opacity-80">
+                                {yes.some(y => y.trainer_id === t.id) ? "kann" : no.some(n => n.trainer_id === t.id) ? "kann nicht" : ""}
+                              </span>
+                            </Button>
+                          );
+                        })}
+                    </div>
+                    {assignedIds.length === 0 && <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>}
+                    {declined.length > 0 && (
+                      <span className="text-xs text-red-600">Abgesagt, aber eingeteilt: {declined.map(nameOf).join(", ")}</span>
+                    )}
                   </div>
                 </div>
               );
+
             })}
           </div>
           <DialogFooter>
