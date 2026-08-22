@@ -215,7 +215,8 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       };
     }
     for (let r = trainerRowsStart; r <= trainerRowsEnd; r++) {
-      ws.mergeCells(r, 2, r, 4);
+      ws.mergeCells(r, 1, r, 4);
+      ws.getCell(r, 1).alignment = { vertical: "middle", wrapText: true };
     }
     ws.mergeCells(trainerHeaderRow.number, 1, trainerHeaderRow.number, 4);
 
