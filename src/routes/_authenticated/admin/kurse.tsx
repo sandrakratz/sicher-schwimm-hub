@@ -1187,18 +1187,55 @@ function Page() {
       </Dialog>
 
       <Dialog open={sessOpen} onOpenChange={setSessOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground">Bis zu 10 Termine. Diese werden auf der Excel-Kursliste als Spaltenüberschriften ausgegeben.</p>
-          <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Bis zu 10 Termine. Diese werden auf der Excel-Kursliste als Spaltenüberschriften ausgegeben. Trainer melden ihre Verfügbarkeit unter „Verfügbarkeit“.</p>
+          <div className="space-y-3">
             {sessions.length === 0 && <div className="text-sm text-muted-foreground">Noch keine Termine.</div>}
-            {sessions.map(s => (
-              <div key={s.id} className="flex items-center gap-2">
-                <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
-                <Input type="date" value={s.session_date} onChange={e => updateSessionDate(s.id, e.target.value)} />
-                <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-              </div>
-            ))}
+            {sessions.map(s => {
+              const nameOf = (id: string) => trainers.find(t => t.id === id)?.name || "Unbekannt";
+              const yes = sessAvail.filter(a => a.session_id === s.id && a.available);
+              const no = sessAvail.filter(a => a.session_id === s.id && !a.available);
+              const assigned = s.assigned_trainer_id || null;
+              const assignedDeclined = !!assigned && no.some(a => a.trainer_id === assigned);
+              return (
+                <div key={s.id} className="rounded-md border p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
+                    <Input type="date" value={s.session_date} onChange={e => updateSessionDate(s.id, e.target.value)} />
+                    <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pl-10 text-xs">
+                    {yes.map(a => <Badge key={a.trainer_id} className="border-transparent bg-green-600 text-white">{nameOf(a.trainer_id)}</Badge>)}
+                    {no.map(a => <Badge key={a.trainer_id} className="border-transparent bg-red-600 text-white">{nameOf(a.trainer_id)}</Badge>)}
+                    {yes.length === 0 && no.length === 0 && <span className="text-muted-foreground">Noch keine Rückmeldungen</span>}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pl-10">
+                    <Label className="text-xs text-muted-foreground">Eingeteilt</Label>
+                    <Select value={assigned ?? "none"} onValueChange={v => assignTrainer(s.id, v === "none" ? null : v)}>
+                      <SelectTrigger className="h-8 w-[240px]"><SelectValue placeholder="Niemand" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Niemand</SelectItem>
+                        {trainers
+                          .slice()
+                          .sort((a, b) => {
+                            const rank = (id: string) => (yes.some(y => y.trainer_id === id) ? 0 : no.some(n => n.trainer_id === id) ? 2 : 1);
+                            return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de");
+                          })
+                          .map(t => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                              {yes.some(y => y.trainer_id === t.id) ? " · kann" : no.some(n => n.trainer_id === t.id) ? " · kann nicht" : ""}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {!assigned && <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>}
+                    {assignedDeclined && <span className="text-xs text-red-600">Eingeteilte Person hat abgesagt</span>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSessOpen(false)}>Schließen</Button>
