@@ -181,7 +181,10 @@ function Page() {
 
   const [sessOpen, setSessOpen] = useState(false);
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
-  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string }[]>([]);
+  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string; assigned_trainer_id?: string | null }[]>([]);
+  const [sessAvail, setSessAvail] = useState<{ session_id: string; trainer_id: string; available: boolean }[]>([]);
+  const [trainers, setTrainers] = useState<TrainerOption[]>([]);
+  const trainersFn = useServerFn(listTrainers);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportingTax, setExportingTax] = useState<string | null>(null);
   const exportXlsx = useServerFn(generateCourseListXlsx);
