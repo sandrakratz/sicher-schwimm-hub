@@ -22,7 +22,7 @@ type SessionRow = {
   assigned_trainer_id: string | null;
 };
 
-type CourseRow = { id: string; name: string; location: string | null; schedule: string | null };
+type CourseRow = { id: string; name: string; location: string | null; schedule: string | null; duration: string | null };
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
 
@@ -161,7 +161,7 @@ function AvailabilityPage() {
     const sessionRows = (ss as SessionRow[]) || [];
     setSessions(sessionRows);
 
-    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule");
+    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule,duration");
     const map: Record<string, CourseRow> = {};
     for (const c of (cs as CourseRow[]) || []) map[c.id] = c;
     setCourses(map);
