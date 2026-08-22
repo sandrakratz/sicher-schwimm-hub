@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, ShieldBan, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, MailOpen, Send, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
+import { Shield, ShieldBan, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, CalendarCheck, MailOpen, Send, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type NavItem = {
-  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/anfragen" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/widerrufe" | "/admin/audit";
+  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
   exact?: boolean;
@@ -46,6 +46,7 @@ const adminNav: NavItem[] = [
   { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board", "trainer"] },
   { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
+  { to: "/admin/verfuegbarkeit", icon: CalendarCheck, label: "Verfügbarkeit", allow: ["admin", "board", "trainer"] },
   { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen", allow: ["admin", "board"] },
   { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },
   { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
