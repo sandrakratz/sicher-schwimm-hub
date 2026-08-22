@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, X, CalendarDays, MapPin, Clock } from "lucide-react";
+import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/verfuegbarkeit")({
@@ -192,12 +192,68 @@ function AvailabilityPage() {
     toast.success(value ? "Für alle Termine zugesagt" : "Für alle Termine abgesagt");
   }
 
+  function exportIcs(mode: "available" | "assigned") {
+    const items = sessions
+      .filter(s => mode === "available"
+        ? avail.some(a => a.session_id === s.id && a.trainer_id === me && a.available)
+        : assign.some(a => a.session_id === s.id && a.trainer_id === me))
+      .map(s => {
+        const c = courses[s.course_id];
+        return {
+          id: `${s.id}-${mode}`,
+          date: s.session_date,
+          title: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
+          location: c?.location || "",
+          description: [c?.schedule && `Zeitplan: ${c.schedule}`, mode === "assigned" ? "Du bist eingeteilt." : "Du hast zugesagt."]
+            .filter(Boolean).join("\n"),
+        };
+      });
+    if (items.length === 0) {
+      toast.error(mode === "available" ? "Keine zugesagten Termine vorhanden." : "Keine Einteilungen vorhanden.");
+      return;
+    }
+    const blob = new Blob([buildIcs(items)], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = mode === "available" ? "sicher-schwimmen-zusagen.ics" : "sicher-schwimmen-einteilungen.ics";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`${items.length} Termine als Kalenderdatei exportiert`);
+  }
+
+  function googleLink(s: SessionRow): string {
+    const c = courses[s.course_id];
+    const start = icsDate(s.session_date);
+    const end = icsDate(s.session_date, 1);
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
+      dates: `${start}/${end}`,
+      details: c?.schedule ? `Zeitplan: ${c.schedule}` : "",
+      location: c?.location || "",
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  }
+
   return (
     <div className="max-w-4xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-2">Meine Verfügbarkeit</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Bitte pro Kurstermin angeben, ob du kannst. Ein erneuter Klick auf die gewählte Antwort hebt sie wieder auf.
       </p>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => exportIcs("available")}>
+          <CalendarPlus className="h-4 w-4" /> Zusagen als Kalender (.ics)
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => exportIcs("assigned")}>
+          <CalendarPlus className="h-4 w-4" /> Meine Einteilungen (.ics)
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Die .ics-Datei kannst du in Google Kalender (Einstellungen → Importieren) und in familywall.com importieren.
+        </span>
+      </div>
 
       {loading ? (
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Wird geladen …</CardContent></Card>
@@ -243,7 +299,16 @@ function AvailabilityPage() {
                             <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={googleLink(s)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary underline hover:text-primary-deep"
+                            title="Diesen Termin in Google Kalender eintragen"
+                          >
+                            Google
+                          </a>
                           <Button
                             size="sm"
                             variant="outline"
