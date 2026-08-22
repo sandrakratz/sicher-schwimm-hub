@@ -189,7 +189,9 @@ function AvailabilityPage() {
                   {g.sessions.map(s => {
                     const state = myState(s.id);
                     const yes = avail.filter(a => a.session_id === s.id && a.available).map(a => trainerName(a.trainer_id));
-                    const assignedToMe = s.assigned_trainer_id === me;
+                    const assignedIds = assign.filter(a => a.session_id === s.id).map(a => a.trainer_id);
+                    const assignedToMe = assignedIds.includes(me);
+                    const others = assignedIds.filter(id => id !== me).map(trainerName);
                     return (
                       <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                         <div className="min-w-0">
@@ -198,7 +200,8 @@ function AvailabilityPage() {
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {assignedToMe && <Badge className="border-transparent bg-primary text-primary-foreground">Du bist eingeteilt</Badge>}
-                            {!assignedToMe && s.assigned_trainer_id && <span>Eingeteilt: {trainerName(s.assigned_trainer_id)}</span>}
+                            {others.length > 0 && <span>Eingeteilt: {others.join(", ")}</span>}
+
                             <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>
                           </div>
                         </div>
