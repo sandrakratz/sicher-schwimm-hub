@@ -26,6 +26,8 @@ type CourseRow = { id: string; name: string; location: string | null; schedule: 
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
 
+type Assign = { session_id: string; trainer_id: string };
+
 function weekday(dateStr: string): string {
   const d = new Date(`${dateStr}T12:00:00`);
   if (isNaN(d.getTime())) return "";
@@ -37,6 +39,7 @@ function AvailabilityPage() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [courses, setCourses] = useState<Record<string, CourseRow>>({});
   const [avail, setAvail] = useState<Avail[]>([]);
+  const [assign, setAssign] = useState<Assign[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
