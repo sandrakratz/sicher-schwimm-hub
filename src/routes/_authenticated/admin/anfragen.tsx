@@ -141,6 +141,20 @@ function AnfragenAdmin() {
   const [notesDraft, setNotesDraft] = useState("");
   const [notesBusy, setNotesBusy] = useState(false);
 
+  const [sharkyBusyId, setSharkyBusyId] = useState<string | null>(null);
+
+  async function toggleSharky(item: Item) {
+    const next = !item.referred_sharky;
+    setSharkyBusyId(item.id);
+    const patch = { referred_sharky: next, referred_sharky_at: next ? new Date().toISOString() : null };
+    const { error } = await supabase.from("course_requests").update(patch).eq("id", item.id);
+    setSharkyBusyId(null);
+    if (error) { toast.error(error.message); return; }
+    setRows(rs => rs.map(r => (r.id === item.id ? { ...r, ...patch } : r)));
+    setSelected(s => (s && s.id === item.id ? { ...s, ...patch } : s));
+    toast.success(next ? "Als an Sharky verwiesen markiert" : "Markierung entfernt");
+  }
+
   async function saveNotes() {
     if (!selected) return;
     setNotesBusy(true);
