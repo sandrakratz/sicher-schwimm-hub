@@ -262,9 +262,12 @@ function AvailabilityPage() {
         : assign.some(a => a.session_id === s.id && a.trainer_id === me))
       .map(s => {
         const c = courses[s.course_id];
+        const t = parseTimeRange(c?.schedule, c?.duration);
         return {
           id: `${s.id}-${mode}`,
           date: s.session_date,
+          start: t?.start ?? null,
+          end: t?.end ?? null,
           title: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
           location: c?.location || "",
           description: [c?.schedule && `Zeitplan: ${c.schedule}`, mode === "assigned" ? "Du bist eingeteilt." : "Du hast zugesagt."]
@@ -287,14 +290,17 @@ function AvailabilityPage() {
 
   function googleLink(s: SessionRow): string {
     const c = courses[s.course_id];
-    const start = icsDate(s.session_date);
-    const end = icsDate(s.session_date, 1);
+    const t = parseTimeRange(c?.schedule, c?.duration);
+    const dates = t
+      ? `${berlinToUtcStamp(s.session_date, t.start)}/${berlinToUtcStamp(s.session_date, t.end)}`
+      : `${icsDate(s.session_date)}/${icsDate(s.session_date, 1)}`;
     const params = new URLSearchParams({
       action: "TEMPLATE",
       text: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
-      dates: `${start}/${end}`,
+      dates,
       details: c?.schedule ? `Zeitplan: ${c.schedule}` : "",
       location: c?.location || "",
+      ctz: "Europe/Berlin",
     });
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   }
