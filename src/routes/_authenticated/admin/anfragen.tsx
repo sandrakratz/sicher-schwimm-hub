@@ -358,6 +358,9 @@ function AnfragenAdmin() {
                   ) : (r.desired_course || "—")}
                 </TableCell>
                 <TableCell><StatusBadge status={r.status} /></TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <SharkyButton active={!!r.referred_sharky} busy={sharkyBusyId === r.id} onClick={() => toggleSharky(r)} />
+                </TableCell>
                 <TableCell className="max-w-[220px]">
                   {r.admin_notes ? (
                     <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
