@@ -26,6 +26,8 @@ type CourseRow = { id: string; name: string; location: string | null; schedule: 
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
 
+type Assign = { session_id: string; trainer_id: string };
+
 function weekday(dateStr: string): string {
   const d = new Date(`${dateStr}T12:00:00`);
   if (isNaN(d.getTime())) return "";
@@ -37,6 +39,7 @@ function AvailabilityPage() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [courses, setCourses] = useState<Record<string, CourseRow>>({});
   const [avail, setAvail] = useState<Avail[]>([]);
+  const [assign, setAssign] = useState<Assign[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -68,9 +71,16 @@ function AvailabilityPage() {
         .select("session_id,trainer_id,available")
         .in("session_id", sessionRows.map(s => s.id));
       setAvail((av as Avail[]) || []);
+      const { data: asg } = await supabase
+        .from("course_session_assignments")
+        .select("session_id,trainer_id")
+        .in("session_id", sessionRows.map(s => s.id));
+      setAssign((asg as Assign[]) || []);
     } else {
       setAvail([]);
+      setAssign([]);
     }
+
 
     try { setTrainers(await trainersFn()); } catch { /* Namen optional */ }
     setLoading(false);
@@ -179,7 +189,9 @@ function AvailabilityPage() {
                   {g.sessions.map(s => {
                     const state = myState(s.id);
                     const yes = avail.filter(a => a.session_id === s.id && a.available).map(a => trainerName(a.trainer_id));
-                    const assignedToMe = s.assigned_trainer_id === me;
+                    const assignedIds = assign.filter(a => a.session_id === s.id).map(a => a.trainer_id);
+                    const assignedToMe = assignedIds.includes(me);
+                    const others = assignedIds.filter(id => id !== me).map(trainerName);
                     return (
                       <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                         <div className="min-w-0">
@@ -188,7 +200,8 @@ function AvailabilityPage() {
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {assignedToMe && <Badge className="border-transparent bg-primary text-primary-foreground">Du bist eingeteilt</Badge>}
-                            {!assignedToMe && s.assigned_trainer_id && <span>Eingeteilt: {trainerName(s.assigned_trainer_id)}</span>}
+                            {others.length > 0 && <span>Eingeteilt: {others.join(", ")}</span>}
+
                             <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>
                           </div>
                         </div>
