@@ -162,6 +162,7 @@ function Page() {
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
+          <TestSendDialog onDone={() => setRange(r => r)} />
           <BackfillButton />
         </div>
       </div>
