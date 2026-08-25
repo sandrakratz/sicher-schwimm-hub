@@ -11,6 +11,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { listDeliveryEvents, type DeliveryEvent } from "@/lib/email-logs.functions";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { RefreshCw } from "lucide-react";
+import { TestSendDialog } from "@/components/admin/TestSendDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/versandstatus")({
   beforeLoad: async () => {
@@ -123,6 +124,8 @@ function Page() {
     <div className="max-w-6xl">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-bold text-primary-deep">Versandstatus</h1>
+        <div className="flex gap-2 items-center">
+        <TestSendDialog onDone={() => void refresh()} />
         <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
           <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
         </Button>
