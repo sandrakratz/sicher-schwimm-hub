@@ -1,13 +1,8 @@
-import * as React from 'react'
-import { render } from '@react-email/components'
 import { createClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { TEMPLATES } from '@/lib/email-templates/registry'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
-const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
 
 const submitSchema = z.object({
   parent_first_name: z.string().trim().min(1).max(100),
@@ -23,12 +18,6 @@ const submitSchema = z.object({
   // honeypot — must be empty
   website: z.string().max(0).optional(),
 })
-
-function generateToken(): string {
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
 
 function todayYmd(): string {
   const d = new Date()
@@ -52,84 +41,23 @@ function getClientIp(request: Request): string | null {
 }
 
 async function enqueueTemplate(
-  supabase: any,
+  _supabase: any,
   templateName: string,
   recipient: string,
   templateData: Record<string, any>,
   idempotencyKey: string,
 ) {
-  const template = TEMPLATES[templateName]
-  if (!template) throw new Error(`Unknown template: ${templateName}`)
-  const messageId = crypto.randomUUID()
-  const normalized = recipient.toLowerCase()
-
-  const { data: suppressed } = await supabase
-    .from('suppressed_emails').select('id').eq('email', normalized).maybeSingle()
-  if (suppressed) {
-    await supabase.from('email_send_log').insert({
-      message_id: messageId, template_name: templateName,
-      recipient_email: recipient, status: 'suppressed',
-    })
-    return { suppressed: true }
-  }
-
-  let unsubscribeToken: string
-  const { data: existingToken } = await supabase
-    .from('email_unsubscribe_tokens')
-    .select('token, used_at').eq('email', normalized).maybeSingle()
-  if (existingToken && !existingToken.used_at) {
-    unsubscribeToken = existingToken.token
-  } else if (!existingToken) {
-    unsubscribeToken = generateToken()
-    await supabase.from('email_unsubscribe_tokens').upsert(
-      { token: unsubscribeToken, email: normalized },
-      { onConflict: 'email', ignoreDuplicates: true },
-    )
-    const { data: stored } = await supabase
-      .from('email_unsubscribe_tokens').select('token').eq('email', normalized).maybeSingle()
-    if (!stored) throw new Error('Failed to prepare email')
-    unsubscribeToken = stored.token
-  } else {
-    return { suppressed: true }
-  }
-
-  const element = React.createElement(template.component, templateData)
-  const html = await render(element)
-  const text = await render(element, { plainText: true })
-  const subject = typeof template.subject === 'function' ? template.subject(templateData) : template.subject
-
-  await supabase.from('email_send_log').insert({
-    message_id: messageId, template_name: templateName,
-    recipient_email: recipient, status: 'pending',
-    subject, body_html: html, body_text: text,
+  const { queueTemplateEmail } = await import('@/lib/email-send.server')
+  const result = await queueTemplateEmail({
+    templateName,
+    recipientEmail: recipient,
+    templateData,
+    idempotencyKey,
   })
-
-
-  const { error } = await supabase.rpc('enqueue_email', {
-    queue_name: 'transactional_emails',
-    payload: {
-      message_id: messageId,
-      to: recipient,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject,
-      html,
-      text,
-      purpose: 'transactional',
-      label: templateName,
-      idempotency_key: idempotencyKey,
-      unsubscribe_token: unsubscribeToken,
-      queued_at: new Date().toISOString(),
-    },
-  })
-  if (error) {
-    await supabase.from('email_send_log').insert({
-      message_id: messageId, template_name: templateName,
-      recipient_email: recipient, status: 'failed', error_message: error.message,
-    })
-    throw new Error(error.message)
+  if (!result.queued && result.reason !== 'suppressed') {
+    throw new Error(result.reason || 'send_failed')
   }
-  return { suppressed: false }
+  return { suppressed: !result.queued }
 }
 
 export const Route = createFileRoute('/api/public/submit-cancellation')({
