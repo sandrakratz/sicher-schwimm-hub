@@ -1,7 +1,55 @@
 import { createEmailWebhookHandler } from '@lovable.dev/email-js'
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute("/lovable/email/events")({
+type Reason = 'bounce' | 'complaint' | 'unsubscribe'
+
+const STATUS: Record<Reason, string> = {
+  bounce: 'bounced',
+  complaint: 'complained',
+  unsubscribe: 'suppressed',
+}
+
+const MESSAGE: Record<Reason, string> = {
+  bounce: 'Empfänger wurde wegen einer Zustellungs-Rückläufer (Bounce) gesperrt.',
+  complaint: 'Empfänger wurde wegen einer Spam-Beschwerde gesperrt.',
+  unsubscribe: 'Empfänger hat sich von E-Mails abgemeldet.',
+}
+
+async function record(reason: Reason, recipient: string, eventId: string) {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const email = recipient.toLowerCase()
+
+  const { error: suppressError } = await supabaseAdmin
+    .from('suppressed_emails')
+    .upsert({ email, reason, metadata: null }, { onConflict: 'email' })
+  if (suppressError) {
+    console.error('Failed to upsert suppressed email', {
+      code: suppressError.code,
+      message: suppressError.message,
+      event_id: eventId,
+    })
+    throw new Error('suppression_write_failed')
+  }
+
+  const { error: logError } = await supabaseAdmin.from('email_send_log').insert({
+    message_id: null,
+    template_name: 'system',
+    recipient_email: email,
+    status: STATUS[reason],
+    error_message: MESSAGE[reason],
+    metadata: null,
+  })
+  if (logError) {
+    console.error('Failed to insert email_send_log', {
+      code: logError.code,
+      message: logError.message,
+      event_id: eventId,
+    })
+    throw new Error('log_write_failed')
+  }
+}
+
+export const Route = createFileRoute('/lovable/email/events')({
   server: {
     handlers: {
       POST: ({ request }) => {
@@ -13,16 +61,14 @@ export const Route = createFileRoute("/lovable/email/events")({
         const handler = createEmailWebhookHandler({
           apiKey,
           on: {
-            // Placeholder handlers — replace each log with the feature's reaction.
-            // Throw on failure so the delivery is retried.
             'email.bounced': async (event) => {
-              console.log('Email bounced', { event_id: event.event_id })
+              await record('bounce', event.data.recipient, event.event_id)
             },
             'email.complaint': async (event) => {
-              console.log('Email complaint', { event_id: event.event_id })
+              await record('complaint', event.data.recipient, event.event_id)
             },
             'email.unsubscribed': async (event) => {
-              console.log('Email unsubscribed', { event_id: event.event_id })
+              await record('unsubscribe', event.data.recipient, event.event_id)
             },
           },
         })
