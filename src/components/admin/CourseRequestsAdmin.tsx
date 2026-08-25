@@ -430,9 +430,20 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
 
   return (
     <div className="max-w-6xl">
-      <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Kursanfragen</h1>
-      {rows.length === 0 ? (
-        <Card className="border-0 shadow-soft"><CardContent className="text-center text-muted-foreground py-10">Noch keine Anfragen.</CardContent></Card>
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <h1 className="font-display text-3xl font-bold text-primary-deep">
+          {isWaiting ? "Warteliste" : "Kursanfragen"}
+        </h1>
+        {isWaiting && (
+          <Badge variant="secondary">{waitingRows.length} auf der Warteliste</Badge>
+        )}
+      </div>
+      {visibleRows.length === 0 ? (
+        <Card className="border-0 shadow-soft">
+          <CardContent className="text-center text-muted-foreground py-10">
+            {isWaiting ? "Aktuell steht niemand auf der Warteliste." : "Noch keine Anfragen."}
+          </CardContent>
+        </Card>
       ) : (
         <Accordion type="multiple" defaultValue={openGroups} className="space-y-3">
           {grouped.map(g => (
@@ -441,25 +452,35 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
                 <AccordionTrigger className="px-4 py-3 hover:no-underline">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="font-display text-lg font-semibold text-primary-deep">{g.label}</span>
-                    <Badge variant="secondary">{g.open.length} offen</Badge>
-                    <Badge variant="outline">{g.assigned.length} zugewiesen</Badge>
-                    {g.rejected.length > 0 && <Badge variant="destructive">{g.rejected.length} abgelehnt</Badge>}
+                    {isWaiting ? (
+                      <Badge variant="secondary">{g.items.length} wartend</Badge>
+                    ) : (
+                      <>
+                        <Badge variant="secondary">{g.open.length} offen</Badge>
+                        <Badge variant="outline">{g.assigned.length} zugewiesen</Badge>
+                        {g.rejected.length > 0 && <Badge variant="destructive">{g.rejected.length} abgelehnt</Badge>}
+                      </>
+                    )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent className="p-0">
-                    <Tabs defaultValue="open">
-                      <div className="px-4 pb-2">
-                        <TabsList>
-                          <TabsTrigger value="open">Aktuelle Anfragen ({g.open.length})</TabsTrigger>
-                          <TabsTrigger value="assigned">Zugewiesene Anfragen ({g.assigned.length})</TabsTrigger>
-                          <TabsTrigger value="rejected">Abgelehnt ({g.rejected.length})</TabsTrigger>
-                        </TabsList>
-                      </div>
-                      <TabsContent value="open"><RequestTable items={g.open} mode="open" /></TabsContent>
-                      <TabsContent value="assigned"><RequestTable items={g.assigned} mode="assigned" /></TabsContent>
-                      <TabsContent value="rejected"><RequestTable items={g.rejected} mode="rejected" /></TabsContent>
-                    </Tabs>
+                    {isWaiting ? (
+                      <WaitingTable items={g.items} />
+                    ) : (
+                      <Tabs defaultValue="open">
+                        <div className="px-4 pb-2">
+                          <TabsList>
+                            <TabsTrigger value="open">Aktuelle Anfragen ({g.open.length})</TabsTrigger>
+                            <TabsTrigger value="assigned">Zugewiesene Anfragen ({g.assigned.length})</TabsTrigger>
+                            <TabsTrigger value="rejected">Abgelehnt ({g.rejected.length})</TabsTrigger>
+                          </TabsList>
+                        </div>
+                        <TabsContent value="open"><RequestTable items={g.open} mode="open" /></TabsContent>
+                        <TabsContent value="assigned"><RequestTable items={g.assigned} mode="assigned" /></TabsContent>
+                        <TabsContent value="rejected"><RequestTable items={g.rejected} mode="rejected" /></TabsContent>
+                      </Tabs>
+                    )}
                   </CardContent>
                 </AccordionContent>
               </Card>
@@ -467,6 +488,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
           ))}
         </Accordion>
       )}
+
 
 
 
