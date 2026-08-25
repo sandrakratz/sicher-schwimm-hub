@@ -294,7 +294,12 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     .slice()
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
-  const visibleRows = isWaiting ? waitingRows : rows;
+  // In der Kursanfragen-Übersicht werden Wartelisten-Einträge ausgeblendet,
+  // da sie einen eigenen Menüpunkt „Warteliste“ haben.
+  const visibleRows = isWaiting
+    ? waitingRows
+    : rows.filter(r => !(r.status === "waiting_list" && !r.assigned_course_id));
+
 
   const grouped = COURSE_GROUPS
     .map(g => {
