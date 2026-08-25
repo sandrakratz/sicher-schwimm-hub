@@ -285,9 +285,20 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     return { name: c.name, period };
   }
 
+  const isWaiting = mode === "waiting";
+
+  // Warteliste: nur Anfragen mit Status „Warteliste“ ohne Kurszuweisung,
+  // älteste zuerst (entspricht der Reihenfolge auf der Warteliste).
+  const waitingRows = rows
+    .filter(r => r.status === "waiting_list" && !r.assigned_course_id)
+    .slice()
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+  const visibleRows = isWaiting ? waitingRows : rows;
+
   const grouped = COURSE_GROUPS
     .map(g => {
-      const items = rows.filter(r => groupKeyFor(r.desired_course) === g.key);
+      const items = visibleRows.filter(r => groupKeyFor(r.desired_course) === g.key);
       const rejected = items.filter(r => r.status === "rejected");
       const rest = items.filter(r => r.status !== "rejected");
       return {
@@ -300,6 +311,55 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     })
     .filter(g => g.items.length > 0);
   const openGroups = grouped.map(g => g.key);
+
+  function WaitingTable({ items }: { items: Item[] }) {
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-12">#</TableHead>
+            <TableHead>Eingang</TableHead>
+            <TableHead>Eltern</TableHead>
+            <TableHead>Kind</TableHead>
+            <TableHead>Geburtsdatum</TableHead>
+            <TableHead>Wunschkurs</TableHead>
+            <TableHead>Sharky</TableHead>
+            <TableHead>Notiz</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((r, i) => (
+            <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelected(r)}>
+              <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+              <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
+              <TableCell>
+                <div className="font-semibold">{r.parent_name}</div>
+                <div className="text-xs text-muted-foreground">{r.parent_email}</div>
+              </TableCell>
+              <TableCell>{r.child_name || "—"}</TableCell>
+              <TableCell className="text-xs">{r.child_dob ? formatDateBerlin(r.child_dob) : "—"}</TableCell>
+              <TableCell>{r.desired_course || "—"}</TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <SharkyButton active={!!r.referred_sharky} busy={sharkyBusyId === r.id} onClick={() => toggleSharky(r)} />
+              </TableCell>
+              <TableCell className="max-w-[220px]">
+                {r.admin_notes ? (
+                  <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
+
 
   function RequestTable({ items, mode }: { items: Item[]; mode: "open" | "assigned" | "rejected" }) {
     if (items.length === 0) {
