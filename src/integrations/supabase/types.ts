@@ -1070,6 +1070,10 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_trainer_of_profile: {
+        Args: { _profile_id: string; _trainer_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       account_status: "pending" | "active" | "disabled" | "archived"
