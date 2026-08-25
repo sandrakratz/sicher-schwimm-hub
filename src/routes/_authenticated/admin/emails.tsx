@@ -11,6 +11,8 @@ import { Eye } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { useServerFn } from "@tanstack/react-start";
 import { backfillEmailBodies } from "@/lib/email-backfill.functions";
+import { templateLabel } from "@/lib/email-template-labels";
+import { TestSendDialog } from "@/components/admin/TestSendDialog";
 import { toast } from "sonner";
 
 
@@ -91,13 +93,25 @@ function Page() {
     });
   }, [range]);
 
-  // Dedupe by message_id (latest per id)
+  // Dedupe by message_id — dabei Inhalte aus allen Einträgen derselben E-Mail
+  // zusammenführen (z. B. Betreff/Text aus dem „pending“-Eintrag, Status aus „sent“).
   const deduped = useMemo(() => {
     const map = new Map<string, LogRow>();
     for (const r of rows) {
       const key = r.message_id || r.id;
       const prev = map.get(key);
-      if (!prev || new Date(r.created_at) > new Date(prev.created_at)) map.set(key, r);
+      if (!prev) { map.set(key, { ...r }); continue; }
+      const newer = new Date(r.created_at) > new Date(prev.created_at) ? r : prev;
+      const older = newer === r ? prev : r;
+      map.set(key, {
+        ...newer,
+        subject: newer.subject ?? older.subject,
+        body_html: newer.body_html ?? older.body_html,
+        body_text: newer.body_text ?? older.body_text,
+        error_message: newer.error_message ?? older.error_message,
+        template_name: newer.template_name ?? older.template_name,
+        recipient_email: newer.recipient_email ?? older.recipient_email,
+      });
     }
     return Array.from(map.values()).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -107,7 +121,7 @@ function Page() {
   const templates = useMemo(() => {
     const set = new Set<string>();
     for (const r of deduped) if (r.template_name) set.add(r.template_name);
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => templateLabel(a).localeCompare(templateLabel(b), "de"));
   }, [deduped]);
 
   const filtered = useMemo(() => {
@@ -148,6 +162,7 @@ function Page() {
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
+          <TestSendDialog onDone={() => setRange(r => r)} />
           <BackfillButton />
         </div>
       </div>
@@ -163,12 +178,12 @@ function Page() {
       <Card className="border-0 shadow-soft">
         <CardContent className="p-4 flex flex-wrap gap-3 items-end">
           <div className="min-w-48">
-            <label className="text-xs font-semibold text-muted-foreground">Template</label>
+            <label className="text-xs font-semibold text-muted-foreground">Art der E-Mail</label>
             <Select value={templateFilter} onValueChange={setTemplateFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
-                {templates.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {templates.map(t => <SelectItem key={t} value={t}>{templateLabel(t)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -204,7 +219,7 @@ function Page() {
                 <thead className="bg-muted/40 text-left">
                   <tr>
                     <th className="p-3">Zeitpunkt</th>
-                    <th className="p-3">Template</th>
+                    <th className="p-3">Art der E-Mail</th>
                     <th className="p-3">Empfänger</th>
                     <th className="p-3">Betreff</th>
                     <th className="p-3">Status</th>
@@ -215,7 +230,7 @@ function Page() {
                   {paged.map(r => (
                     <tr key={r.id} className="border-t">
                       <td className="p-3 whitespace-nowrap text-xs">{formatDateTimeBerlin(r.created_at)}</td>
-                      <td className="p-3">{r.template_name || "—"}</td>
+                      <td className="p-3">{templateLabel(r.template_name)}</td>
                       <td className="p-3">{r.recipient_email || "—"}</td>
                       <td className="p-3 max-w-xs truncate">{r.subject || <span className="text-muted-foreground italic">—</span>}</td>
                       <td className="p-3"><Badge variant={statusVariant(r.status)}>{STATUS_LABEL[r.status] || r.status}</Badge></td>
@@ -254,7 +269,7 @@ function Page() {
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant={statusVariant(selected.status)}>{STATUS_LABEL[selected.status] || selected.status}</Badge>
-                {selected.template_name && <Badge variant="outline">{selected.template_name}</Badge>}
+                {selected.template_name && <Badge variant="outline">{templateLabel(selected.template_name)}</Badge>}
               </div>
               {selected.error_message && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
