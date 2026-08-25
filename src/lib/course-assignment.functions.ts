@@ -4,8 +4,6 @@ import { BILLING } from '@/lib/billing-config'
 import { formatDateBerlin } from '@/lib/format'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
-const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 
 /**
@@ -211,72 +209,17 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       const html = await render(element)
       const text = await render(element, { plainText: true })
       const subject = typeof tpl.subject === 'function' ? tpl.subject(templateData) : tpl.subject
-      const messageId = crypto.randomUUID()
-
-      const normalizedEmail = req.parent_email.toLowerCase()
-      let unsubscribeToken: string
-      const { data: existingToken } = await supabaseAdmin
-        .from('email_unsubscribe_tokens')
-        .select('token, used_at')
-        .eq('email', normalizedEmail)
-        .maybeSingle()
-      if (existingToken && !existingToken.used_at) {
-        unsubscribeToken = existingToken.token
-      } else {
-        unsubscribeToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
-        await supabaseAdmin.from('email_unsubscribe_tokens').upsert(
-          { token: unsubscribeToken, email: normalizedEmail },
-          { onConflict: 'email', ignoreDuplicates: true }
-        )
-        const { data: stored } = await supabaseAdmin
-          .from('email_unsubscribe_tokens')
-          .select('token')
-          .eq('email', normalizedEmail)
-          .maybeSingle()
-        if (stored?.token) unsubscribeToken = stored.token
-      }
-
-      await supabaseAdmin.from('email_send_log').insert({
-        message_id: messageId,
-        template_name: 'course-assignment',
-        recipient_email: req.parent_email,
-        status: 'pending',
+      const { sendRawEmail } = await import('@/lib/email-send.server')
+      const result = await sendRawEmail({
+        templateName: 'course-assignment',
+        recipientEmail: req.parent_email,
         subject,
-        body_html: html,
-        body_text: text,
-        sender_user_id: userId,
+        html,
+        text,
+        senderUserId: userId,
+        idempotencyKey: `course-assign-${req.id}-${course.id}-${Date.now()}`,
       })
-
-
-      const { error: enqErr } = await supabaseAdmin.rpc('enqueue_email', {
-        queue_name: 'transactional_emails',
-        payload: {
-          message_id: messageId,
-          to: req.parent_email,
-          from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-          sender_domain: SENDER_DOMAIN,
-          subject,
-          html,
-          text,
-          purpose: 'transactional',
-          label: 'course-assignment',
-          idempotency_key: `course-assign-${req.id}-${course.id}-${Date.now()}`,
-          unsubscribe_token: unsubscribeToken,
-          queued_at: new Date().toISOString(),
-        },
-      })
-
-      if (enqErr) {
-        await supabaseAdmin.from('email_send_log').insert({
-          message_id: messageId,
-          template_name: 'course-assignment',
-          recipient_email: req.parent_email,
-          status: 'failed',
-          error_message: enqErr.message,
-        })
-      } else {
-        emailQueued = true
-      }
+      emailQueued = result.sent
     }
 
     const { logAudit } = await import('@/lib/audit.server')

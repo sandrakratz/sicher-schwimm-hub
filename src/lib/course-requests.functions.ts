@@ -2,8 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
-const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
 const REPLY_TO = 'info@sicher-schwimmen.com'
 
 function escapeHtml(s: string): string {
@@ -37,11 +35,6 @@ export const replyToCourseRequest = createServerFn({ method: 'POST' })
     if (!req.parent_email) throw new Error('Keine E-Mail hinterlegt')
 
     const recipient = req.parent_email as string
-    const normalizedEmail = recipient.toLowerCase()
-
-    const { data: suppressed } = await supabaseAdmin
-      .from('suppressed_emails').select('id').eq('email', normalizedEmail).maybeSingle()
-    if (suppressed) throw new Error('Empfänger hat sich abgemeldet')
 
     const subject = data.subject || `Rückfrage zu Ihrer Kursanfrage${req.child_name ? ` – ${req.child_name}` : ''}`
     const escapedBody = escapeHtml(data.body).replace(/\n/g, '<br />')
@@ -77,64 +70,23 @@ export const replyToCourseRequest = createServerFn({ method: 'POST' })
       .join('\n')
     const text = `Hallo ${req.parent_name || ''},\n\n${data.body}\n\n--\n${SITE_NAME}\n\n--- Ihre ursprüngliche Kursanfrage ---\n${summaryText}`
 
-    let unsubscribeToken: string
-    const { data: existingToken } = await supabaseAdmin
-      .from('email_unsubscribe_tokens')
-      .select('token, used_at').eq('email', normalizedEmail).maybeSingle()
-    if (existingToken && !existingToken.used_at) {
-      unsubscribeToken = existingToken.token
-    } else {
-      unsubscribeToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
-      await supabaseAdmin.from('email_unsubscribe_tokens').upsert(
-        { token: unsubscribeToken, email: normalizedEmail },
-        { onConflict: 'email', ignoreDuplicates: true },
-      )
-      const { data: stored } = await supabaseAdmin
-        .from('email_unsubscribe_tokens').select('token').eq('email', normalizedEmail).maybeSingle()
-      if (stored?.token) unsubscribeToken = stored.token
-    }
-
-    const messageId = crypto.randomUUID()
-    await supabaseAdmin.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: 'course-request-reply',
-      recipient_email: recipient,
-      status: 'pending',
+    const { sendRawEmail } = await import('@/lib/email-send.server')
+    const result = await sendRawEmail({
+      templateName: 'course-request-reply',
+      recipientEmail: recipient,
       subject,
-      body_text: text,
-      body_html: html,
-      sender_user_id: userId,
+      html,
+      text,
+      replyTo: REPLY_TO,
+      senderUserId: userId,
+      idempotencyKey: `course-request-reply-${data.requestId}-${Date.now()}`,
     })
-
-
-    const { error: enqErr } = await supabaseAdmin.rpc('enqueue_email', {
-      queue_name: 'transactional_emails',
-      payload: {
-        message_id: messageId,
-        to: recipient,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        reply_to: REPLY_TO,
-        sender_domain: SENDER_DOMAIN,
-        subject,
-        html,
-        text,
-        purpose: 'transactional',
-        label: 'course-request-reply',
-        idempotency_key: `course-request-reply-${data.requestId}-${Date.now()}`,
-        unsubscribe_token: unsubscribeToken,
-        queued_at: new Date().toISOString(),
-      },
-    })
-
-    if (enqErr) {
-      await supabaseAdmin.from('email_send_log').insert({
-        message_id: messageId,
-        template_name: 'course-request-reply',
-        recipient_email: recipient,
-        status: 'failed',
-        error_message: enqErr.message,
-      })
-      throw new Error(enqErr.message)
+    if (!result.sent) {
+      throw new Error(
+        result.reason === 'suppressed'
+          ? 'Empfänger hat sich abgemeldet'
+          : 'E-Mail konnte nicht versendet werden',
+      )
     }
 
     await supabaseAdmin.from('course_requests').update({ status: 'contacted' }).eq('id', data.requestId)
