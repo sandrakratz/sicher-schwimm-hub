@@ -178,12 +178,12 @@ function Page() {
       <Card className="border-0 shadow-soft">
         <CardContent className="p-4 flex flex-wrap gap-3 items-end">
           <div className="min-w-48">
-            <label className="text-xs font-semibold text-muted-foreground">Template</label>
+            <label className="text-xs font-semibold text-muted-foreground">Art der E-Mail</label>
             <Select value={templateFilter} onValueChange={setTemplateFilter}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
-                {templates.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {templates.map(t => <SelectItem key={t} value={t}>{templateLabel(t)}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
