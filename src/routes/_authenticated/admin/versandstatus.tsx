@@ -126,10 +126,12 @@ function Page() {
         <h1 className="font-display text-3xl font-bold text-primary-deep">Versandstatus</h1>
         <div className="flex gap-2 items-center">
         <TestSendDialog onDone={() => void refresh()} />
-        <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
-          <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
-        </Button>
+          <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
+          </Button>
+        </div>
       </div>
+
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Card className="border-0 shadow-soft"><CardContent className="py-4">
