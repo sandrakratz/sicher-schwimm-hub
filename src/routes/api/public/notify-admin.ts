@@ -1,6 +1,3 @@
-import * as React from 'react'
-import { render } from '@react-email/components'
-import { createClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { TEMPLATES } from '@/lib/email-templates/registry'
@@ -49,16 +46,6 @@ const TEMPLATE_DATA_SCHEMAS: Record<string, z.ZodTypeAny> = {
   }).strip(),
 }
 
-const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
-const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
-
-function generateToken(): string {
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
 // Public endpoint that sends a notification email to the fixed admin recipient
 // defined in the template (`template.to`). Only templates that declare a
 // fixed `to` address are accepted, so this endpoint cannot be abused to send
@@ -67,12 +54,6 @@ export const Route = createFileRoute('/api/public/notify-admin')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        if (!supabaseUrl || !serviceKey) {
-          return Response.json({ error: 'Server configuration error' }, { status: 500 })
-        }
-
         let templateName: string
         let templateData: Record<string, any> = {}
         let idempotencyKey: string | undefined
