@@ -91,13 +91,25 @@ function Page() {
     });
   }, [range]);
 
-  // Dedupe by message_id (latest per id)
+  // Dedupe by message_id — dabei Inhalte aus allen Einträgen derselben E-Mail
+  // zusammenführen (z. B. Betreff/Text aus dem „pending“-Eintrag, Status aus „sent“).
   const deduped = useMemo(() => {
     const map = new Map<string, LogRow>();
     for (const r of rows) {
       const key = r.message_id || r.id;
       const prev = map.get(key);
-      if (!prev || new Date(r.created_at) > new Date(prev.created_at)) map.set(key, r);
+      if (!prev) { map.set(key, { ...r }); continue; }
+      const newer = new Date(r.created_at) > new Date(prev.created_at) ? r : prev;
+      const older = newer === r ? prev : r;
+      map.set(key, {
+        ...newer,
+        subject: newer.subject ?? older.subject,
+        body_html: newer.body_html ?? older.body_html,
+        body_text: newer.body_text ?? older.body_text,
+        error_message: newer.error_message ?? older.error_message,
+        template_name: newer.template_name ?? older.template_name,
+        recipient_email: newer.recipient_email ?? older.recipient_email,
+      });
     }
     return Array.from(map.values()).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -107,7 +119,7 @@ function Page() {
   const templates = useMemo(() => {
     const set = new Set<string>();
     for (const r of deduped) if (r.template_name) set.add(r.template_name);
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => templateLabel(a).localeCompare(templateLabel(b), "de"));
   }, [deduped]);
 
   const filtered = useMemo(() => {
