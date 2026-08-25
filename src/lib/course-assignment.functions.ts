@@ -4,8 +4,6 @@ import { BILLING } from '@/lib/billing-config'
 import { formatDateBerlin } from '@/lib/format'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
-const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 
 /**
