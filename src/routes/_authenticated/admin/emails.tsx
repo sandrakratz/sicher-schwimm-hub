@@ -219,7 +219,7 @@ function Page() {
                 <thead className="bg-muted/40 text-left">
                   <tr>
                     <th className="p-3">Zeitpunkt</th>
-                    <th className="p-3">Template</th>
+                    <th className="p-3">Art der E-Mail</th>
                     <th className="p-3">Empfänger</th>
                     <th className="p-3">Betreff</th>
                     <th className="p-3">Status</th>
@@ -230,7 +230,7 @@ function Page() {
                   {paged.map(r => (
                     <tr key={r.id} className="border-t">
                       <td className="p-3 whitespace-nowrap text-xs">{formatDateTimeBerlin(r.created_at)}</td>
-                      <td className="p-3">{r.template_name || "—"}</td>
+                      <td className="p-3">{templateLabel(r.template_name)}</td>
                       <td className="p-3">{r.recipient_email || "—"}</td>
                       <td className="p-3 max-w-xs truncate">{r.subject || <span className="text-muted-foreground italic">—</span>}</td>
                       <td className="p-3"><Badge variant={statusVariant(r.status)}>{STATUS_LABEL[r.status] || r.status}</Badge></td>
@@ -269,7 +269,7 @@ function Page() {
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2 text-xs">
                 <Badge variant={statusVariant(selected.status)}>{STATUS_LABEL[selected.status] || selected.status}</Badge>
-                {selected.template_name && <Badge variant="outline">{selected.template_name}</Badge>}
+                {selected.template_name && <Badge variant="outline">{templateLabel(selected.template_name)}</Badge>}
               </div>
               {selected.error_message && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
