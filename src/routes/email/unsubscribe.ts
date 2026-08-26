@@ -11,7 +11,7 @@ async function lookupToken(token: string) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { data, error } = await supabaseAdmin
     .from('email_unsubscribe_tokens')
-    .select('token, email, used_at, expires_at')
+    .select('token, email, used_at')
     .eq('token', token)
     .maybeSingle()
   return { supabaseAdmin, row: data, error }
@@ -30,9 +30,6 @@ export const Route = createFileRoute('/email/unsubscribe')({
           return json({ valid: false, reason: 'error' }, 500)
         }
         if (!row) return json({ valid: false, reason: 'invalid_token' })
-        if (row.expires_at && new Date(row.expires_at) < new Date()) {
-          return json({ valid: false, reason: 'invalid_token' })
-        }
         if (row.used_at) return json({ valid: false, reason: 'already_unsubscribed' })
         return json({ valid: true })
       },
@@ -48,9 +45,6 @@ export const Route = createFileRoute('/email/unsubscribe')({
           return json({ success: false, reason: 'error' }, 500)
         }
         if (!row) return json({ success: false, reason: 'invalid_token' })
-        if (row.expires_at && new Date(row.expires_at) < new Date()) {
-          return json({ success: false, reason: 'invalid_token' })
-        }
 
         const email = String(row.email).toLowerCase()
 
