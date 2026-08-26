@@ -987,7 +987,7 @@ function Page() {
                   <TableHead>Status</TableHead>
                   <TableHead>Mitglied</TableHead>
                   <TableHead>Ergebnis</TableHead>
-                  <TableHead>Bezahlt</TableHead>
+                  {canManage && <TableHead>Bezahlt</TableHead>}
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
