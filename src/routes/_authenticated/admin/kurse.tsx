@@ -987,13 +987,13 @@ function Page() {
                   <TableHead>Status</TableHead>
                   <TableHead>Mitglied</TableHead>
                   <TableHead>Ergebnis</TableHead>
-                  <TableHead>Bezahlt</TableHead>
+                  {canManage && <TableHead>Bezahlt</TableHead>}
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
 
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
@@ -1039,7 +1039,7 @@ function Page() {
                       )}
                       {p.is_member === false && <Badge variant="secondary">Nicht-Mitglied</Badge>}
                       {p.is_member == null && <span className="text-muted-foreground">offen</span>}
-                      {p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
+                      {canManage && p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
                     </TableCell>
 
                     <TableCell className="text-xs">
@@ -1049,20 +1049,22 @@ function Page() {
                       {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
                       {p.goal_reached == null && !p.badge && !p.achievement && "—"}
                     </TableCell>
-                    <TableCell className="text-xs">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
-                        {p.paid ? (
-                          <span className="text-green-700 font-medium">Bezahlt{p.paid_at && <div className="text-muted-foreground font-normal">{fmtDate(p.paid_at)}</div>}</span>
-                        ) : (
-                          <span className="text-muted-foreground">offen</span>
-                        )}
-                      </label>
-                    </TableCell>
+                    {canManage && (
+                      <TableCell className="text-xs">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
+                          {p.paid ? (
+                            <span className="text-green-700 font-medium">Bezahlt{p.paid_at && <div className="text-muted-foreground font-normal">{fmtDate(p.paid_at)}</div>}</span>
+                          ) : (
+                            <span className="text-muted-foreground">offen</span>
+                          )}
+                        </label>
+                      </TableCell>
+                    )}
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      {canManage && <Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                     </TableCell>
                   </TableRow>
                 )})}
@@ -1070,7 +1072,7 @@ function Page() {
             </Table>
           </div>
 
-          <div className="border-t pt-4 mt-4 space-y-3">
+          {canManage && <div className="border-t pt-4 mt-4 space-y-3">
             <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
@@ -1098,7 +1100,7 @@ function Page() {
 
             <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
             <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
-          </div>
+          </div>}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPartOpen(false)}>Schließen</Button>
@@ -1173,7 +1175,7 @@ function Page() {
               </div>
               <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
 
-              <div className="border-t pt-3 mt-2">
+              {canManage && <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
@@ -1204,7 +1206,7 @@ function Page() {
                 <div className="mt-2 text-xs text-muted-foreground">
                   Elternkonto-Verknüpfung: {editPart.parent_user_id ? <span className="font-mono">{editPart.parent_user_id}</span> : "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"}
                 </div>
-              </div>
+              </div>}
 
 
               <div className="border-t pt-3 mt-2">
@@ -1229,7 +1231,7 @@ function Page() {
                 <div className="mt-3"><Label>Geschafft / Anmerkungen zum Ergebnis</Label><Textarea rows={3} placeholder="z.B. 25m geschwommen, Sprung vom Beckenrand …" value={editPart.achievement || ""} onChange={e => setEditPart(p => p && { ...p, achievement: e.target.value })} /></div>
               </div>
 
-              <div className="border-t pt-3 mt-2">
+              {canManage && <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Euro className="h-4 w-4" /> Zahlung (Buchhaltung)</div>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox checked={editPart.paid} onCheckedChange={v => setEditPart(p => p && { ...p, paid: !!v, paid_at: v ? (p.paid_at || new Date().toISOString()) : null })} />
@@ -1239,7 +1241,7 @@ function Page() {
                   <div className="text-xs text-muted-foreground mt-1">Bestätigt am {fmtDate(editPart.paid_at)}</div>
                 )}
                 <div className="mt-3"><Label>Zahlungsnotiz</Label><Textarea rows={2} placeholder="z.B. Überweisung, Bar, Rechnungsnr. …" value={editPart.payment_note || ""} onChange={e => setEditPart(p => p && { ...p, payment_note: e.target.value })} /></div>
-              </div>
+              </div>}
             </div>
           )}
           <DialogFooter>
