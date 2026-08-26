@@ -804,7 +804,7 @@ function Page() {
             <DialogTitle>{detailId === "unassigned" ? "Zeiträume ohne Kursangebot" : detailProgram?.name || "Kurs"}</DialogTitle>
           </DialogHeader>
 
-          {detailId !== "unassigned" && detailProgram && (
+          {canManage && detailId !== "unassigned" && detailProgram && (
             <div className="space-y-3 border rounded-md p-4">
               <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
               <div className="grid sm:grid-cols-2 gap-3">
