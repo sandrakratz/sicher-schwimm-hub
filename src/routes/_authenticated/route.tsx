@@ -43,6 +43,7 @@ function AuthLayout() {
       if (!u.user) return;
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
       setIsStaff(!!roles?.some(r => r.role === "admin" || r.role === "board"));
+      setIsTrainer(!!roles?.some(r => r.role === "trainer"));
       const { data: profile } = await supabase.from("profiles").select("first_name,last_name").eq("id", u.user.id).maybeSingle();
       setName([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || u.user.email || "");
     })();
