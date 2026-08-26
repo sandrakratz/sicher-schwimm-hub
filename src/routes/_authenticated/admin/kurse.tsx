@@ -1175,7 +1175,7 @@ function Page() {
               </div>
               <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
 
-              <div className="border-t pt-3 mt-2">
+              {canManage && <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
