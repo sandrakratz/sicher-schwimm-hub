@@ -32,34 +32,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-type NavItem = {
-  to: "/admin" | "/admin/benutzer" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/warteliste" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/versandstatus" | "/admin/widerrufe" | "/admin/audit";
-  icon: typeof Shield;
-  label: string;
-  exact?: boolean;
-  allow: Role[];
-};
-
-const adminNav: NavItem[] = [
-  { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
-  { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board", "trainer"] },
-  { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
-  { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
-  { to: "/admin/verfuegbarkeit", icon: CalendarCheck, label: "Verfügbarkeit", allow: ["admin", "board", "trainer"] },
-  { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen", allow: ["admin", "board"] },
-  { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
-  { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },
-  { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
-  { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
-  { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
-  { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten", allow: ["admin", "board"] },
-  { to: "/admin/emails", icon: Send, label: "Gesendete E-Mails", allow: ["admin", "board"] },
-
-  { to: "/admin/versandstatus", icon: Activity, label: "Versandstatus", allow: ["admin", "board"] },
-  { to: "/admin/widerrufe", icon: FileText, label: "Widerrufe", allow: ["admin", "board"] },
-  { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
-];
-
 function AdminLayout() {
   const navigate = useNavigate();
   const { adminRoles } = Route.useRouteContext();
@@ -77,27 +49,36 @@ function AdminLayout() {
     navigate({ to: "/" });
   }
 
-  const visibleNav = adminNav.filter(n => n.allow.some(r => roles.includes(r)));
+  const visibleNav = visibleAdminNav(roles);
 
   const navContent = (
     <>
-      <div className="p-4 border-b border-white/10 flex items-center gap-3">
+      <Link to="/" className="p-4 border-b border-white/10 flex items-center gap-3">
         <img src={logo} alt="Sicher Schwimmen e.V." className="h-14 w-auto object-contain" height={56} />
         <div className="text-white">
-          <div className="font-display font-bold leading-none">Admin</div>
+          <div className="font-display font-bold leading-none">Mitgliederportal</div>
         </div>
-      </div>
+      </Link>
       <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-        {visibleNav.map(n => (
+        {portalNav.map(n => (
           <Link key={n.to} to={n.to} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 transition"
             activeProps={{ className: "bg-accent text-accent-foreground" }}
             activeOptions={{ exact: n.exact }}>
             <n.icon className="h-4 w-4" />{n.label}
           </Link>
         ))}
-        <Link to="/portal" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 mt-4">
-          <ArrowLeft className="h-4 w-4" />Zurück zum Portal
-        </Link>
+        {visibleNav.length > 0 && (
+          <>
+            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">Verwaltung</div>
+            {visibleNav.map(n => (
+              <Link key={n.to} to={n.to} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-white/10 transition"
+                activeProps={{ className: "bg-accent text-accent-foreground" }}
+                activeOptions={{ exact: n.exact }}>
+                <n.icon className="h-4 w-4" />{n.label}
+              </Link>
+            ))}
+          </>
+        )}
       </nav>
       <div className="p-3 border-t border-white/10">
         <div className="px-3 py-2 text-xs opacity-70 truncate">{name}</div>
