@@ -359,9 +359,38 @@ function Page() {
   }
 
   async function load() {
+    let manage = canManage;
+    try {
+      const { roles } = await rolesFn();
+      manage = roles.includes("admin") || roles.includes("board");
+      setCanManage(manage);
+    } catch { /* keep current */ }
+
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
-    const list = (data as Course[]) || [];
+    let list = (data as Course[]) || [];
+
+    if (!manage) {
+      // Trainer: nur eigene Kurse (als Kurstrainer oder einem Termin zugewiesen)
+      const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
+      const allowed = new Set<string>();
+      if (uid) {
+        list.forEach(c => { if (c.trainer_id === uid) allowed.add(c.id); });
+        const { data: mySessions } = await supabase
+          .from("course_sessions")
+          .select("id,course_id,assigned_trainer_id");
+        const sessions = (mySessions as any[]) || [];
+        sessions.forEach(s => { if (s.assigned_trainer_id === uid) allowed.add(s.course_id); });
+        const { data: myAssign } = await supabase
+          .from("course_session_assignments")
+          .select("session_id")
+          .eq("trainer_id", uid);
+        const assignedSessionIds = new Set(((myAssign as any[]) || []).map(a => a.session_id));
+        sessions.forEach(s => { if (assignedSessionIds.has(s.id)) allowed.add(s.course_id); });
+      }
+      list = list.filter(c => allowed.has(c.id));
+    }
     setRows(list);
+
     const { data: parts } = await supabase.from("course_participants").select("course_id,status");
     const map: Record<string, { confirmed: number; waiting: number }> = {};
     (parts || []).forEach((p: any) => {
@@ -371,7 +400,12 @@ function Page() {
     });
     setCounts(map);
     const { data: progs } = await supabase.from("course_programs").select("*").order("sort_order", { ascending: true });
-    setPrograms((progs as ProgramRow[]) || []);
+    let progList = (progs as ProgramRow[]) || [];
+    if (!manage) {
+      const usedIds = new Set(list.map(c => c.program_id).filter(Boolean) as string[]);
+      progList = progList.filter(p => usedIds.has(p.id));
+    }
+    setPrograms(progList);
   }
   useEffect(() => { load(); }, []);
 
