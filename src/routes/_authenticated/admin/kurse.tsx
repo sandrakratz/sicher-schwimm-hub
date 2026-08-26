@@ -1206,7 +1206,7 @@ function Page() {
                 <div className="mt-2 text-xs text-muted-foreground">
                   Elternkonto-Verknüpfung: {editPart.parent_user_id ? <span className="font-mono">{editPart.parent_user_id}</span> : "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"}
                 </div>
-              </div>
+              </div>}
 
 
               <div className="border-t pt-3 mt-2">
