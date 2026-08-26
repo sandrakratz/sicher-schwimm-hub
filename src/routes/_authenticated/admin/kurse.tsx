@@ -735,10 +735,12 @@ function Page() {
     <div className="max-w-7xl space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary-deep">Kursverwaltung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite.</p>
+          <h1 className="font-display text-3xl font-bold text-primary-deep">{canManage ? "Kursverwaltung" : "Meine Kurse"}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{canManage
+            ? "Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite."
+            : "Hier siehst du nur die Kurse, in denen du als Trainer eingetragen bist."}</p>
         </div>
-        <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
+        {canManage && <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
