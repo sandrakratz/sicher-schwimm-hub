@@ -993,7 +993,7 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {participants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
 
                 {participants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
