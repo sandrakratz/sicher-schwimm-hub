@@ -85,6 +85,16 @@ function AuthLayout() {
             <Shield className="h-4 w-4" />Admin-Bereich
           </Link>
         )}
+        {!isStaff && isTrainer && (
+          <>
+            <Link to="/admin/verfuegbarkeit" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition mt-4">
+              <CalendarCheck className="h-4 w-4" />Meine Verfügbarkeit
+            </Link>
+            <Link to="/admin/kurse" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition">
+              <Shield className="h-4 w-4" />Trainer-Bereich (Kurse)
+            </Link>
+          </>
+        )}
       </nav>
       <div className="p-3 border-t border-sidebar-border">
         <div className="px-3 py-2 text-xs opacity-70 truncate">{name}</div>
