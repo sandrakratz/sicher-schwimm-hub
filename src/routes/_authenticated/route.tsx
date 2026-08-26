@@ -1,7 +1,7 @@
 import { Outlet, Link, createFileRoute, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, LogOut, Waves, Shield, BookOpen, Menu } from "lucide-react";
+import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, LogOut, Waves, Shield, BookOpen, Menu, CalendarCheck } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const navigate = useNavigate();
   const [isStaff, setIsStaff] = useState(false);
+  const [isTrainer, setIsTrainer] = useState(false);
   const [name, setName] = useState<string>("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -42,6 +43,7 @@ function AuthLayout() {
       if (!u.user) return;
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
       setIsStaff(!!roles?.some(r => r.role === "admin" || r.role === "board"));
+      setIsTrainer(!!roles?.some(r => r.role === "trainer"));
       const { data: profile } = await supabase.from("profiles").select("first_name,last_name").eq("id", u.user.id).maybeSingle();
       setName([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || u.user.email || "");
     })();
@@ -82,6 +84,16 @@ function AuthLayout() {
           <Link to="/admin" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition mt-4">
             <Shield className="h-4 w-4" />Admin-Bereich
           </Link>
+        )}
+        {!isStaff && isTrainer && (
+          <>
+            <Link to="/admin/verfuegbarkeit" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition mt-4">
+              <CalendarCheck className="h-4 w-4" />Meine Verfügbarkeit
+            </Link>
+            <Link to="/admin/kurse" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition">
+              <Shield className="h-4 w-4" />Trainer-Bereich (Kurse)
+            </Link>
+          </>
         )}
       </nav>
       <div className="p-3 border-t border-sidebar-border">
