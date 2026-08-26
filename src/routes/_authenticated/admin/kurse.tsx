@@ -114,6 +114,7 @@ type Course = {
   age_range: string | null;
   duration: string | null;
   location: string | null;
+  trainer_id?: string | null;
   status: "planned" | "open" | "waiting_list" | "fully_booked" | "completed";
   max_participants: number | null;
   starts_on: string | null;
