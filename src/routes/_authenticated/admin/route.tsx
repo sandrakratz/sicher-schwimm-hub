@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, ShieldBan, Users, BookOpen, ListChecks, Newspaper, FileText, Calendar, CalendarCheck, Hourglass, MailOpen, Send, Activity, ScrollText, LogOut, ArrowLeft, Menu } from "lucide-react";
+import { Shield, LogOut, Menu } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/co
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
-
-type Role = "admin" | "board" | "trainer" | "member" | "parent";
+import { portalNav, visibleAdminNav, type Role } from "@/lib/nav-items";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
