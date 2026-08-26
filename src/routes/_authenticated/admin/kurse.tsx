@@ -1039,7 +1039,7 @@ function Page() {
                       )}
                       {p.is_member === false && <Badge variant="secondary">Nicht-Mitglied</Badge>}
                       {p.is_member == null && <span className="text-muted-foreground">offen</span>}
-                      {p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
+                      {canManage && p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
                     </TableCell>
 
                     <TableCell className="text-xs">
