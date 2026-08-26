@@ -162,6 +162,8 @@ function slugify(s: string) {
 }
 
 function Page() {
+  const [canManage, setCanManage] = useState(true);
+  const rolesFn = useServerFn(getMyAdminRoles);
   const [rows, setRows] = useState<Course[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [progOpen, setProgOpen] = useState(false);
