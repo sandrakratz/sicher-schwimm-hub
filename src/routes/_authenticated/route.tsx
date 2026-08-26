@@ -1,12 +1,13 @@
 import { Outlet, Link, createFileRoute, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, LogOut, Waves, Shield, BookOpen, Menu, CalendarCheck } from "lucide-react";
+import { LogOut, Waves, Menu } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { portalNav, visibleAdminNav, type Role } from "@/lib/nav-items";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
