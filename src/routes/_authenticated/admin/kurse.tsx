@@ -1072,7 +1072,7 @@ function Page() {
             </Table>
           </div>
 
-          <div className="border-t pt-4 mt-4 space-y-3">
+          {canManage && <div className="border-t pt-4 mt-4 space-y-3">
             <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
