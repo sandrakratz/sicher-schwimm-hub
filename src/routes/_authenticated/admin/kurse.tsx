@@ -746,7 +746,7 @@ function Page() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {programs.length === 0 && unassigned.length === 0 && (
           <Card className="border-0 shadow-soft md:col-span-2 xl:col-span-3">
-            <CardContent className="py-10 text-center text-muted-foreground text-sm">Noch keine Kurse angelegt.</CardContent>
+            <CardContent className="py-10 text-center text-muted-foreground text-sm">{canManage ? "Noch keine Kurse angelegt." : "Du bist derzeit in keinen Kurs eingeteilt."}</CardContent>
           </Card>
         )}
 
