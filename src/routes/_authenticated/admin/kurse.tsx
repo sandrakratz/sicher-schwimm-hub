@@ -16,6 +16,7 @@ import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays
 import { useServerFn } from "@tanstack/react-start";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
+import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
