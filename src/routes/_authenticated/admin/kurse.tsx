@@ -842,9 +842,11 @@ function Page() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="font-semibold text-sm">Kurszeiträume</div>
-              <Button size="sm" onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}>
-                <Plus className="h-4 w-4" /> Neuer Zeitraum
-              </Button>
+              {canManage && (
+                <Button size="sm" onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}>
+                  <Plus className="h-4 w-4" /> Neuer Zeitraum
+                </Button>
+              )}
             </div>
             {renderTermTable(detailId === "unassigned" ? null : detailId)}
           </div>
