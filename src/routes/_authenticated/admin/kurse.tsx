@@ -16,6 +16,7 @@ import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays
 import { useServerFn } from "@tanstack/react-start";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
+import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -113,6 +114,7 @@ type Course = {
   age_range: string | null;
   duration: string | null;
   location: string | null;
+  trainer_id?: string | null;
   status: "planned" | "open" | "waiting_list" | "fully_booked" | "completed";
   max_participants: number | null;
   starts_on: string | null;
@@ -161,6 +163,8 @@ function slugify(s: string) {
 }
 
 function Page() {
+  const [canManage, setCanManage] = useState(true);
+  const rolesFn = useServerFn(getMyAdminRoles);
   const [rows, setRows] = useState<Course[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [progOpen, setProgOpen] = useState(false);
@@ -359,9 +363,38 @@ function Page() {
   }
 
   async function load() {
+    let manage = canManage;
+    try {
+      const { roles } = await rolesFn();
+      manage = roles.includes("admin") || roles.includes("board");
+      setCanManage(manage);
+    } catch { /* keep current */ }
+
     const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
-    const list = (data as Course[]) || [];
+    let list = (data as Course[]) || [];
+
+    if (!manage) {
+      // Trainer: nur eigene Kurse (als Kurstrainer oder einem Termin zugewiesen)
+      const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
+      const allowed = new Set<string>();
+      if (uid) {
+        list.forEach(c => { if (c.trainer_id === uid) allowed.add(c.id); });
+        const { data: mySessions } = await supabase
+          .from("course_sessions")
+          .select("id,course_id,assigned_trainer_id");
+        const sessions = (mySessions as any[]) || [];
+        sessions.forEach(s => { if (s.assigned_trainer_id === uid) allowed.add(s.course_id); });
+        const { data: myAssign } = await supabase
+          .from("course_session_assignments")
+          .select("session_id")
+          .eq("trainer_id", uid);
+        const assignedSessionIds = new Set(((myAssign as any[]) || []).map(a => a.session_id));
+        sessions.forEach(s => { if (assignedSessionIds.has(s.id)) allowed.add(s.course_id); });
+      }
+      list = list.filter(c => allowed.has(c.id));
+    }
     setRows(list);
+
     const { data: parts } = await supabase.from("course_participants").select("course_id,status");
     const map: Record<string, { confirmed: number; waiting: number }> = {};
     (parts || []).forEach((p: any) => {
@@ -371,7 +404,12 @@ function Page() {
     });
     setCounts(map);
     const { data: progs } = await supabase.from("course_programs").select("*").order("sort_order", { ascending: true });
-    setPrograms((progs as ProgramRow[]) || []);
+    let progList = (progs as ProgramRow[]) || [];
+    if (!manage) {
+      const usedIds = new Set(list.map(c => c.program_id).filter(Boolean) as string[]);
+      progList = progList.filter(p => usedIds.has(p.id));
+    }
+    setPrograms(progList);
   }
   useEffect(() => { load(); }, []);
 
@@ -646,11 +684,13 @@ function Page() {
             title="Rechnungsposten als CSV für WISO MeinVerein Web"
             onClick={() => exportMeinVerein(c)}
           ><FileDown className="h-4 w-4" /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</Button>
-          <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
-          {c.archived_at
-            ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
-            : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /></Button>}
-          <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          {canManage && <>
+            <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
+            {c.archived_at
+              ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
+              : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /></Button>}
+            <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          </>}
         </TableCell>
       </TableRow>
     );
@@ -696,16 +736,18 @@ function Page() {
     <div className="max-w-7xl space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary-deep">Kursverwaltung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite.</p>
+          <h1 className="font-display text-3xl font-bold text-primary-deep">{canManage ? "Kursverwaltung" : "Meine Kurse"}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{canManage
+            ? "Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite."
+            : "Hier siehst du nur die Kurse, in denen du als Trainer eingetragen bist."}</p>
         </div>
-        <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
+        {canManage && <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {programs.length === 0 && unassigned.length === 0 && (
           <Card className="border-0 shadow-soft md:col-span-2 xl:col-span-3">
-            <CardContent className="py-10 text-center text-muted-foreground text-sm">Noch keine Kurse angelegt.</CardContent>
+            <CardContent className="py-10 text-center text-muted-foreground text-sm">{canManage ? "Noch keine Kurse angelegt." : "Du bist derzeit in keinen Kurs eingeteilt."}</CardContent>
           </Card>
         )}
 
@@ -739,7 +781,7 @@ function Page() {
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setEditingProg(p); setDetailId(p.id); }}>Öffnen</Button>
-                  <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); startNewTerm(p); }}><Plus className="h-4 w-4" /> Neuer Zeitraum</Button>
+                  {canManage && <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); startNewTerm(p); }}><Plus className="h-4 w-4" /> Neuer Zeitraum</Button>}
                 </div>
               </CardContent>
             </Card>
@@ -763,7 +805,7 @@ function Page() {
             <DialogTitle>{detailId === "unassigned" ? "Zeiträume ohne Kursangebot" : detailProgram?.name || "Kurs"}</DialogTitle>
           </DialogHeader>
 
-          {detailId !== "unassigned" && detailProgram && (
+          {canManage && detailId !== "unassigned" && detailProgram && (
             <div className="space-y-3 border rounded-md p-4">
               <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
               <div className="grid sm:grid-cols-2 gap-3">
@@ -801,9 +843,11 @@ function Page() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="font-semibold text-sm">Kurszeiträume</div>
-              <Button size="sm" onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}>
-                <Plus className="h-4 w-4" /> Neuer Zeitraum
-              </Button>
+              {canManage && (
+                <Button size="sm" onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}>
+                  <Plus className="h-4 w-4" /> Neuer Zeitraum
+                </Button>
+              )}
             </div>
             {renderTermTable(detailId === "unassigned" ? null : detailId)}
           </div>
