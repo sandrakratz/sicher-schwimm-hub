@@ -1,12 +1,13 @@
 import { Outlet, Link, createFileRoute, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, LogOut, Waves, Shield, BookOpen, Menu, CalendarCheck } from "lucide-react";
+import { LogOut, Waves, Menu } from "lucide-react";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { portalNav, visibleAdminNav, type Role } from "@/lib/nav-items";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -29,8 +30,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthLayout() {
   const navigate = useNavigate();
-  const [isStaff, setIsStaff] = useState(false);
-  const [isTrainer, setIsTrainer] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [name, setName] = useState<string>("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -41,9 +41,8 @@ function AuthLayout() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      setIsStaff(!!roles?.some(r => r.role === "admin" || r.role === "board"));
-      setIsTrainer(!!roles?.some(r => r.role === "trainer"));
+      const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
+      setRoles((r ?? []).map(x => x.role as Role));
       const { data: profile } = await supabase.from("profiles").select("first_name,last_name").eq("id", u.user.id).maybeSingle();
       setName([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || u.user.email || "");
     })();
@@ -55,15 +54,7 @@ function AuthLayout() {
     navigate({ to: "/" });
   }
 
-  const portalNav = [
-    { to: "/portal", icon: LayoutDashboard, label: "Übersicht" },
-    { to: "/portal/profil", icon: User, label: "Mein Profil" },
-    { to: "/portal/kurse", icon: BookOpen, label: "Meine Kurse" },
-    { to: "/portal/news", icon: Newspaper, label: "Vereinsnews" },
-    { to: "/portal/events", icon: Calendar, label: "Termine" },
-    { to: "/portal/dokumente", icon: FileText, label: "Dokumente" },
-    { to: "/portal/kontakt", icon: Mail, label: "Verein kontaktieren" },
-  ];
+  const adminItems = visibleAdminNav(roles);
 
   const navContent = (
     <>
@@ -76,23 +67,21 @@ function AuthLayout() {
           <Link key={n.to} to={n.to}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
             activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-            activeOptions={{ exact: n.to === "/portal" }}>
+            activeOptions={{ exact: n.exact }}>
             <n.icon className="h-4 w-4" />{n.label}
           </Link>
         ))}
-        {isStaff && (
-          <Link to="/admin" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition mt-4">
-            <Shield className="h-4 w-4" />Admin-Bereich
-          </Link>
-        )}
-        {!isStaff && isTrainer && (
+        {adminItems.length > 0 && (
           <>
-            <Link to="/admin/verfuegbarkeit" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition mt-4">
-              <CalendarCheck className="h-4 w-4" />Meine Verfügbarkeit
-            </Link>
-            <Link to="/admin/kurse" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-accent/15 text-accent hover:bg-accent/25 transition">
-              <Shield className="h-4 w-4" />Trainer-Bereich (Kurse)
-            </Link>
+            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">Verwaltung</div>
+            {adminItems.map(n => (
+              <Link key={n.to} to={n.to}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
+                activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
+                activeOptions={{ exact: n.exact }}>
+                <n.icon className="h-4 w-4" />{n.label}
+              </Link>
+            ))}
           </>
         )}
       </nav>
