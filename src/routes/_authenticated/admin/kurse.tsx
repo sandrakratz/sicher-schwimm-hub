@@ -1100,7 +1100,7 @@ function Page() {
 
             <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
             <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
-          </div>
+          </div>}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPartOpen(false)}>Schließen</Button>
