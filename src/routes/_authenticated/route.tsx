@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const navigate = useNavigate();
   const [isStaff, setIsStaff] = useState(false);
+  const [isTrainer, setIsTrainer] = useState(false);
   const [name, setName] = useState<string>("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
