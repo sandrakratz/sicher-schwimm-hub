@@ -51,6 +51,7 @@ import { Route as AuthenticatedAdminSperrlisteRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
 import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
 import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
+import { Route as AuthenticatedAdminMitgliederRouteImport } from './routes/_authenticated/admin/mitglieder'
 import { Route as AuthenticatedAdminKurseRouteImport } from './routes/_authenticated/admin/kurse'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin/emails'
@@ -286,6 +287,12 @@ const AuthenticatedAdminMitgliedschaftenRoute =
     path: '/mitgliedschaften',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminMitgliederRoute =
+  AuthenticatedAdminMitgliederRouteImport.update({
+    id: '/mitglieder',
+    path: '/mitglieder',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminKurseRoute = AuthenticatedAdminKurseRouteImport.update({
   id: '/kurse',
   path: '/kurse',
@@ -379,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
+  '/admin/mitglieder': typeof AuthenticatedAdminMitgliederRoute
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
@@ -432,6 +440,7 @@ export interface FileRoutesByTo {
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
+  '/admin/mitglieder': typeof AuthenticatedAdminMitgliederRoute
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
@@ -488,6 +497,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/kurse': typeof AuthenticatedAdminKurseRoute
+  '/_authenticated/admin/mitglieder': typeof AuthenticatedAdminMitgliederRoute
   '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
@@ -544,6 +554,7 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/events'
     | '/admin/kurse'
+    | '/admin/mitglieder'
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
@@ -597,6 +608,7 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/events'
     | '/admin/kurse'
+    | '/admin/mitglieder'
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
@@ -652,6 +664,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/emails'
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/kurse'
+    | '/_authenticated/admin/mitglieder'
     | '/_authenticated/admin/mitgliedschaften'
     | '/_authenticated/admin/nachrichten'
     | '/_authenticated/admin/news'
@@ -1005,6 +1018,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMitgliedschaftenRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/mitglieder': {
+      id: '/_authenticated/admin/mitglieder'
+      path: '/mitglieder'
+      fullPath: '/admin/mitglieder'
+      preLoaderRoute: typeof AuthenticatedAdminMitgliederRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/kurse': {
       id: '/_authenticated/admin/kurse'
       path: '/kurse'
@@ -1093,6 +1113,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminKurseRoute: typeof AuthenticatedAdminKurseRoute
+  AuthenticatedAdminMitgliederRoute: typeof AuthenticatedAdminMitgliederRoute
   AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
   AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
@@ -1113,6 +1134,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
     AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
     AuthenticatedAdminKurseRoute: AuthenticatedAdminKurseRoute,
+    AuthenticatedAdminMitgliederRoute: AuthenticatedAdminMitgliederRoute,
     AuthenticatedAdminMitgliedschaftenRoute:
       AuthenticatedAdminMitgliedschaftenRoute,
     AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
