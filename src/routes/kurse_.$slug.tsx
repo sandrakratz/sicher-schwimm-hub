@@ -183,9 +183,13 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
             <Card className="border-0 shadow-soft">
               <CardContent className="p-6">
                 <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Voraussetzungen</h2>
-                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                  {requirements.map((r, i) => <li key={i}>{r}</li>)}
-                </ul>
+                {requirements.length > 1 ? (
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                    {requirements.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{requirements[0]}</p>
+                )}
                 {program.min_age_years != null && (
                   <p className="text-xs text-muted-foreground mt-3">
                     Mindestalter zu Kursbeginn: {program.min_age_years} Jahre.
