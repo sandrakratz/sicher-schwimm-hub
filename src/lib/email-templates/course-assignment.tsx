@@ -95,7 +95,9 @@ const Email = (p: Props) => {
               </Text>
             )}
             <Text style={{ margin: '4px 0' }}>
-              Bitte überweisen Sie den Betrag innerhalb von <strong>{p.payment_due_days ?? 14} Tagen</strong> nach Erhalt dieser E-Mail.
+              Bitte überweisen Sie den Betrag innerhalb von <strong>{p.payment_due_days ?? 14} Tagen</strong> nach Erhalt
+              dieser E-Mail, spätestens jedoch <strong>bis 10 Tage vor Kursbeginn</strong>. Beginnt der Kurs innerhalb der
+              nächsten 10 Tage, ist die Kursgebühr <strong>sofort per Echtzeit-/Sofortüberweisung</strong> zu zahlen.
             </Text>
             <Section style={{ backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginTop: '8px', border: '1px solid #e2e8f0' }}>
               {hasBank ? (

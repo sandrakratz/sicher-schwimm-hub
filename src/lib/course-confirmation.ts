@@ -36,6 +36,10 @@ export interface ConfirmationDoc {
   unitLabel: string;
   priceLabel: string;
   dueDateLabel: string;
+  /** true, wenn der Kurs innerhalb der letzten 10 Tage vor Kursbeginn gebucht wurde. */
+  immediatePayment: boolean;
+  /** Fertiger Zahlungssatz für E-Mail und PDF. */
+  paymentInstruction: string;
   paymentReference: string;
 }
 
@@ -50,6 +54,9 @@ function addDays(iso: string, days: number): Date {
   return d;
 }
 
+/** Spätester Zahlungstermin: 10 Tage vor Kursbeginn. */
+export const DAYS_BEFORE_START = 10;
+
 export function computeDueDate(
   issuedAt: string,
   paymentDueDays: number,
@@ -57,10 +64,20 @@ export function computeDueDate(
 ): Date {
   const due = addDays(issuedAt, paymentDueDays);
   if (startsOn) {
-    const beforeStart = addDays(`${startsOn}T12:00:00`, -1);
+    const beforeStart = addDays(`${startsOn}T12:00:00`, -DAYS_BEFORE_START);
     if (beforeStart.getTime() < due.getTime()) return beforeStart;
   }
   return due;
+}
+
+/** Zahlung ist sofort fällig, wenn der späteste Termin nicht mehr in der Zukunft liegt. */
+export function isImmediatePayment(
+  issuedAt: string,
+  paymentDueDays: number,
+  startsOn?: string | null,
+): boolean {
+  const due = computeDueDate(issuedAt, paymentDueDays, startsOn);
+  return due.getTime() <= new Date(issuedAt).getTime();
 }
 
 export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc {
@@ -74,6 +91,9 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
     input.payerStreet || "",
     [input.payerZip, input.payerCity].filter(Boolean).join(" "),
   ].filter((l) => l.trim().length > 0);
+
+  const immediate = isImmediatePayment(issuedAt, dueDays, input.startsOn);
+  const dueDateLabel = formatDateBerlin(computeDueDate(issuedAt, dueDays, input.startsOn));
 
   const period =
     input.startsOn || input.endsOn
@@ -97,7 +117,11 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
     locationLabel: input.location || "—",
     unitLabel: input.unitCount != null ? String(input.unitCount) : "—",
     priceLabel: formatEuro(input.priceAmount),
-    dueDateLabel: formatDateBerlin(computeDueDate(issuedAt, dueDays, input.startsOn)),
+    dueDateLabel,
+    immediatePayment: immediate,
+    paymentInstruction: immediate
+      ? `Da die Buchung innerhalb der letzten ${DAYS_BEFORE_START} Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr sofort per Echtzeit-/Sofortüberweisung unter Angabe der Dokument-Nr. ${documentNo} auf folgendes Vereinskonto zu zahlen:`
+      : `Bitte überweisen Sie die Kursgebühr bis zum ${dueDateLabel} unter Angabe der Dokument-Nr. ${documentNo} auf folgendes Vereinskonto:`,
     paymentReference: `${documentNo} / ${childName}`,
   };
 }

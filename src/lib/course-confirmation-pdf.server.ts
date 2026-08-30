@@ -135,9 +135,7 @@ async function addConfirmationPage(pdf: PDFDocument, input: ConfirmationInput) {
   w.row("Kursgebühr:", d.priceLabel, 12);
 
   w.space(16);
-  w.text(
-    `Bitte überweisen Sie die Kursgebühr bis zum ${d.dueDateLabel} unter Angabe der Dokument-Nr. ${d.documentNo} auf folgendes Vereinskonto:`,
-  );
+  w.text(d.paymentInstruction);
   w.space(8);
   w.row("Kontoinhaber:", d.bank.recipient);
   w.row("IBAN:", d.bank.iban);
