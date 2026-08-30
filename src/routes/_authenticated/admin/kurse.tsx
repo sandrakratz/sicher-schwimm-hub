@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
