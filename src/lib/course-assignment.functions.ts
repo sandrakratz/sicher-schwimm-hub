@@ -70,29 +70,6 @@ export const unassignRequestFromCourse = createServerFn({ method: 'POST' })
       .eq('id', req.id)
     if (updErr) throw new Error(updErr.message)
 
-    // Sofortzahlung: interne Warnung an Admins/Trainer
-    if (paymentMethod === 'immediate') {
-      const { queueTemplateEmail } = await import('@/lib/email-send.server')
-      await queueTemplateEmail({
-        templateName: 'immediate-payment-alert',
-        idempotencyKey: `immediate-payment-assign-${req.id}-${course.id}`,
-        templateData: {
-          child_name: req.child_name || participantName,
-          parent_name: req.parent_name,
-          parent_email: req.parent_email,
-          parent_phone: req.parent_phone || '',
-          program_name: course.name,
-          course_name: course.name,
-          course_starts_on: course.starts_on,
-          booked_at: issuedAt,
-          due_date: paymentDueDate,
-          price_amount: priceAmount,
-          document_no: documentNo,
-          payment_reference: documentNo ? `${documentNo} / ${participantName}` : `${course.name} – ${participantName}`,
-        },
-      })
-    }
-
     const { logAudit } = await import('@/lib/audit.server')
     await logAudit(supabase, userId, {
       action: 'course.participant.unassigned',
@@ -253,6 +230,29 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         idempotencyKey: `course-assign-${req.id}-${course.id}-${Date.now()}`,
       })
       emailQueued = result.sent
+    }
+
+    // Sofortzahlung: interne Warnung an Admins/Trainer
+    if (paymentMethod === 'immediate') {
+      const { queueTemplateEmail } = await import('@/lib/email-send.server')
+      await queueTemplateEmail({
+        templateName: 'immediate-payment-alert',
+        idempotencyKey: `immediate-payment-assign-${req.id}-${course.id}`,
+        templateData: {
+          child_name: req.child_name || participantName,
+          parent_name: req.parent_name,
+          parent_email: req.parent_email,
+          parent_phone: req.parent_phone || '',
+          program_name: course.name,
+          course_name: course.name,
+          course_starts_on: course.starts_on,
+          booked_at: issuedAt,
+          due_date: paymentDueDate,
+          price_amount: priceAmount,
+          document_no: documentNo,
+          payment_reference: documentNo ? `${documentNo} / ${participantName}` : `${course.name} – ${participantName}`,
+        },
+      })
     }
 
     const { logAudit } = await import('@/lib/audit.server')
