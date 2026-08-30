@@ -177,7 +177,7 @@ function AvailabilityPage() {
       .filter(s => mode === "available"
         ? avail.some(a => a.session_id === s.id && a.trainer_id === me && a.available)
         : assign.some(a => a.session_id === s.id && a.trainer_id === me))
-      .map(s => {
+      .map<CalendarItem>(s => {
         const c = courses[s.course_id];
         const t = parseTimeRange(c?.schedule, c?.duration);
         return {
@@ -208,18 +208,15 @@ function AvailabilityPage() {
   function googleLink(s: SessionRow): string {
     const c = courses[s.course_id];
     const t = parseTimeRange(c?.schedule, c?.duration);
-    const dates = t
-      ? `${berlinToUtcStamp(s.session_date, t.start)}/${berlinToUtcStamp(s.session_date, t.end)}`
-      : `${icsDate(s.session_date)}/${icsDate(s.session_date, 1)}`;
-    const params = new URLSearchParams({
-      action: "TEMPLATE",
-      text: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
-      dates,
-      details: c?.schedule ? `Zeitplan: ${c.schedule}` : "",
+    return googleCalendarUrl({
+      id: s.id,
+      date: s.session_date,
+      start: t?.start ?? null,
+      end: t?.end ?? null,
+      title: `${c?.name || "Kurstermin"} (${s.session_index}. Termin)`,
       location: c?.location || "",
-      ctz: "Europe/Berlin",
+      description: c?.schedule ? `Zeitplan: ${c.schedule}` : "",
     });
-    return `https://calendar.google.com/calendar/render?${params.toString()}`;
   }
 
   return (
