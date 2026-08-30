@@ -11,6 +11,7 @@ import { BankDetails } from "@/components/BankDetails";
 import { formatPrice } from "@/lib/format";
 import { programStatus } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
+import { HIDDEN_PROGRAM_SLUGS, NOT_BOOKABLE_NOTE, UPCOMING_PROGRAMS } from "@/lib/upcoming-programs";
 
 export const Route = createFileRoute("/kurse")({
   loader: async () => await listCoursePrograms(),
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/kurse")({
       children: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "ItemList",
-        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).map((c, i) => ({
+        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).filter((c) => !HIDDEN_PROGRAM_SLUGS.includes(c.slug)).map((c, i) => ({
           "@type": "ListItem",
           position: i + 1,
           item: {
@@ -52,7 +53,9 @@ export const Route = createFileRoute("/kurse")({
 });
 
 function KursePage() {
-  const programs = (Route.useLoaderData() ?? []) as Array<CourseProgram>;
+  const programs = ((Route.useLoaderData() ?? []) as Array<CourseProgram>).filter(
+    (p) => !HIDDEN_PROGRAM_SLUGS.includes(p.slug),
+  );
 
   return (
     <PublicLayout>
@@ -69,6 +72,50 @@ function KursePage() {
       <section className="container mx-auto px-4 py-16">
         <div className="mb-8 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary-deep">
           <strong>Hinweis:</strong> Wir befinden uns derzeit in der finalen Abstimmung der Wasserzeiten mit mehreren Schwimmbädern. Daher wird der genaue Kursort jedem Kurs nach der endgültigen Beckenvergabe zugeordnet und allen Teilnehmenden rechtzeitig bzw. bei Kursbestätigung mitgeteilt.
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-10">
+          {UPCOMING_PROGRAMS.map((u) => (
+            <Card key={u.slug} className="shadow-soft border-0 flex flex-col">
+              <CardContent className="p-6 flex flex-col flex-1">
+                <div className="flex items-center justify-between mb-3 gap-2">
+                  <Badge variant="outline" className="bg-secondary text-primary-deep border-0 line-clamp-1">{u.targetGroup}</Badge>
+                  <span className="text-xs px-2.5 py-1 rounded-full border font-semibold whitespace-nowrap bg-muted text-muted-foreground">
+                    Geplant – noch nicht buchbar
+                  </span>
+                </div>
+                <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{u.name}</h3>
+                <div className="text-sm font-semibold text-primary mb-3">{u.ageRange}</div>
+                <p className="text-sm font-medium text-foreground mb-2">{u.intro}</p>
+                <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                  {u.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+                </div>
+                <div className="text-xs mb-4 flex-1">
+                  <span className="font-semibold text-primary-deep">Rahmen:</span>
+                  <ul className="mt-1 list-disc pl-5 space-y-0.5 text-muted-foreground">
+                    {u.frame.map((f, i) => <li key={i}>{f}</li>)}
+                  </ul>
+                </div>
+                <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
+                  <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />Geplanter Zeitraum: {u.period}</div>
+                  <div className="flex items-start gap-2"><MapPin className="h-3.5 w-3.5 mt-0.5" />{u.location}</div>
+                  <div className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />7–8 Familien</div>
+                  <div className="flex items-start gap-2 pt-1">
+                    <Tag className="h-3.5 w-3.5 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-foreground">{formatPrice(u.priceNonMember)}</span> Normalpreis
+                      {" · "}
+                      <span className="font-semibold text-primary">{formatPrice(u.priceMember)}</span> für Mitglieder
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep">
+                  {NOT_BOOKABLE_NOTE}
+                </div>
+                <div className="mt-3 text-center text-xs font-semibold text-muted-foreground">Demnächst verfügbar</div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {programs.length === 0 ? (
