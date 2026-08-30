@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { AiImageNotice } from "@/components/AiImageNotice";
+import { SocialLinks } from "@/components/SocialLinks";
+import { SOCIAL } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, Eye, Heart, Users, Sparkles, Accessibility } from "lucide-react";
+import { Target, Eye, Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
 import sandraKratzAsset from "@/assets/sandra-kratz.png.asset.json";
 import michaelKratzAsset from "@/assets/michael-kratz.jpg.asset.json";
 import manuelaScholzOrnowskiAsset from "@/assets/manuela-scholz-ornowski.jpg.asset.json";
+
 
 export const Route = createFileRoute("/ueber-uns")({
   head: () => ({
