@@ -4,7 +4,7 @@ import { AiImageNotice } from "@/components/AiImageNotice";
 import { SocialLinks } from "@/components/SocialLinks";
 import { SOCIAL } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
-import { Target, Eye, Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
+import { Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
 import sandraKratzAsset from "@/assets/sandra-kratz.png.asset.json";
 import michaelKratzAsset from "@/assets/michael-kratz.jpg.asset.json";
@@ -66,11 +66,12 @@ function Page() {
       </section>
 
       <section className="container mx-auto px-4 pb-16">
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-8 text-center">Was uns wichtig ist</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: Target, title: "Mission", text: "Sichere Schwimmausbildung für alle – unabhängig von Alter und Hintergrund." },
-            { icon: Eye, title: "Vision", text: "Eine Region, in der niemand am Wasser unsicher ist." },
-            { icon: Heart, title: "Werte", text: "Sicherheit, Respekt, Familienorientierung und Inklusion." },
+            { icon: ShieldCheck, title: "Sicherheit", text: "Schwimmen lernen soll Kindern Sicherheit geben – im Wasser und im Umgang mit den eigenen Fähigkeiten." },
+            { icon: Heart, title: "Vertrauen", text: "Jedes Kind hat sein eigenes Tempo. Wir begleiten Kinder, statt sie unter Druck zu setzen." },
+            { icon: Sparkles, title: "Freude", text: "Schwimmenlernen darf Spaß machen. Freude am Wasser schafft Vertrauen und motiviert zum Weiterlernen." },
           ].map(b => (
             <Card key={b.title} className="border-0 shadow-soft">
               <CardContent className="p-7">
@@ -86,6 +87,9 @@ function Page() {
       <section className="bg-wave py-16">
         <div className="container mx-auto px-4 max-w-3xl">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-6 text-center">Ein Verein mit Herz</h2>
+          <p className="font-display text-2xl md:text-3xl font-bold text-primary-deep text-center leading-snug border-l-4 border-accent pl-5 md:pl-6 mb-8 text-balance">
+            Bei uns steht nicht der wirtschaftliche Erfolg im Mittelpunkt, sondern das Kind.
+          </p>
           <div className="space-y-4 text-muted-foreground leading-relaxed">
             <p>
               Sicher Schwimmen e.V. ist ein gemeinnütziger Verein. Bei uns stehen
@@ -103,7 +107,9 @@ function Page() {
             </p>
             <p>
               Wir möchten einen Verein, in dem Kinder sich wohlfühlen, Menschen sich
-              einbringen können und Gemeinschaft wirklich gelebt wird.
+              einbringen können und Gemeinschaft wirklich gelebt wird. Deshalb geht es
+              uns nicht um ein möglichst großes Angebot um jeden Preis, sondern um
+              persönliche Verantwortung für jedes Kind, das uns anvertraut wird.
             </p>
             <p className="font-semibold text-primary-deep">
               Sicher Schwimmen e.V. – ein Verein mit Herz.
@@ -111,6 +117,7 @@ function Page() {
           </div>
         </div>
       </section>
+
 
       <section className="container mx-auto px-4 py-16">
         <div className="text-center max-w-3xl mx-auto">
@@ -134,29 +141,35 @@ function Page() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mt-14 mb-3 text-center">Der Vorstand</h2>
+        <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-8">
+          Sicher Schwimmen e.V. wird von einem gewählten Vorstand getragen, der
+          Verantwortung für den Verein und seine Arbeit übernimmt.
+        </p>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {
-              role: "1. Vorsitzender",
+              role: "1. Vorsitzender · Fachkraft für Bäderbetriebe",
               name: "Michael Kratz",
               photo: michaelKratzAsset.url,
               objectPosition: "center 20%",
-              bio: "Ausgebildete Fachkraft für Bäderbetriebe mit jahrzehntelanger Erfahrung im Bäderwesen, in der Arbeit mit Kindern sowie in Schwimmausbildung und Wassergewöhnung.",
+              bio: "Ausgebildete Fachkraft für Bäderbetriebe mit langjähriger Erfahrung im Bäderwesen, in der Arbeit mit Kindern sowie in Schwimmausbildung und Wassergewöhnung.",
             },
             {
-              role: "2. Vorsitzende",
+              role: "2. Vorsitzende · Kindertagespflegeperson & Fachkraft für Kleinkindpädagogik",
               name: "Sandra Kratz",
               photo: sandraKratzAsset.url,
               objectPosition: "center",
-              bio: "Langjährige Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung.",
+              bio: "Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung.",
             },
             {
-              role: "Kassenwart/Mitgliederverwaltung",
+              role: "Kassenwartin",
               name: "Manuela Scholz-Ornowski",
               photo: manuelaScholzOrnowskiAsset.url,
               objectPosition: "center",
               bio: "Engagiert sich im Vorstand für die Förderung von Schwimmkompetenz und Wassersicherheit und dafür, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen.",
             },
+
           ].map((p) => (
             <Card key={p.role} className="border-0 shadow-soft h-full min-w-0 overflow-hidden">
               <CardContent className="p-6 sm:p-7 min-w-0">
@@ -193,20 +206,20 @@ function Page() {
           <Card className="border-0 shadow-soft h-full">
             <CardContent className="p-7 space-y-4">
               <Users className="h-9 w-9 text-accent" />
-              <h2 className="font-display text-2xl font-bold text-primary-deep">Die Menschen hinter Sicher Schwimmen</h2>
+              <h2 className="font-display text-2xl font-bold text-primary-deep">Unser Trainerteam</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Hinter unserem Verein stehen Menschen mit unterschiedlichen
-                Erfahrungen, Fähigkeiten und Lebenswegen. Einige bringen viele Jahre
-                Erfahrung aus dem Schwimmsport mit, andere kommen aus pädagogischen
-                Berufen oder engagieren sich ehrenamtlich für unseren
-                Schwimmnachwuchs.
+                Hinter unseren Schwimmkursen steht ein engagiertes Team aus
+                Trainerinnen, Trainern und Nachwuchskräften.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Was sie verbindet, ist die Freude daran, Kinder und Jugendliche auf
-                ihrem Weg zu sicheren und selbstbewussten Schwimmern zu begleiten.
-                Unsere Trainerinnen und Trainer stellen sich regelmäßig persönlich auf
-                unseren Social-Media-Kanälen vor.
+                Die Menschen dahinter sind so unterschiedlich wie die Kinder, die wir
+                begleiten. Genau darin liegt eine unserer Stärken.
               </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Unsere Trainerinnen und Trainer stellen sich auf Facebook und Instagram
+                persönlich vor.
+              </p>
+
               <SocialLinks className="text-primary-deep" />
             </CardContent>
           </Card>
