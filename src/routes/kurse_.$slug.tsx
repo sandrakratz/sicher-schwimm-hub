@@ -329,7 +329,15 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 : `Ihre Buchung für „${result?.courseName}“ ist verbindlich eingegangen. Sie erhalten in Kürze eine Bestätigung per E-Mail mit allen Zahlungsinformationen.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {result?.status === "confirmed" && (
+            <PaymentSummary
+              startsOn={result.startsOn}
+              paymentDueDays={result.paymentDueDays}
+              amount={result.amount}
+            />
+          )}
           <AlertDialogFooter>
+
             <AlertDialogAction onClick={() => { setResult(null); window.location.reload(); }}>Alles klar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
