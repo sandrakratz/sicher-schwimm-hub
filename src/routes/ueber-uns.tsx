@@ -114,9 +114,9 @@ function Page() {
               bio: "Manuela Scholz-Ornowski engagiert sich im Vorstand von Sicher Schwimmen für die Förderung von Schwimmkompetenz und Wassersicherheit. Mit ihrem Einsatz unterstützt sie die Weiterentwicklung der Vereinsarbeit und setzt sich dafür ein, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen. Ihr besonderes Anliegen ist es, Menschen für die Bedeutung von Schwimmfähigkeit als wichtige Lebenskompetenz zu sensibilisieren und die Ziele des Vereins nachhaltig voranzubringen.",
             },
           ].map((p) => (
-            <Card key={p.role} className="border-0 shadow-soft h-full">
-              <CardContent className="p-7">
-                <div className="flex items-center gap-4 mb-4">
+            <Card key={p.role} className="border-0 shadow-soft h-full min-w-0 overflow-hidden">
+              <CardContent className="p-6 sm:p-7 min-w-0">
+                <div className="flex items-center gap-4 mb-4 min-w-0">
                   {p.photo ? (
                     <img
                       src={p.photo}
@@ -129,11 +129,11 @@ function Page() {
                     <div className="h-20 w-20 rounded-full bg-muted shrink-0" aria-hidden="true" />
                   )}
                   <div className="min-w-0">
-                    <div className="text-accent font-semibold uppercase tracking-wider text-xs mb-1">{p.role}</div>
-                    <h3 className="font-display font-bold text-lg text-primary-deep leading-tight">{p.name}</h3>
+                    <div lang="de" className="text-accent font-semibold uppercase tracking-wider text-xs mb-1 break-words hyphens-auto">{p.role}</div>
+                    <h3 lang="de" className="font-display font-bold text-lg text-primary-deep leading-tight break-words">{p.name}</h3>
                   </div>
                 </div>
-                <p className="text-muted-foreground text-sm leading-relaxed">{p.bio}</p>
+                <p lang="de" className="text-muted-foreground text-sm leading-relaxed break-words hyphens-auto">{p.bio}</p>
               </CardContent>
             </Card>
           ))}
