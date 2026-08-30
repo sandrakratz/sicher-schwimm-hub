@@ -16,6 +16,19 @@ import { deleteUser, setUserRole, setUserStatus } from "@/lib/admin-users.functi
 import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/benutzer")({
+  beforeLoad: async () => {
+    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { redirect } = await import("@tanstack/react-router");
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
+    catch { throw redirect({ to: "/portal" }); }
+  },
+  head: () => ({
+    meta: [
+      { title: "Benutzerverwaltung – Adminbereich | Sicher Schwimmen e.V." },
+      { name: "description", content: "Verwaltung von Benutzerkonten, Rollen und Freischaltungen." },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: Page,
 });
 

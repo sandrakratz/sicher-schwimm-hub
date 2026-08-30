@@ -11,6 +11,19 @@ import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus } from "lucide-reac
 import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/verfuegbarkeit")({
+  beforeLoad: async () => {
+    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { redirect } = await import("@tanstack/react-router");
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
+    catch { throw redirect({ to: "/portal" }); }
+  },
+  head: () => ({
+    meta: [
+      { title: "Verfügbarkeit & Einteilung – Adminbereich | Sicher Schwimmen e.V." },
+      { name: "description", content: "Trainer-Verfügbarkeiten für Kurstermine erfassen und Einteilungen verwalten." },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AvailabilityPage,
 });
 
