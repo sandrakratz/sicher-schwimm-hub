@@ -42,10 +42,25 @@ export const Route = createFileRoute("/")({
       type: "application/ld+json",
       children: JSON.stringify({
         "@context": "https://schema.org",
-        "@type": "WebSite",
+        "@type": "SportsClub",
         name: "Sicher Schwimmen e.V.",
         url: "https://sicher-schwimmen.com",
         inLanguage: "de-DE",
+        email: ORG.email,
+        telephone: ORG.phoneIntl,
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: ORG.street,
+          postalCode: "53773",
+          addressLocality: "Hennef (Sieg)",
+          addressRegion: "Nordrhein-Westfalen",
+          addressCountry: "DE",
+        },
+        areaServed: [
+          { "@type": "City", name: "Hennef" },
+          { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
+        ],
+        sameAs: SOCIAL.map((s) => s.url),
       }),
     }],
   }),
@@ -53,6 +68,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const featured = ((Route.useLoaderData() ?? []) as Array<CourseProgram>).slice(0, 4);
   return (
     <PublicLayout>
       {/* Hero */}
