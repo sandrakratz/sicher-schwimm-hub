@@ -5,6 +5,15 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/unsubscribe")({
+  head: () => ({
+    meta: [
+      { title: "E-Mail-Abmeldung | Sicher Schwimmen e.V." },
+      { name: "description", content: "Melden Sie sich hier von den E-Mail-Benachrichtigungen von Sicher Schwimmen e.V. ab." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "E-Mail-Abmeldung | Sicher Schwimmen e.V." },
+      { property: "og:description", content: "Abmeldung von E-Mail-Benachrichtigungen des Vereins Sicher Schwimmen e.V." },
+    ],
+  }),
   component: Page,
 });
 

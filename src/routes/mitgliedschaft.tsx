@@ -11,6 +11,7 @@ import { Check, Users, Heart, User, HandHeart, Waves, Euro, Star, Vote } from "l
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { COURSE_FEES, MEMBERSHIP_FEES } from "@/lib/billing-config";
 import { HoneypotField, SubmitButton } from "@/components/form-support";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useServerFn } from "@tanstack/react-start";
@@ -32,10 +33,10 @@ export const Route = createFileRoute("/mitgliedschaft")({
 });
 
 const tiers = [
-  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: "60 €/Jahr", desc: "Einzelmitgliedschaft für alle unter 18." },
-  { type: "adult", icon: User, name: "Erwachsene", price: "60 €/Jahr", desc: "Einzelmitgliedschaft ab 18 Jahren." },
-  { type: "family", icon: Users, name: "Familie", price: "96 €/Jahr", desc: "Ab 3 Personen, max. 2 Erwachsene + Kinder unter 18 im selben Haushalt." },
-  { type: "supporting", icon: HandHeart, name: "Förderung", price: "ab 60 €/Jahr", desc: "Passive Mitgliedschaft ohne Stimmrecht, Beitrag nach oben frei wählbar." },
+  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: `${MEMBERSHIP_FEES.children_youth} €/Jahr`, desc: "Einzelmitgliedschaft für alle unter 18." },
+  { type: "adult", icon: User, name: "Erwachsene", price: `${MEMBERSHIP_FEES.adult} €/Jahr`, desc: "Einzelmitgliedschaft ab 18 Jahren." },
+  { type: "family", icon: Users, name: "Familie", price: `${MEMBERSHIP_FEES.family} €/Jahr`, desc: "Ab 3 Personen, max. 2 Erwachsene + Kinder unter 18 im selben Haushalt." },
+  { type: "supporting", icon: HandHeart, name: "Förderung", price: `ab ${MEMBERSHIP_FEES.supporting_min} €/Jahr`, desc: "Passive Mitgliedschaft ohne Stimmrecht, Beitrag nach oben frei wählbar." },
 ];
 
 const billingNote = "Beitrag fällig jeweils zum 1. März per SEPA-Lastschrift. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.";
@@ -246,7 +247,7 @@ function Page() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               { icon: Waves, title: "Kostenlose Wasserzeit", desc: "Einmal im Monat exklusive Wasserzeit für Mitglieder – Termine werden vom Verein bekannt gegeben." },
-              { icon: Euro, title: "Vergünstigte Kurse", desc: "Mitglieder zahlen für Schwimmkurse 150 € statt 200 € (10 Einheiten à 45 Min.)." },
+              { icon: Euro, title: "Vergünstigte Kurse", desc: `Mitglieder zahlen für Schwimmkurse ${COURSE_FEES.member} € statt ${COURSE_FEES.standard} € (10 Einheiten à 45 Min.).` },
               { icon: Star, title: "Bevorzugte Plätze", desc: "Bei der Kursvergabe werden Vereinsmitglieder bevorzugt berücksichtigt." },
               { icon: Vote, title: "Mitbestimmung", desc: "Stimmrecht in der Mitgliederversammlung und aktive Mitgestaltung des Vereins." },
             ].map((b) => (
