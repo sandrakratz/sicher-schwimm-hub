@@ -488,6 +488,40 @@ function Page() {
     const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
   }
+  const participantPaymentState = (p: Participant) =>
+    paymentState({
+      paid: p.paid,
+      paidAt: p.paid_at,
+      bookedAt: p.created_at,
+      startsOn: partCourse?.starts_on,
+      paymentDueDays: partCourse?.payment_due_days,
+      method: p.payment_method,
+      dueDate: p.payment_due_date,
+    });
+
+  const PAY_RANK: Record<string, number> = { immediate: 0, overdue: 1, expected: 2, paid: 3 };
+
+  const visibleParticipants = useMemo(() => {
+    let list = participants;
+    if (payFilter !== "all") {
+      list = list.filter(p => {
+        const key = participantPaymentState(p).key;
+        return payFilter === "open" ? key !== "paid" : key === payFilter;
+      });
+    }
+    const sorted = [...list];
+    if (paySort === "payment") {
+      sorted.sort((a, b) => PAY_RANK[participantPaymentState(a).key] - PAY_RANK[participantPaymentState(b).key]);
+    } else if (paySort === "due") {
+      const due = (p: Participant) => p.payment_due_date || "9999-12-31";
+      sorted.sort((a, b) => due(a).localeCompare(due(b)));
+    } else {
+      sorted.sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || ""));
+    }
+    return sorted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participants, payFilter, paySort, partCourse]);
+
   async function addParticipant() {
     if (!partCourse) return;
     if (!newPart.name.trim()) return toast.error("Name erforderlich");
@@ -1106,13 +1140,7 @@ function Page() {
                       {p.goal_reached == null && !p.badge && !p.achievement && "—"}
                     </TableCell>
                     {canManage && (() => {
-                      const st = paymentState({
-                        paid: p.paid,
-                        paidAt: p.paid_at,
-                        bookedAt: p.created_at,
-                        startsOn: partCourse?.starts_on,
-                        paymentDueDays: partCourse?.payment_due_days,
-                      });
+                      const st = participantPaymentState(p);
                       return (
                         <TableCell className="text-xs">
                           <label className="flex items-start gap-2 cursor-pointer">
