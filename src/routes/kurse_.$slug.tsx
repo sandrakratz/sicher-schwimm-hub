@@ -81,7 +81,69 @@ export const Route = createFileRoute("/kurse_/$slug")({
 });
 
 function ProgramPage() {
-  const program = Route.useLoaderData() as CourseProgram;
+  const data = Route.useLoaderData() as CourseProgram | { upcomingSlug: string };
+  if ("upcomingSlug" in data) {
+    const up = UPCOMING_PROGRAMS.find((u) => u.slug === data.upcomingSlug)!;
+    return <UpcomingProgramPage up={up} />;
+  }
+  return <BookableProgramPage program={data} />;
+}
+
+function UpcomingProgramPage({ up }: { up: (typeof UPCOMING_PROGRAMS)[number] }) {
+  return (
+    <PublicLayout>
+      <section className="bg-hero text-white py-16">
+        <div className="container mx-auto px-4">
+          <Link to="/kurse" className="text-white/80 text-sm underline">← Alle Kurse</Link>
+          <h1 className="font-display text-4xl md:text-5xl font-bold mt-3 mb-3">{up.name}</h1>
+          <p className="text-white/85 max-w-2xl">{up.intro}</p>
+        </div>
+      </section>
+
+      <section className="container mx-auto px-4 py-12 grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary-deep">
+            <strong>Geplant – noch nicht buchbar.</strong> {NOT_BOOKABLE_NOTE}
+          </div>
+          <div className="space-y-3 text-muted-foreground">
+            {up.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+          </div>
+          <Card className="border-0 shadow-soft">
+            <CardContent className="p-6">
+              <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Rahmen</h2>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                {up.frame.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-4">
+          <Card className="border-0 shadow-soft">
+            <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
+              <Badge variant="outline" className="bg-secondary text-primary-deep border-0">{up.targetGroup}</Badge>
+              <div className="flex items-center gap-2 pt-2"><Users className="h-4 w-4" />{up.ageRange}</div>
+              <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" />{up.location}</div>
+              <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Geplanter Zeitraum: {up.period}</div>
+              <div className="flex items-start gap-2">
+                <Tag className="h-4 w-4 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-foreground">{formatPrice(up.priceNonMember)}</span> Normalpreis ·{" "}
+                  <span className="font-semibold text-primary">{formatPrice(up.priceMember)}</span> für Mitglieder
+                </div>
+              </div>
+              <div className="pt-3 text-center text-xs font-semibold text-muted-foreground border-t">
+                Demnächst verfügbar
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+      </section>
+    </PublicLayout>
+  );
+}
+
+function BookableProgramPage({ program }: { program: CourseProgram }) {
   const [bookingTerm, setBookingTerm] = useState<CourseTerm | null>(null);
   const [result, setResult] = useState<{ status: "confirmed" | "waiting"; courseName: string } | null>(null);
   const [blockedNotice, setBlockedNotice] = useState(false);
