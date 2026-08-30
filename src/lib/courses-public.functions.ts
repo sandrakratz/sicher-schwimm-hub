@@ -329,9 +329,18 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       documentNo = (docNo as string | null) ?? null
     }
 
+    // Serverseitig verbindlich berechnete Zahlungsbedingungen (manipulationssicher)
+    const { paymentTerms } = await import('@/lib/payment-status')
+    const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14
+    const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
+    const paymentMethod = isFull ? null : terms.immediate ? 'immediate' : 'transfer'
+    const paymentDueDate = isFull ? null : terms.dueDate.toISOString().slice(0, 10)
+
     const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
       course_id: course.id,
       request_id: request?.id ?? null,
+      payment_method: paymentMethod,
+      payment_due_date: paymentDueDate,
       participant_name: data.childName,
       participant_email: data.parentEmail,
       participant_phone: data.parentPhone || null,
@@ -373,7 +382,9 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         waitlist: isFull,
         is_member: data.isMember,
         price_amount: price,
-        payment_due_days: course.payment_due_days ?? program?.payment_due_days ?? 14,
+        payment_due_days: dueDays,
+        payment_method: paymentMethod,
+        payment_due_date: paymentDueDate,
         document_no: documentNo ?? undefined,
         issued_at: issuedAt,
         site_base_url: SITE_BASE_URL,
@@ -405,11 +416,36 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       },
     })
 
+    // Sofortzahlung: zusätzliche interne Warnung an Admins/Trainer
+    if (!isFull && terms.immediate) {
+      await queueTemplateEmail({
+        templateName: 'immediate-payment-alert',
+        idempotencyKey: `immediate-payment-${request?.id ?? course.id}-${emailNorm}`,
+        templateData: {
+          child_name: data.childName,
+          parent_name: data.parentName,
+          parent_email: data.parentEmail,
+          parent_phone: data.parentPhone || '',
+          program_name: program?.name ?? course.name,
+          course_name: course.name,
+          course_starts_on: course.starts_on,
+          booked_at: issuedAt,
+          due_date: paymentDueDate,
+          price_amount: price,
+          document_no: documentNo,
+          payment_reference: documentNo ? `${documentNo} / ${data.childName}` : `${course.name} – ${data.childName}`,
+        },
+      })
+    }
+
     return {
       ok: true,
       status,
       courseName: course.name,
       programName: program?.name ?? course.name,
       price,
+      paymentMethod,
+      paymentDueDate,
+      immediatePayment: !isFull && terms.immediate,
     }
   })

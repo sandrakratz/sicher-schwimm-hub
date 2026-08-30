@@ -134,6 +134,14 @@ async function addConfirmationPage(pdf: PDFDocument, input: ConfirmationInput) {
   w.space(12);
   w.row("Kursgebühr:", d.priceLabel, 12);
 
+  w.space(12);
+  w.text("Zahlungsbedingungen", { size: 12, bold: true });
+  w.rule(6);
+  w.space(4);
+  w.row("Zahlungsart:", d.immediatePayment ? "Echtzeit-/Sofortüberweisung" : "Überweisung");
+  w.row("Fällig bis:", d.immediatePayment ? `sofort (${d.dueDateLabel})` : d.dueDateLabel);
+  w.row("Zahlungsziel:", d.paymentTermsLabel);
+
   w.space(16);
   w.text(d.paymentInstruction);
   w.space(8);

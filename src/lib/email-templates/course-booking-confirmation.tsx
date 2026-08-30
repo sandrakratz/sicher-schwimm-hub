@@ -135,6 +135,12 @@ const Email = (p: Props) => {
             <strong style={{ color: '#0c4a6e' }}>{d.priceLabel}</strong>
           </Text>
 
+          <Section style={{ backgroundColor: d.immediatePayment ? '#fff7ed' : '#f0f9ff', padding: '12px 16px', borderRadius: '8px', marginTop: '14px', border: '1px solid #e2e8f0' }}>
+            <Line label="Zahlungsart:" value={<strong>{d.paymentMethodLabel}</strong>} />
+            <Line label="Fällig bis:" value={<strong>{d.immediatePayment ? `sofort (${d.dueDateLabel})` : d.dueDateLabel}</strong>} />
+            <Line label="Zahlungsziel:" value={d.paymentTermsLabel} />
+          </Section>
+
           <Text style={{ marginTop: '16px' }}>
             {d.immediatePayment ? (
               <>

@@ -8,6 +8,7 @@ import { template as cancellationInternal } from './cancellation-internal'
 import { template as cancellationConfirmation } from './cancellation-confirmation'
 import { template as courseBooking, waitlistTemplate as courseWaitlist } from './course-booking-confirmation'
 import { template as paymentCheckReminder } from './payment-check-reminder'
+import { template as immediatePaymentAlert } from './immediate-payment-alert'
 
 
 
@@ -31,4 +32,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'course-booking-confirmation': courseBooking,
   'course-waitlist-confirmation': courseWaitlist,
   'payment-check-reminder': paymentCheckReminder,
+  'immediate-payment-alert': immediatePaymentAlert,
 }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,8 @@ type Participant = {
   member_confirmed_at: string | null;
   price_amount: number | null;
   created_at?: string | null;
+  payment_method?: string | null;
+  payment_due_date?: string | null;
   parent_user_id: string | null;
   request_id: string | null;
 };
@@ -185,6 +187,8 @@ function Page() {
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [payFilter, setPayFilter] = useState<string>("all");
+  const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
   const [reqOpen, setReqOpen] = useState(false);
@@ -484,6 +488,40 @@ function Page() {
     const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
   }
+  const participantPaymentState = (p: Participant) =>
+    paymentState({
+      paid: p.paid,
+      paidAt: p.paid_at,
+      bookedAt: p.created_at,
+      startsOn: partCourse?.starts_on,
+      paymentDueDays: partCourse?.payment_due_days,
+      method: p.payment_method,
+      dueDate: p.payment_due_date,
+    });
+
+  const PAY_RANK: Record<string, number> = { immediate: 0, overdue: 1, expected: 2, paid: 3 };
+
+  const visibleParticipants = useMemo(() => {
+    let list = participants;
+    if (payFilter !== "all") {
+      list = list.filter(p => {
+        const key = participantPaymentState(p).key;
+        return payFilter === "open" ? key !== "paid" : key === payFilter;
+      });
+    }
+    const sorted = [...list];
+    if (paySort === "payment") {
+      sorted.sort((a, b) => PAY_RANK[participantPaymentState(a).key] - PAY_RANK[participantPaymentState(b).key]);
+    } else if (paySort === "due") {
+      const due = (p: Participant) => p.payment_due_date || "9999-12-31";
+      sorted.sort((a, b) => due(a).localeCompare(due(b)));
+    } else {
+      sorted.sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || ""));
+    }
+    return sorted;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participants, payFilter, paySort, partCourse]);
+
   async function addParticipant() {
     if (!partCourse) return;
     if (!newPart.name.trim()) return toast.error("Name erforderlich");
@@ -1003,6 +1041,32 @@ function Page() {
               </div>
             );
           })()}
+          {canManage && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-xs text-muted-foreground">Zahlungsstatus:</span>
+              <Select value={payFilter} onValueChange={setPayFilter}>
+                <SelectTrigger className="h-8 w-[220px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="open">Alle offenen</SelectItem>
+                  <SelectItem value="expected">Zahlung erwartet</SelectItem>
+                  <SelectItem value="immediate">Sofortzahlung erwartet</SelectItem>
+                  <SelectItem value="overdue">Nicht bezahlt (überfällig)</SelectItem>
+                  <SelectItem value="paid">Bezahlt</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">Sortierung:</span>
+              <Select value={paySort} onValueChange={setPaySort}>
+                <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="payment">Zahlungsstatus (dringend zuerst)</SelectItem>
+                  <SelectItem value="due">Fälligkeitsdatum</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">{visibleParticipants.length} von {participants.length}</span>
+            </div>
+          )}
           <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1019,9 +1083,9 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {visibleParticipants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
 
-                {participants.map(p => {
+                {visibleParticipants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
                   <TableRow key={p.id}>
@@ -1076,13 +1140,7 @@ function Page() {
                       {p.goal_reached == null && !p.badge && !p.achievement && "—"}
                     </TableCell>
                     {canManage && (() => {
-                      const st = paymentState({
-                        paid: p.paid,
-                        paidAt: p.paid_at,
-                        bookedAt: p.created_at,
-                        startsOn: partCourse?.starts_on,
-                        paymentDueDays: partCourse?.payment_due_days,
-                      });
+                      const st = participantPaymentState(p);
                       return (
                         <TableCell className="text-xs">
                           <label className="flex items-start gap-2 cursor-pointer">

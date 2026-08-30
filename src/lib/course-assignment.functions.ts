@@ -141,9 +141,18 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       documentNo = (docNo as string | null) ?? null
     }
 
+    // Serverseitig berechnete Zahlungsbedingungen (manipulationssicher)
+    const { paymentTerms } = await import('@/lib/payment-status')
+    const dueDays = course.payment_due_days ?? 14
+    const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
+    const paymentMethod = data.status === 'confirmed' ? (terms.immediate ? 'immediate' : 'transfer') : null
+    const paymentDueDate = data.status === 'confirmed' ? terms.dueDate.toISOString().slice(0, 10) : null
+
     // Insert participant
     const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
       course_id: course.id,
+      payment_method: paymentMethod,
+      payment_due_date: paymentDueDate,
       participant_name: participantName,
       participant_email: req.parent_email,
       participant_phone: req.parent_phone,
@@ -193,7 +202,8 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         admin_notes: data.adminNotes || null,
         is_member: isMember,
         price_amount: priceAmount,
-        payment_due_days: course.payment_due_days ?? 14,
+        payment_due_days: dueDays,
+        issued_at: issuedAt,
         bank_recipient: BILLING.recipient,
         bank_iban: BILLING.iban,
         bank_bic: BILLING.bic,
@@ -220,6 +230,29 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         idempotencyKey: `course-assign-${req.id}-${course.id}-${Date.now()}`,
       })
       emailQueued = result.sent
+    }
+
+    // Sofortzahlung: interne Warnung an Admins/Trainer
+    if (paymentMethod === 'immediate') {
+      const { queueTemplateEmail } = await import('@/lib/email-send.server')
+      await queueTemplateEmail({
+        templateName: 'immediate-payment-alert',
+        idempotencyKey: `immediate-payment-assign-${req.id}-${course.id}`,
+        templateData: {
+          child_name: req.child_name || participantName,
+          parent_name: req.parent_name,
+          parent_email: req.parent_email,
+          parent_phone: req.parent_phone || '',
+          program_name: course.name,
+          course_name: course.name,
+          course_starts_on: course.starts_on,
+          booked_at: issuedAt,
+          due_date: paymentDueDate,
+          price_amount: priceAmount,
+          document_no: documentNo,
+          payment_reference: documentNo ? `${documentNo} / ${participantName}` : `${course.name} – ${participantName}`,
+        },
+      })
     }
 
     const { logAudit } = await import('@/lib/audit.server')

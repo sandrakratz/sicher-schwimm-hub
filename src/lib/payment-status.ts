@@ -54,6 +54,10 @@ export function paymentState(p: {
   bookedAt?: string | null;
   startsOn?: string | null;
   paymentDueDays?: number | null;
+  /** Serverseitig gespeicherte Zahlungsart ('transfer' | 'immediate'). */
+  method?: string | null;
+  /** Serverseitig gespeichertes Fälligkeitsdatum (YYYY-MM-DD). */
+  dueDate?: string | null;
   now?: Date;
 }): PaymentState {
   if (p.paid) {
@@ -70,7 +74,10 @@ export function paymentState(p: {
     paymentDueDays: p.paymentDueDays,
   });
   const now = p.now ?? new Date();
-  if (terms.immediate) {
+  const immediate = p.method ? p.method === 'immediate' : terms.immediate;
+  const dueDate = p.dueDate ? new Date(`${p.dueDate}T23:59:59`) : terms.dueDate;
+  const dueLabel = p.dueDate ? formatDateBerlin(p.dueDate) : terms.dueDateLabel;
+  if (immediate) {
     return {
       key: "immediate",
       label: "Sofortzahlung erwartet",
@@ -78,18 +85,18 @@ export function paymentState(p: {
       detail: "Echtzeit-/Sofortüberweisung – kurzfristige Buchung",
     };
   }
-  if (terms.dueDate.getTime() < now.getTime()) {
+  if (dueDate.getTime() < now.getTime()) {
     return {
       key: "overdue",
       label: "Nicht bezahlt (überfällig)",
       className: "bg-red-100 text-red-800 border-red-200",
-      detail: `Fällig war der ${terms.dueDateLabel}`,
+      detail: `Fällig war der ${dueLabel}`,
     };
   }
   return {
     key: "expected",
     label: "Zahlung erwartet",
     className: "bg-amber-100 text-amber-900 border-amber-200",
-    detail: `Fällig bis ${terms.dueDateLabel}`,
+    detail: `Fällig bis ${dueLabel}`,
   };
 }

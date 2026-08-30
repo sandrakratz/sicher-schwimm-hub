@@ -40,6 +40,10 @@ export interface ConfirmationDoc {
   immediatePayment: boolean;
   /** Fertiger Zahlungssatz für E-Mail und PDF. */
   paymentInstruction: string;
+  /** Kurzbezeichnung der Zahlungsart. */
+  paymentMethodLabel: string;
+  /** Beschreibung des Zahlungsziels. */
+  paymentTermsLabel: string;
   paymentReference: string;
 }
 
@@ -122,6 +126,10 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
     paymentInstruction: immediate
       ? `Da die Buchung innerhalb der letzten ${DAYS_BEFORE_START} Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr sofort per Echtzeit-/Sofortüberweisung unter Angabe der Dokument-Nr. ${documentNo} auf folgendes Vereinskonto zu zahlen:`
       : `Bitte überweisen Sie die Kursgebühr bis zum ${dueDateLabel} unter Angabe der Dokument-Nr. ${documentNo} auf folgendes Vereinskonto:`,
+    paymentMethodLabel: immediate ? "Echtzeit-/Sofortüberweisung" : "Überweisung",
+    paymentTermsLabel: immediate
+      ? `Buchung innerhalb der letzten ${DAYS_BEFORE_START} Tage vor Kursbeginn – sofort fällig`
+      : `${dueDays} Tage nach Bestätigung, spätestens ${DAYS_BEFORE_START} Tage vor Kursbeginn`,
     paymentReference: `${documentNo} / ${childName}`,
   };
 }
