@@ -162,6 +162,21 @@ const Email = (p: Props) => {
             <Line label="Verwendungszweck:" value={d.paymentReference} />
           </Section>
 
+          {d.payQrUrl && (
+            <Section style={{ backgroundColor: '#fff7ed', padding: '14px 16px', borderRadius: '8px', border: '1px solid #fed7aa', marginTop: '14px', textAlign: 'center' as const }}>
+              <Text style={{ margin: '0 0 8px', fontWeight: 'bold', color: '#9a3412' }}>
+                QR-Code für die Echtzeit-/Sofortüberweisung
+              </Text>
+              <Img src={d.payQrUrl} alt="QR-Code für die Überweisung" width="180" height="180" style={{ margin: '0 auto', display: 'block' }} />
+              <Text style={{ margin: '8px 0 0', fontSize: '12px', color: '#7c2d12' }}>
+                Einfach mit Ihrer Banking-App scannen – Empfänger, IBAN, Betrag und Verwendungszweck werden automatisch übernommen.
+              </Text>
+              <Text style={{ margin: '6px 0 0', fontSize: '12px' }}>
+                <Link href={d.payQrUrl}>QR-Code im Browser öffnen</Link>
+              </Text>
+            </Section>
+          )}
+
           <Text style={{ marginTop: '16px' }}><strong>Hinweis zur Umsatzsteuer:</strong></Text>
           <Text style={row}>{d.org.vatNote}</Text>
 
