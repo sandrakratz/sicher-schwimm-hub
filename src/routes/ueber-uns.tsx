@@ -66,11 +66,12 @@ function Page() {
       </section>
 
       <section className="container mx-auto px-4 pb-16">
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-8 text-center">Was uns wichtig ist</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: Target, title: "Mission", text: "Sichere Schwimmausbildung für alle – unabhängig von Alter und Hintergrund." },
-            { icon: Eye, title: "Vision", text: "Eine Region, in der niemand am Wasser unsicher ist." },
-            { icon: Heart, title: "Werte", text: "Sicherheit, Respekt, Familienorientierung und Inklusion." },
+            { icon: ShieldCheck, title: "Sicherheit", text: "Schwimmen lernen soll Kindern Sicherheit geben – im Wasser und im Umgang mit den eigenen Fähigkeiten." },
+            { icon: Heart, title: "Vertrauen", text: "Jedes Kind hat sein eigenes Tempo. Wir begleiten Kinder, statt sie unter Druck zu setzen." },
+            { icon: Sparkles, title: "Freude", text: "Schwimmenlernen darf Spaß machen. Freude am Wasser schafft Vertrauen und motiviert zum Weiterlernen." },
           ].map(b => (
             <Card key={b.title} className="border-0 shadow-soft">
               <CardContent className="p-7">
@@ -86,6 +87,9 @@ function Page() {
       <section className="bg-wave py-16">
         <div className="container mx-auto px-4 max-w-3xl">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-6 text-center">Ein Verein mit Herz</h2>
+          <p className="font-display text-2xl md:text-3xl font-bold text-primary-deep text-center leading-snug border-l-4 border-accent pl-5 md:pl-6 mb-8 text-balance">
+            Bei uns steht nicht der wirtschaftliche Erfolg im Mittelpunkt, sondern das Kind.
+          </p>
           <div className="space-y-4 text-muted-foreground leading-relaxed">
             <p>
               Sicher Schwimmen e.V. ist ein gemeinnütziger Verein. Bei uns stehen
@@ -103,7 +107,9 @@ function Page() {
             </p>
             <p>
               Wir möchten einen Verein, in dem Kinder sich wohlfühlen, Menschen sich
-              einbringen können und Gemeinschaft wirklich gelebt wird.
+              einbringen können und Gemeinschaft wirklich gelebt wird. Deshalb geht es
+              uns nicht um ein möglichst großes Angebot um jeden Preis, sondern um
+              persönliche Verantwortung für jedes Kind, das uns anvertraut wird.
             </p>
             <p className="font-semibold text-primary-deep">
               Sicher Schwimmen e.V. – ein Verein mit Herz.
@@ -111,6 +117,7 @@ function Page() {
           </div>
         </div>
       </section>
+
 
       <section className="container mx-auto px-4 py-16">
         <div className="text-center max-w-3xl mx-auto">
