@@ -36,6 +36,7 @@ import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
+import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
@@ -200,6 +201,11 @@ const ApiPublicSubmitCancellationRoute =
     path: '/api/public/submit-cancellation',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPayQrRoute = ApiPublicPayQrRouteImport.update({
+  id: '/api/public/pay-qr',
+  path: '/api/public/pay-qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotifyAdminRoute = ApiPublicNotifyAdminRouteImport.update({
   id: '/api/public/notify-admin',
   path: '/api/public/notify-admin',
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
+  '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -456,6 +463,7 @@ export interface FileRoutesByTo {
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
+  '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -513,6 +521,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
+  '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -570,6 +579,7 @@ export interface FileRouteTypes {
     | '/portal/news'
     | '/portal/profil'
     | '/api/public/notify-admin'
+    | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
     | '/lovable/email/events'
     | '/admin/'
@@ -624,6 +634,7 @@ export interface FileRouteTypes {
     | '/portal/news'
     | '/portal/profil'
     | '/api/public/notify-admin'
+    | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
     | '/lovable/email/events'
     | '/admin'
@@ -680,6 +691,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/news'
     | '/_authenticated/portal/profil'
     | '/api/public/notify-admin'
+    | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
     | '/lovable/email/events'
     | '/_authenticated/admin/'
@@ -714,6 +726,7 @@ export interface RootRouteChildren {
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
+  ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
@@ -911,6 +924,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/submit-cancellation'
       fullPath: '/api/public/submit-cancellation'
       preLoaderRoute: typeof ApiPublicSubmitCancellationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pay-qr': {
+      id: '/api/public/pay-qr'
+      path: '/api/public/pay-qr'
+      fullPath: '/api/public/pay-qr'
+      preLoaderRoute: typeof ApiPublicPayQrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/notify-admin': {
@@ -1202,6 +1222,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
+  ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
   LovableEmailEventsRoute: LovableEmailEventsRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
