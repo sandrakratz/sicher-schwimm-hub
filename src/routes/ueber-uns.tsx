@@ -84,7 +84,7 @@ function Page() {
         </div>
       </section>
 
-      <section className="bg-wave py-16">
+      <section className="bg-wave py-12">
         <div className="container mx-auto px-4 max-w-3xl">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-6 text-center">Ein Verein mit Herz</h2>
           <p className="font-display text-2xl md:text-3xl font-bold text-primary-deep text-center leading-snug border-l-4 border-accent pl-5 md:pl-6 mb-8 text-balance">
@@ -119,7 +119,7 @@ function Page() {
       </section>
 
 
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-12">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mb-8">Was uns verbindet</h2>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
@@ -141,7 +141,7 @@ function Page() {
           </p>
         </div>
 
-        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mt-14 mb-3 text-center">Der Vorstand</h2>
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mt-10 mb-3 text-center">Der Vorstand</h2>
         <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-8">
           Sicher Schwimmen e.V. wird von einem gewählten Vorstand getragen, der
           Verantwortung für den Verein und seine Arbeit übernimmt.
@@ -201,7 +201,7 @@ function Page() {
         </p>
       </section>
 
-      <section className="bg-wave py-16">
+      <section className="bg-wave py-12">
         <div className="container mx-auto px-4 grid lg:grid-cols-2 gap-8">
           <Card className="border-0 shadow-soft h-full">
             <CardContent className="p-7 space-y-4">
@@ -269,7 +269,7 @@ function Page() {
         </div>
       </section>
 
-      <section className="bg-wave py-16">
+      <section className="bg-wave py-12">
         <div className="container mx-auto px-4 max-w-3xl text-center space-y-4">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep">Noch mehr von uns</h2>
           <p className="text-muted-foreground leading-relaxed">
