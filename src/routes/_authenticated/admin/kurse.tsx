@@ -48,6 +48,7 @@ type Participant = {
   member_confirmed: boolean;
   member_confirmed_at: string | null;
   price_amount: number | null;
+  created_at?: string | null;
   parent_user_id: string | null;
   request_id: string | null;
 };
@@ -98,6 +99,7 @@ function ageAt(dobStr: string | null | undefined, refStr: string | null | undefi
   return age;
 }
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { paymentState } from "@/lib/payment-status";
 
 function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
@@ -1011,7 +1013,7 @@ function Page() {
                   <TableHead>Status</TableHead>
                   <TableHead>Mitglied</TableHead>
                   <TableHead>Ergebnis</TableHead>
-                  {canManage && <TableHead>Bezahlt</TableHead>}
+                  {canManage && <TableHead>Zahlungsstatus</TableHead>}
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -1073,18 +1075,26 @@ function Page() {
                       {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
                       {p.goal_reached == null && !p.badge && !p.achievement && "—"}
                     </TableCell>
-                    {canManage && (
-                      <TableCell className="text-xs">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
-                          {p.paid ? (
-                            <span className="text-green-700 font-medium">Bezahlt{p.paid_at && <div className="text-muted-foreground font-normal">{fmtDate(p.paid_at)}</div>}</span>
-                          ) : (
-                            <span className="text-muted-foreground">offen</span>
-                          )}
-                        </label>
-                      </TableCell>
-                    )}
+                    {canManage && (() => {
+                      const st = paymentState({
+                        paid: p.paid,
+                        paidAt: p.paid_at,
+                        bookedAt: p.created_at,
+                        startsOn: partCourse?.starts_on,
+                        paymentDueDays: partCourse?.payment_due_days,
+                      });
+                      return (
+                        <TableCell className="text-xs">
+                          <label className="flex items-start gap-2 cursor-pointer">
+                            <Checkbox className="mt-0.5" checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
+                            <span>
+                              <Badge variant="outline" className={st.className}>{st.label}</Badge>
+                              <span className="block text-muted-foreground mt-0.5">{st.detail}</span>
+                            </span>
+                          </label>
+                        </TableCell>
+                      );
+                    })()}
                     <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
