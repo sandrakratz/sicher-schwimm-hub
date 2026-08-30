@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -190,7 +190,7 @@ function RequestPage() {
               <div className="space-y-3 border-t pt-6">
                 <label className="flex gap-3 items-start cursor-pointer">
                   <Checkbox name="gdpr_consent" required />
-                  <span className="text-sm">Ich habe die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu. *</span>
+                  <span className="text-sm">Ich habe die <Link to="/datenschutz" className="text-primary underline">Datenschutzerklärung</Link> gelesen und stimme der Verarbeitung meiner Daten zu. *</span>
                 </label>
                 <label className="flex gap-3 items-start cursor-pointer">
                   <Checkbox name="contact_permission" />

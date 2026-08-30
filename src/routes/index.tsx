@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AiImageNotice } from "@/components/AiImageNotice";
+import { LABELS } from "@/lib/labels";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,7 +76,7 @@ function Home() {
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Button asChild variant="accent" size="xl">
-                <Link to="/kurs-anfragen">Auf Warteliste setzen <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                <Link to="/kurs-anfragen">{LABELS.waitlistCta} <ArrowRight className="ml-1 h-4 w-4" /></Link>
               </Button>
               <Button asChild variant="hero" size="xl">
                 <Link to="/kurse">Kurse ansehen</Link>
@@ -213,7 +214,7 @@ function Home() {
             Setzen Sie Ihr Kind auf die Warteliste oder werden Sie Mitglied im Verein.
           </p>
           <div className="flex flex-wrap gap-3 justify-center relative">
-            <Button asChild variant="accent" size="xl"><Link to="/kurs-anfragen">Auf Warteliste setzen</Link></Button>
+            <Button asChild variant="accent" size="xl"><Link to="/kurs-anfragen">{LABELS.waitlistCta}</Link></Button>
             <Button asChild variant="heroOutline" size="xl"><Link to="/kontakt"><MapPin className="mr-1 h-4 w-4" />Kontakt aufnehmen</Link></Button>
           </div>
         </div>

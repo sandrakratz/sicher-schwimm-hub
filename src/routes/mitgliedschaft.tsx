@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -213,7 +213,7 @@ function Page() {
           {accountResult === "exists" && (
             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 space-y-2">
               <p>Für diese E-Mail existiert bereits ein Konto. Sie können sich direkt anmelden.</p>
-              <Button asChild variant="outline" size="sm"><a href="/auth">Zum Login</a></Button>
+              <Button asChild variant="outline" size="sm"><Link to="/auth">Zum Login</Link></Button>
             </div>
           )}
 
@@ -380,13 +380,13 @@ function Page() {
 
                 <div className="space-y-3 border-t pt-5">
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_statutes" required /> <span>Ich akzeptiere die <a href="/satzung" className="text-primary underline">Vereinssatzung</a>. *</span>
+                    <Checkbox name="accepted_statutes" required /> <span>Ich akzeptiere die <Link to="/satzung" className="text-primary underline">Vereinssatzung</Link>. *</span>
                   </label>
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_rules" required /> <span>Ich akzeptiere die <a href="/mitgliedsordnung" className="text-primary underline">Mitgliedsordnung</a>. *</span>
+                    <Checkbox name="accepted_rules" required /> <span>Ich akzeptiere die <Link to="/mitgliedsordnung" className="text-primary underline">Mitgliedsordnung</Link>. *</span>
                   </label>
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a>. *</span>
+                    <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <Link to="/datenschutz" className="text-primary underline">Datenschutzerklärung</Link>. *</span>
                   </label>
                 </div>
 

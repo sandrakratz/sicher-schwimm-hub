@@ -1,4 +1,5 @@
 import { CONTACT_ITEMS } from "@/lib/billing-config";
+import { LABELS } from "@/lib/labels";
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
@@ -31,7 +32,7 @@ export function SiteFooter() {
         <div>
           <h4 className="font-display font-bold mb-3 text-base">Service</h4>
           <ul className="space-y-2 text-sm opacity-90">
-            <li><Link to="/kurs-anfragen" className="hover:text-accent">Warteliste</Link></li>
+            <li><Link to="/kurs-anfragen" className="hover:text-accent">{LABELS.waitlistCta}</Link></li>
             <li><Link to="/kontakt" className="hover:text-accent">Kontakt</Link></li>
             <li><Link to="/faq" className="hover:text-accent">FAQ</Link></li>
             <li><Link to="/portal" className="hover:text-accent">Mitgliederportal</Link></li>
