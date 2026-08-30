@@ -401,7 +401,7 @@ function Page() {
                   </div>
                 </div>
 
-                <HoneypotField value="" onChange={() => {}} />
+                <HoneypotField />
 
                 <SubmitButton loading={loading} loadingText="Antrag wird gesendet…" className="w-full">Mitgliedsantrag absenden</SubmitButton>
               </form>

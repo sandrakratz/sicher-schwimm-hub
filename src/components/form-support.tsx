@@ -14,10 +14,11 @@ export function HoneypotField({
   onChange,
   name = "website",
 }: {
-  value: string;
-  onChange: (v: string) => void;
+  value?: string;
+  onChange?: (v: string) => void;
   name?: string;
 }) {
+  const controlled = value !== undefined && onChange !== undefined;
   return (
     <div className="hidden" aria-hidden="true">
       <label>
@@ -27,8 +28,7 @@ export function HoneypotField({
           name={name}
           tabIndex={-1}
           autoComplete="off"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          {...(controlled ? { value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange!(e.target.value) } : { defaultValue: "" })}
         />
       </label>
     </div>

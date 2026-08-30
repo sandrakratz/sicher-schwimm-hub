@@ -198,7 +198,7 @@ function RequestPage() {
                 </label>
               </div>
 
-              <HoneypotField value="" onChange={() => {}} />
+              <HoneypotField />
 
               <SubmitButton loading={loading} loadingText="Anfrage wird gesendet…" className="w-full">Anfrage absenden</SubmitButton>
             </form>

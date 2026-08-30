@@ -169,7 +169,7 @@ function Page() {
                   </div>
                   <div><Label htmlFor="subject">Betreff</Label><Input id="subject" name="subject" maxLength={200} /></div>
                   <div><Label htmlFor="body">Nachricht *</Label><Textarea id="body" name="body" rows={6} required maxLength={4000} /></div>
-                  <HoneypotField value="" onChange={() => {}} />
+                  <HoneypotField />
                   <SubmitButton loading={loading} loadingText="Nachricht wird gesendet…" className="w-full">Nachricht senden</SubmitButton>
                 </form>
               </CardContent>
