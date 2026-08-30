@@ -36,6 +36,10 @@ export interface ConfirmationDoc {
   unitLabel: string;
   priceLabel: string;
   dueDateLabel: string;
+  /** true, wenn der Kurs innerhalb der letzten 10 Tage vor Kursbeginn gebucht wurde. */
+  immediatePayment: boolean;
+  /** Fertiger Zahlungssatz für E-Mail und PDF. */
+  paymentInstruction: string;
   paymentReference: string;
 }
 
