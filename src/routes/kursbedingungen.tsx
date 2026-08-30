@@ -29,8 +29,8 @@ function KursbedingungenPage() {
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">2. Kursgebühr &amp; Zahlung</h2>
       <p>
-        Die Kursgebühr beträgt <strong>200 € für Nichtmitglieder</strong> bzw.
-        <strong> 150 € für Vereinsmitglieder</strong> und umfasst in der Regel
+        Die Kursgebühr beträgt <strong>{formatPrice(COURSE_FEES.standard)} für Nichtmitglieder</strong> bzw.
+        <strong> {formatPrice(COURSE_FEES.member)} für Vereinsmitglieder</strong> und umfasst in der Regel
         10 Einheiten à 45 Minuten. Die Gebühr ist innerhalb von
         <strong> 14 Tagen nach Bestätigung</strong> per Überweisung auf das
         folgende Vereinskonto zu zahlen. Beginnt der Kurs
@@ -40,13 +40,7 @@ function KursbedingungenPage() {
       </p>
       <div className="rounded-lg border bg-muted/40 p-4 my-4 not-prose">
         <div className="font-semibold text-primary-deep mb-2">Bankverbindung</div>
-        <ul className="space-y-1 text-sm">
-          <li><strong>Kontoinhaber:</strong> {BILLING.recipient}</li>
-          <li><strong>IBAN:</strong> {BILLING.iban}</li>
-          <li><strong>BIC:</strong> {BILLING.bic}</li>
-          <li><strong>Bank:</strong> {BILLING.bankName}</li>
-          <li><strong>Verwendungszweck:</strong> Kursname + Name des Kindes + Kursbeginn (Startdatum)</li>
-        </ul>
+        <BankDetails />
       </div>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">3. Rücktritt durch die Teilnehmer:innen</h2>
