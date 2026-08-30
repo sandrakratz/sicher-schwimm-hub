@@ -23,6 +23,7 @@ import { formatPrice } from "@/lib/format";
 import { termStatus } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
+import { NOT_BOOKABLE_NOTE, UPCOMING_PROGRAMS } from "@/lib/upcoming-programs";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
 export const Route = createFileRoute("/kurse_/$slug")({
