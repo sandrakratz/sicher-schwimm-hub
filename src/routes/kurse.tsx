@@ -11,7 +11,7 @@ import { BankDetails } from "@/components/BankDetails";
 import { formatPrice } from "@/lib/format";
 import { programStatus } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
-import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
+import { NOT_BOOKABLE_NOTE, PROGRAM_CARD_SUMMARIES } from "@/lib/upcoming-programs";
 
 export const Route = createFileRoute("/kurse")({
   loader: async () => await listCoursePrograms(),
