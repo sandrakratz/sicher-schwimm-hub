@@ -192,7 +192,9 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
           setParentUserId(res.parentUserId);
           setParentLabel(res.parentLabel || "");
         }
-      } catch {}
+      } catch (err) {
+        console.warn("[anfragen] Mitgliedsvorschlag konnte nicht geladen werden:", err);
+      }
     })();
   }, [selected?.id]);
 

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { HoneypotField, SubmitButton } from "@/components/form-support";
 import { CheckCircle2 } from "lucide-react";
 import { CancellationButton } from "@/components/CancellationButton";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -49,6 +50,7 @@ function RequestPage() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (String(fd.get("website") || "").trim() !== "") { setDone(true); return; } // Spamschutz (Honeypot)
     const data = {
       parent_name: String(fd.get("parent_name") || ""),
       parent_email: String(fd.get("parent_email") || ""),
@@ -188,7 +190,7 @@ function RequestPage() {
               <div className="space-y-3 border-t pt-6">
                 <label className="flex gap-3 items-start cursor-pointer">
                   <Checkbox name="gdpr_consent" required />
-                  <span className="text-sm">Ich habe die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a> gelesen und stimme der Verarbeitung meiner Daten zu. *</span>
+                  <span className="text-sm">Ich habe die <Link to="/datenschutz" className="text-primary underline">Datenschutzerklärung</Link> gelesen und stimme der Verarbeitung meiner Daten zu. *</span>
                 </label>
                 <label className="flex gap-3 items-start cursor-pointer">
                   <Checkbox name="contact_permission" />
@@ -196,9 +198,9 @@ function RequestPage() {
                 </label>
               </div>
 
-              <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
-                {loading ? "Wird gesendet..." : "Anfrage absenden"}
-              </Button>
+              <HoneypotField />
+
+              <SubmitButton loading={loading} loadingText="Anfrage wird gesendet…" className="w-full">Anfrage absenden</SubmitButton>
             </form>
           </CardContent>
         </Card>

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
 
 export const Route = createFileRoute("/impressum")({
@@ -85,7 +85,7 @@ export const Route = createFileRoute("/impressum")({
       <h2 className="font-display text-2xl font-bold text-primary-deep">Widerrufsrecht</h2>
       <p>
         Informationen zum Widerrufsrecht sowie das Muster-Widerrufsformular finden Sie unter{" "}
-        <a href="/widerruf" className="text-primary underline">Widerruf</a>.
+        <Link to="/widerruf" className="text-primary underline">Widerruf</Link>.
       </p>
 
 

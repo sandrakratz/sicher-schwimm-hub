@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { THEME_COLOR } from "@/lib/billing-config";
 
 function NotFoundComponent() {
   return (
@@ -78,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#0a4d8c" },
+      { name: "theme-color", content: THEME_COLOR },
       { title: "Sicher Schwimmen e.V. – Schwimmkurse in Hennef" },
       { name: "description", content: "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
       { name: "author", content: "Sicher Schwimmen e.V." },

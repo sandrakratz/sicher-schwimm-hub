@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
+import { CONTACT_ITEMS, ORG } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { HoneypotField, SubmitButton } from "@/components/form-support";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/kontakt")({
@@ -30,8 +32,8 @@ export const Route = createFileRoute("/kontakt")({
         "@type": "LocalBusiness",
         name: "Sicher Schwimmen e.V.",
         url: "https://sicher-schwimmen.com",
-        email: "info@sicher-schwimmen.com",
-        telephone: "+49-178-1142945",
+        email: ORG.email,
+        telephone: ORG.phoneIntl,
         address: {
           "@type": "PostalAddress",
           addressLocality: "Hennef (Sieg)",
@@ -64,6 +66,7 @@ function Page() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (String(fd.get("website") || "").trim() !== "") { setDone(true); return; } // Spamschutz (Honeypot)
     const parsed = schema.safeParse({
       from_name: fd.get("from_name"),
       from_email: fd.get("from_email"),
@@ -118,9 +121,11 @@ function Page() {
       <section className="container mx-auto px-4 py-16 grid lg:grid-cols-3 gap-8">
         <div className="space-y-4">
           {[
-            { icon: MapPin, title: "Adresse", text: "Hennef, Rhein-Sieg-Kreis" },
-            { icon: Mail, title: "E-Mail", text: "info@sicher-schwimmen.com" },
-            { icon: Phone, title: "Telefon", text: "0178 / 1142945 (Michael Kratz)" },
+            ...CONTACT_ITEMS.map((c) => ({
+              icon: c.key === "address" ? MapPin : c.key === "email" ? Mail : Phone,
+              title: c.title,
+              text: c.text,
+            })),
           ].map(i => (
             <Card key={i.title} className="border-0 shadow-soft">
               <CardContent className="p-5 flex gap-4 items-start">
@@ -164,9 +169,8 @@ function Page() {
                   </div>
                   <div><Label htmlFor="subject">Betreff</Label><Input id="subject" name="subject" maxLength={200} /></div>
                   <div><Label htmlFor="body">Nachricht *</Label><Textarea id="body" name="body" rows={6} required maxLength={4000} /></div>
-                  <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
-                    {loading ? "Wird gesendet..." : "Nachricht senden"}
-                  </Button>
+                  <HoneypotField />
+                  <SubmitButton loading={loading} loadingText="Nachricht wird gesendet…" className="w-full">Nachricht senden</SubmitButton>
                 </form>
               </CardContent>
             </Card>

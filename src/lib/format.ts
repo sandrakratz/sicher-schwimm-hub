@@ -33,3 +33,15 @@ export function formatDateTimeBerlin(input: string | Date | null | undefined): s
     return typeof input === "string" ? input : "—";
   }
 }
+
+/** Einheitliche Preisdarstellung (EUR, ohne Nachkommastellen). */
+export function formatPrice(value: number | null | undefined): string | null {
+  if (value == null) return null;
+  const n = Number(value);
+  if (isNaN(n)) return null;
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(n);
+}

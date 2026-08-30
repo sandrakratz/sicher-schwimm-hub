@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Check, Users, Heart, User, HandHeart, Waves, Euro, Star, Vote } from "l
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { COURSE_FEES, MEMBERSHIP_FEES } from "@/lib/billing-config";
+import { HoneypotField, SubmitButton } from "@/components/form-support";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useServerFn } from "@tanstack/react-start";
 import { submitMembershipSignup } from "@/lib/membership-signup.functions";
@@ -31,10 +33,10 @@ export const Route = createFileRoute("/mitgliedschaft")({
 });
 
 const tiers = [
-  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: "60 €/Jahr", desc: "Einzelmitgliedschaft für alle unter 18." },
-  { type: "adult", icon: User, name: "Erwachsene", price: "60 €/Jahr", desc: "Einzelmitgliedschaft ab 18 Jahren." },
-  { type: "family", icon: Users, name: "Familie", price: "96 €/Jahr", desc: "Ab 3 Personen, max. 2 Erwachsene + Kinder unter 18 im selben Haushalt." },
-  { type: "supporting", icon: HandHeart, name: "Förderung", price: "ab 60 €/Jahr", desc: "Passive Mitgliedschaft ohne Stimmrecht, Beitrag nach oben frei wählbar." },
+  { type: "children_youth", icon: User, name: "Kinder & Jugend", price: `${MEMBERSHIP_FEES.children_youth} €/Jahr`, desc: "Einzelmitgliedschaft für alle unter 18." },
+  { type: "adult", icon: User, name: "Erwachsene", price: `${MEMBERSHIP_FEES.adult} €/Jahr`, desc: "Einzelmitgliedschaft ab 18 Jahren." },
+  { type: "family", icon: Users, name: "Familie", price: `${MEMBERSHIP_FEES.family} €/Jahr`, desc: "Ab 3 Personen, max. 2 Erwachsene + Kinder unter 18 im selben Haushalt." },
+  { type: "supporting", icon: HandHeart, name: "Förderung", price: `ab ${MEMBERSHIP_FEES.supporting_min} €/Jahr`, desc: "Passive Mitgliedschaft ohne Stimmrecht, Beitrag nach oben frei wählbar." },
 ];
 
 const billingNote = "Beitrag fällig jeweils zum 1. März per SEPA-Lastschrift. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.";
@@ -87,6 +89,7 @@ function Page() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (String(fd.get("website") || "").trim() !== "") { setDone(true); return; } // Spamschutz (Honeypot)
     const rawPassword = String(fd.get("account_password") || "").trim();
     const rawPasswordConfirm = String(fd.get("account_password_confirm") || "").trim();
 
@@ -211,7 +214,7 @@ function Page() {
           {accountResult === "exists" && (
             <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 space-y-2">
               <p>Für diese E-Mail existiert bereits ein Konto. Sie können sich direkt anmelden.</p>
-              <Button asChild variant="outline" size="sm"><a href="/auth">Zum Login</a></Button>
+              <Button asChild variant="outline" size="sm"><Link to="/auth">Zum Login</Link></Button>
             </div>
           )}
 
@@ -244,7 +247,7 @@ function Page() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               { icon: Waves, title: "Kostenlose Wasserzeit", desc: "Einmal im Monat exklusive Wasserzeit für Mitglieder – Termine werden vom Verein bekannt gegeben." },
-              { icon: Euro, title: "Vergünstigte Kurse", desc: "Mitglieder zahlen für Schwimmkurse 150 € statt 200 € (10 Einheiten à 45 Min.)." },
+              { icon: Euro, title: "Vergünstigte Kurse", desc: `Mitglieder zahlen für Schwimmkurse ${COURSE_FEES.member} € statt ${COURSE_FEES.standard} € (10 Einheiten à 45 Min.).` },
               { icon: Star, title: "Bevorzugte Plätze", desc: "Bei der Kursvergabe werden Vereinsmitglieder bevorzugt berücksichtigt." },
               { icon: Vote, title: "Mitbestimmung", desc: "Stimmrecht in der Mitgliederversammlung und aktive Mitgestaltung des Vereins." },
             ].map((b) => (
@@ -378,13 +381,13 @@ function Page() {
 
                 <div className="space-y-3 border-t pt-5">
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_statutes" required /> <span>Ich akzeptiere die <a href="/satzung" className="text-primary underline">Vereinssatzung</a>. *</span>
+                    <Checkbox name="accepted_statutes" required /> <span>Ich akzeptiere die <Link to="/satzung" className="text-primary underline">Vereinssatzung</Link>. *</span>
                   </label>
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_rules" required /> <span>Ich akzeptiere die <a href="/mitgliedsordnung" className="text-primary underline">Mitgliedsordnung</a>. *</span>
+                    <Checkbox name="accepted_rules" required /> <span>Ich akzeptiere die <Link to="/mitgliedsordnung" className="text-primary underline">Mitgliedsordnung</Link>. *</span>
                   </label>
                   <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <a href="/datenschutz" className="text-primary underline">Datenschutzerklärung</a>. *</span>
+                    <Checkbox name="accepted_privacy" required /> <span>Ich akzeptiere die <Link to="/datenschutz" className="text-primary underline">Datenschutzerklärung</Link>. *</span>
                   </label>
                 </div>
 
@@ -399,9 +402,9 @@ function Page() {
                   </div>
                 </div>
 
-                <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
-                  {loading ? "Wird gesendet..." : "Mitgliedsantrag absenden"}
-                </Button>
+                <HoneypotField />
+
+                <SubmitButton loading={loading} loadingText="Antrag wird gesendet…" className="w-full">Mitgliedsantrag absenden</SubmitButton>
               </form>
             </CardContent>
           </Card>
