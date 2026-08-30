@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from '@react-email/components'
+import { Body, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 import { buildConfirmationDoc } from '@/lib/course-confirmation'
 
