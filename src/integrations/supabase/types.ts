@@ -181,6 +181,8 @@ export type Database = {
           payer_city: string | null
           payer_street: string | null
           payer_zip: string | null
+          payment_due_date: string | null
+          payment_method: string | null
           payment_note: string | null
           price_amount: number | null
           request_id: string | null
@@ -214,6 +216,8 @@ export type Database = {
           payer_city?: string | null
           payer_street?: string | null
           payer_zip?: string | null
+          payment_due_date?: string | null
+          payment_method?: string | null
           payment_note?: string | null
           price_amount?: number | null
           request_id?: string | null
@@ -247,6 +251,8 @@ export type Database = {
           payer_city?: string | null
           payer_street?: string | null
           payer_zip?: string | null
+          payment_due_date?: string | null
+          payment_method?: string | null
           payment_note?: string | null
           price_amount?: number | null
           request_id?: string | null
