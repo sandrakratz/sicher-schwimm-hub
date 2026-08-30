@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
-import { CONTACT_ITEMS, ORG } from "@/lib/billing-config";
+import { CONTACT_ITEMS, ORG, SOCIAL } from "@/lib/billing-config";
+import { SocialLinks } from "@/components/SocialLinks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
