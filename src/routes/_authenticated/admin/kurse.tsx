@@ -1013,7 +1013,7 @@ function Page() {
                   <TableHead>Status</TableHead>
                   <TableHead>Mitglied</TableHead>
                   <TableHead>Ergebnis</TableHead>
-                  {canManage && <TableHead>Bezahlt</TableHead>}
+                  {canManage && <TableHead>Zahlungsstatus</TableHead>}
                   <TableHead>Notiz</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
