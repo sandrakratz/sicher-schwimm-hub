@@ -136,8 +136,18 @@ const Email = (p: Props) => {
           </Text>
 
           <Text style={{ marginTop: '16px' }}>
-            Bitte überweisen Sie die Kursgebühr bis zum <strong>{d.dueDateLabel}</strong> unter Angabe der
-            Dokument-Nr. {d.documentNo} auf folgendes Vereinskonto:
+            {d.immediatePayment ? (
+              <>
+                Da die Buchung innerhalb der letzten 10 Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr{' '}
+                <strong>sofort per Echtzeit-/Sofortüberweisung</strong> unter Angabe der Dokument-Nr. {d.documentNo} auf
+                folgendes Vereinskonto zu zahlen:
+              </>
+            ) : (
+              <>
+                Bitte überweisen Sie die Kursgebühr bis zum <strong>{d.dueDateLabel}</strong> unter Angabe der
+                Dokument-Nr. {d.documentNo} auf folgendes Vereinskonto:
+              </>
+            )}
           </Text>
           <Section style={{ backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <Line label="Kontoinhaber:" value={d.bank.recipient} />
