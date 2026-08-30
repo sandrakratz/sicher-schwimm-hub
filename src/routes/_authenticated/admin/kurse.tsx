@@ -129,6 +129,10 @@ type Course = {
   unit_count: number | null;
 };
 
+function Hint({ children }: { children: React.ReactNode }) {
+  return <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{children}</p>;
+}
+
 type ProgramRow = {
   id: string;
   name: string;
@@ -809,34 +813,42 @@ function Page() {
 
           {canManage && detailId !== "unassigned" && detailProgram && (
             <div className="space-y-3 border rounded-md p-4">
-              <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
+              <div>
+                <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Diese Angaben steuern die öffentliche Darstellung: die Kurskarte in der Kursübersicht (/kurse) und die Detailseite
+                  (/kurse/{editingProg.slug || detailProgram.slug}). Kurszeiträume, Termine und Buchbarkeit werden weiter unten je Zeitraum gepflegt.
+                </p>
+              </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value }))} /></div>
-                <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /></div>
+                <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /><Hint>Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern verändert bestehende Links.</Hint></div>
               </div>
-              <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /></div>
-              <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /></div>
-              <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /></div>
+              <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen abweichenden Ort haben.</Hint></div>
+              <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
+              <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
               <div className="grid sm:grid-cols-4 gap-3">
-                <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /></div>
-                <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /></div>
-                <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
-                <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /></div>
+                <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
+                <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
+                <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei der Buchung.</Hint></div>
+                <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /><Hint>Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").</Hint></div>
               </div>
               <div className="grid sm:grid-cols-4 gap-3 items-end">
-                <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
-                <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
-                <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /></div>
-                <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /></div>
+                <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
+                <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
+                <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /><Hint>Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext genutzt.</Hint></div>
+                <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /><Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint></div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
                   Auf der Webseite anzeigen
+                  <span className="text-[11px] text-muted-foreground">(Karte in /kurse + eigene Detailseite)</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
                   Online buchbar
+                  <span className="text-[11px] text-muted-foreground">(aus: Status „Geplant – noch nicht buchbar", keine Buchung)</span>
                 </label>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => { removeProgram(detailProgram); setDetailId(null); }}><Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen</Button>
@@ -871,31 +883,33 @@ function Page() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value, slug: p.slug || slugify(e.target.value) }))} /></div>
-              <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /></div>
+              <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /><Hint>Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern verändert bestehende Links.</Hint></div>
             </div>
-            <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /></div>
-            <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /></div>
+            <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
+            <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /></div>
-              <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /></div>
-              <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
-              <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /></div>
+              <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
+              <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
+              <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei der Buchung.</Hint></div>
+              <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /><Hint>Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").</Hint></div>
             </div>
-            <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /></div>
+            <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen abweichenden Ort haben.</Hint></div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
-              <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /></div>
-              <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /></div>
+              <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
+              <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
+              <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /><Hint>Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext genutzt.</Hint></div>
             </div>
             <div className="grid grid-cols-2 gap-3 items-end">
-              <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /></div>
+              <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /><Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint></div>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
                 Auf der Webseite anzeigen
+                <span className="text-[11px] text-muted-foreground">(Karte in /kurse + Detailseite)</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
                 Online buchbar
+                <span className="text-[11px] text-muted-foreground">(aus: „Geplant – noch nicht buchbar")</span>
               </label>
             </div>
           </div>

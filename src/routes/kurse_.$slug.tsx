@@ -147,18 +147,58 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
   const [result, setResult] = useState<{ status: "confirmed" | "waiting"; courseName: string } | null>(null);
   const [blockedNotice, setBlockedNotice] = useState(false);
 
+  const paragraphs = (program.description ?? "").split(/\n\s*\n/).filter(Boolean);
+  const requirements = (program.requirements ?? "").split("\n").map((r) => r.trim()).filter(Boolean);
+  const openTerms = program.terms.filter((t) => !t.is_full).length;
+
   return (
     <PublicLayout>
       <section className="bg-hero text-white py-16">
         <div className="container mx-auto px-4">
           <Link to="/kurse" className="text-white/80 text-sm underline">← Alle Kurse</Link>
           <h1 className="font-display text-4xl md:text-5xl font-bold mt-3 mb-3">{program.name}</h1>
-          {program.description && <p className="text-white/85 max-w-2xl">{program.description}</p>}
+          {paragraphs[0] && <p className="text-white/85 max-w-2xl">{paragraphs[0]}</p>}
         </div>
       </section>
 
       <section className="container mx-auto px-4 py-12 grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary-deep">
+            {openTerms > 0 ? (
+              <><strong>Freie Plätze verfügbar.</strong> Sie können unten einen Zeitraum auswählen und verbindlich buchen.</>
+            ) : program.terms.length > 0 ? (
+              <><strong>Aktuell ausgebucht.</strong> Gerne nehmen wir Sie auf die Warteliste auf und melden uns, sobald ein Platz frei wird.</>
+            ) : (
+              <><strong>Termine in Planung.</strong> Sobald die Wasserzeiten feststehen, veröffentlichen wir hier die buchbaren Zeiträume.</>
+            )}
+          </div>
+
+          {paragraphs.length > 1 && (
+            <div className="space-y-3 text-muted-foreground">
+              {paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}
+            </div>
+          )}
+
+          {requirements.length > 0 && (
+            <Card className="border-0 shadow-soft">
+              <CardContent className="p-6">
+                <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Voraussetzungen</h2>
+                {requirements.length > 1 ? (
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                    {requirements.map((r, i) => <li key={i}>{r}</li>)}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{requirements[0]}</p>
+                )}
+                {program.min_age_years != null && (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Mindestalter zu Kursbeginn: {program.min_age_years} Jahre.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <h2 className="font-display text-2xl font-bold text-primary-deep">Buchbare Zeiträume</h2>
 
           {program.terms.length === 0 ? (
@@ -212,34 +252,27 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
           </p>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-4">
           <Card className="border-0 shadow-soft">
-            <CardContent className="p-6 space-y-2 text-sm">
-              <h2 className="font-display text-lg font-bold text-primary-deep mb-2">Kursinfos</h2>
-              {program.target_group && <div className="flex items-start gap-2"><Users className="h-4 w-4 mt-0.5" />{program.target_group}</div>}
-              {program.age_range && <div className="flex items-center gap-2"><Users className="h-4 w-4" />Alter: {program.age_range}</div>}
-              {program.duration && <div className="flex items-center gap-2"><Clock className="h-4 w-4" />{program.duration}</div>}
+            <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
+              {program.target_group && <Badge variant="outline" className="bg-secondary text-primary-deep border-0">{program.target_group}</Badge>}
+              {program.age_range && <div className="flex items-center gap-2 pt-2"><Users className="h-4 w-4" />{program.age_range}</div>}
               {program.location && <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" />{program.location}</div>}
+              {program.duration && <div className="flex items-center gap-2"><Clock className="h-4 w-4" />{program.duration}</div>}
               {(program.price_member != null || program.price_non_member != null) && (
-                <div className="flex items-start gap-2 pt-1">
+                <div className="flex items-start gap-2">
                   <Tag className="h-4 w-4 mt-0.5" />
                   <div>
-                    {program.price_non_member != null && <div>{formatPrice(program.price_non_member)} Normalpreis</div>}
-                    {program.price_member != null && <div className="text-primary font-semibold">{formatPrice(program.price_member)} für Mitglieder</div>}
+                    {program.price_non_member != null && <><span className="font-semibold text-foreground">{formatPrice(program.price_non_member)}</span> Normalpreis</>}
+                    {program.price_non_member != null && program.price_member != null && " · "}
+                    {program.price_member != null && <><span className="font-semibold text-primary">{formatPrice(program.price_member)}</span> für Mitglieder</>}
                   </div>
                 </div>
               )}
-              {program.requirements && (
-                <div className="pt-2 border-t mt-3">
-                  <div className="font-semibold text-primary-deep mb-1">Voraussetzungen</div>
-                  <p className="text-muted-foreground">{program.requirements}</p>
-                </div>
-              )}
-              {program.min_age_years != null && (
-                <p className="text-xs text-muted-foreground pt-2">
-                  Mindestalter zu Kursbeginn: {program.min_age_years} Jahre.
-                </p>
-              )}
+              <div className="pt-3 border-t space-y-2">
+                <Button asChild variant="outline" className="w-full"><Link to="/kurs-anfragen">{LABELS.waitlistCta}</Link></Button>
+                <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.</p>
+              </div>
             </CardContent>
           </Card>
 
@@ -252,6 +285,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
           </Card>
         </aside>
       </section>
+
 
       <BookingDialog
         program={program}
