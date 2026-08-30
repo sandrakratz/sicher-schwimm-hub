@@ -257,6 +257,9 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     if (!course || !course.is_public || course.archived_at) {
       throw new Error('Dieser Kurs ist derzeit nicht buchbar.')
     }
+    if ((course as any).course_programs && (course as any).course_programs.bookable === false) {
+      throw new Error('Dieses Angebot ist derzeit noch nicht buchbar.')
+    }
 
 
     const program = (course as any).course_programs as
