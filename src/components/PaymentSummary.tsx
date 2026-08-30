@@ -45,7 +45,7 @@ export function PaymentSummary({ startsOn, paymentDueDays, amount, bookedAt, com
       <p className="mt-2 text-xs opacity-90">{terms.note}</p>
       {!compact && (
         <p className="mt-1 text-xs opacity-90">
-          Verwendungszweck: Name des Kindes und Kursbeginn. Bankverbindung: {BILLING.iban} ({BILLING.bank}).
+          Verwendungszweck: Name des Kindes und Kursbeginn. Bankverbindung: {BILLING.iban} ({BILLING.bankName}).
         </p>
       )}
     </div>
