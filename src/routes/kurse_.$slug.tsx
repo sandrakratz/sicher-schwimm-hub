@@ -27,14 +27,23 @@ import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm }
 
 export const Route = createFileRoute("/kurse_/$slug")({
   loader: async ({ params }) => {
+    const upcoming = UPCOMING_PROGRAMS.find((u) => u.slug === params.slug);
+    if (upcoming) return { upcomingSlug: upcoming.slug } as const;
     const program = await getCourseProgram({ data: { slug: params.slug } });
     if (!program) throw notFound();
     return program;
   },
   head: ({ params, loaderData }) => {
-    const p = loaderData as CourseProgram | undefined;
-    const title = p ? `${p.name} – Schwimmkurs buchen | Sicher Schwimmen e.V.` : "Schwimmkurs | Sicher Schwimmen e.V.";
-    const desc = p?.description
+    const up = UPCOMING_PROGRAMS.find((u) => u.slug === params.slug);
+    const p = up ? undefined : (loaderData as CourseProgram | undefined);
+    const title = up
+      ? `${up.name} – geplantes Angebot | Sicher Schwimmen e.V.`
+      : p
+        ? `${p.name} – Schwimmkurs buchen | Sicher Schwimmen e.V.`
+        : "Schwimmkurs | Sicher Schwimmen e.V.";
+    const desc = up
+      ? `${up.intro} Geplantes Eltern-Kind-Angebot (${up.ageRange}) – derzeit noch nicht buchbar.`
+      : p?.description
       ? `${p.description} Freie Termine online verbindlich buchen.`
       : "Schwimmkurs mit freien Terminen online verbindlich buchen.";
     const url = `https://sicher-schwimmen.com/kurse/${encodeURIComponent(params.slug)}`;
