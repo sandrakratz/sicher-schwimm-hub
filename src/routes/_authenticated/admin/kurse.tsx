@@ -49,6 +49,8 @@ type Participant = {
   member_confirmed_at: string | null;
   price_amount: number | null;
   created_at?: string | null;
+  payment_method?: string | null;
+  payment_due_date?: string | null;
   parent_user_id: string | null;
   request_id: string | null;
 };
@@ -185,6 +187,8 @@ function Page() {
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [payFilter, setPayFilter] = useState<string>("all");
+  const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
   const [reqOpen, setReqOpen] = useState(false);
@@ -1003,6 +1007,32 @@ function Page() {
               </div>
             );
           })()}
+          {canManage && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-xs text-muted-foreground">Zahlungsstatus:</span>
+              <Select value={payFilter} onValueChange={setPayFilter}>
+                <SelectTrigger className="h-8 w-[220px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="open">Alle offenen</SelectItem>
+                  <SelectItem value="expected">Zahlung erwartet</SelectItem>
+                  <SelectItem value="immediate">Sofortzahlung erwartet</SelectItem>
+                  <SelectItem value="overdue">Nicht bezahlt (überfällig)</SelectItem>
+                  <SelectItem value="paid">Bezahlt</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">Sortierung:</span>
+              <Select value={paySort} onValueChange={setPaySort}>
+                <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="payment">Zahlungsstatus (dringend zuerst)</SelectItem>
+                  <SelectItem value="due">Fälligkeitsdatum</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">{visibleParticipants.length} von {participants.length}</span>
+            </div>
+          )}
           <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
@@ -1019,9 +1049,9 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {participants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
+                {visibleParticipants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
 
-                {participants.map(p => {
+                {visibleParticipants.map(p => {
                   const age = ageAt(p.date_of_birth, partCourse?.starts_on);
                   return (
                   <TableRow key={p.id}>
