@@ -19,7 +19,7 @@ import heroPool from "@/assets/hero-pool.jpg";
 import kids from "@/assets/kids-swimming.jpg";
 import beaverAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const beaver = beaverAsset.url;
-import { COURSE_LOCATION, ORG, SOCIAL } from "@/lib/billing-config";
+import { COURSE_LOCATION } from "@/lib/billing-config";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
 
 const CARD_ICONS = [Waves, Heart, GraduationCap, Sparkles];
