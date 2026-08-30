@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
-import { CONTACT_ITEMS, ORG } from "@/lib/billing-config";
+import { CONTACT_ITEMS, ORG, SOCIAL } from "@/lib/billing-config";
+import { SocialLinks } from "@/components/SocialLinks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/kontakt")({
           { "@type": "City", name: "Hennef" },
           { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
         ],
+        sameAs: SOCIAL.map((s) => s.url),
       }),
     }],
   }),
@@ -137,6 +139,10 @@ function Page() {
               </CardContent>
             </Card>
           ))}
+          <div className="pt-2">
+            <div className="text-sm font-semibold text-primary-deep mb-2">Folgen Sie uns</div>
+            <SocialLinks className="text-primary-deep" />
+          </div>
         </div>
         <div className="lg:col-span-2">
           {done ? (

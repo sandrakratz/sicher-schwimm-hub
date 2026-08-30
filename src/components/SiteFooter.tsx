@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Mail, Phone, MapPin } from "lucide-react";
+import { SocialLinks } from "@/components/SocialLinks";
 
 export function SiteFooter() {
   return (
@@ -52,6 +53,7 @@ export function SiteFooter() {
               );
             })}
           </ul>
+          <SocialLinks className="mt-4" />
         </div>
       </div>
 

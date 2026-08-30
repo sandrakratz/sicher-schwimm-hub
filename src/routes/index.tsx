@@ -19,8 +19,13 @@ import heroPool from "@/assets/hero-pool.jpg";
 import kids from "@/assets/kids-swimming.jpg";
 import beaverAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const beaver = beaverAsset.url;
+import { COURSE_LOCATION } from "@/lib/billing-config";
+import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
+
+const CARD_ICONS = [Waves, Heart, GraduationCap, Sparkles];
 
 export const Route = createFileRoute("/")({
+  loader: async () => await listCoursePrograms(),
   head: () => ({
     meta: [
       { title: "Schwimmkurse Hennef – Seepferdchen, Wassergewöhnung & mehr | Sicher Schwimmen e.V." },
@@ -41,6 +46,7 @@ export const Route = createFileRoute("/")({
         name: "Sicher Schwimmen e.V.",
         url: "https://sicher-schwimmen.com",
         inLanguage: "de-DE",
+        publisher: { "@type": "SportsClub", name: "Sicher Schwimmen e.V.", url: "https://sicher-schwimmen.com" },
       }),
     }],
   }),
@@ -48,6 +54,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const featured = ((Route.useLoaderData() ?? []) as Array<CourseProgram>).slice(0, 4);
   return (
     <PublicLayout>
       {/* Hero */}
@@ -151,23 +158,41 @@ function Home() {
               <Link to="/kurse">Alle Kurse ansehen <ArrowRight className="ml-1 h-4 w-4" /></Link>
             </Button>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { icon: Waves, title: "Wassergewöhnung", age: "ab 3 Jahre", desc: "Spielerische erste Erfahrungen im Wasser." },
-              { icon: Heart, title: "Eltern & Kind", age: "1–3 Jahre", desc: "Gemeinsame Wasserzeit für die Kleinsten." },
-              { icon: GraduationCap, title: "Seepferdchen", age: "ab 5 Jahre", desc: "Vom Anfänger zum ersten Schwimmabzeichen." },
-              { icon: Sparkles, title: "Bronze / Silber / Gold", age: "Fortgeschrittene", desc: "Weiterführende Schwimmabzeichen." },
-            ].map((c) => (
-              <Card key={c.title} className="shadow-soft border-0 hover:shadow-card transition-shadow">
-                <CardContent className="p-6">
-                  <c.icon className="h-10 w-10 text-accent mb-4" />
-                  <h3 className="font-bold text-lg text-primary-deep">{c.title}</h3>
-                  <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">{c.age}</div>
-                  <p className="text-sm text-muted-foreground">{c.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {featured.length === 0 ? (
+            <p className="text-muted-foreground">Aktuell sind keine Kursangebote veröffentlicht.</p>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {featured.map((c, i) => {
+                const Icon = CARD_ICONS[i % CARD_ICONS.length];
+                return (
+                  <Link
+                    key={c.id}
+                    to="/kurse/$slug"
+                    params={{ slug: c.slug }}
+                    className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    aria-label={`Kurs ansehen: ${c.name}`}
+                  >
+                    <Card className="shadow-soft border-0 hover:shadow-card transition-shadow h-full">
+                      <CardContent className="p-6">
+                        <Icon className="h-10 w-10 text-accent mb-4" />
+                        <h3 className="font-bold text-lg text-primary-deep">{c.name}</h3>
+                        <div className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
+                          {c.age_range || c.target_group || "Alle Altersgruppen"}
+                        </div>
+                        {c.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-3">{c.description}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
+            {COURSE_LOCATION} – der genaue Kursort wird rechtzeitig bekannt gegeben.
+          </p>
         </div>
       </section>
 

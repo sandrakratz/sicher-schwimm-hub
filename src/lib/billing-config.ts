@@ -29,6 +29,15 @@ export const ORG = {
   vatNote: "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.",
 };
 
+/** Offizielle Social-Media-Kanäle – zentrale Quelle für Footer, Kontakt und JSON-LD. */
+export const SOCIAL = [
+  { key: "facebook", label: "Facebook", url: "https://www.facebook.com/sicherschwimmen/" },
+  { key: "instagram", label: "Instagram", url: "https://www.instagram.com/sicherschwimmen/" },
+] as const;
+
+/** Einheitliche Ortsangabe für Kurse (genauer Kursort wird später zugeordnet). */
+export const COURSE_LOCATION = "Schwimmbad im Rhein-Sieg-Kreis";
+
 /** Kontaktangaben, wie sie auf Kontaktseite und im Footer erscheinen. */
 export const CONTACT_ITEMS = [
   { key: "address", title: "Adresse", text: ORG.areaShort },

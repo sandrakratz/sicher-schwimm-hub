@@ -108,6 +108,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           sport: "Swimming",
           address: {
             "@type": "PostalAddress",
+            streetAddress: "Bergstr. 67a",
+            postalCode: "53773",
             addressLocality: "Hennef (Sieg)",
             addressRegion: "Nordrhein-Westfalen",
             addressCountry: "DE",
@@ -115,6 +117,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           areaServed: [
             { "@type": "City", name: "Hennef" },
             { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
+          ],
+          sameAs: [
+            "https://www.facebook.com/sicherschwimmen/",
+            "https://www.instagram.com/sicherschwimmen/",
           ],
         }),
       },
