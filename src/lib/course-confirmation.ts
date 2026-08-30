@@ -1,6 +1,7 @@
 // Gemeinsame Datenaufbereitung für die Kursbestätigung (E-Mail und PDF).
 import { BILLING, ORG } from "@/lib/billing-config";
 import { formatDateBerlin } from "@/lib/format";
+import { buildEpcPayload, buildPayQrUrl } from "@/lib/epc-qr";
 
 export interface ConfirmationInput {
   documentNo?: string | null;
@@ -45,6 +46,10 @@ export interface ConfirmationDoc {
   /** Beschreibung des Zahlungsziels. */
   paymentTermsLabel: string;
   paymentReference: string;
+  /** EPC-QR-Datensatz (GiroCode) – nur bei Sofortzahlung gesetzt. */
+  epcPayload: string | null;
+  /** Absolute URL zum QR-Code-Bild – nur bei Sofortzahlung gesetzt. */
+  payQrUrl: string | null;
 }
 
 export function formatEuro(v?: number | null): string {
@@ -99,6 +104,8 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
   const immediate = isImmediatePayment(issuedAt, dueDays, input.startsOn);
   const dueDateLabel = formatDateBerlin(computeDueDate(issuedAt, dueDays, input.startsOn));
 
+  const reference = `${documentNo} / ${childName}`;
+
   const period =
     input.startsOn || input.endsOn
       ? `${formatDateBerlin(input.startsOn)} bis ${formatDateBerlin(input.endsOn)}`
@@ -130,6 +137,8 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
     paymentTermsLabel: immediate
       ? `Buchung innerhalb der letzten ${DAYS_BEFORE_START} Tage vor Kursbeginn – sofort fällig`
       : `${dueDays} Tage nach Bestätigung, spätestens ${DAYS_BEFORE_START} Tage vor Kursbeginn`,
-    paymentReference: `${documentNo} / ${childName}`,
+    paymentReference: reference,
+    epcPayload: immediate ? buildEpcPayload({ amount: input.priceAmount, reference }) : null,
+    payQrUrl: immediate ? buildPayQrUrl({ amount: input.priceAmount, reference }) : null,
   };
 }

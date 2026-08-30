@@ -93,6 +93,27 @@ export async function renderConfirmationsPdf(inputs: Array<ConfirmationInput>): 
   return await pdf.save();
 }
 
+async function drawQr(page: PDFPage, payload: string, x: number, y: number, size: number) {
+  const QRCode = await import("qrcode");
+  const qr = QRCode.create(payload, { errorCorrectionLevel: "M" });
+  const count = qr.modules.size;
+  const data = qr.modules.data;
+  const cell = size / count;
+  page.drawRectangle({ x: x - cell, y: y - cell, width: size + cell * 2, height: size + cell * 2, color: rgb(1, 1, 1) });
+  for (let r = 0; r < count; r += 1) {
+    for (let c = 0; c < count; c += 1) {
+      if (!data[r * count + c]) continue;
+      page.drawRectangle({
+        x: x + c * cell,
+        y: y + size - (r + 1) * cell,
+        width: cell,
+        height: cell,
+        color: rgb(0, 0, 0),
+      });
+    }
+  }
+}
+
 async function addConfirmationPage(pdf: PDFDocument, input: ConfirmationInput) {
   const d = buildConfirmationDoc(input);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -149,6 +170,16 @@ async function addConfirmationPage(pdf: PDFDocument, input: ConfirmationInput) {
   w.row("IBAN:", d.bank.iban);
   w.row("BIC:", d.bank.bic);
   w.row("Verwendungszweck:", d.paymentReference);
+
+  if (d.epcPayload) {
+    w.space(14);
+    w.text("QR-Code für die Echtzeit-/Sofortüberweisung", { size: 12, bold: true });
+    w.text("Scannen Sie den Code mit Ihrer Banking-App - Empfänger, IBAN, Betrag und Verwendungszweck werden automatisch übernommen.", { size: 9.5 });
+    w.space(6);
+    await drawQr(page, d.epcPayload, 56, cursor.y - 110, 104);
+    cursor.y -= 116;
+    if (d.payQrUrl) w.text(`Alternativ online: ${d.payQrUrl}`, { size: 8.5 });
+  }
 
   w.space(16);
   w.text("Hinweis zur Umsatzsteuer:", { bold: true });
