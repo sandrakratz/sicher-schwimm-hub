@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Users, Tag } from "lucide-react";
 import { CancellationButton } from "@/components/CancellationButton";
 import { BILLING } from "@/lib/billing-config";
+import { BankDetails } from "@/components/BankDetails";
+import { formatPrice } from "@/lib/format";
+import { programStatus } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
 
 export const Route = createFileRoute("/kurse")({
@@ -47,11 +50,6 @@ export const Route = createFileRoute("/kurse")({
   component: KursePage,
 });
 
-function fmtPrice(v: number | null) {
-  if (v == null) return null;
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v));
-}
-
 function KursePage() {
   const programs = (Route.useLoaderData() ?? []) as Array<CourseProgram>;
 
@@ -79,15 +77,9 @@ function KursePage() {
             {programs.map((c) => {
               const openTerms = c.open_terms ?? 0;
               const hasTerms = (c.terms?.length ?? 0) > 0;
-              const statusLabel = openTerms > 0 ? `${openTerms} Termin${openTerms > 1 ? "e" : ""} buchbar` : hasTerms ? "Ausgebucht" : "Warteliste";
-              const statusClass =
-                openTerms > 0
-                  ? "bg-success/15 text-success border-success/30"
-                  : hasTerms
-                    ? "bg-destructive/10 text-destructive border-destructive/30"
-                    : "bg-warning/15 text-warning-foreground border-warning/30";
-              const std = fmtPrice(c.price_non_member);
-              const mem = fmtPrice(c.price_member);
+              const { label: statusLabel, className: statusClass } = programStatus(openTerms, hasTerms);
+              const std = formatPrice(c.price_non_member);
+              const mem = formatPrice(c.price_member);
               return (
                 <Card key={c.id} className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
                   <CardContent className="p-6 flex flex-col flex-1">
@@ -140,17 +132,8 @@ function KursePage() {
 
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Die Kursgebühr wird nach der Buchungsbestätigung fällig:
-            innerhalb von 14 Tagen nach der Bestätigung, spätestens jedoch einen Tag vor Kursbeginn.
-          </p>
-          <dl className="grid sm:grid-cols-[auto,1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="font-semibold text-foreground">Kontoinhaber</dt><dd className="text-muted-foreground">{BILLING.recipient}</dd>
-            <dt className="font-semibold text-foreground">IBAN</dt><dd className="text-muted-foreground">{BILLING.iban}</dd>
-            <dt className="font-semibold text-foreground">BIC</dt><dd className="text-muted-foreground">{BILLING.bic}</dd>
-            <dt className="font-semibold text-foreground">Bank</dt><dd className="text-muted-foreground">{BILLING.bankName}</dd>
-            <dt className="font-semibold text-foreground">Verwendungszweck</dt><dd className="text-muted-foreground">Kursname + Name des Kindes + Kursbeginn (Startdatum)</dd>
-          </dl>
+          <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>
+          <BankDetails />
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-10">
