@@ -144,6 +144,7 @@ type ProgramRow = {
   price_non_member: number | null;
   payment_due_days: number;
   is_public: boolean;
+  bookable: boolean;
   sort_order: number;
 };
 
@@ -414,7 +415,7 @@ function Page() {
   useEffect(() => { load(); }, []);
 
   function startNewProgram() {
-    setEditingProg({ is_public: true, payment_due_days: 14, sort_order: (programs.at(-1)?.sort_order ?? 0) + 10, price_member: 150, price_non_member: 200 });
+    setEditingProg({ is_public: true, bookable: true, payment_due_days: 14, sort_order: (programs.at(-1)?.sort_order ?? 0) + 10, price_member: 150, price_non_member: 200 });
     setProgOpen(true);
   }
   function startEditProgram(p: ProgramRow) { setEditingProg(p); setProgOpen(true); }
@@ -435,6 +436,7 @@ function Page() {
       price_non_member: editingProg.price_non_member ?? null,
       payment_due_days: editingProg.payment_due_days ?? 14,
       is_public: editingProg.is_public ?? true,
+      bookable: editingProg.bookable ?? true,
       sort_order: editingProg.sort_order ?? 0,
     };
     const res = editingProg.id
@@ -832,6 +834,10 @@ function Page() {
                   <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
                   Auf der Webseite anzeigen
                 </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
+                  Online buchbar
+                </label>
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => { removeProgram(detailProgram); setDetailId(null); }}><Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen</Button>
                   <Button onClick={saveProgram}>Kursangaben speichern</Button>
@@ -886,6 +892,10 @@ function Page() {
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
                 Auf der Webseite anzeigen
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
+                Online buchbar
               </label>
             </div>
           </div>
