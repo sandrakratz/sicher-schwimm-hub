@@ -53,6 +53,11 @@ export const sendPaymentReminders = createServerFn({ method: 'POST' })
         continue
       }
 
+      if (data.dryRun) {
+        sent.push({ name, email, kind: state.key })
+        continue
+      }
+
       const res = await queueTemplateEmail({
         templateName: 'payment-reminder',
         recipientEmail: email,
