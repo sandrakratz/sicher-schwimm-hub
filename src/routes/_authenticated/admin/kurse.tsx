@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
@@ -210,6 +211,22 @@ function Page() {
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
   const [exportingCsv, setExportingCsv] = useState<string | null>(null);
   const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
+  const remindFn = useServerFn(sendPaymentReminders);
+  const [reminding, setReminding] = useState(false);
+
+  async function handleSendReminders(courseId?: string | null) {
+    if (!confirm("Zahlungserinnerung an alle offenen Fälle (Sofortzahlung erwartet oder überfällig) senden?")) return;
+    setReminding(true);
+    try {
+      const res: any = await remindFn({ data: { courseId: courseId ?? null } });
+      if (!res?.sentCount) toast.info("Keine offenen Fälle für eine Erinnerung gefunden.");
+      else toast.success(`${res.sentCount} Zahlungserinnerung(en) versendet`);
+    } catch (e: any) {
+      toast.error(e?.message || "Versand fehlgeschlagen");
+    } finally {
+      setReminding(false);
+    }
+  }
 
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
@@ -1065,6 +1082,15 @@ function Page() {
                 </SelectContent>
               </Select>
               <span className="text-xs text-muted-foreground">{visibleParticipants.length} von {participants.length}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                disabled={reminding}
+                onClick={() => handleSendReminders(partCourse?.id ?? null)}
+              >
+                {reminding ? "Sende…" : "Zahlungserinnerung senden"}
+              </Button>
             </div>
           )}
           <div className="border rounded-md overflow-x-auto">
