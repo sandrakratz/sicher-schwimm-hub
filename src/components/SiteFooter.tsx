@@ -52,6 +52,7 @@ export function SiteFooter() {
               );
             })}
           </ul>
+          <SocialLinks className="mt-4" />
         </div>
       </div>
 
