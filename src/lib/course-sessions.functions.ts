@@ -167,7 +167,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
           .filter(Boolean)
           .sort((a: string, b: string) => a.localeCompare(b, "de"));
       }
-    } catch {}
+    } catch (err) {
+      console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
+    }
 
     ws.addRow([]);
     const trainerTitle = ws.addRow(["Trainer – Anwesenheit (Unterschrift je Kurstermin)"]);
@@ -263,7 +265,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         entity_id: data.courseId,
         metadata: { participants: participants.length, sessions: sessions.length },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
+    }
 
     return { filename, base64 };
   });
@@ -470,7 +474,9 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
         entity_id: data.courseId,
         metadata: { participants: participants.length },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
+    }
 
     return { filename, base64 };
   });
@@ -579,7 +585,9 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
         entity_id: data.courseId,
         metadata: { participants: participants.length, format: data.format },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
+    }
 
     return { filename, base64 };
   });
@@ -721,7 +729,9 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
         entity_id: data.courseId,
         metadata: { rows: participants.length, missing_document_no: missingDocNo },
       });
-    } catch {}
+    } catch (err) {
+      console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
+    }
 
     return { filename, base64, rows: participants.length, missingDocNo };
   });
