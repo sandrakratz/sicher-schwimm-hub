@@ -35,10 +35,11 @@ function KursbedingungenPage() {
         <strong> {formatPrice(COURSE_FEES.member)} für Vereinsmitglieder</strong> und umfasst in der Regel
         10 Einheiten à 45 Minuten. Die Gebühr ist innerhalb von
         <strong> 14 Tagen nach Bestätigung</strong> per Überweisung auf das
-        folgende Vereinskonto zu zahlen. Beginnt der Kurs
-        innerhalb dieser 14 Tage, ist die Gebühr <strong>spätestens einen Tag
-        vor Kursbeginn</strong> zu überweisen. Ohne fristgerechten Zahlungseingang
-        kann der Kursplatz anderweitig vergeben werden.
+        folgende Vereinskonto zu zahlen, <strong>spätestens jedoch bis 10 Tage
+        vor Kursbeginn</strong>. Wird ein Kurs innerhalb der letzten 10 Tage vor
+        Kursbeginn gebucht, ist die Kursgebühr <strong>sofort per
+        Echtzeit-/Sofortüberweisung</strong> zu zahlen. Ohne fristgerechten
+        Zahlungseingang kann der Kursplatz anderweitig vergeben werden.
       </p>
       <div className="rounded-lg border bg-muted/40 p-4 my-4 not-prose">
         <div className="font-semibold text-primary-deep mb-2">Bankverbindung</div>
