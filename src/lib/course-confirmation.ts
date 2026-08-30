@@ -92,6 +92,9 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
     [input.payerZip, input.payerCity].filter(Boolean).join(" "),
   ].filter((l) => l.trim().length > 0);
 
+  const immediate = isImmediatePayment(issuedAt, dueDays, input.startsOn);
+  const dueDateLabel = formatDateBerlin(computeDueDate(issuedAt, dueDays, input.startsOn));
+
   const period =
     input.startsOn || input.endsOn
       ? `${formatDateBerlin(input.startsOn)} bis ${formatDateBerlin(input.endsOn)}`
