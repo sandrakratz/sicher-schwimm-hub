@@ -141,29 +141,35 @@ function Page() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+        <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep mt-14 mb-3 text-center">Der Vorstand</h2>
+        <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-8">
+          Sicher Schwimmen e.V. wird von einem gewählten Vorstand getragen, der
+          Verantwortung für den Verein und seine Arbeit übernimmt.
+        </p>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {
-              role: "1. Vorsitzender",
+              role: "1. Vorsitzender · Fachkraft für Bäderbetriebe",
               name: "Michael Kratz",
               photo: michaelKratzAsset.url,
               objectPosition: "center 20%",
-              bio: "Ausgebildete Fachkraft für Bäderbetriebe mit jahrzehntelanger Erfahrung im Bäderwesen, in der Arbeit mit Kindern sowie in Schwimmausbildung und Wassergewöhnung.",
+              bio: "Ausgebildete Fachkraft für Bäderbetriebe mit langjähriger Erfahrung im Bäderwesen, in der Arbeit mit Kindern sowie in Schwimmausbildung und Wassergewöhnung.",
             },
             {
-              role: "2. Vorsitzende",
+              role: "2. Vorsitzende · Kindertagespflegeperson & Fachkraft für Kleinkindpädagogik",
               name: "Sandra Kratz",
               photo: sandraKratzAsset.url,
               objectPosition: "center",
-              bio: "Langjährige Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung.",
+              bio: "Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung.",
             },
             {
-              role: "Kassenwart/Mitgliederverwaltung",
+              role: "Kassenwartin",
               name: "Manuela Scholz-Ornowski",
               photo: manuelaScholzOrnowskiAsset.url,
               objectPosition: "center",
               bio: "Engagiert sich im Vorstand für die Förderung von Schwimmkompetenz und Wassersicherheit und dafür, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen.",
             },
+
           ].map((p) => (
             <Card key={p.role} className="border-0 shadow-soft h-full min-w-0 overflow-hidden">
               <CardContent className="p-6 sm:p-7 min-w-0">
