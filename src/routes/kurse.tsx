@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
+import { AiImageNotice } from "@/components/AiImageNotice";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Users, Tag } from "lucide-react";
@@ -146,10 +147,7 @@ function KursePage() {
         <div className="flex justify-center mt-6">
           <CancellationButton />
         </div>
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Abbildungen auf dieser Website sind teilweise KI-generiert – siehe{" "}
-          <Link to="/impressum" hash="bildnachweise" className="underline">Bildnachweise</Link>.
-        </p>
+        <AiImageNotice className="mt-8 text-center" />
       </section>
     </PublicLayout>
   );

@@ -1,3 +1,4 @@
+import { CONTACT_ITEMS } from "@/lib/billing-config";
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
@@ -40,9 +41,15 @@ export function SiteFooter() {
         <div>
           <h4 className="font-display font-bold mb-3 text-base">Kontakt</h4>
           <ul className="space-y-3 text-sm opacity-90">
-            <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 shrink-0 text-accent" />Hennef, Rhein-Sieg-Kreis</li>
-            <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 shrink-0 text-accent" />info@sicher-schwimmen.com</li>
-            <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 shrink-0 text-accent" />0178 / 1142945 (Michael Kratz)</li>
+            {CONTACT_ITEMS.map((c) => {
+              const Icon = c.key === "address" ? MapPin : c.key === "email" ? Mail : Phone;
+              return (
+                <li key={c.key} className="flex items-start gap-2">
+                  <Icon className="h-4 w-4 mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+                  <span className="break-words min-w-0">{c.text}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>

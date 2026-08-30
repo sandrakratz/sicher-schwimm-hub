@@ -177,9 +177,7 @@ function Home() {
             <div className="font-display font-bold text-3xl">100%</div>
             <div className="text-xs font-semibold">Kinderschutzkonzept</div>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Abbildungen teilweise KI-generiert – siehe <Link to="/impressum" hash="bildnachweise" className="underline">Bildnachweise</Link>.
-          </p>
+          <AiImageNotice className="mt-4" />
         </div>
 
         <div>

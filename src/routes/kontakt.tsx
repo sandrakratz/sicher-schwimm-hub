@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
+import { CONTACT_ITEMS, ORG } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +31,8 @@ export const Route = createFileRoute("/kontakt")({
         "@type": "LocalBusiness",
         name: "Sicher Schwimmen e.V.",
         url: "https://sicher-schwimmen.com",
-        email: "info@sicher-schwimmen.com",
-        telephone: "+49-178-1142945",
+        email: ORG.email,
+        telephone: ORG.phoneIntl,
         address: {
           "@type": "PostalAddress",
           addressLocality: "Hennef (Sieg)",
@@ -118,9 +119,11 @@ function Page() {
       <section className="container mx-auto px-4 py-16 grid lg:grid-cols-3 gap-8">
         <div className="space-y-4">
           {[
-            { icon: MapPin, title: "Adresse", text: "Hennef, Rhein-Sieg-Kreis" },
-            { icon: Mail, title: "E-Mail", text: "info@sicher-schwimmen.com" },
-            { icon: Phone, title: "Telefon", text: "0178 / 1142945 (Michael Kratz)" },
+            ...CONTACT_ITEMS.map((c) => ({
+              icon: c.key === "address" ? MapPin : c.key === "email" ? Mail : Phone,
+              title: c.title,
+              text: c.text,
+            })),
           ].map(i => (
             <Card key={i.title} className="border-0 shadow-soft">
               <CardContent className="p-5 flex gap-4 items-start">

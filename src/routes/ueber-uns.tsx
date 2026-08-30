@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
+import { AiImageNotice } from "@/components/AiImageNotice";
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, Eye, Heart, Users, Sparkles, Accessibility } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
@@ -34,9 +35,7 @@ function Page() {
       <section className="container mx-auto px-4 py-16 grid lg:grid-cols-2 gap-12 items-center">
         <div>
           <img src={parentChild} alt="" className="rounded-3xl shadow-card" width={1024} height={768} loading="lazy" />
-          <p className="mt-4 text-xs text-muted-foreground">
-            Abbildungen teilweise KI-generiert – siehe <Link to="/impressum" hash="bildnachweise" className="underline">Bildnachweise</Link>.
-          </p>
+          <AiImageNotice className="mt-4" />
         </div>
 
         <div className="space-y-4">
