@@ -11,7 +11,7 @@ import { BankDetails } from "@/components/BankDetails";
 import { formatPrice } from "@/lib/format";
 import { programStatus } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
-import { HIDDEN_PROGRAM_SLUGS, NOT_BOOKABLE_NOTE, UPCOMING_PROGRAMS } from "@/lib/upcoming-programs";
+import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
 
 export const Route = createFileRoute("/kurse")({
   loader: async () => await listCoursePrograms(),
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/kurse")({
       children: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "ItemList",
-        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).filter((c) => !HIDDEN_PROGRAM_SLUGS.includes(c.slug)).map((c, i) => ({
+        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).map((c, i) => ({
           "@type": "ListItem",
           position: i + 1,
           item: {
@@ -53,9 +53,7 @@ export const Route = createFileRoute("/kurse")({
 });
 
 function KursePage() {
-  const programs = ((Route.useLoaderData() ?? []) as Array<CourseProgram>).filter(
-    (p) => !HIDDEN_PROGRAM_SLUGS.includes(p.slug),
-  );
+  const programs = (Route.useLoaderData() ?? []) as Array<CourseProgram>;
 
   return (
     <PublicLayout>
@@ -81,7 +79,10 @@ function KursePage() {
             {programs.map((c) => {
               const openTerms = c.open_terms ?? 0;
               const hasTerms = (c.terms?.length ?? 0) > 0;
-              const { label: statusLabel, className: statusClass } = programStatus(openTerms, hasTerms);
+              const bookable = c.bookable !== false;
+              const status = programStatus(openTerms, hasTerms);
+              const statusLabel = bookable ? status.label : "Geplant – noch nicht buchbar";
+              const statusClass = bookable ? status.className : "bg-muted text-muted-foreground";
               const std = formatPrice(c.price_non_member);
               const mem = formatPrice(c.price_member);
               return (
@@ -95,11 +96,21 @@ function KursePage() {
                     </div>
                     <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
                     {c.age_range && <div className="text-sm font-semibold text-primary mb-3">{c.age_range}</div>}
-                    {c.description && <p className="text-sm text-muted-foreground mb-3">{c.description}</p>}
+                    {c.description && (
+                      <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                        {c.description.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
+                      </div>
+                    )}
                     {c.requirements && (
                       <div className="text-xs mb-4 flex-1">
-                        <span className="font-semibold text-primary-deep">Voraussetzungen: </span>
-                        <span className="text-muted-foreground">{c.requirements}</span>
+                        <span className="font-semibold text-primary-deep">{bookable ? "Voraussetzungen: " : "Rahmen:"}</span>
+                        {bookable ? (
+                          <span className="text-muted-foreground">{c.requirements}</span>
+                        ) : (
+                          <ul className="mt-1 list-disc pl-5 space-y-0.5 text-muted-foreground">
+                            {c.requirements.split("\n").filter(Boolean).map((f, i) => <li key={i}>{f}</li>)}
+                          </ul>
+                        )}
                       </div>
                     )}
                     <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
@@ -122,11 +133,20 @@ function KursePage() {
                         <div className="flex items-center gap-2 pt-1"><Tag className="h-3.5 w-3.5" />Preis folgt nach Schwimmbadbuchung</div>
                       )}
                     </div>
-                    <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
-                      <Link to="/kurse/$slug" params={{ slug: c.slug }}>
-                        {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
-                      </Link>
-                    </Button>
+                    {bookable ? (
+                      <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
+                        <Link to="/kurse/$slug" params={{ slug: c.slug }}>
+                          {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
+                        </Link>
+                      </Button>
+                    ) : (
+                      <>
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep">
+                          {NOT_BOOKABLE_NOTE}
+                        </div>
+                        <div className="mt-3 text-center text-xs font-semibold text-muted-foreground">Demnächst verfügbar</div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               );
