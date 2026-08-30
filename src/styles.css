@@ -24,6 +24,7 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-deep: var(--primary-deep);
+  --color-hero-foreground: var(--hero-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -71,6 +72,8 @@
   --primary-foreground: oklch(1 0 0);
   /* Deep navy for headings & dark sections */
   --primary-deep: oklch(0.28 0.09 255);
+  /* Text colour on the dark hero gradient */
+  --hero-foreground: oklch(1 0 0);
 
   --secondary: oklch(0.94 0.04 230);
   --secondary-foreground: oklch(0.28 0.09 255);
@@ -124,6 +127,7 @@
   --primary: oklch(0.68 0.16 235);
   --primary-foreground: oklch(0.15 0.05 255);
   --primary-deep: oklch(0.18 0.05 255);
+  --hero-foreground: oklch(0.99 0.005 230);
   --secondary: oklch(0.3 0.08 255);
   --secondary-foreground: oklch(0.97 0.02 225);
   --muted: oklch(0.3 0.06 255);
