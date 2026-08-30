@@ -11,6 +11,7 @@ import { Check, Users, Heart, User, HandHeart, Waves, Euro, Star, Vote } from "l
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { HoneypotField, SubmitButton } from "@/components/form-support";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useServerFn } from "@tanstack/react-start";
 import { submitMembershipSignup } from "@/lib/membership-signup.functions";
@@ -87,6 +88,7 @@ function Page() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    if (String(fd.get("website") || "").trim() !== "") { setDone(true); return; } // Spamschutz (Honeypot)
     const rawPassword = String(fd.get("account_password") || "").trim();
     const rawPasswordConfirm = String(fd.get("account_password_confirm") || "").trim();
 
@@ -399,9 +401,9 @@ function Page() {
                   </div>
                 </div>
 
-                <Button type="submit" variant="accent" size="lg" className="w-full" disabled={loading}>
-                  {loading ? "Wird gesendet..." : "Mitgliedsantrag absenden"}
-                </Button>
+                <HoneypotField value="" onChange={() => {}} />
+
+                <SubmitButton loading={loading} loadingText="Antrag wird gesendet…" className="w-full">Mitgliedsantrag absenden</SubmitButton>
               </form>
             </CardContent>
           </Card>
