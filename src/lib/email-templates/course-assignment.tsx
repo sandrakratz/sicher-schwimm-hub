@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Body, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 import { formatDateBerlin } from '@/lib/format'
+import { paymentTerms } from '@/lib/payment-status'
 
 interface Props {
   parent_name?: string
@@ -15,6 +16,7 @@ interface Props {
   course_starts_on?: string
   course_ends_on?: string
   course_description?: string
+  issued_at?: string
   status_label?: string
   admin_notes?: string
   // Zahlung
@@ -50,6 +52,11 @@ const Email = (p: Props) => {
   const showPayment = p.status_label !== 'Warteliste'
   const memberLabel = p.is_member === true ? 'Mitglied' : p.is_member === false ? 'Nicht-Mitglied' : null
   const hasBank = Boolean(p.bank_iban && p.bank_recipient)
+  const terms = paymentTerms({
+    bookedAt: p.issued_at ?? null,
+    startsOn: p.course_starts_on ?? null,
+    paymentDueDays: p.payment_due_days ?? null,
+  })
   return (
   <Html lang="de">
     <Head />
@@ -95,10 +102,13 @@ const Email = (p: Props) => {
               </Text>
             )}
             <Text style={{ margin: '4px 0' }}>
-              Bitte überweisen Sie den Betrag innerhalb von <strong>{p.payment_due_days ?? 14} Tagen</strong> nach Erhalt
-              dieser E-Mail, spätestens jedoch <strong>bis 10 Tage vor Kursbeginn</strong>. Beginnt der Kurs innerhalb der
-              nächsten 10 Tage, ist die Kursgebühr <strong>sofort per Echtzeit-/Sofortüberweisung</strong> zu zahlen.
+              <strong>Zahlungsart:</strong> {terms.methodLabel}
             </Text>
+            <Text style={{ margin: '4px 0' }}>
+              <strong>Fällig bis:</strong>{' '}
+              <strong>{terms.immediate ? `sofort (${terms.dueDateLabel})` : terms.dueDateLabel}</strong>
+            </Text>
+            <Text style={{ margin: '4px 0' }}>{terms.note}</Text>
             <Section style={{ backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', marginTop: '8px', border: '1px solid #e2e8f0' }}>
               {hasBank ? (
                 <>
@@ -168,5 +178,6 @@ export const template = {
     price_amount: 150,
     payment_due_days: 14,
     payment_reference: 'Seepferdchen Frühjahr – Max Beispiel',
+    issued_at: '2026-02-01',
   },
 } satisfies TemplateEntry
