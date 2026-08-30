@@ -5,7 +5,7 @@ export const LABELS = {
   /** Button-/Link-Text, der zum Formular unter /kurs-anfragen führt. */
   waitlistCta: "Auf die Warteliste",
   /** Überschrift und Seitentitel des Warteliste-Formulars. */
-  waitlistPageTitle: "Auf die Warteliste",
+  waitlistPageTitle: "Kursanfrage & Warteliste",
   /** Bezeichnung der Person, die das Kind anmeldet. */
   guardian: "Erziehungsberechtigte:r",
   guardianFirstName: "Vorname (Erziehungsberechtigte:r)",
