@@ -24,12 +24,48 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/kontakt", changefreq: "monthly", priority: "0.7" },
           { path: "/faq", changefreq: "monthly", priority: "0.6" },
           { path: "/news", changefreq: "weekly", priority: "0.6" },
+          { path: "/widerruf", changefreq: "yearly", priority: "0.4" },
           { path: "/kursbedingungen", changefreq: "yearly", priority: "0.3" },
           { path: "/satzung", changefreq: "yearly", priority: "0.3" },
           { path: "/mitgliedsordnung", changefreq: "yearly", priority: "0.3" },
           { path: "/datenschutz", changefreq: "yearly", priority: "0.3" },
           { path: "/impressum", changefreq: "yearly", priority: "0.3" },
         ];
+
+        const { createClient } = await import("@supabase/supabase-js");
+        const key = process.env['SUPABASE_PUBLISHABLE_KEY']!;
+        const supabase = createClient(process.env['SUPABASE_URL']!, key, {
+          auth: { persistSession: false, autoRefreshToken: false },
+          global: {
+            fetch: (input, init) => {
+              const headers = new Headers(init?.headers);
+              if (key.startsWith("sb_") && headers.get("Authorization") === "Bearer " + key)
+                headers.delete("Authorization");
+              headers.set("apikey", key);
+              return fetch(input, { ...init, headers });
+            },
+          },
+        });
+
+        const pageSize = 1000;
+        for (let offset = 0; ; offset += pageSize) {
+          const { data, error } = await supabase
+            .from("course_programs")
+            .select("slug")
+            .eq("is_public", true)
+            .order("slug")
+            .range(offset, offset + pageSize - 1);
+          if (error) throw error;
+          entries.push(
+            ...(data ?? []).map((p: { slug: string }) => ({
+              path: `/kurse/${encodeURIComponent(p.slug)}`,
+              changefreq: "weekly" as const,
+              priority: "0.8",
+            })),
+          );
+          if (!data || data.length < pageSize) break;
+        }
+
 
         const urls = entries.map((e) =>
           [

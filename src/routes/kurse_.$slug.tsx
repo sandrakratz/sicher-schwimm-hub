@@ -31,12 +31,13 @@ export const Route = createFileRoute("/kurse_/$slug")({
     if (!program) throw notFound();
     return program;
   },
-  head: ({ loaderData }) => {
+  head: ({ params, loaderData }) => {
     const p = loaderData as CourseProgram | undefined;
     const title = p ? `${p.name} – Schwimmkurs buchen | Sicher Schwimmen e.V.` : "Schwimmkurs | Sicher Schwimmen e.V.";
     const desc = p?.description
       ? `${p.description} Freie Termine online verbindlich buchen.`
       : "Schwimmkurs mit freien Terminen online verbindlich buchen.";
+    const url = `https://sicher-schwimmen.com/kurse/${encodeURIComponent(params.slug)}`;
     return {
       meta: [
         { title },
@@ -44,10 +45,13 @@ export const Route = createFileRoute("/kurse_/$slug")({
         { property: "og:title", content: title },
         { property: "og:description", content: desc.slice(0, 158) },
         { property: "og:type", content: "website" },
+        { property: "og:url", content: url },
         { name: "twitter:card", content: "summary_large_image" },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
+
   component: ProgramPage,
   errorComponent: () => (
     <PublicLayout>
