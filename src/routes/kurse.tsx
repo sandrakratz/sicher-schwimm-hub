@@ -96,11 +96,15 @@ function KursePage() {
                     </div>
                     <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
                     {c.age_range && <div className="text-sm font-semibold text-primary mb-3">{c.age_range}</div>}
-                    {c.description && (
-                      <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                        {c.description.split(/\n\s*\n/).map((para, i) => <p key={i}>{para}</p>)}
-                      </div>
-                    )}
+                    {(() => {
+                      const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/) : []);
+                      if (paras.length === 0) return null;
+                      return (
+                        <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                          {paras.map((para, i) => <p key={i}>{para}</p>)}
+                        </div>
+                      );
+                    })()}
                     {c.requirements && (
                       <div className="text-xs mb-4 flex-1">
                         <span className="font-semibold text-primary-deep">{bookable ? "Voraussetzungen: " : "Rahmen:"}</span>
