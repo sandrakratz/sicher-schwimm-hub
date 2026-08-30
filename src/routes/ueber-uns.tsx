@@ -206,20 +206,20 @@ function Page() {
           <Card className="border-0 shadow-soft h-full">
             <CardContent className="p-7 space-y-4">
               <Users className="h-9 w-9 text-accent" />
-              <h2 className="font-display text-2xl font-bold text-primary-deep">Die Menschen hinter Sicher Schwimmen</h2>
+              <h2 className="font-display text-2xl font-bold text-primary-deep">Unser Trainerteam</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Hinter unserem Verein stehen Menschen mit unterschiedlichen
-                Erfahrungen, Fähigkeiten und Lebenswegen. Einige bringen viele Jahre
-                Erfahrung aus dem Schwimmsport mit, andere kommen aus pädagogischen
-                Berufen oder engagieren sich ehrenamtlich für unseren
-                Schwimmnachwuchs.
+                Hinter unseren Schwimmkursen steht ein engagiertes Team aus
+                Trainerinnen, Trainern und Nachwuchskräften.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Was sie verbindet, ist die Freude daran, Kinder und Jugendliche auf
-                ihrem Weg zu sicheren und selbstbewussten Schwimmern zu begleiten.
-                Unsere Trainerinnen und Trainer stellen sich regelmäßig persönlich auf
-                unseren Social-Media-Kanälen vor.
+                Die Menschen dahinter sind so unterschiedlich wie die Kinder, die wir
+                begleiten. Genau darin liegt eine unserer Stärken.
               </p>
+              <p className="text-muted-foreground leading-relaxed">
+                Unsere Trainerinnen und Trainer stellen sich auf Facebook und Instagram
+                persönlich vor.
+              </p>
+
               <SocialLinks className="text-primary-deep" />
             </CardContent>
           </Card>
