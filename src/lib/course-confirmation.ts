@@ -54,6 +54,9 @@ function addDays(iso: string, days: number): Date {
   return d;
 }
 
+/** Spätester Zahlungstermin: 10 Tage vor Kursbeginn. */
+export const DAYS_BEFORE_START = 10;
+
 export function computeDueDate(
   issuedAt: string,
   paymentDueDays: number,
@@ -61,10 +64,20 @@ export function computeDueDate(
 ): Date {
   const due = addDays(issuedAt, paymentDueDays);
   if (startsOn) {
-    const beforeStart = addDays(`${startsOn}T12:00:00`, -1);
+    const beforeStart = addDays(`${startsOn}T12:00:00`, -DAYS_BEFORE_START);
     if (beforeStart.getTime() < due.getTime()) return beforeStart;
   }
   return due;
+}
+
+/** Zahlung ist sofort fällig, wenn der späteste Termin nicht mehr in der Zukunft liegt. */
+export function isImmediatePayment(
+  issuedAt: string,
+  paymentDueDays: number,
+  startsOn?: string | null,
+): boolean {
+  const due = computeDueDate(issuedAt, paymentDueDays, startsOn);
+  return due.getTime() <= new Date(issuedAt).getTime();
 }
 
 export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc {
