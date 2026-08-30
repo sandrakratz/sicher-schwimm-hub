@@ -24,6 +24,7 @@ import { termStatus } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
 import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
+import { PaymentSummary } from "@/components/PaymentSummary";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
 export const Route = createFileRoute("/kurse_/$slug")({
@@ -144,7 +145,13 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
 
 function BookableProgramPage({ program }: { program: CourseProgram }) {
   const [bookingTerm, setBookingTerm] = useState<CourseTerm | null>(null);
-  const [result, setResult] = useState<{ status: "confirmed" | "waiting"; courseName: string } | null>(null);
+  const [result, setResult] = useState<{
+    status: "confirmed" | "waiting";
+    courseName: string;
+    startsOn: string | null;
+    paymentDueDays: number | null;
+    amount: number | null;
+  } | null>(null);
   const [blockedNotice, setBlockedNotice] = useState(false);
 
   const paragraphs = (program.description ?? "").split(/\n\s*\n/).filter(Boolean);
@@ -338,7 +345,13 @@ function BookingDialog({
   program: CourseProgram;
   term: CourseTerm | null;
   onClose: () => void;
-  onSuccess: (r: { status: "confirmed" | "waiting"; courseName: string }) => void;
+  onSuccess: (r: {
+    status: "confirmed" | "waiting";
+    courseName: string;
+    startsOn: string | null;
+    paymentDueDays: number | null;
+    amount: number | null;
+  }) => void;
   onBlocked: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -350,6 +363,10 @@ function BookingDialog({
   });
 
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
+
+  const price = form.isMember
+    ? term?.price_member ?? program.price_member ?? null
+    : term?.price_non_member ?? program.price_non_member ?? null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,7 +400,13 @@ function BookingDialog({
         onBlocked();
         return;
       }
-      onSuccess({ status: res.status as "confirmed" | "waiting", courseName: res.courseName ?? term.name });
+      onSuccess({
+        status: res.status as "confirmed" | "waiting",
+        courseName: res.courseName ?? term.name,
+        startsOn: term.starts_on,
+        paymentDueDays: program.payment_due_days,
+        amount: price,
+      });
 
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Die Buchung konnte nicht abgeschlossen werden.");
@@ -459,6 +482,12 @@ function BookingDialog({
               {program.price_member != null ? ` ${formatPrice(program.price_member)}` : ""})
             </Label>
           </div>
+          <PaymentSummary
+            startsOn={term?.starts_on}
+            paymentDueDays={program.payment_due_days}
+            amount={price}
+          />
+
           <div className="flex items-start gap-2">
             <Checkbox id="acceptTerms" checked={form.acceptTerms} onCheckedChange={(v) => set("acceptTerms", Boolean(v))} />
             <Label htmlFor="acceptTerms" className="text-sm font-normal leading-snug">
