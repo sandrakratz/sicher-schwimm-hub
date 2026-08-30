@@ -45,6 +45,7 @@ export const Route = createFileRoute("/kontakt")({
           { "@type": "City", name: "Hennef" },
           { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
         ],
+        sameAs: SOCIAL.map((s) => s.url),
       }),
     }],
   }),
