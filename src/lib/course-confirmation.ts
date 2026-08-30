@@ -114,7 +114,11 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
     locationLabel: input.location || "—",
     unitLabel: input.unitCount != null ? String(input.unitCount) : "—",
     priceLabel: formatEuro(input.priceAmount),
-    dueDateLabel: formatDateBerlin(computeDueDate(issuedAt, dueDays, input.startsOn)),
+    dueDateLabel,
+    immediatePayment: immediate,
+    paymentInstruction: immediate
+      ? `Da die Buchung innerhalb der letzten ${DAYS_BEFORE_START} Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr sofort per Echtzeit-/Sofortüberweisung unter Angabe der Dokument-Nr. ${documentNo} auf folgendes Vereinskonto zu zahlen:`
+      : `Bitte überweisen Sie die Kursgebühr bis zum ${dueDateLabel} unter Angabe der Dokument-Nr. ${documentNo} auf folgendes Vereinskonto:`,
     paymentReference: `${documentNo} / ${childName}`,
   };
 }
