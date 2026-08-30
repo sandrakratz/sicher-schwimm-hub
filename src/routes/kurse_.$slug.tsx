@@ -18,6 +18,10 @@ import {
 import { Clock, MapPin, Users, Tag, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { BILLING } from "@/lib/billing-config";
+import { BankDetails } from "@/components/BankDetails";
+import { formatPrice } from "@/lib/format";
+import { termStatus } from "@/lib/course-status";
+import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
@@ -63,11 +67,6 @@ export const Route = createFileRoute("/kurse_/$slug")({
   ),
 });
 
-function fmtPrice(v: number | null) {
-  if (v == null) return null;
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Number(v));
-}
-
 function ProgramPage() {
   const program = Route.useLoaderData() as CourseProgram;
   const [bookingTerm, setBookingTerm] = useState<CourseTerm | null>(null);
@@ -94,7 +93,7 @@ function ProgramPage() {
                 <p className="text-muted-foreground mb-4">
                   Für diesen Kurs stehen aktuell keine Termine zur Buchung bereit. Gerne nehmen wir Sie auf die Warteliste auf.
                 </p>
-                <Button asChild variant="accent"><Link to="/kurs-anfragen">Für Warteliste anfragen</Link></Button>
+                <Button asChild variant="accent"><Link to="/kurs-anfragen">{LABELS.waitlistCta}</Link></Button>
               </CardContent>
             </Card>
           ) : (
@@ -105,13 +104,10 @@ function ProgramPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-semibold text-primary-deep">{t.name}</span>
-                        {t.is_full ? (
-                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">Ausgebucht</Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-success/15 text-success border-success/30">
-                            {t.free_slots != null ? `${t.free_slots} freie Plätze` : "Plätze frei"}
-                          </Badge>
-                        )}
+                        {(() => {
+                          const st = termStatus(Boolean(t.is_full), t.free_slots);
+                          return <Badge variant="outline" className={st.className}>{st.label}</Badge>;
+                        })()}
                       </div>
                       <div className="text-sm text-muted-foreground flex items-center gap-2">
                         <CalendarDays className="h-4 w-4" />
@@ -123,7 +119,7 @@ function ProgramPage() {
                     </div>
                     <div className="shrink-0">
                       {t.is_full ? (
-                        <Button asChild variant="outline"><Link to="/kurs-anfragen">Warteliste anfragen</Link></Button>
+                        <Button asChild variant="outline"><Link to="/kurs-anfragen">{LABELS.waitlistCta}</Link></Button>
                       ) : (
                         <Button variant="accent" onClick={() => setBookingTerm(t)}>Verbindlich buchen</Button>
                       )}
@@ -154,8 +150,8 @@ function ProgramPage() {
                 <div className="flex items-start gap-2 pt-1">
                   <Tag className="h-4 w-4 mt-0.5" />
                   <div>
-                    {program.price_non_member != null && <div>{fmtPrice(program.price_non_member)} Normalpreis</div>}
-                    {program.price_member != null && <div className="text-primary font-semibold">{fmtPrice(program.price_member)} für Mitglieder</div>}
+                    {program.price_non_member != null && <div>{formatPrice(program.price_non_member)} Normalpreis</div>}
+                    {program.price_member != null && <div className="text-primary font-semibold">{formatPrice(program.price_member)} für Mitglieder</div>}
                   </div>
                 </div>
               )}
@@ -176,12 +172,8 @@ function ProgramPage() {
           <Card className="border-0 shadow-soft">
             <CardContent className="p-6 text-sm">
               <h2 className="font-display text-lg font-bold text-primary-deep mb-2">Bankverbindung</h2>
-              <p className="text-muted-foreground mb-3">Zahlung erst nach der Buchungsbestätigung – innerhalb von 14 Tagen, spätestens einen Tag vor Kursbeginn.</p>
-              <dl className="space-y-1 text-muted-foreground">
-                <div><span className="font-semibold text-foreground">Empfänger:</span> {BILLING.recipient}</div>
-                <div><span className="font-semibold text-foreground">IBAN:</span> {BILLING.iban}</div>
-                <div><span className="font-semibold text-foreground">BIC:</span> {BILLING.bic}</div>
-              </dl>
+              <p className="text-muted-foreground mb-3">{BILLING.dueNote}</p>
+              <BankDetails variant="compact" />
             </CardContent>
           </Card>
         </aside>
@@ -356,7 +348,7 @@ function BookingDialog({
             <Checkbox id="isMember" checked={form.isMember} onCheckedChange={(v) => set("isMember", Boolean(v))} />
             <Label htmlFor="isMember" className="text-sm font-normal leading-snug">
               Wir sind Mitglied im Sicher-Schwimmen e.V. (Mitgliedspreis
-              {program.price_member != null ? ` ${fmtPrice(program.price_member)}` : ""})
+              {program.price_member != null ? ` ${formatPrice(program.price_member)}` : ""})
             </Label>
           </div>
           <div className="flex items-start gap-2">
