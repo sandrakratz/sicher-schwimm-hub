@@ -11,6 +11,7 @@ import { BankDetails } from "@/components/BankDetails";
 import { formatPrice } from "@/lib/format";
 import { programStatus } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
+import { HIDDEN_PROGRAM_SLUGS, NOT_BOOKABLE_NOTE, UPCOMING_PROGRAMS } from "@/lib/upcoming-programs";
 
 export const Route = createFileRoute("/kurse")({
   loader: async () => await listCoursePrograms(),
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/kurse")({
       children: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "ItemList",
-        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).map((c, i) => ({
+        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).filter((c) => !HIDDEN_PROGRAM_SLUGS.includes(c.slug)).map((c, i) => ({
           "@type": "ListItem",
           position: i + 1,
           item: {
@@ -52,7 +53,9 @@ export const Route = createFileRoute("/kurse")({
 });
 
 function KursePage() {
-  const programs = (Route.useLoaderData() ?? []) as Array<CourseProgram>;
+  const programs = ((Route.useLoaderData() ?? []) as Array<CourseProgram>).filter(
+    (p) => !HIDDEN_PROGRAM_SLUGS.includes(p.slug),
+  );
 
   return (
     <PublicLayout>
