@@ -33,6 +33,7 @@ export interface CourseProgram {
   price_member: number | null
   price_non_member: number | null
   payment_due_days: number
+  bookable: boolean
   sort_order: number
   terms: Array<CourseTerm>
   open_terms: number
@@ -119,6 +120,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
       price_member: p.price_member,
       price_non_member: p.price_non_member,
       payment_due_days: p.payment_due_days,
+      bookable: (p as any).bookable !== false,
       sort_order: p.sort_order,
       terms,
       open_terms: terms.filter((t) => !t.is_full).length,
@@ -254,6 +256,9 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     if (courseErr) throw new Error(courseErr.message)
     if (!course || !course.is_public || course.archived_at) {
       throw new Error('Dieser Kurs ist derzeit nicht buchbar.')
+    }
+    if ((course as any).course_programs && (course as any).course_programs.bookable === false) {
+      throw new Error('Dieses Angebot ist derzeit noch nicht buchbar.')
     }
 
 

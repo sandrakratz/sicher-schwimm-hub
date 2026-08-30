@@ -23,27 +23,25 @@ import { formatPrice } from "@/lib/format";
 import { termStatus } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
-import { NOT_BOOKABLE_NOTE, UPCOMING_PROGRAMS } from "@/lib/upcoming-programs";
+import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
 export const Route = createFileRoute("/kurse_/$slug")({
   loader: async ({ params }) => {
-    const upcoming = UPCOMING_PROGRAMS.find((u) => u.slug === params.slug);
-    if (upcoming) return { upcomingSlug: upcoming.slug } as const;
     const program = await getCourseProgram({ data: { slug: params.slug } });
     if (!program) throw notFound();
     return program;
   },
   head: ({ params, loaderData }) => {
-    const up = UPCOMING_PROGRAMS.find((u) => u.slug === params.slug);
-    const p = up ? undefined : (loaderData as CourseProgram | undefined);
+    const p = loaderData as CourseProgram | undefined;
+    const up = p && p.bookable === false ? p : undefined;
     const title = up
       ? `${up.name} – geplantes Angebot | Sicher Schwimmen e.V.`
       : p
         ? `${p.name} – Schwimmkurs buchen | Sicher Schwimmen e.V.`
         : "Schwimmkurs | Sicher Schwimmen e.V.";
     const desc = up
-      ? `${up.intro} Geplantes Eltern-Kind-Angebot (${up.ageRange}) – derzeit noch nicht buchbar.`
+      ? `${(up.description ?? "").split(/\n/)[0]} Geplantes Angebot – derzeit noch nicht buchbar.`
       : p?.description
       ? `${p.description} Freie Termine online verbindlich buchen.`
       : "Schwimmkurs mit freien Terminen online verbindlich buchen.";
@@ -82,22 +80,21 @@ export const Route = createFileRoute("/kurse_/$slug")({
 });
 
 function ProgramPage() {
-  const data = Route.useLoaderData() as CourseProgram | { upcomingSlug: string };
-  if ("upcomingSlug" in data) {
-    const up = UPCOMING_PROGRAMS.find((u) => u.slug === data.upcomingSlug)!;
-    return <UpcomingProgramPage up={up} />;
-  }
+  const data = Route.useLoaderData() as CourseProgram;
+  if (data.bookable === false) return <UpcomingProgramPage up={data} />;
   return <BookableProgramPage program={data} />;
 }
 
-function UpcomingProgramPage({ up }: { up: (typeof UPCOMING_PROGRAMS)[number] }) {
+function UpcomingProgramPage({ up }: { up: CourseProgram }) {
+  const paragraphs = (up.description ?? "").split(/\n\s*\n/).filter(Boolean);
+  const frame = (up.requirements ?? "").split("\n").filter(Boolean);
   return (
     <PublicLayout>
       <section className="bg-hero text-white py-16">
         <div className="container mx-auto px-4">
           <Link to="/kurse" className="text-white/80 text-sm underline">← Alle Kurse</Link>
           <h1 className="font-display text-4xl md:text-5xl font-bold mt-3 mb-3">{up.name}</h1>
-          <p className="text-white/85 max-w-2xl">{up.intro}</p>
+          {paragraphs[0] && <p className="text-white/85 max-w-2xl">{paragraphs[0]}</p>}
         </div>
       </section>
 
@@ -107,13 +104,13 @@ function UpcomingProgramPage({ up }: { up: (typeof UPCOMING_PROGRAMS)[number] })
             <strong>Geplant – noch nicht buchbar.</strong> {NOT_BOOKABLE_NOTE}
           </div>
           <div className="space-y-3 text-muted-foreground">
-            {up.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+            {paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}
           </div>
           <Card className="border-0 shadow-soft">
             <CardContent className="p-6">
               <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Rahmen</h2>
               <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                {up.frame.map((f, i) => <li key={i}>{f}</li>)}
+                {frame.map((f, i) => <li key={i}>{f}</li>)}
               </ul>
             </CardContent>
           </Card>
@@ -122,15 +119,15 @@ function UpcomingProgramPage({ up }: { up: (typeof UPCOMING_PROGRAMS)[number] })
         <aside className="space-y-4">
           <Card className="border-0 shadow-soft">
             <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
-              <Badge variant="outline" className="bg-secondary text-primary-deep border-0">{up.targetGroup}</Badge>
-              <div className="flex items-center gap-2 pt-2"><Users className="h-4 w-4" />{up.ageRange}</div>
-              <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" />{up.location}</div>
-              <div className="flex items-center gap-2"><Clock className="h-4 w-4" />Geplanter Zeitraum: {up.period}</div>
+              {up.target_group && <Badge variant="outline" className="bg-secondary text-primary-deep border-0">{up.target_group}</Badge>}
+              {up.age_range && <div className="flex items-center gap-2 pt-2"><Users className="h-4 w-4" />{up.age_range}</div>}
+              {up.location && <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" />{up.location}</div>}
+              {up.duration && <div className="flex items-center gap-2"><Clock className="h-4 w-4" />{up.duration}</div>}
               <div className="flex items-start gap-2">
                 <Tag className="h-4 w-4 mt-0.5" />
                 <div>
-                  <span className="font-semibold text-foreground">{formatPrice(up.priceNonMember)}</span> Normalpreis ·{" "}
-                  <span className="font-semibold text-primary">{formatPrice(up.priceMember)}</span> für Mitglieder
+                  <span className="font-semibold text-foreground">{formatPrice(up.price_non_member)}</span> Normalpreis ·{" "}
+                  <span className="font-semibold text-primary">{formatPrice(up.price_member)}</span> für Mitglieder
                 </div>
               </div>
               <div className="pt-3 text-center text-xs font-semibold text-muted-foreground border-t">
