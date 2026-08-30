@@ -145,11 +145,14 @@ function KursePage() {
                       </Button>
                     ) : (
                       <>
-                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep">
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep mb-3">
                           {NOT_BOOKABLE_NOTE}
                         </div>
-                        <div className="mt-3 text-center text-xs font-semibold text-muted-foreground">Demnächst verfügbar</div>
+                        <Button asChild variant="outline" className="w-full">
+                          <Link to="/kurse/$slug" params={{ slug: c.slug }}>Details &amp; Anfrage</Link>
+                        </Button>
                       </>
+
                     )}
                   </CardContent>
                 </Card>

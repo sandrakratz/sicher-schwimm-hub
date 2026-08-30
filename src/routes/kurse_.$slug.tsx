@@ -130,8 +130,9 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
                   <span className="font-semibold text-primary">{formatPrice(up.price_member)}</span> für Mitglieder
                 </div>
               </div>
-              <div className="pt-3 text-center text-xs font-semibold text-muted-foreground border-t">
-                Demnächst verfügbar
+              <div className="pt-3 border-t space-y-2">
+                <Button asChild variant="accent" className="w-full"><Link to="/kurs-anfragen">{LABELS.waitlistCta}</Link></Button>
+                <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns, sobald Termine feststehen.</p>
               </div>
             </CardContent>
           </Card>
