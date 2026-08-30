@@ -11,7 +11,7 @@ export const BILLING = {
   purpose: "Kursname + Name des Kindes + Kursbeginn (Startdatum)",
   /** Einheitlicher Hinweis zur Fälligkeit der Kursgebühr. */
   dueNote:
-    "Die Kursgebühr wird nach der Buchungsbestätigung fällig: innerhalb von 14 Tagen nach der Bestätigung, spätestens jedoch einen Tag vor Kursbeginn.",
+    "Die Kursgebühr wird nach der Buchungsbestätigung fällig: innerhalb von 14 Tagen nach der Bestätigung, spätestens jedoch bis 10 Tage vor Kursbeginn. Wird ein Kurs innerhalb der letzten 10 Tage vor Kursbeginn gebucht, ist die Kursgebühr sofort per Echtzeit-/Sofortüberweisung zu zahlen.",
 };
 
 export const ORG = {
