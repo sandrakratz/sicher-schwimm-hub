@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AlertTriangle, Loader2, RefreshCw, Send, Trash2, Undo2 } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { AlertTriangle, FileText, Loader2, RefreshCw, Send, Trash2, Undo2 } from "lucide-react";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import {
   listWaitlist,
@@ -25,6 +26,76 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   expired: { label: "Frist abgelaufen", className: "bg-slate-200 text-slate-800" },
   removed: { label: "Entfernt", className: "bg-slate-200 text-slate-800" },
 };
+
+type WaitlistEntry = Record<string, unknown> & {
+  id: string;
+  child_name: string | null;
+  request?: Record<string, unknown> | null;
+};
+
+function Row({ label, value }: { label: string; value: unknown }) {
+  if (value === null || value === undefined || value === "") return null;
+  const text =
+    typeof value === "boolean" ? (value ? "Ja" : "Nein") : String(value);
+  return (
+    <div className="grid grid-cols-[11rem_1fr] gap-2 border-b py-1.5 text-sm last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="whitespace-pre-wrap">{text}</span>
+    </div>
+  );
+}
+
+function OriginalRequestDialog({
+  entry,
+  open,
+  onOpenChange,
+}: {
+  entry: WaitlistEntry | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const r = entry?.request ?? null;
+  const g = (k: string) => (r ? r[k] : (entry as Record<string, unknown> | null)?.[k]) ?? null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Originalanfrage – {String(entry?.child_name ?? "")}</DialogTitle>
+          <DialogDescription>
+            {r
+              ? "Ursprüngliche Kursanfrage über das Anfrageformular."
+              : "Direkte Anmeldung über das Wartelisten-Formular."}
+          </DialogDescription>
+        </DialogHeader>
+        {entry && (
+          <div className="space-y-1">
+            <Row label="Eingang" value={formatDateTimeBerlin(String(g("created_at") ?? entry["created_at"]))} />
+            <Row label="Kind" value={g("child_name")} />
+            <Row
+              label="Geburtsdatum"
+              value={g("child_dob") ? formatDateBerlin(String(g("child_dob"))) : null}
+            />
+            <Row label="Eltern" value={g("parent_name")} />
+            <Row label="E-Mail" value={g("parent_email")} />
+            <Row label="Telefon" value={g("parent_phone")} />
+            <Row label="Kurswunsch" value={g("desired_course")} />
+            <Row label="Schwimmniveau" value={g("swimming_level")} />
+            <Row label="Gesundheitliche Hinweise" value={g("health_info")} />
+            <Row label="Nachricht" value={g("message") ?? entry["notes"]} />
+            <Row label="Mitglied" value={entry["is_member"]} />
+            <Row label="Datenschutz zugestimmt" value={g("gdpr_consent") ?? entry["gdpr_consent"]} />
+            <Row label="Kontaktaufnahme erlaubt" value={g("contact_permission")} />
+            <Row label="Status Anfrage" value={g("status")} />
+            <Row label="Interne Notizen (Anfrage)" value={r?.["admin_notes"]} />
+            {r && <Row label="Anfrage-ID" value={r["id"]} />}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function NotesCell({
   entryId,
