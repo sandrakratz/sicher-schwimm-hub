@@ -367,13 +367,24 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const [{ data: entries }, { data: programs }, { data: courses }] = await Promise.all([
       supabaseAdmin.from('waitlist_entries').select('*').order('created_at', { ascending: true }),
-      supabaseAdmin.from('course_programs').select('id,name').order('sort_order'),
+      supabaseAdmin.from('course_programs').select('id,name,slug,min_age_years').order('sort_order'),
       supabaseAdmin
         .from('courses')
         .select('id,name,program_id,starts_on,max_participants,status,archived_at')
         .is('archived_at', null)
         .order('starts_on'),
     ])
+
+    // Freitext-Kurswunsch aus der ursprünglichen Anfrage nachziehen
+    const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
+    const wishes = new Map<string, string | null>()
+    if (requestIds.length) {
+      const { data: reqs } = await supabaseAdmin
+        .from('course_requests')
+        .select('id,desired_course')
+        .in('id', requestIds)
+      for (const r of reqs ?? []) wishes.set(r.id, r.desired_course)
+    }
 
     const courseIds = (courses ?? []).map((c) => c.id)
     const counts = new Map<string, number>()
@@ -388,7 +399,10 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     }
 
     return {
-      entries: entries ?? [],
+      entries: (entries ?? []).map((e) => ({
+        ...e,
+        desired_course: e.request_id ? wishes.get(e.request_id) ?? null : null,
+      })),
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => ({
         ...c,
@@ -396,6 +410,7 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         free: c.max_participants != null ? Math.max(0, c.max_participants - (counts.get(c.id) ?? 0)) : null,
       })),
     }
+
   })
 
 export const runWaitlistAllocation = createServerFn({ method: 'POST' })
