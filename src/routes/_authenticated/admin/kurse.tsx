@@ -1071,6 +1071,18 @@ function Page() {
                 <Input type="number" value={editing.payment_due_days ?? 14} onChange={e => setEditing(p => ({ ...p, payment_due_days: e.target.value ? Number(e.target.value) : 14 }))} />
               </div>
             </div>
+            {editing.starts_on && (() => {
+              const terms = paymentTerms({ startsOn: editing.starts_on, paymentDueDays: editing.payment_due_days ?? 14 });
+              return (
+                <div className="rounded-md border bg-muted/40 p-3 text-xs">
+                  <div className="font-medium">Zahlungsvorschau bei Buchung heute</div>
+                  <div className="mt-1 text-muted-foreground">
+                    Kursbeginn {formatDateBerlin(editing.starts_on)} · Zahlungsart: {terms.methodLabel} · fällig bis {terms.dueDateLabel}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">{terms.note}</div>
+                </div>
+              );
+            })()}
             <label className="flex items-center gap-2 text-sm"><Checkbox checked={editing.is_public ?? true} onCheckedChange={v => setEditing(p => ({ ...p, is_public: !!v }))} /> Öffentlich sichtbar</label>
 
           </div>
