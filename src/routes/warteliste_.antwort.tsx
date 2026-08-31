@@ -40,7 +40,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 function OfferResponsePage() {
-  const { token, aktion } = useSearch({ from: "/warteliste/antwort" });
+  const { token, aktion } = useSearch({ from: "/warteliste_/antwort" });
   const [result, setResult] = useState<null | { accepted: boolean; immediate?: boolean; dueDate?: string }>(null);
   const [loading, setLoading] = useState(false);
 
