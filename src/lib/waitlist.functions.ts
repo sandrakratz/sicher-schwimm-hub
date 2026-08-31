@@ -422,15 +422,35 @@ export const listWaitlist = createServerFn({ method: 'GET' })
       }
     }
 
+    const norm = (v: string | null | undefined) => (v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+    const dupCount = new Map<string, number>()
+    for (const e of entries ?? []) {
+      if (!['waiting', 'offered'].includes(e.status)) continue
+      const key = `${norm(e.parent_email)}|${norm(e.child_name)}`
+      dupCount.set(key, (dupCount.get(key) ?? 0) + 1)
+    }
+
     return {
       entries: (entries ?? []).map((e) => {
         const req = e.request_id ? requests.get(e.request_id) ?? null : null
+        const emailNorm = norm(e.parent_email)
+        const childNorm = norm(e.child_name)
+        const block = (blocklist ?? []).find(
+          (b) =>
+            (b.email_norm && b.email_norm === emailNorm) ||
+            (b.child_name_norm &&
+              b.child_name_norm === childNorm &&
+              (!b.child_dob || b.child_dob === e.child_dob)),
+        )
         return {
           ...e,
           desired_course: (req?.['desired_course'] as string | null) ?? null,
           request: req,
+          blocked_reason: block?.reason ?? null,
+          duplicate: (dupCount.get(`${emailNorm}|${childNorm}`) ?? 0) > 1,
         }
       }),
+
 
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => ({
