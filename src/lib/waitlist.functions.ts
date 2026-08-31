@@ -544,8 +544,9 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
     const rows: Array<Record<string, unknown>> = []
     for (const r of requests ?? []) {
       if (byRequest.has(r.id)) continue
+      if (enrolledRequests.has(r.id)) continue
       const key = `${(r.parent_email ?? '').toLowerCase().trim()}|${(r.child_name ?? '').toLowerCase().trim()}`
-      if (byPerson.has(key)) continue
+      if (byPerson.has(key) || enrolledPersons.has(key)) continue
       byPerson.add(key)
       const prog = matchProgram(r.desired_course, programs ?? [])
       rows.push({
