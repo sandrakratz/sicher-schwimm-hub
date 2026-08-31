@@ -144,6 +144,10 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
       sort_order: p.sort_order,
       terms,
       open_terms: terms.filter((t) => !t.is_full).length,
+      free_slots_total: terms.some((t) => t.free_slots != null)
+        ? terms.reduce((sum, t) => sum + (t.free_slots ?? 0), 0)
+        : null,
+      waitlist_count: waitCounts.get(p.id) ?? 0,
     }
   })
 }
