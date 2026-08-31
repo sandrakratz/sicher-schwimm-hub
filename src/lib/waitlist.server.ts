@@ -180,3 +180,8 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
 
   return { offers, expired }
 }
+
+/** Manuelles Platzangebot aus der Verwaltung heraus. */
+export async function offerPlaceManually(entry: any, course: any, program: any) {
+  return createOffer(entry, course, program)
+}
