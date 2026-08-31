@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,15 +190,20 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
         const others = all.filter(s => s.trainer_id !== me && s.available);
 
         return (
-          <Card key={e.id} className="border-0 shadow-soft">
-            <CardContent className="p-4 space-y-3">
+          <CollapsibleCard
+            key={e.id}
+            className="border-0 shadow-soft"
+            storageKey={`event-shift-${e.id}`}
+            title={e.title}
+            subtitle={
+              <span className="flex flex-wrap gap-3">
+                <span>{formatDateTimeBerlin(e.starts_at)}{e.ends_at ? ` – ${berlinTime(e.ends_at)} Uhr` : ""}</span>
+                {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</span>}
+              </span>
+            }
+            contentClassName="space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-display text-lg font-semibold text-primary-deep">{e.title}</div>
-                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span>{formatDateTimeBerlin(e.starts_at)}{e.ends_at ? ` – ${berlinTime(e.ends_at)} Uhr` : ""}</span>
-                    {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</span>}
-                  </div>
                   {e.signup_note && <p className="mt-1 text-xs text-muted-foreground">{e.signup_note}</p>}
                 </div>
                 <div className="flex gap-2">
@@ -297,8 +303,7 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
                   Noch nicht besetzt: {gaps.map(g => formatRange(g.start, g.end)).join(", ")}
                 </p>
               )}
-            </CardContent>
-          </Card>
+          </CollapsibleCard>
         );
       })}
     </div>

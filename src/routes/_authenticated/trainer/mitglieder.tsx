@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -89,8 +89,12 @@ function Page() {
         className="max-w-sm"
       />
 
-      <Card>
-        <CardContent className="p-0">
+      <CollapsibleCard
+        title="Mitgliederliste"
+        subtitle="Klicken zum Ein- und Ausklappen"
+        storageKey="trainer-mitglieder"
+        contentClassName="px-0"
+      >
           <Table>
             <TableHeader>
               <TableRow>
@@ -145,8 +149,7 @@ function Page() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,8 +102,7 @@ function Page() {
         <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Beitrag</Button>
       </div>
 
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0 overflow-x-auto">
+      <CollapsibleCard title="Beiträge" storageKey="admin-news" contentClassName="px-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -131,8 +131,7 @@ function Page() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

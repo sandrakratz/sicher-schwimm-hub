@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,8 +208,7 @@ function Page() {
         </CardContent>
       </Card>
 
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0">
+      <CollapsibleCard title="Gesendete E-Mails" storageKey="admin-emails" contentClassName="px-0">
           {loading ? (
             <p className="text-center text-muted-foreground py-10">Lade …</p>
           ) : paged.length === 0 ? (
@@ -254,8 +254,7 @@ function Page() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">

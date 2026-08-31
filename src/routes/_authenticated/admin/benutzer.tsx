@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -168,8 +169,7 @@ function Page() {
         <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="Suche nach Name oder E-Mail…" className="max-w-xs" />
       </div>
 
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0 overflow-x-auto">
+      <CollapsibleCard title="Benutzerliste" storageKey="admin-benutzer" contentClassName="px-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -205,8 +205,7 @@ function Page() {
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       {canManage && (
         <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
