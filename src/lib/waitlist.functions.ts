@@ -375,16 +375,26 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         .order('starts_on'),
     ])
 
-    // Freitext-Kurswunsch aus der ursprünglichen Anfrage nachziehen
+    // Originalanfrage (komplett) nachziehen
     const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
-    const wishes = new Map<string, string | null>()
+    const requests = new Map<string, Record<string, string | number | boolean | null>>()
     if (requestIds.length) {
       const { data: reqs } = await supabaseAdmin
         .from('course_requests')
-        .select('id,desired_course')
+        .select('*')
         .in('id', requestIds)
-      for (const r of reqs ?? []) wishes.set(r.id, r.desired_course)
+      for (const r of reqs ?? []) {
+        const plain: Record<string, string | number | boolean | null> = {}
+        for (const [k, v] of Object.entries(r as Record<string, unknown>)) {
+          plain[k] =
+            v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
+              ? (v as string | number | boolean | null)
+              : JSON.stringify(v)
+        }
+        requests.set(r.id, plain)
+      }
     }
+
 
     const courseIds = (courses ?? []).map((c) => c.id)
     const counts = new Map<string, number>()
@@ -399,10 +409,15 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     }
 
     return {
-      entries: (entries ?? []).map((e) => ({
-        ...e,
-        desired_course: e.request_id ? wishes.get(e.request_id) ?? null : null,
-      })),
+      entries: (entries ?? []).map((e) => {
+        const req = e.request_id ? requests.get(e.request_id) ?? null : null
+        return {
+          ...e,
+          desired_course: (req?.['desired_course'] as string | null) ?? null,
+          request: req,
+        }
+      }),
+
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => ({
         ...c,
