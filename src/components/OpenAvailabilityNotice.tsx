@@ -75,7 +75,7 @@ export function OpenAvailabilityNotice() {
           </div>
         </div>
         <Button asChild size="sm">
-          <Link to="/admin/verfuegbarkeit">Jetzt beantworten</Link>
+          <Link to="/trainer/verfuegbarkeit">Jetzt beantworten</Link>
         </Button>
       </CardContent>
     </Card>

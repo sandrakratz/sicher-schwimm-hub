@@ -42,6 +42,8 @@ import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/pu
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as AuthenticatedTrainerVerfuegbarkeitRouteImport } from './routes/_authenticated/trainer/verfuegbarkeit'
+import { Route as AuthenticatedTrainerMitgliederRouteImport } from './routes/_authenticated/trainer/mitglieder'
+import { Route as AuthenticatedTrainerKurseRouteImport } from './routes/_authenticated/trainer/kurse'
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
 import { Route as AuthenticatedPortalKurseRouteImport } from './routes/_authenticated/portal/kurse'
@@ -236,6 +238,18 @@ const AuthenticatedTrainerVerfuegbarkeitRoute =
   AuthenticatedTrainerVerfuegbarkeitRouteImport.update({
     id: '/trainer/verfuegbarkeit',
     path: '/trainer/verfuegbarkeit',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainerMitgliederRoute =
+  AuthenticatedTrainerMitgliederRouteImport.update({
+    id: '/trainer/mitglieder',
+    path: '/trainer/mitglieder',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainerKurseRoute =
+  AuthenticatedTrainerKurseRouteImport.update({
+    id: '/trainer/kurse',
+    path: '/trainer/kurse',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPortalProfilRoute =
@@ -442,6 +456,8 @@ export interface FileRoutesByFullPath {
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
+  '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
@@ -502,6 +518,8 @@ export interface FileRoutesByTo {
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
+  '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
@@ -565,6 +583,8 @@ export interface FileRoutesById {
   '/_authenticated/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/_authenticated/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
+  '/_authenticated/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/_authenticated/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
@@ -628,6 +648,8 @@ export interface FileRouteTypes {
     | '/portal/kurse'
     | '/portal/news'
     | '/portal/profil'
+    | '/trainer/kurse'
+    | '/trainer/mitglieder'
     | '/trainer/verfuegbarkeit'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
@@ -688,6 +710,8 @@ export interface FileRouteTypes {
     | '/portal/kurse'
     | '/portal/news'
     | '/portal/profil'
+    | '/trainer/kurse'
+    | '/trainer/mitglieder'
     | '/trainer/verfuegbarkeit'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
@@ -750,6 +774,8 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/kurse'
     | '/_authenticated/portal/news'
     | '/_authenticated/portal/profil'
+    | '/_authenticated/trainer/kurse'
+    | '/_authenticated/trainer/mitglieder'
     | '/_authenticated/trainer/verfuegbarkeit'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
@@ -1034,6 +1060,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainerVerfuegbarkeitRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trainer/mitglieder': {
+      id: '/_authenticated/trainer/mitglieder'
+      path: '/trainer/mitglieder'
+      fullPath: '/trainer/mitglieder'
+      preLoaderRoute: typeof AuthenticatedTrainerMitgliederRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trainer/kurse': {
+      id: '/_authenticated/trainer/kurse'
+      path: '/trainer/kurse'
+      fullPath: '/trainer/kurse'
+      preLoaderRoute: typeof AuthenticatedTrainerKurseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/portal/profil': {
       id: '/_authenticated/portal/profil'
       path: '/portal/profil'
@@ -1282,6 +1322,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortalKurseRoute: typeof AuthenticatedPortalKurseRoute
   AuthenticatedPortalNewsRoute: typeof AuthenticatedPortalNewsRoute
   AuthenticatedPortalProfilRoute: typeof AuthenticatedPortalProfilRoute
+  AuthenticatedTrainerKurseRoute: typeof AuthenticatedTrainerKurseRoute
+  AuthenticatedTrainerMitgliederRoute: typeof AuthenticatedTrainerMitgliederRoute
   AuthenticatedTrainerVerfuegbarkeitRoute: typeof AuthenticatedTrainerVerfuegbarkeitRoute
   AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
   AuthenticatedTrainerIndexRoute: typeof AuthenticatedTrainerIndexRoute
@@ -1295,6 +1337,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortalKurseRoute: AuthenticatedPortalKurseRoute,
   AuthenticatedPortalNewsRoute: AuthenticatedPortalNewsRoute,
   AuthenticatedPortalProfilRoute: AuthenticatedPortalProfilRoute,
+  AuthenticatedTrainerKurseRoute: AuthenticatedTrainerKurseRoute,
+  AuthenticatedTrainerMitgliederRoute: AuthenticatedTrainerMitgliederRoute,
   AuthenticatedTrainerVerfuegbarkeitRoute:
     AuthenticatedTrainerVerfuegbarkeitRoute,
   AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
