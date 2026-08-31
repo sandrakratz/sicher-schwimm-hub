@@ -192,6 +192,10 @@ function Page() {
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean } | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const removeParticipantFn = useServerFn(removeCourseParticipant);
+
   const [reqOpen, setReqOpen] = useState(false);
   const [reqLoading, setReqLoading] = useState(false);
   const [reqRow, setReqRow] = useState<CourseRequest | null>(null);
