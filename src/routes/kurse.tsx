@@ -100,7 +100,10 @@ function KursePage() {
                       <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold whitespace-nowrap ${statusClass}`}>{statusLabel}</span>
                     </div>
                     <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
-                    {c.age_range && <div className="text-sm font-semibold text-primary mb-3">{c.age_range}</div>}
+                    {c.age_range && <div className="text-sm font-semibold text-primary mb-1">{c.age_range}</div>}
+                    {bookable && (
+                      <div className="text-xs text-muted-foreground mb-3">{status.detail}</div>
+                    )}
                     {(() => {
                       const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/) : []);
                       if (paras.length === 0) return null;
