@@ -56,7 +56,7 @@ export function SiteHeader() {
             </Link>
           </Button>
           <Button asChild variant="accent" size="sm">
-            <Link to="/kurs-anfragen">Kurs anfragen</Link>
+            <Link to="/warteliste">Kurs anfragen</Link>
           </Button>
         </div>
 
@@ -81,7 +81,7 @@ export function SiteHeader() {
                 </Link>
               </Button>
               <Button asChild variant="accent" className="flex-1">
-                <Link to="/kurs-anfragen" onClick={() => setOpen(false)}>Kurs anfragen</Link>
+                <Link to="/warteliste" onClick={() => setOpen(false)}>Kurs anfragen</Link>
               </Button>
             </div>
           </nav>

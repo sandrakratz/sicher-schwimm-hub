@@ -2,7 +2,7 @@
 // Damit heißt derselbe Weg überall gleich.
 
 export const LABELS = {
-  /** Button-/Link-Text, der zum Formular unter /kurs-anfragen führt. */
+  /** Button-/Link-Text, der zum Wartelisten-Formular unter /warteliste führt. */
   waitlistCta: "Auf die Warteliste",
   /** Überschrift und Seitentitel des Warteliste-Formulars. */
   waitlistPageTitle: "Kursanfrage & Warteliste",
