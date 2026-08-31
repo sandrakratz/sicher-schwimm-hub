@@ -34,12 +34,14 @@ import { Route as WartelisteAntwortRouteImport } from './routes/warteliste_.antw
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authenticated/trainer/index'
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
+import { Route as AuthenticatedTrainerVerfuegbarkeitRouteImport } from './routes/_authenticated/trainer/verfuegbarkeit'
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
 import { Route as AuthenticatedPortalKurseRouteImport } from './routes/_authenticated/portal/kurse'
@@ -192,6 +194,12 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTrainerIndexRoute =
+  AuthenticatedTrainerIndexRouteImport.update({
+    id: '/trainer/',
+    path: '/trainer/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPortalIndexRoute =
   AuthenticatedPortalIndexRouteImport.update({
     id: '/portal/',
@@ -224,6 +232,12 @@ const ApiPublicNotifyAdminRoute = ApiPublicNotifyAdminRouteImport.update({
   path: '/api/public/notify-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTrainerVerfuegbarkeitRoute =
+  AuthenticatedTrainerVerfuegbarkeitRouteImport.update({
+    id: '/trainer/verfuegbarkeit',
+    path: '/trainer/verfuegbarkeit',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPortalProfilRoute =
   AuthenticatedPortalProfilRouteImport.update({
     id: '/portal/profil',
@@ -428,12 +442,14 @@ export interface FileRoutesByFullPath {
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
+  '/trainer/': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -486,12 +502,14 @@ export interface FileRoutesByTo {
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
+  '/trainer': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -547,12 +565,14 @@ export interface FileRoutesById {
   '/_authenticated/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/_authenticated/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
   '/lovable/email/events': typeof LovableEmailEventsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
+  '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -608,12 +628,14 @@ export interface FileRouteTypes {
     | '/portal/kurse'
     | '/portal/news'
     | '/portal/profil'
+    | '/trainer/verfuegbarkeit'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
     | '/lovable/email/events'
     | '/admin/'
     | '/portal/'
+    | '/trainer/'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
@@ -666,12 +688,14 @@ export interface FileRouteTypes {
     | '/portal/kurse'
     | '/portal/news'
     | '/portal/profil'
+    | '/trainer/verfuegbarkeit'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
     | '/lovable/email/events'
     | '/admin'
     | '/portal'
+    | '/trainer'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
@@ -726,12 +750,14 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/kurse'
     | '/_authenticated/portal/news'
     | '/_authenticated/portal/profil'
+    | '/_authenticated/trainer/verfuegbarkeit'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
     | '/lovable/email/events'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
+    | '/_authenticated/trainer/'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
@@ -952,6 +978,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trainer/': {
+      id: '/_authenticated/trainer/'
+      path: '/trainer'
+      fullPath: '/trainer/'
+      preLoaderRoute: typeof AuthenticatedTrainerIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/portal/': {
       id: '/_authenticated/portal/'
       path: '/portal'
@@ -993,6 +1026,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/notify-admin'
       preLoaderRoute: typeof ApiPublicNotifyAdminRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/trainer/verfuegbarkeit': {
+      id: '/_authenticated/trainer/verfuegbarkeit'
+      path: '/trainer/verfuegbarkeit'
+      fullPath: '/trainer/verfuegbarkeit'
+      preLoaderRoute: typeof AuthenticatedTrainerVerfuegbarkeitRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/portal/profil': {
       id: '/_authenticated/portal/profil'
@@ -1242,7 +1282,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortalKurseRoute: typeof AuthenticatedPortalKurseRoute
   AuthenticatedPortalNewsRoute: typeof AuthenticatedPortalNewsRoute
   AuthenticatedPortalProfilRoute: typeof AuthenticatedPortalProfilRoute
+  AuthenticatedTrainerVerfuegbarkeitRoute: typeof AuthenticatedTrainerVerfuegbarkeitRoute
   AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
+  AuthenticatedTrainerIndexRoute: typeof AuthenticatedTrainerIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1253,7 +1295,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortalKurseRoute: AuthenticatedPortalKurseRoute,
   AuthenticatedPortalNewsRoute: AuthenticatedPortalNewsRoute,
   AuthenticatedPortalProfilRoute: AuthenticatedPortalProfilRoute,
+  AuthenticatedTrainerVerfuegbarkeitRoute:
+    AuthenticatedTrainerVerfuegbarkeitRoute,
   AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
+  AuthenticatedTrainerIndexRoute: AuthenticatedTrainerIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

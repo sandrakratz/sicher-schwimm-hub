@@ -5,6 +5,7 @@ export type Role = "admin" | "board" | "trainer" | "member" | "parent";
 export type AppNavItem = {
   to:
     | "/portal" | "/portal/profil" | "/portal/kurse" | "/portal/news" | "/portal/events" | "/portal/dokumente" | "/portal/kontakt"
+    | "/trainer" | "/trainer/verfuegbarkeit"
     | "/admin" | "/admin/benutzer" | "/admin/mitglieder" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/warteliste" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/versandstatus" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
@@ -23,6 +24,16 @@ export const portalNav: AppNavItem[] = [
   { to: "/portal/kontakt", icon: Mail, label: "Verein kontaktieren" },
 ];
 
+/** Eigener Bereich für Trainer:innen */
+export const trainerNav: AppNavItem[] = [
+  { to: "/trainer", icon: LayoutDashboard, label: "Trainerbereich", exact: true, allow: ["admin", "board", "trainer"] },
+  { to: "/trainer/verfuegbarkeit", icon: CalendarCheck, label: "Meine Verfügbarkeit", allow: ["admin", "board", "trainer"] },
+];
+
+export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
+  return trainerNav.filter(n => (n.allow ?? []).some(r => roles.includes(r)));
+}
+
 /** Nur mit passender Rolle sichtbar */
 export const adminNav: AppNavItem[] = [
   { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
@@ -30,7 +41,7 @@ export const adminNav: AppNavItem[] = [
   { to: "/admin/mitglieder", icon: Users, label: "Vereinsmitglieder", allow: ["admin", "board", "trainer"] },
   { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
-  { to: "/admin/verfuegbarkeit", icon: CalendarCheck, label: "Verfügbarkeit", allow: ["admin", "board", "trainer"] },
+  { to: "/admin/verfuegbarkeit", icon: CalendarCheck, label: "Verfügbarkeit", allow: ["admin", "board"] },
   { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen (Archiv)", allow: ["admin"] },
   { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
   { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },

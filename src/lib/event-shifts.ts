@@ -8,6 +8,8 @@ export type ShiftSignup = {
   starts_at: string | null;
   ends_at: string | null;
   note: string | null;
+  group_id?: string | null;
+  helper_name?: string | null;
 };
 
 export type Interval = { start: number; end: number };

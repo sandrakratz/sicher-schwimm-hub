@@ -214,142 +214,20 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
 
     if (!data.street || !data.zip || !data.city) return { ok: false as const, reason: 'address_required' as const }
 
-    const { data: course } = await supabaseAdmin
-      .from('courses')
-      .select('*, course_programs(*)')
-      .eq('id', entry.offer_course_id!)
-      .maybeSingle()
-    if (!course) return { ok: false as const, reason: 'not_found' as const }
-    const program = (course as any).course_programs ?? null
-
-    const price =
-      entry.is_member === true
-        ? course.price_member ?? program?.price_member ?? null
-        : course.price_non_member ?? program?.price_non_member ?? null
-
-    const issuedAt = new Date().toISOString()
-    const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
-    const documentNo = (docNo as string | null) ?? null
-
-    const { paymentTerms } = await import('@/lib/payment-status')
-    const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14
-    const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
-    const paymentMethod = terms.immediate ? 'immediate' : 'transfer'
-    const paymentDueDate = terms.dueDate.toISOString().slice(0, 10)
-
-    const { data: request } = await supabaseAdmin
-      .from('course_requests')
-      .insert({
-        parent_name: entry.parent_name,
-        parent_email: entry.parent_email,
-        parent_phone: entry.parent_phone,
-        child_name: entry.child_name,
-        child_dob: entry.child_dob,
-        desired_course: program?.name ?? course.name,
-        health_info: entry.notes,
-        gdpr_consent: true,
-        contact_permission: true,
-        status: 'accepted',
-        assigned_course_id: course.id,
-        admin_notes: 'Zusage über die Warteliste',
-      })
-      .select('id')
-      .maybeSingle()
-
-    const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
-      course_id: course.id,
-      request_id: request?.id ?? null,
-      participant_name: entry.child_name,
-      participant_email: entry.parent_email,
-      participant_phone: entry.parent_phone,
-      payer_street: data.street,
-      payer_zip: data.zip,
-      payer_city: data.city,
-      date_of_birth: entry.child_dob,
-      status: 'confirmed',
-      notes: entry.notes,
-      is_member: entry.is_member,
-      price_amount: price,
-      online_booking: true,
-      paid: false,
-      payment_method: paymentMethod,
-      payment_due_date: paymentDueDate,
-      document_no: documentNo,
-      document_issued_at: documentNo ? issuedAt : null,
-    })
-    if (partErr) throw new Error(partErr.message)
-
-    await supabaseAdmin
-      .from('waitlist_entries')
-      .update({
-        status: 'accepted',
-        offer_token: null,
-        responded_at: issuedAt,
-        request_id: request?.id ?? null,
-      })
-      .eq('id', entry.id)
-
-    const { queueTemplateEmail } = await import('@/lib/email-send.server')
-    await queueTemplateEmail({
-      templateName: 'course-booking-confirmation',
-      recipientEmail: entry.parent_email,
-      idempotencyKey: `waitlist-accept-${entry.id}`,
-      templateData: {
-        parent_name: entry.parent_name,
-        payer_street: data.street,
-        payer_zip: data.zip,
-        payer_city: data.city,
-        child_name: entry.child_name,
-        program_name: program?.name ?? course.name,
-        course_name: course.name,
-        course_location: course.location ?? program?.location,
-        course_schedule: course.schedule,
-        course_starts_on: course.starts_on,
-        course_ends_on: course.ends_on,
-        course_description: program?.description ?? course.description,
-        unit_count: course.unit_count ?? null,
-        waitlist: false,
-        is_member: entry.is_member,
-        price_amount: price,
-        payment_due_days: dueDays,
-        payment_method: paymentMethod,
-        payment_due_date: paymentDueDate,
-        document_no: documentNo ?? undefined,
-        issued_at: issuedAt,
-        site_base_url: SITE_BASE_URL,
-      },
-    })
-
-    await queueTemplateEmail({
-      templateName: 'course-request',
-      idempotencyKey: `waitlist-accept-admin-${entry.id}`,
-      templateData: {
-        parent_name: entry.parent_name,
-        parent_email: entry.parent_email,
-        parent_phone: entry.parent_phone || '',
-        child_name: entry.child_name,
-        child_dob: entry.child_dob || '',
-        desired_course: `${program?.name ?? course.name} – ${course.name}`,
-        health_info: entry.notes || '',
-        message: 'Zusage über die Warteliste – Platz verbindlich gebucht',
-        submitted_at: issuedAt,
-        created_at: issuedAt,
-        program_name: program?.name ?? course.name,
-        course_name: course.name,
-        course_starts_on: course.starts_on,
-        course_ends_on: course.ends_on,
-        course_schedule: course.schedule,
-        course_location: course.location ?? program?.location ?? null,
-        booking_status: 'Warteliste – verbindlich gebucht',
-      },
-    })
+    const { bookWaitlistEntry } = await import('@/lib/waitlist-booking.server')
+    const booking = await bookWaitlistEntry(
+      entry,
+      entry.offer_course_id!,
+      { street: data.street, zip: data.zip, city: data.city },
+      'parent',
+    )
 
     return {
       ok: true as const,
       action: 'accept' as const,
-      courseName: course.name,
-      immediatePayment: terms.immediate,
-      paymentDueDate,
+      courseName: booking.courseName,
+      immediatePayment: booking.immediatePayment,
+      paymentDueDate: booking.paymentDueDate,
     }
   })
 
@@ -423,6 +301,18 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     }
 
     const norm = (v: string | null | undefined) => (v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+
+    // Zahlungsstatus der bereits gebuchten Plätze (über Anfrage-ID oder E-Mail + Kind)
+    const { data: bookedParts } = await supabaseAdmin
+      .from('course_participants')
+      .select('id,course_id,request_id,participant_email,participant_name,paid,paid_at,price_amount,payment_method,payment_due_date,status,created_at')
+      .neq('status', 'cancelled')
+    const partByRequest = new Map<string, (typeof bookedParts extends null ? never : NonNullable<typeof bookedParts>[number])>()
+    const partByPerson = new Map<string, NonNullable<typeof bookedParts>[number]>()
+    for (const p of bookedParts ?? []) {
+      if (p.request_id) partByRequest.set(p.request_id, p)
+      partByPerson.set(`${norm(p.participant_email)}|${norm(p.participant_name)}`, p)
+    }
     const dupCount = new Map<string, number>()
     for (const e of entries ?? []) {
       if (!['waiting', 'offered'].includes(e.status)) continue
@@ -442,12 +332,36 @@ export const listWaitlist = createServerFn({ method: 'GET' })
               b.child_name_norm === childNorm &&
               (!b.child_dob || b.child_dob === e.child_dob)),
         )
+        const part =
+          (e.request_id ? partByRequest.get(e.request_id) : undefined) ??
+          partByPerson.get(`${emailNorm}|${childNorm}`) ??
+          null
+        const today = new Date().toISOString().slice(0, 10)
+        const paymentStatus = !part
+          ? 'none'
+          : part.paid
+            ? 'paid'
+            : part.payment_due_date && part.payment_due_date < today
+              ? 'overdue'
+              : 'open'
         return {
           ...e,
           desired_course: (req?.['desired_course'] as string | null) ?? null,
           request: req,
           blocked_reason: block?.reason ?? null,
           duplicate: (dupCount.get(`${emailNorm}|${childNorm}`) ?? 0) > 1,
+          booking: part
+            ? {
+                course_id: part.course_id,
+                paid: !!part.paid,
+                paid_at: part.paid_at,
+                price_amount: part.price_amount,
+                payment_method: part.payment_method,
+                payment_due_date: part.payment_due_date,
+                booked_at: part.created_at,
+              }
+            : null,
+          payment_status: paymentStatus as 'none' | 'open' | 'overdue' | 'paid',
         }
       }),
 
@@ -658,4 +572,43 @@ export const deleteWaitlistEntry = createServerFn({ method: 'POST' })
     const { error } = await supabaseAdmin.from('waitlist_entries').delete().eq('id', data.entryId)
     if (error) throw new Error(error.message)
     return { ok: true }
+  })
+
+/**
+ * Direkte, verbindliche Buchung aus der Verwaltung: erzeugt sofort den
+ * Teilnehmereintrag mit Buchungsdatum und Zahlungsdetails und verschickt die
+ * Buchungsbestätigung an die Eltern.
+ */
+export const bookWaitlistPlaceDirect = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        entryId: z.string().uuid(),
+        courseId: z.string().uuid(),
+        street: z.string().trim().max(160).optional(),
+        zip: z.string().trim().max(12).optional(),
+        city: z.string().trim().max(120).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context)
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { data: entry } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('*')
+      .eq('id', data.entryId)
+      .maybeSingle()
+    if (!entry) throw new Error('Eintrag nicht gefunden')
+    if (entry.status === 'accepted') throw new Error('Dieser Eintrag ist bereits gebucht')
+
+    const { bookWaitlistEntry } = await import('@/lib/waitlist-booking.server')
+    const booking = await bookWaitlistEntry(
+      entry,
+      data.courseId,
+      { street: data.street ?? null, zip: data.zip ?? null, city: data.city ?? null },
+      'admin',
+    )
+    return { ok: true as const, ...booking }
   })

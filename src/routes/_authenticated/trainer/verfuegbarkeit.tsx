@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AvailabilityBoard } from "@/components/trainer/AvailabilityBoard";
 
-export const Route = createFileRoute("/_authenticated/admin/verfuegbarkeit")({
+export const Route = createFileRoute("/_authenticated/trainer/verfuegbarkeit")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
     const { redirect } = await import("@tanstack/react-router");
@@ -10,8 +10,8 @@ export const Route = createFileRoute("/_authenticated/admin/verfuegbarkeit")({
   },
   head: () => ({
     meta: [
-      { title: "Verfügbarkeit & Einteilung – Adminbereich | Sicher Schwimmen e.V." },
-      { name: "description", content: "Trainer-Verfügbarkeiten für Kurstermine erfassen und Einteilungen verwalten." },
+      { title: "Meine Verfügbarkeit – Trainerbereich | Sicher Schwimmen e.V." },
+      { name: "description", content: "Eigene Verfügbarkeiten für Kurstermine und Helfer-Einsätze eintragen." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

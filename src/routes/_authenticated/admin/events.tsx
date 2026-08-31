@@ -20,6 +20,7 @@ import {
   berlinTime, coverageGaps, coverageSlices, formatRange, signupInterval,
   toBerlinInput, fromBerlinInput, type ShiftSignup,
 } from "@/lib/event-shifts";
+import { HelperGroupsPanel } from "@/components/admin/HelperGroupsPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/events")({
   beforeLoad: async () => {
@@ -86,7 +87,7 @@ function Page() {
     setRows((data as Ev[]) || []);
     const { data: su } = await supabase
       .from("event_shift_signups")
-      .select("id,event_id,trainer_id,available,starts_at,ends_at,note")
+      .select("id,event_id,trainer_id,available,starts_at,ends_at,note,group_id,helper_name")
       .order("starts_at", { ascending: true });
     setSignups((su as ShiftSignup[]) || []);
   }
@@ -324,6 +325,8 @@ function HelperDialog({
                 </p>
               )}
             </div>
+
+            <HelperGroupsPanel eventId={event.id} signups={signups} trainers={trainers} />
 
             <div>
               <div className="mb-2 text-sm font-medium">Rückmeldungen ({signups.length})</div>
