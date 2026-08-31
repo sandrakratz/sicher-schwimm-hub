@@ -8,7 +8,7 @@
 
 3. **Neu im Trainerbereich: „Vereinsmitglieder“.** Vollständige Liste aller aktiven Mitgliedschaften, bei Familien zusätzlich aufgeklappt Partner:in und Kinder mit Geburtsdatum. Telefon und E-Mail werden aus der Mitgliedschaft angezeigt (Partner und Kinder haben in den Anträgen nur Name + Geburtsdatum hinterlegt, es gibt dort keine eigenen Kontaktdaten). SEPA-/Bankdaten werden bewusst **nicht** ausgegeben – sie verlassen den Server gar nicht erst. Mit Suchfeld über Namen aller Familienmitglieder.
 
-4. **Neu im Trainerbereich: „Meine Kurse“.** Für jeden Kurs, dem der/die Trainer:in zugeteilt ist (als Kurstrainer oder über einen Termin), die Teilnehmerliste mit Name, Geburtsdatum, Kontaktdaten der Eltern, Notizen/Gesundheitshinweisen sowie Status. Zahlungsinformationen (bezahlt, Betrag, Zahlungsart) bleiben ausgeblendet, wie bisher vereinbart.
+4. **Neu im Trainerbereich: „Meine Kurse“.** Für jeden Kurs, dem der/die Trainer:in zugeteilt ist (als Kurstrainer oder über einen Termin), die Teilnehmerliste mit Name, Geburtsdatum, Kontaktdaten der Eltern, Notizen/Gesundheitshinweisen sowie Status. Zu den Zahlungen wird nur angezeigt, ob bezahlt wurde oder nicht – Betrag und Zahlungsart bleiben ausgeblendet.
 
 ## Technische Umsetzung
 
