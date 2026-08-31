@@ -307,8 +307,7 @@ export function AvailabilityBoard() {
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
+            </CollapsibleCard>
           ))}
         </div>
       )}
