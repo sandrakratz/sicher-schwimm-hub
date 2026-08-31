@@ -290,11 +290,26 @@ export function WaitlistAdmin() {
                   return (
                     <tr key={e.id} className="border-b align-top">
                       <td className="py-2 pr-3 font-medium">
-                        {e.child_name}
+                        <button
+                          type="button"
+                          className="text-left text-primary underline underline-offset-2"
+                          title="Originalanfrage anzeigen"
+                          onClick={() => setDetail(e as unknown as WaitlistEntry)}
+                        >
+                          {e.child_name}
+                        </button>
                         {e.child_dob && (
                           <div className="text-xs text-muted-foreground">{formatDateBerlin(e.child_dob)}</div>
                         )}
+                        <button
+                          type="button"
+                          className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                          onClick={() => setDetail(e as unknown as WaitlistEntry)}
+                        >
+                          <FileText className="h-3 w-3" /> Details
+                        </button>
                       </td>
+
                       <td className="py-2 pr-3">
                         {e.parent_name}
                         <div className="text-xs text-muted-foreground">{e.parent_email}</div>
