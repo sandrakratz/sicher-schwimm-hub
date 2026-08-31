@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AlertTriangle, FileText, Loader2, RefreshCw, Send, Trash2, Undo2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertTriangle, Copy, FileText, Loader2, Pencil, RefreshCw, Send, ShieldBan, Trash2, Undo2 } from "lucide-react";
+
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import {
