@@ -37,6 +37,10 @@ export interface CourseProgram {
   sort_order: number
   terms: Array<CourseTerm>
   open_terms: number
+  /** Summe der freien Plätze über alle Termine (null, wenn keine Kapazität hinterlegt ist) */
+  free_slots_total: number | null
+  /** Anzahl wartender Familien auf der Warteliste dieses Angebots */
+  waitlist_count: number
 }
 
 function todayIso() {
