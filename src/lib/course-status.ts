@@ -69,10 +69,7 @@ export function programAvailability(input: {
       tone: 'open',
       label,
       className: TONE_CLASS.open,
-      detail: `${openTerms} buchbare${openTerms > 1 ? '' : 'r'} Zeitraum${openTerms > 1 ? 'räume'.slice(0) : ''} · ${waitNote}`.replace(
-        'Zeitraumräume',
-        'Zeiträume',
-      ),
+      detail: `${openTerms} ${openTerms > 1 ? 'buchbare Zeiträume' : 'buchbarer Zeitraum'} · ${waitNote}`,
     }
   }
   if (hasTerms) {
