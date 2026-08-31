@@ -511,7 +511,8 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
       supabaseAdmin
         .from('course_requests')
         .select('*')
-        .eq('status', 'waiting_list')
+        .neq('status', 'rejected')
+        .is('assigned_course_id', null)
         .order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug').order('sort_order'),
       supabaseAdmin.from('waitlist_entries').select('id,request_id,parent_email,child_name'),
