@@ -52,7 +52,7 @@ export const removeCourseParticipant = createServerFn({ method: 'POST' })
     await logAudit(context.supabase, context.userId, {
       action: 'course_participant.removed',
       entity: 'course_participants',
-      entityId: part.id,
+      entity_id: part.id,
       metadata: {
         course_id: part.course_id,
         name: part.participant_name,
