@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<string, { label: string; className: string }> = {
 type WaitlistEntry = Record<string, unknown> & {
   id: string;
   child_name: string | null;
-  request?: Record<string, unknown> | null;
+  request?: Record<string, string | number | boolean | null> | null;
 };
 
 function Row({ label, value }: { label: string; value: unknown }) {
