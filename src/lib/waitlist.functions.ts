@@ -400,10 +400,15 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     }
 
     return {
-      entries: (entries ?? []).map((e) => ({
-        ...e,
-        desired_course: e.request_id ? wishes.get(e.request_id) ?? null : null,
-      })),
+      entries: (entries ?? []).map((e) => {
+        const req = e.request_id ? requests.get(e.request_id) ?? null : null
+        return {
+          ...e,
+          desired_course: (req?.['desired_course'] as string | null) ?? null,
+          request: req,
+        }
+      }),
+
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => ({
         ...c,
