@@ -518,6 +518,22 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
       supabaseAdmin.from('waitlist_entries').select('id,request_id,parent_email,child_name'),
     ])
 
+    // Bereits in einen Kurs aufgenommene Anfragen nicht erneut auf die Warteliste holen
+    const { data: participants } = await supabaseAdmin
+      .from('course_participants')
+      .select('request_id,participant_name,participant_email')
+      .neq('status', 'cancelled')
+
+    const enrolledRequests = new Set(
+      (participants ?? []).map((p) => p.request_id).filter(Boolean) as Array<string>,
+    )
+    const enrolledPersons = new Set(
+      (participants ?? []).map(
+        (p) =>
+          `${(p.participant_email ?? '').toLowerCase().trim()}|${(p.participant_name ?? '').toLowerCase().trim()}`,
+      ),
+    )
+
     const byRequest = new Set((existing ?? []).map((e) => e.request_id).filter(Boolean) as Array<string>)
     const byPerson = new Set(
       (existing ?? []).map(
