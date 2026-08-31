@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { buildIcs, googleCalendarUrl, parseTimeRange, type CalendarItem } from "@/lib/ics";
+import { EventShiftSignups } from "@/components/admin/EventShiftSignups";
 
 export const Route = createFileRoute("/_authenticated/admin/verfuegbarkeit")({
   beforeLoad: async () => {
