@@ -564,14 +564,37 @@ function Page() {
     if (partCourse) await openParticipants(partCourse);
     await load();
   }
-  async function removePart(p: Participant) {
-    if (!confirm(`Teilnehmer "${p.participant_name}" entfernen?`)) return;
-    const { error } = await supabase.from("course_participants").delete().eq("id", p.id);
-    if (error) return toast.error(error.message);
-    toast.success("Entfernt");
-    if (partCourse) await openParticipants(partCourse);
-    await load();
+  function removePart(p: Participant) {
+    setRemovePart({
+      participant: p,
+      reason: p.paid ? "" : "Nichtzahlung",
+      blocklist: !p.paid,
+    });
   }
+  async function confirmRemovePart() {
+    if (!removeState) return;
+    setRemoving(true);
+    try {
+      await removeParticipantFn({
+        data: {
+          participantId: removeState.participant.id,
+          reason: removeState.reason,
+          blocklist: removeState.blocklist,
+        },
+      });
+      toast.success(
+        removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
+      );
+      setRemovePart(null);
+      if (partCourse) await openParticipants(partCourse);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Entfernen fehlgeschlagen");
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   async function savePart() {
     if (!editPart) return;
     if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
