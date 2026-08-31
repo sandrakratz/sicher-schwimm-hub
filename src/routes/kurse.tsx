@@ -161,6 +161,17 @@ function KursePage() {
           </div>
         )}
 
+        <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft text-center">
+          <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Kein passender Platz dabei?</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Tragen Sie Ihr Kind unverbindlich auf die Warteliste ein. Sobald ein Platz frei wird, erhalten Sie
+            automatisch ein Angebot per E-Mail – Vereinsmitglieder werden bevorzugt berücksichtigt.
+          </p>
+          <Button asChild variant="accent">
+            <Link to="/warteliste" search={{ programm: undefined }}>Auf die Warteliste setzen</Link>
+          </Button>
+        </div>
+
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
           <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>

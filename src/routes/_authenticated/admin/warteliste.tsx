@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CourseRequestsAdmin } from "@/components/admin/CourseRequestsAdmin";
+import { WaitlistAdmin } from "@/components/admin/WaitlistAdmin";
 
 export const Route = createFileRoute("/_authenticated/admin/warteliste")({
   beforeLoad: async () => {
@@ -8,5 +9,14 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
     try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
     catch { throw redirect({ to: "/admin/benutzer" }); }
   },
-  component: () => <CourseRequestsAdmin mode="waiting" />,
+  component: WaitlistPage,
 });
+
+function WaitlistPage() {
+  return (
+    <div className="space-y-10">
+      <WaitlistAdmin />
+      <CourseRequestsAdmin mode="waiting" />
+    </div>
+  );
+}

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WiderrufRouteImport } from './routes/widerruf'
+import { Route as WartelisteRouteImport } from './routes/warteliste'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -29,6 +30,7 @@ import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WartelisteAntwortRouteImport } from './routes/warteliste_.antwort'
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
@@ -63,11 +65,17 @@ import { Route as AuthenticatedAdminAnfragenRouteImport } from './routes/_authen
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicHooksWaitlistSweepRouteImport } from './routes/api/public/hooks/waitlist-sweep'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
 
 const WiderrufRoute = WiderrufRouteImport.update({
   id: '/widerruf',
   path: '/widerruf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WartelisteRoute = WartelisteRouteImport.update({
+  id: '/warteliste',
+  path: '/warteliste',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -162,6 +170,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WartelisteAntwortRoute = WartelisteAntwortRouteImport.update({
+  id: '/warteliste_/antwort',
+  path: '/warteliste/antwort',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KurseSlugRoute = KurseSlugRouteImport.update({
@@ -355,6 +368,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksWaitlistSweepRoute =
+  ApiPublicHooksWaitlistSweepRouteImport.update({
+    id: '/api/public/hooks/waitlist-sweep',
+    path: '/api/public/hooks/waitlist-sweep',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPaymentCheckReminderRoute =
   ApiPublicHooksPaymentCheckReminderRouteImport.update({
     id: '/api/public/hooks/payment-check-reminder',
@@ -381,10 +400,12 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
+  '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -414,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -437,9 +459,11 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
+  '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -469,6 +493,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -494,10 +519,12 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse_/$slug': typeof KurseSlugRoute
+  '/warteliste_/antwort': typeof WartelisteAntwortRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -527,6 +554,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -552,10 +580,12 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/warteliste'
     | '/widerruf'
     | '/admin'
     | '/email/unsubscribe'
     | '/kurse/$slug'
+    | '/warteliste/antwort'
     | '/admin/anfragen'
     | '/admin/audit'
     | '/admin/benutzer'
@@ -585,6 +615,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/portal/'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -608,9 +639,11 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/warteliste'
     | '/widerruf'
     | '/email/unsubscribe'
     | '/kurse/$slug'
+    | '/warteliste/antwort'
     | '/admin/anfragen'
     | '/admin/audit'
     | '/admin/benutzer'
@@ -640,6 +673,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/portal'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -664,10 +698,12 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/warteliste'
     | '/widerruf'
     | '/_authenticated/admin'
     | '/email/unsubscribe'
     | '/kurse_/$slug'
+    | '/warteliste_/antwort'
     | '/_authenticated/admin/anfragen'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
@@ -697,6 +733,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -722,14 +759,17 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UeberUnsRoute: typeof UeberUnsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  WartelisteRoute: typeof WartelisteRoute
   WiderrufRoute: typeof WiderrufRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
+  WartelisteAntwortRoute: typeof WartelisteAntwortRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
+  ApiPublicHooksWaitlistSweepRoute: typeof ApiPublicHooksWaitlistSweepRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -742,6 +782,13 @@ declare module '@tanstack/react-router' {
       path: '/widerruf'
       fullPath: '/widerruf'
       preLoaderRoute: typeof WiderrufRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warteliste': {
+      id: '/warteliste'
+      path: '/warteliste'
+      fullPath: '/warteliste'
+      preLoaderRoute: typeof WartelisteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unsubscribe': {
@@ -875,6 +922,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warteliste_/antwort': {
+      id: '/warteliste_/antwort'
+      path: '/warteliste/antwort'
+      fullPath: '/warteliste/antwort'
+      preLoaderRoute: typeof WartelisteAntwortRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kurse_/$slug': {
@@ -1115,6 +1169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/waitlist-sweep': {
+      id: '/api/public/hooks/waitlist-sweep'
+      path: '/api/public/hooks/waitlist-sweep'
+      fullPath: '/api/public/hooks/waitlist-sweep'
+      preLoaderRoute: typeof ApiPublicHooksWaitlistSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/payment-check-reminder': {
       id: '/api/public/hooks/payment-check-reminder'
       path: '/api/public/hooks/payment-check-reminder'
@@ -1218,15 +1279,18 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UeberUnsRoute: UeberUnsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  WartelisteRoute: WartelisteRoute,
   WiderrufRoute: WiderrufRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
+  WartelisteAntwortRoute: WartelisteAntwortRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
   LovableEmailEventsRoute: LovableEmailEventsRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
+  ApiPublicHooksWaitlistSweepRoute: ApiPublicHooksWaitlistSweepRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,

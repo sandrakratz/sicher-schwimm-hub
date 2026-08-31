@@ -297,6 +297,7 @@ export type Database = {
           sort_order: number
           target_group: string | null
           updated_at: string
+          waitlist_offer_days: number
         }
         Insert: {
           age_range?: string | null
@@ -317,6 +318,7 @@ export type Database = {
           sort_order?: number
           target_group?: string | null
           updated_at?: string
+          waitlist_offer_days?: number
         }
         Update: {
           age_range?: string | null
@@ -337,6 +339,7 @@ export type Database = {
           sort_order?: number
           target_group?: string | null
           updated_at?: string
+          waitlist_offer_days?: number
         }
         Relationships: []
       }
@@ -1063,6 +1066,110 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      waitlist_entries: {
+        Row: {
+          admin_notes: string | null
+          child_dob: string | null
+          child_name: string | null
+          course_id: string | null
+          created_at: string
+          gdpr_consent: boolean
+          id: string
+          is_member: boolean | null
+          notes: string | null
+          offer_course_id: string | null
+          offer_expires_at: string | null
+          offer_token: string | null
+          offered_at: string | null
+          parent_email: string
+          parent_name: string
+          parent_phone: string | null
+          parent_user_id: string | null
+          program_id: string | null
+          request_id: string | null
+          responded_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          child_dob?: string | null
+          child_name?: string | null
+          course_id?: string | null
+          created_at?: string
+          gdpr_consent?: boolean
+          id?: string
+          is_member?: boolean | null
+          notes?: string | null
+          offer_course_id?: string | null
+          offer_expires_at?: string | null
+          offer_token?: string | null
+          offered_at?: string | null
+          parent_email: string
+          parent_name: string
+          parent_phone?: string | null
+          parent_user_id?: string | null
+          program_id?: string | null
+          request_id?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          child_dob?: string | null
+          child_name?: string | null
+          course_id?: string | null
+          created_at?: string
+          gdpr_consent?: boolean
+          id?: string
+          is_member?: boolean | null
+          notes?: string | null
+          offer_course_id?: string | null
+          offer_expires_at?: string | null
+          offer_token?: string | null
+          offered_at?: string | null
+          parent_email?: string
+          parent_name?: string
+          parent_phone?: string | null
+          parent_user_id?: string | null
+          program_id?: string | null
+          request_id?: string | null
+          responded_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_offer_course_id_fkey"
+            columns: ["offer_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "course_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "course_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
