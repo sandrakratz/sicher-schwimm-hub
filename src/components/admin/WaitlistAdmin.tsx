@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { AlertTriangle, FileText, Loader2, RefreshCw, Send, Trash2, Undo2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertTriangle, Copy, FileText, Loader2, Pencil, RefreshCw, Send, ShieldBan, Trash2, Undo2 } from "lucide-react";
+
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import {
@@ -45,23 +47,85 @@ function Row({ label, value }: { label: string; value: unknown }) {
   );
 }
 
+type EditPatch = {
+  entryId: string;
+  childName?: string;
+  childDob?: string | null;
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string | null;
+  isMember?: boolean | null;
+  notes?: string | null;
+  appendNote?: string;
+};
+
 function OriginalRequestDialog({
   entry,
   open,
   onOpenChange,
+  onSave,
+  saving,
 }: {
   entry: WaitlistEntry | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSave: (patch: EditPatch) => void;
+  saving: boolean;
 }) {
   const r = entry?.request ?? null;
   const g = (k: string) => (r ? r[k] : (entry as Record<string, unknown> | null)?.[k]) ?? null;
+
+  const [edit, setEdit] = useState(false);
+  const [form, setForm] = useState({
+    childName: "",
+    childDob: "",
+    parentName: "",
+    parentEmail: "",
+    parentPhone: "",
+    isMember: "" as "" | "yes" | "no",
+    notes: "",
+  });
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    if (!entry) return;
+    setEdit(false);
+    setNote("");
+    setForm({
+      childName: String(entry["child_name"] ?? ""),
+      childDob: String(entry["child_dob"] ?? ""),
+      parentName: String(entry["parent_name"] ?? ""),
+      parentEmail: String(entry["parent_email"] ?? ""),
+      parentPhone: String(entry["parent_phone"] ?? ""),
+      isMember: entry["is_member"] === true ? "yes" : entry["is_member"] === false ? "no" : "",
+      notes: String(entry["notes"] ?? ""),
+    });
+  }, [entry]);
+
+  const missing: string[] = [];
+  if (!form.childDob) missing.push("Geburtsdatum");
+  if (!form.parentPhone) missing.push("Telefon");
+
+  function save() {
+    if (!entry) return;
+    onSave({
+      entryId: entry.id,
+      childName: form.childName.trim() || undefined,
+      childDob: form.childDob || null,
+      parentName: form.parentName.trim() || undefined,
+      parentEmail: form.parentEmail.trim() || undefined,
+      parentPhone: form.parentPhone.trim() || null,
+      isMember: form.isMember === "yes" ? true : form.isMember === "no" ? false : null,
+      notes: form.notes.trim() || null,
+      ...(note.trim() ? { appendNote: note.trim() } : {}),
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Originalanfrage – {String(entry?.child_name ?? "")}</DialogTitle>
+          <DialogTitle>Anfrage – {String(entry?.child_name ?? "")}</DialogTitle>
           <DialogDescription>
             {r
               ? "Ursprüngliche Kursanfrage über das Anfrageformular."
@@ -69,32 +133,106 @@ function OriginalRequestDialog({
           </DialogDescription>
         </DialogHeader>
         {entry && (
-          <div className="space-y-1">
-            <Row label="Eingang" value={formatDateTimeBerlin(String(g("created_at") ?? entry["created_at"]))} />
-            <Row label="Kind" value={g("child_name")} />
-            <Row
-              label="Geburtsdatum"
-              value={g("child_dob") ? formatDateBerlin(String(g("child_dob"))) : null}
-            />
-            <Row label="Eltern" value={g("parent_name")} />
-            <Row label="E-Mail" value={g("parent_email")} />
-            <Row label="Telefon" value={g("parent_phone")} />
-            <Row label="Kurswunsch" value={g("desired_course")} />
-            <Row label="Schwimmniveau" value={g("swimming_level")} />
-            <Row label="Gesundheitliche Hinweise" value={g("health_info")} />
-            <Row label="Nachricht" value={g("message") ?? entry["notes"]} />
-            <Row label="Mitglied" value={entry["is_member"]} />
-            <Row label="Datenschutz zugestimmt" value={g("gdpr_consent") ?? entry["gdpr_consent"]} />
-            <Row label="Kontaktaufnahme erlaubt" value={g("contact_permission")} />
-            <Row label="Status Anfrage" value={g("status")} />
-            <Row label="Interne Notizen (Anfrage)" value={r?.["admin_notes"]} />
-            {r && <Row label="Anfrage-ID" value={r["id"]} />}
+          <div className="space-y-3">
+            {!!entry["blocked_reason"] && (
+              <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>Auf der Sperrliste: {String(entry["blocked_reason"])}</span>
+              </div>
+            )}
+            {missing.length > 0 && (
+              <div className="flex items-start gap-2 rounded-md bg-amber-100 p-2 text-xs text-amber-900">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>Unvollständig – es fehlen: {missing.join(", ")}</span>
+              </div>
+            )}
+
+            {edit ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="text-sm">
+                  Kind
+                  <Input value={form.childName} onChange={(e) => setForm((f) => ({ ...f, childName: e.target.value }))} />
+                </label>
+                <label className="text-sm">
+                  Geburtsdatum
+                  <Input type="date" value={form.childDob} onChange={(e) => setForm((f) => ({ ...f, childDob: e.target.value }))} />
+                </label>
+                <label className="text-sm">
+                  Eltern
+                  <Input value={form.parentName} onChange={(e) => setForm((f) => ({ ...f, parentName: e.target.value }))} />
+                </label>
+                <label className="text-sm">
+                  E-Mail
+                  <Input type="email" value={form.parentEmail} onChange={(e) => setForm((f) => ({ ...f, parentEmail: e.target.value }))} />
+                </label>
+                <label className="text-sm">
+                  Telefon
+                  <Input value={form.parentPhone} onChange={(e) => setForm((f) => ({ ...f, parentPhone: e.target.value }))} />
+                </label>
+                <label className="text-sm">
+                  Mitglied
+                  <select
+                    className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={form.isMember}
+                    onChange={(e) => setForm((f) => ({ ...f, isMember: e.target.value as "" | "yes" | "no" }))}
+                  >
+                    <option value="">Unbekannt</option>
+                    <option value="yes">Ja</option>
+                    <option value="no">Nein</option>
+                  </select>
+                </label>
+                <label className="text-sm sm:col-span-2">
+                  Angaben der Eltern / Gesundheitshinweise
+                  <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                </label>
+                <label className="text-sm sm:col-span-2">
+                  Neue interne Notiz (wird mit Datum ergänzt)
+                  <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="z. B. Eltern telefonisch erreicht…" />
+                </label>
+                <div className="flex gap-2 sm:col-span-2">
+                  <Button size="sm" onClick={save} disabled={saving}>
+                    {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Speichern
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEdit(false)}>
+                    Abbrechen
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1">
+                  <Row label="Eingang" value={formatDateTimeBerlin(String(entry["created_at"]))} />
+                  <Row label="Kind" value={entry["child_name"]} />
+                  <Row
+                    label="Geburtsdatum"
+                    value={entry["child_dob"] ? formatDateBerlin(String(entry["child_dob"])) : null}
+                  />
+                  <Row label="Eltern" value={entry["parent_name"]} />
+                  <Row label="E-Mail" value={entry["parent_email"]} />
+                  <Row label="Telefon" value={entry["parent_phone"]} />
+                  <Row label="Kurswunsch" value={g("desired_course")} />
+                  <Row label="Schwimmniveau" value={g("swimming_level")} />
+                  <Row label="Gesundheitliche Hinweise" value={g("health_info")} />
+                  <Row label="Angaben der Eltern" value={entry["notes"] ?? g("message")} />
+                  <Row label="Mitglied" value={entry["is_member"]} />
+                  <Row label="Datenschutz zugestimmt" value={entry["gdpr_consent"] ?? g("gdpr_consent")} />
+                  <Row label="Kontaktaufnahme erlaubt" value={g("contact_permission")} />
+                  <Row label="Interne Notizen" value={entry["admin_notes"]} />
+                  {r && <Row label="Anfrage-ID" value={r["id"]} />}
+                </div>
+                <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Daten ergänzen / Notiz hinzufügen
+                </Button>
+              </>
+            )}
           </div>
         )}
       </DialogContent>
     </Dialog>
   );
 }
+
 
 
 function NotesCell({
@@ -184,8 +322,23 @@ export function WaitlistAdmin() {
   });
 
   const update = useMutation({
-    mutationFn: (v: { entryId: string; status?: "waiting" | "removed"; adminNotes?: string; programId?: string | null }) =>
-      updateWaitlistEntry({ data: v }),
+    mutationFn: (v: {
+      entryId: string;
+      status?: "waiting" | "removed";
+      adminNotes?: string;
+      appendNote?: string;
+      programId?: string | null;
+      childName?: string;
+      childDob?: string | null;
+      parentName?: string;
+      parentEmail?: string;
+      parentPhone?: string | null;
+      isMember?: boolean | null;
+      notes?: string | null;
+      blocklist?: boolean;
+      blocklistReason?: string;
+    }) => updateWaitlistEntry({ data: v }),
+
     onSuccess: () => {
       invalidate();
     },
@@ -301,6 +454,17 @@ export function WaitlistAdmin() {
                         {e.child_dob && (
                           <div className="text-xs text-muted-foreground">{formatDateBerlin(e.child_dob)}</div>
                         )}
+                        {(e as Record<string, unknown>)["blocked_reason"] ? (
+                          <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                            <ShieldBan className="h-3 w-3" /> Sperrliste
+                          </div>
+                        ) : null}
+                        {(e as Record<string, unknown>)["duplicate_of"] ? (
+                          <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                            <Copy className="h-3 w-3" /> mögliche Dublette
+                          </div>
+                        ) : null}
+
                         <button
                           type="button"
                           className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
@@ -410,11 +574,25 @@ export function WaitlistAdmin() {
                               size="sm"
                               variant="ghost"
                               title="Als abgemeldet markieren"
-                              onClick={() => update.mutate({ entryId: e.id, status: "removed" })}
+                              onClick={() => {
+                                if (!confirm(`${e.child_name} als abgemeldet markieren?`)) return;
+                                const block = confirm(
+                                  "Zusätzlich auf die Sperrliste setzen? (OK = ja, Abbrechen = nein)",
+                                );
+                                update.mutate({
+                                  entryId: e.id,
+                                  status: "removed",
+                                  ...(block
+                                    ? { blocklist: true, blocklistReason: "Von der Warteliste abgemeldet" }
+                                    : {}),
+                                });
+                                toast.success(block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert");
+                              }}
                             >
                               <Send className="h-4 w-4 rotate-180" />
                             </Button>
                           )}
+
                           {e.status !== "waiting" && e.status !== "accepted" && (
                             <Button
                               size="sm"
@@ -446,7 +624,21 @@ export function WaitlistAdmin() {
         </Card>
       ))}
 
-      <OriginalRequestDialog entry={detail} open={!!detail} onOpenChange={(v) => !v && setDetail(null)} />
+      <OriginalRequestDialog
+        entry={detail}
+        open={!!detail}
+        onOpenChange={(v) => !v && setDetail(null)}
+        saving={update.isPending}
+        onSave={(patch) => {
+          update.mutate(patch, {
+            onSuccess: () => {
+              toast.success("Angaben gespeichert");
+              setDetail(null);
+            },
+          });
+        }}
+      />
+
 
     </div>
   );

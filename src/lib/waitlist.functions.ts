@@ -365,7 +365,16 @@ export const listWaitlist = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     await assertStaff(context)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const [{ data: entries }, { data: programs }, { data: courses }] = await Promise.all([
+
+    // Abgelaufene Platzangebote schließen, damit Plätze nicht hängen bleiben
+    try {
+      const { expireOffers } = await import('@/lib/waitlist.server')
+      await expireOffers()
+    } catch (err) {
+      console.error('expireOffers failed', err)
+    }
+
+    const [{ data: entries }, { data: programs }, { data: courses }, { data: blocklist }] = await Promise.all([
       supabaseAdmin.from('waitlist_entries').select('*').order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug,min_age_years').order('sort_order'),
       supabaseAdmin
@@ -373,7 +382,12 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         .select('id,name,program_id,starts_on,max_participants,status,archived_at')
         .is('archived_at', null)
         .order('starts_on'),
+      supabaseAdmin
+        .from('booking_blocklist')
+        .select('email_norm,child_name_norm,child_dob,reason')
+        .eq('active', true),
     ])
+
 
     // Originalanfrage (komplett) nachziehen
     const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
@@ -408,15 +422,35 @@ export const listWaitlist = createServerFn({ method: 'GET' })
       }
     }
 
+    const norm = (v: string | null | undefined) => (v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+    const dupCount = new Map<string, number>()
+    for (const e of entries ?? []) {
+      if (!['waiting', 'offered'].includes(e.status)) continue
+      const key = `${norm(e.parent_email)}|${norm(e.child_name)}`
+      dupCount.set(key, (dupCount.get(key) ?? 0) + 1)
+    }
+
     return {
       entries: (entries ?? []).map((e) => {
         const req = e.request_id ? requests.get(e.request_id) ?? null : null
+        const emailNorm = norm(e.parent_email)
+        const childNorm = norm(e.child_name)
+        const block = (blocklist ?? []).find(
+          (b) =>
+            (b.email_norm && b.email_norm === emailNorm) ||
+            (b.child_name_norm &&
+              b.child_name_norm === childNorm &&
+              (!b.child_dob || b.child_dob === e.child_dob)),
+        )
         return {
           ...e,
           desired_course: (req?.['desired_course'] as string | null) ?? null,
           request: req,
+          blocked_reason: block?.reason ?? null,
+          duplicate: (dupCount.get(`${emailNorm}|${childNorm}`) ?? 0) > 1,
         }
       }),
+
 
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => ({
@@ -458,27 +492,37 @@ export const offerWaitlistPlace = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+const updateSchema = z.object({
+  entryId: z.string().uuid(),
+  status: z.enum(['waiting', 'removed', 'declined']).optional(),
+  adminNotes: z.string().max(4000).nullable().optional(),
+  appendNote: z.string().trim().max(2000).optional(),
+  programId: z.string().uuid().nullable().optional(),
+  childName: z.string().trim().min(1).max(120).optional(),
+  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  parentName: z.string().trim().min(1).max(120).optional(),
+  parentEmail: z.string().trim().email().max(200).optional(),
+  parentPhone: z.string().trim().max(60).nullable().optional(),
+  isMember: z.boolean().nullable().optional(),
+  notes: z.string().max(4000).nullable().optional(),
+  blocklist: z.boolean().optional(),
+  blocklistReason: z.string().trim().max(500).optional(),
+})
+
 export const updateWaitlistEntry = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: {
-      entryId: string
-      status?: string
-      adminNotes?: string | null
-      programId?: string | null
-    }) =>
-      z
-        .object({
-          entryId: z.string().uuid(),
-          status: z.enum(['waiting', 'removed', 'declined']).optional(),
-          adminNotes: z.string().max(2000).nullable().optional(),
-          programId: z.string().uuid().nullable().optional(),
-        })
-        .parse(input),
-  )
+  .inputValidator((input: unknown) => updateSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertStaff(context)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+    const { data: entry } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('*')
+      .eq('id', data.entryId)
+      .maybeSingle()
+    if (!entry) throw new Error('Eintrag nicht gefunden')
+
     const patch: Record<string, unknown> = {}
     if (data.status) {
       patch['status'] = data.status
@@ -487,14 +531,44 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       patch['offer_expires_at'] = null
     }
     if (data.adminNotes !== undefined) patch['admin_notes'] = data.adminNotes
+    if (data.appendNote) {
+      const { formatDateTimeBerlin } = await import('@/lib/format')
+      const stamp = formatDateTimeBerlin(new Date().toISOString())
+      const prev = (patch['admin_notes'] as string | null) ?? entry.admin_notes ?? ''
+      patch['admin_notes'] = `${prev ? `${prev}\n` : ''}[${stamp}] ${data.appendNote}`
+    }
     if (data.programId !== undefined) {
       patch['program_id'] = data.programId
       patch['course_id'] = null
     }
+    if (data.childName !== undefined) patch['child_name'] = data.childName
+    if (data.childDob !== undefined) patch['child_dob'] = data.childDob
+    if (data.parentName !== undefined) patch['parent_name'] = data.parentName
+    if (data.parentEmail !== undefined) patch['parent_email'] = data.parentEmail
+    if (data.parentPhone !== undefined) patch['parent_phone'] = data.parentPhone || null
+    if (data.isMember !== undefined) patch['is_member'] = data.isMember
+    if (data.notes !== undefined) patch['notes'] = data.notes
+
     const { error } = await supabaseAdmin.from('waitlist_entries').update(patch as never).eq('id', data.entryId)
     if (error) throw new Error(error.message)
+
+    if (data.blocklist) {
+      const email = (entry.parent_email ?? '').trim().toLowerCase() || null
+      const child = (entry.child_name ?? '').trim().replace(/\s+/g, ' ').toLowerCase() || null
+      await supabaseAdmin.from('booking_blocklist').insert({
+        child_name_norm: child,
+        child_dob: entry.child_dob,
+        email_norm: email,
+        reason: data.blocklistReason || 'Von der Warteliste abgemeldet',
+        source: 'manual',
+        active: true,
+        created_by: context.userId,
+      })
+    }
+
     return { ok: true }
   })
+
 
 /**
  * Übernimmt alte Kursanfragen mit Status „Warteliste“ einmalig in die neue

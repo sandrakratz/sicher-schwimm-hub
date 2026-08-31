@@ -18,6 +18,8 @@ import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
+import { removeCourseParticipant } from "@/lib/participants-admin.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -192,6 +194,10 @@ function Page() {
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean } | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const removeParticipantFn = useServerFn(removeCourseParticipant);
+
   const [reqOpen, setReqOpen] = useState(false);
   const [reqLoading, setReqLoading] = useState(false);
   const [reqRow, setReqRow] = useState<CourseRequest | null>(null);
@@ -564,14 +570,37 @@ function Page() {
     if (partCourse) await openParticipants(partCourse);
     await load();
   }
-  async function removePart(p: Participant) {
-    if (!confirm(`Teilnehmer "${p.participant_name}" entfernen?`)) return;
-    const { error } = await supabase.from("course_participants").delete().eq("id", p.id);
-    if (error) return toast.error(error.message);
-    toast.success("Entfernt");
-    if (partCourse) await openParticipants(partCourse);
-    await load();
+  function removePart(p: Participant) {
+    setRemovePart({
+      participant: p,
+      reason: p.paid ? "" : "Nichtzahlung",
+      blocklist: !p.paid,
+    });
   }
+  async function confirmRemovePart() {
+    if (!removeState) return;
+    setRemoving(true);
+    try {
+      await removeParticipantFn({
+        data: {
+          participantId: removeState.participant.id,
+          reason: removeState.reason,
+          blocklist: removeState.blocklist,
+        },
+      });
+      toast.success(
+        removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
+      );
+      setRemovePart(null);
+      if (partCourse) await openParticipants(partCourse);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Entfernen fehlgeschlagen");
+    } finally {
+      setRemoving(false);
+    }
+  }
+
   async function savePart() {
     if (!editPart) return;
     if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
@@ -1438,7 +1467,63 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!removeState} onOpenChange={v => !v && setRemovePart(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Teilnehmer entfernen</DialogTitle>
+          </DialogHeader>
+          {removeState && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                „{removeState.participant.participant_name}“ wird aus dem Kurs entfernt.
+                {!removeState.participant.paid && " Die Zahlung ist bisher nicht eingegangen."}
+              </p>
+              <div className="space-y-1">
+                <Label>Grund</Label>
+                <Select
+                  value={["Nichtzahlung", "Rücktritt der Eltern", "Sonstiges"].includes(removeState.reason) ? removeState.reason : "Sonstiges"}
+                  onValueChange={v => setRemovePart(s => s && { ...s, reason: v === "Sonstiges" ? "" : v, blocklist: v === "Nichtzahlung" ? true : s.blocklist })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Grund wählen" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nichtzahlung">Nichtzahlung</SelectItem>
+                    <SelectItem value="Rücktritt der Eltern">Rücktritt der Eltern</SelectItem>
+                    <SelectItem value="Sonstiges">Sonstiges</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  value={removeState.reason}
+                  onChange={e => setRemovePart(s => s && { ...s, reason: e.target.value })}
+                  placeholder="Notiz zum Grund (optional)"
+                  rows={2}
+                />
+              </div>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={removeState.blocklist}
+                  onCheckedChange={v => setRemovePart(s => s && { ...s, blocklist: !!v })}
+                />
+                <span>
+                  Auf die Sperrliste setzen
+                  <span className="block text-xs text-muted-foreground">
+                    Zukünftige Buchungen und Wartelisteneinträge werden blockiert (jederzeit unter „Sperrliste“ rücknehmbar).
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemovePart(null)}>Abbrechen</Button>
+            <Button variant="destructive" onClick={confirmRemovePart} disabled={removing}>
+              {removing ? "Wird entfernt…" : "Entfernen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
