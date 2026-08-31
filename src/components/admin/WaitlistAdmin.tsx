@@ -136,7 +136,9 @@ function NotesCell({
 export function WaitlistAdmin() {
   const qc = useQueryClient();
   const [showClosed, setShowClosed] = useState(false);
+  const [detail, setDetail] = useState<WaitlistEntry | null>(null);
   const migratedOnce = useRef(false);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-waitlist"],
