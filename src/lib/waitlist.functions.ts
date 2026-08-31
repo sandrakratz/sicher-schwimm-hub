@@ -445,14 +445,21 @@ export const offerWaitlistPlace = createServerFn({ method: 'POST' })
 
 export const updateWaitlistEntry = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { entryId: string; status?: string; adminNotes?: string | null }) =>
-    z
-      .object({
-        entryId: z.string().uuid(),
-        status: z.enum(['waiting', 'removed', 'declined']).optional(),
-        adminNotes: z.string().max(2000).nullable().optional(),
-      })
-      .parse(input),
+  .inputValidator(
+    (input: {
+      entryId: string
+      status?: string
+      adminNotes?: string | null
+      programId?: string | null
+    }) =>
+      z
+        .object({
+          entryId: z.string().uuid(),
+          status: z.enum(['waiting', 'removed', 'declined']).optional(),
+          adminNotes: z.string().max(2000).nullable().optional(),
+          programId: z.string().uuid().nullable().optional(),
+        })
+        .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context)
@@ -465,10 +472,75 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       patch['offer_expires_at'] = null
     }
     if (data.adminNotes !== undefined) patch['admin_notes'] = data.adminNotes
+    if (data.programId !== undefined) {
+      patch['program_id'] = data.programId
+      patch['course_id'] = null
+    }
     const { error } = await supabaseAdmin.from('waitlist_entries').update(patch as never).eq('id', data.entryId)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
+
+/**
+ * Übernimmt alte Kursanfragen mit Status „Warteliste“ einmalig in die neue
+ * Warteliste – inklusive Wunschkurs (Textabgleich) und Notizen. Idempotent.
+ */
+export const migrateWaitingRequests = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context)
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { matchProgram } = await import('@/lib/waitlist-age')
+
+    const [{ data: requests }, { data: programs }, { data: existing }] = await Promise.all([
+      supabaseAdmin
+        .from('course_requests')
+        .select('*')
+        .eq('status', 'waiting_list')
+        .order('created_at', { ascending: true }),
+      supabaseAdmin.from('course_programs').select('id,name,slug').order('sort_order'),
+      supabaseAdmin.from('waitlist_entries').select('id,request_id,parent_email,child_name'),
+    ])
+
+    const byRequest = new Set((existing ?? []).map((e) => e.request_id).filter(Boolean) as Array<string>)
+    const byPerson = new Set(
+      (existing ?? []).map(
+        (e) => `${(e.parent_email ?? '').toLowerCase().trim()}|${(e.child_name ?? '').toLowerCase().trim()}`,
+      ),
+    )
+
+    const rows: Array<Record<string, unknown>> = []
+    for (const r of requests ?? []) {
+      if (byRequest.has(r.id)) continue
+      const key = `${(r.parent_email ?? '').toLowerCase().trim()}|${(r.child_name ?? '').toLowerCase().trim()}`
+      if (byPerson.has(key)) continue
+      byPerson.add(key)
+      const prog = matchProgram(r.desired_course, programs ?? [])
+      rows.push({
+        program_id: prog?.id ?? null,
+        request_id: r.id,
+        child_name: r.child_name ?? 'Unbekannt',
+        child_dob: r.child_dob,
+        parent_name: r.parent_name,
+        parent_email: r.parent_email,
+        parent_phone: r.parent_phone,
+        notes: [r.message, r.health_info, r.swimming_level ? `Schwimmniveau: ${r.swimming_level}` : null]
+          .filter(Boolean)
+          .join('\n') || null,
+        admin_notes: r.admin_notes,
+        gdpr_consent: true,
+        status: 'waiting',
+        created_at: r.created_at,
+      })
+    }
+
+    if (rows.length) {
+      const { error } = await supabaseAdmin.from('waitlist_entries').insert(rows as never)
+      if (error) throw new Error(error.message)
+    }
+    return { migrated: rows.length }
+  })
+
 
 export const deleteWaitlistEntry = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
