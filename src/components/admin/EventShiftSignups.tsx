@@ -13,6 +13,18 @@ import {
   toBerlinInput, fromBerlinInput, type ShiftSignup,
 } from "@/lib/event-shifts";
 import type { TrainerOption } from "@/lib/trainers.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { listHelperGroups, syncHelperGroupFill } from "@/lib/event-helpers.functions";
+
+type HelperGroup = {
+  id: string;
+  event_id: string;
+  name: string;
+  needed_count: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  filled_at: string | null;
+};
 
 type EventRow = {
   id: string;
@@ -28,6 +40,9 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
   const [events, setEvents] = useState<EventRow[]>([]);
   const [signups, setSignups] = useState<ShiftSignup[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [groups, setGroups] = useState<HelperGroup[]>([]);
+  const listGroupsFn = useServerFn(listHelperGroups);
+  const syncFn = useServerFn(syncHelperGroupFill);
 
   async function load() {
     const nowIso = new Date().toISOString();
@@ -45,6 +60,17 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
       .select("id,event_id,trainer_id,available,starts_at,ends_at,note,group_id,helper_name")
       .in("event_id", rows.map(r => r.id));
     setSignups((su as ShiftSignup[]) || []);
+    try {
+      const res = (await listGroupsFn({ data: { eventIds: rows.map(r => r.id) } })) as { groups: HelperGroup[] };
+      setGroups(res.groups || []);
+    } catch { /* Helferstellen optional */ }
+  }
+
+  async function assignGroup(signupId: string, eventId: string, groupId: string | null) {
+    const { error } = await supabase.from("event_shift_signups").update({ group_id: groupId }).eq("id", signupId);
+    if (error) return toast.error(error.message);
+    try { await syncFn({ data: { eventId } }); } catch { /* Besetzung wird beim nächsten Laden aktualisiert */ }
+    await load();
   }
 
   useEffect(() => { load(); }, []);
@@ -213,6 +239,18 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
                         defaultValue={s.note || ""}
                         onBlur={ev => { if ((ev.target.value || "") !== (s.note || "")) patch(s.id, { note: ev.target.value || null }); }}
                       />
+                      {groups.filter(g => g.event_id === e.id).length > 0 && (
+                        <select
+                          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                          value={s.group_id || ""}
+                          onChange={ev => assignGroup(s.id, e.id, ev.target.value || null)}
+                        >
+                          <option value="">Aufgabe wählen…</option>
+                          {groups.filter(g => g.event_id === e.id).map(g => (
+                            <option key={g.id} value={g.id}>{g.name}</option>
+                          ))}
+                        </select>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => removeRow(s.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -234,6 +272,24 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
                     ))
                   : <span>Noch keine weiteren Zusagen.</span>}
               </div>
+
+              {groups.filter(g => g.event_id === e.id).length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {groups.filter(g => g.event_id === e.id).map(g => {
+                    const count = all.filter(s => s.group_id === g.id && s.available).length;
+                    const full = count >= g.needed_count;
+                    return (
+                      <Badge
+                        key={g.id}
+                        variant="secondary"
+                        className={full ? "border-transparent bg-green-600 text-white" : "bg-amber-100 text-amber-900"}
+                      >
+                        {g.name}: {count}/{g.needed_count}{full ? " besetzt" : ""}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
 
               {gaps.length > 0 && (
                 <p className="inline-flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
