@@ -239,6 +239,10 @@ function AvailabilityPage() {
         </span>
       </div>
 
+      {me && <EventShiftSignups me={me} trainers={trainers} />}
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep mb-3">Kurstermine</h2>
+
       {loading ? (
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Wird geladen …</CardContent></Card>
       ) : groups.length === 0 ? (
