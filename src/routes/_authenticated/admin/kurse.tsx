@@ -303,7 +303,8 @@ function Page() {
   async function updateSessionTime(id: string, field: "start_time" | "end_time", value: string) {
     const next = value ? `${value}:00` : null;
     setSessions(list => list.map(s => (s.id === id ? { ...s, [field]: next } : s)));
-    const { error } = await supabase.from("course_sessions").update({ [field]: next }).eq("id", id);
+    const patch = field === "start_time" ? { start_time: next } : { end_time: next };
+    const { error } = await supabase.from("course_sessions").update(patch).eq("id", id);
     if (error) toast.error(error.message);
   }
   async function removeSession(id: string) {
