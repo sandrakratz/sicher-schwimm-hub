@@ -14,13 +14,13 @@ export const listHelperGroups = createServerFn({ method: 'POST' })
     z.object({ eventIds: z.array(z.string().uuid()).max(200) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    if (data.eventIds.length === 0) return { groups: [] as Array<Record<string, unknown>> }
+    if (data.eventIds.length === 0) return { groups: [] }
     const { data: groups } = await context.supabase
       .from('event_helper_groups')
       .select('*')
       .in('event_id', data.eventIds)
       .order('sort_order', { ascending: true })
-    return { groups: groups ?? [] }
+    return { groups: (groups ?? []) as Array<Record<string, unknown>> }
   })
 
 const groupSchema = z.object({

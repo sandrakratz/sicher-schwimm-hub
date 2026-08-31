@@ -49,8 +49,8 @@ export function HelperGroupsPanel({
   async function load() {
     try {
       await syncFn({ data: { eventId } });
-      const res = await listFn({ data: { eventIds: [eventId] } });
-      setGroups((res.groups as unknown as HelperGroup[]) ?? []);
+      const res = (await listFn({ data: { eventIds: [eventId] } })) as { groups: HelperGroup[] };
+      setGroups(res.groups ?? []);
     } catch (e) {
       toast.error((e as Error).message || "Helferstellen konnten nicht geladen werden");
     }
