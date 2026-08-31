@@ -43,3 +43,50 @@ export function termStatus(isFull: boolean, freeSlots: number | null | undefined
       : "Plätze frei";
   return { tone, label, className: TONE_CLASS[tone] };
 }
+
+/**
+ * Verfügbarkeit eines Kursangebots inkl. freier Plätze und Warteliste –
+ * für Eltern verständlich formuliert.
+ */
+export function programAvailability(input: {
+  openTerms: number
+  hasTerms: boolean
+  freeSlotsTotal: number | null
+  waitlistCount: number
+}): { tone: CourseStatusTone; label: string; className: string; detail: string } {
+  const { openTerms, hasTerms, freeSlotsTotal, waitlistCount } = input
+  const waitNote =
+    waitlistCount > 0
+      ? `${waitlistCount} Familie${waitlistCount > 1 ? 'n' : ''} auf der Warteliste`
+      : 'Noch niemand auf der Warteliste'
+
+  if (openTerms > 0) {
+    const label =
+      freeSlotsTotal != null && freeSlotsTotal > 0
+        ? `${freeSlotsTotal} freie${freeSlotsTotal === 1 ? 'r' : ''} Platz${freeSlotsTotal === 1 ? '' : 'ätze'}`
+        : 'Plätze frei'
+    return {
+      tone: 'open',
+      label,
+      className: TONE_CLASS.open,
+      detail: `${openTerms} buchbare${openTerms > 1 ? '' : 'r'} Zeitraum${openTerms > 1 ? 'räume'.slice(0) : ''} · ${waitNote}`.replace(
+        'Zeitraumräume',
+        'Zeiträume',
+      ),
+    }
+  }
+  if (hasTerms) {
+    return {
+      tone: 'full',
+      label: 'Ausgebucht – Warteliste',
+      className: TONE_CLASS.full,
+      detail: `Alle Termine belegt · ${waitNote}`,
+    }
+  }
+  return {
+    tone: 'waitlist',
+    label: 'Warteliste',
+    className: TONE_CLASS.waitlist,
+    detail: `Termine in Planung · ${waitNote}`,
+  }
+}
