@@ -31,7 +31,7 @@ export const adminNav: AppNavItem[] = [
   { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
   { to: "/admin/verfuegbarkeit", icon: CalendarCheck, label: "Verfügbarkeit", allow: ["admin", "board", "trainer"] },
-  { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen", allow: ["admin", "board"] },
+  { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen (Archiv)", allow: ["admin", "board"] },
   { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
   { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },
   { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
