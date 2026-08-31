@@ -145,7 +145,7 @@ function Page() {
                       <TableCell colSpan={2} className="text-xs text-muted-foreground">über {m.name}</TableCell>
                     </TableRow>
                   ))}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>
