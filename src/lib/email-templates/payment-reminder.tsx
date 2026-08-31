@@ -76,20 +76,28 @@ const Email = (p: Props) => {
           </Heading>
 
           <Text>Liebe Eltern,</Text>
-          <Text>
-            für den Kursplatz von <strong>{d.childName}</strong> konnten wir bisher keinen Zahlungseingang feststellen.
-            {immediate ? (
-              <>
-                {' '}Da die Buchung innerhalb der letzten 10 Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr{' '}
-                <strong>sofort per Echtzeit-/Sofortüberweisung</strong> zu zahlen.
-              </>
-            ) : (
-              <>
-                {' '}Die Kursgebühr war bis zum <strong>{d.dueDateLabel}</strong> fällig. Bitte holen Sie die Zahlung
-                zeitnah nach, damit der Platz erhalten bleibt.
-              </>
-            )}
-          </Text>
+          {immediate ? (
+            <Text>
+              für den Kursplatz von <strong>{d.childName}</strong> konnten wir bisher keinen Zahlungseingang
+              feststellen. Da die Buchung innerhalb der letzten 10 Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr{' '}
+              <strong>sofort per Echtzeit-/Sofortüberweisung</strong> zu zahlen.
+            </Text>
+          ) : (
+            <>
+              <Text>
+                für den Kursplatz von <strong>{d.childName}</strong> konnten wir bisher weder einen Zahlungseingang
+                noch eine Rückmeldung von Ihnen feststellen.
+              </Text>
+              <Text>
+                Die Kursgebühr in Höhe von <strong>{d.priceLabel}</strong> war bereits zum{' '}
+                <strong>{d.dueDateLabel}</strong> fällig.
+              </Text>
+              <Text>
+                Wir bitten Sie daher, den offenen Betrag{' '}
+                <strong>innerhalb von 3 Werktagen nach Erhalt dieser E-Mail</strong> zu überweisen.
+              </Text>
+            </>
+          )}
 
           <Hr />
           <Line label="Kurs:" value={d.courseTitle} />
@@ -100,6 +108,7 @@ const Email = (p: Props) => {
             <strong style={labelStyle}>Offener Betrag:</strong>
             <strong style={{ color: '#0c4a6e' }}>{d.priceLabel}</strong>
           </Text>
+
 
           <Section
             style={{
@@ -148,10 +157,29 @@ const Email = (p: Props) => {
             </Section>
           )}
 
+          {!immediate && (
+            <>
+              <Text style={{ marginTop: '16px' }}>
+                Sollte innerhalb dieser Frist <strong>weder die Zahlung noch eine Rückmeldung</strong> bei uns
+                eingehen, geben wir den reservierten Kursplatz <strong>ohne weitere Ankündigung wieder frei</strong>.
+              </Text>
+              <Text>
+                Da wir Kursplätze verbindlich reservieren und die Nachfrage nach unseren Kursen sehr hoch ist, bitten
+                wir um Verständnis, dass wir Familien, die trotz Fälligkeit weder zahlen noch auf unsere
+                Zahlungserinnerung reagieren, <strong>künftig keine weiteren Kursbuchungen mehr ermöglichen können</strong>.
+              </Text>
+            </>
+          )}
+
           <Text style={{ marginTop: '16px' }}>
-            Sollten Sie die Zahlung bereits veranlasst haben, betrachten Sie diese E-Mail bitte als gegenstandslos.
-            Bei Fragen erreichen Sie uns unter {ORG.email} oder {ORG.phone}.
+            Falls Sie die Zahlung bereits veranlasst haben, betrachten Sie diese E-Mail bitte als gegenstandslos. In
+            diesem Fall freuen wir uns über eine kurze Rückmeldung.
           </Text>
+          <Text>
+            Bei Fragen erreichen Sie uns unter <Link href={`mailto:${ORG.email}`}>{ORG.email}</Link> oder{' '}
+            <strong>{ORG.phone}</strong>.
+          </Text>
+
 
           <Text style={{ marginTop: '16px' }}>Herzliche Grüße</Text>
           <Text style={row}>{ORG.signatory}</Text>
