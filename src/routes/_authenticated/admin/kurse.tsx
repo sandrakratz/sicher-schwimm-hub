@@ -1467,7 +1467,63 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!removeState} onOpenChange={v => !v && setRemovePart(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Teilnehmer entfernen</DialogTitle>
+          </DialogHeader>
+          {removeState && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                „{removeState.participant.participant_name}“ wird aus dem Kurs entfernt.
+                {!removeState.participant.paid && " Die Zahlung ist bisher nicht eingegangen."}
+              </p>
+              <div className="space-y-1">
+                <Label>Grund</Label>
+                <Select
+                  value={["Nichtzahlung", "Rücktritt der Eltern", "Sonstiges"].includes(removeState.reason) ? removeState.reason : "Sonstiges"}
+                  onValueChange={v => setRemovePart(s => s && { ...s, reason: v === "Sonstiges" ? "" : v, blocklist: v === "Nichtzahlung" ? true : s.blocklist })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Grund wählen" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Nichtzahlung">Nichtzahlung</SelectItem>
+                    <SelectItem value="Rücktritt der Eltern">Rücktritt der Eltern</SelectItem>
+                    <SelectItem value="Sonstiges">Sonstiges</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  value={removeState.reason}
+                  onChange={e => setRemovePart(s => s && { ...s, reason: e.target.value })}
+                  placeholder="Notiz zum Grund (optional)"
+                  rows={2}
+                />
+              </div>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={removeState.blocklist}
+                  onCheckedChange={v => setRemovePart(s => s && { ...s, blocklist: !!v })}
+                />
+                <span>
+                  Auf die Sperrliste setzen
+                  <span className="block text-xs text-muted-foreground">
+                    Zukünftige Buchungen und Wartelisteneinträge werden blockiert (jederzeit unter „Sperrliste“ rücknehmbar).
+                  </span>
+                </span>
+              </label>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemovePart(null)}>Abbrechen</Button>
+            <Button variant="destructive" onClick={confirmRemovePart} disabled={removing}>
+              {removing ? "Wird entfernt…" : "Entfernen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
 
