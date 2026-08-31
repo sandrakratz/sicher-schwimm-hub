@@ -80,7 +80,12 @@ function KursePage() {
               const openTerms = c.open_terms ?? 0;
               const hasTerms = (c.terms?.length ?? 0) > 0;
               const bookable = c.bookable !== false;
-              const status = programStatus(openTerms, hasTerms);
+              const status = programAvailability({
+                openTerms,
+                hasTerms,
+                freeSlotsTotal: c.free_slots_total ?? null,
+                waitlistCount: c.waitlist_count ?? 0,
+              });
               const statusLabel = bookable ? status.label : "Geplant – noch nicht buchbar";
               const statusClass = bookable ? status.className : "bg-muted text-muted-foreground";
               const std = formatPrice(c.price_non_member);
