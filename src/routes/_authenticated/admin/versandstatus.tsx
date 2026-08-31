@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -197,8 +198,7 @@ function Page() {
         </Card>
       )}
 
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-0">
+      <CollapsibleCard title="Versandstatus" storageKey="admin-versandstatus" contentClassName="px-0">
           {loading ? (
             <div className="py-10 text-center text-muted-foreground">Lade Zustellereignisse…</div>
           ) : filtered.length === 0 ? (
@@ -236,8 +236,7 @@ function Page() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       <p className="mt-3 text-xs text-muted-foreground">
         Angezeigt werden Zustellereignisse des E-Mail-Versands
