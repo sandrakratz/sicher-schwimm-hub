@@ -88,6 +88,22 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
     }
   }
 
+  // Wartende Familien je Angebot (Warteliste)
+  const waitCounts = new Map<string, number>()
+  {
+    const { data: waiting } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('program_id,course_id,status')
+      .eq('status', 'waiting')
+    const courseToProgram = new Map<string, string>()
+    for (const c of relevant) if (c.program_id) courseToProgram.set(c.id, c.program_id)
+    for (const w of waiting ?? []) {
+      const pid = w.program_id ?? (w.course_id ? courseToProgram.get(w.course_id) : null)
+      if (!pid) continue
+      waitCounts.set(pid, (waitCounts.get(pid) ?? 0) + 1)
+    }
+  }
+
   return programs.map((p) => {
     const terms: Array<CourseTerm> = relevant
       .filter((c) => c.program_id === p.id)
