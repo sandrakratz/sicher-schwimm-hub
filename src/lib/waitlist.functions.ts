@@ -375,16 +375,17 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         .order('starts_on'),
     ])
 
-    // Freitext-Kurswunsch aus der ursprünglichen Anfrage nachziehen
+    // Originalanfrage (komplett) nachziehen
     const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
-    const wishes = new Map<string, string | null>()
+    const requests = new Map<string, Record<string, unknown>>()
     if (requestIds.length) {
       const { data: reqs } = await supabaseAdmin
         .from('course_requests')
-        .select('id,desired_course')
+        .select('*')
         .in('id', requestIds)
-      for (const r of reqs ?? []) wishes.set(r.id, r.desired_course)
+      for (const r of reqs ?? []) requests.set(r.id, r as unknown as Record<string, unknown>)
     }
+
 
     const courseIds = (courses ?? []).map((c) => c.id)
     const counts = new Map<string, number>()
