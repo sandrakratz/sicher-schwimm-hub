@@ -613,7 +613,21 @@ export function WaitlistAdmin() {
         </Card>
       ))}
 
-      <OriginalRequestDialog entry={detail} open={!!detail} onOpenChange={(v) => !v && setDetail(null)} />
+      <OriginalRequestDialog
+        entry={detail}
+        open={!!detail}
+        onOpenChange={(v) => !v && setDetail(null)}
+        saving={update.isPending}
+        onSave={(patch) => {
+          update.mutate(patch, {
+            onSuccess: () => {
+              toast.success("Angaben gespeichert");
+              setDetail(null);
+            },
+          });
+        }}
+      />
+
 
     </div>
   );
