@@ -1,5 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
+import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, ListChecks, MailOpen } from "lucide-react";
@@ -43,6 +44,8 @@ function AdminDashboard() {
         <h1 className="font-display text-4xl font-bold text-primary-deep">Übersicht</h1>
         <p className="text-muted-foreground mt-2">Verwalten Sie Mitglieder, Kurse, Anfragen und Inhalte.</p>
       </div>
+
+      <OpenAvailabilityNotice />
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map(s => (
           <Link key={s.label} to={s.to} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
