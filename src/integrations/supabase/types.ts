@@ -495,30 +495,36 @@ export type Database = {
           assigned_trainer_id: string | null
           course_id: string
           created_at: string
+          end_time: string | null
           id: string
           note: string | null
           session_date: string
           session_index: number
+          start_time: string | null
           updated_at: string
         }
         Insert: {
           assigned_trainer_id?: string | null
           course_id: string
           created_at?: string
+          end_time?: string | null
           id?: string
           note?: string | null
           session_date: string
           session_index: number
+          start_time?: string | null
           updated_at?: string
         }
         Update: {
           assigned_trainer_id?: string | null
           course_id?: string
           created_at?: string
+          end_time?: string | null
           id?: string
           note?: string | null
           session_date?: string
           session_index?: number
+          start_time?: string | null
           updated_at?: string
         }
         Relationships: [
