@@ -563,11 +563,25 @@ export function WaitlistAdmin() {
                               size="sm"
                               variant="ghost"
                               title="Als abgemeldet markieren"
-                              onClick={() => update.mutate({ entryId: e.id, status: "removed" })}
+                              onClick={() => {
+                                if (!confirm(`${e.child_name} als abgemeldet markieren?`)) return;
+                                const block = confirm(
+                                  "Zusätzlich auf die Sperrliste setzen? (OK = ja, Abbrechen = nein)",
+                                );
+                                update.mutate({
+                                  entryId: e.id,
+                                  status: "removed",
+                                  ...(block
+                                    ? { blocklist: true, blocklistReason: "Von der Warteliste abgemeldet" }
+                                    : {}),
+                                });
+                                toast.success(block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert");
+                              }}
                             >
                               <Send className="h-4 w-4 rotate-180" />
                             </Button>
                           )}
+
                           {e.status !== "waiting" && e.status !== "accepted" && (
                             <Button
                               size="sm"
