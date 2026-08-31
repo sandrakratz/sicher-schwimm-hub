@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -115,8 +115,8 @@ function Page() {
                 <TableRow><TableCell colSpan={7} className="text-muted-foreground">Keine aktiven Mitglieder gefunden.</TableCell></TableRow>
               )}
               {filtered.map(m => (
-                <>
-                  <TableRow key={m.id}>
+                <Fragment key={m.id}>
+                  <TableRow>
                     <TableCell className="font-medium">{m.name || "—"}</TableCell>
                     <TableCell><Badge variant="secondary">Hauptmitglied</Badge></TableCell>
                     <TableCell>{m.date_of_birth ? formatDateBerlin(m.date_of_birth) : "—"}</TableCell>
@@ -145,7 +145,7 @@ function Page() {
                       <TableCell colSpan={2} className="text-xs text-muted-foreground">über {m.name}</TableCell>
                     </TableRow>
                   ))}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>

@@ -39,9 +39,9 @@ export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
 /** Nur mit passender Rolle sichtbar */
 export const adminNav: AppNavItem[] = [
   { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
-  { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board", "trainer"] },
+  { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board"] },
   { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
-  { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board", "trainer"] },
+  { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board"] },
   { to: "/admin/anfragen", icon: ListChecks, label: "Kursanfragen (Archiv)", allow: ["admin"] },
   { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
   { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },
