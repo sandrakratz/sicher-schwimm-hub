@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -233,22 +234,25 @@ export function AvailabilityBoard() {
       ) : (
         <div className="space-y-6">
           {groups.map(g => (
-            <Card key={g.courseId} className="border-0 shadow-soft">
-              <CardContent className="p-4">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-display text-lg font-semibold text-primary-deep">{g.course?.name || "Kurs"}</div>
-                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      {g.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{g.course.location}</span>}
-                      {g.course?.schedule && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{g.course.schedule}</span>}
-                      <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{g.sessions.length} Termine</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
-                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
-                  </div>
-                </div>
+            <CollapsibleCard
+              key={g.courseId}
+              className="border-0 shadow-soft"
+              storageKey={`trainer-avail-${g.courseId}`}
+              title={g.course?.name || "Kurs"}
+              subtitle={
+                <span className="flex flex-wrap gap-3">
+                  {g.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{g.course.location}</span>}
+                  {g.course?.schedule && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{g.course.schedule}</span>}
+                  <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{g.sessions.length} Termine</span>
+                </span>
+              }
+              actions={
+                <>
+                  <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
+                  <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
+                </>
+              }
+            >
 
                 <div className="divide-y rounded-md border">
                   {g.sessions.map(s => {
