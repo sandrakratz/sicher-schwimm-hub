@@ -511,11 +511,28 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
       supabaseAdmin
         .from('course_requests')
         .select('*')
-        .eq('status', 'waiting_list')
+        .neq('status', 'rejected')
+        .is('assigned_course_id', null)
         .order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug').order('sort_order'),
       supabaseAdmin.from('waitlist_entries').select('id,request_id,parent_email,child_name'),
     ])
+
+    // Bereits in einen Kurs aufgenommene Anfragen nicht erneut auf die Warteliste holen
+    const { data: participants } = await supabaseAdmin
+      .from('course_participants')
+      .select('request_id,participant_name,participant_email')
+      .neq('status', 'cancelled')
+
+    const enrolledRequests = new Set(
+      (participants ?? []).map((p) => p.request_id).filter(Boolean) as Array<string>,
+    )
+    const enrolledPersons = new Set(
+      (participants ?? []).map(
+        (p) =>
+          `${(p.participant_email ?? '').toLowerCase().trim()}|${(p.participant_name ?? '').toLowerCase().trim()}`,
+      ),
+    )
 
     const byRequest = new Set((existing ?? []).map((e) => e.request_id).filter(Boolean) as Array<string>)
     const byPerson = new Set(
@@ -527,8 +544,9 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
     const rows: Array<Record<string, unknown>> = []
     for (const r of requests ?? []) {
       if (byRequest.has(r.id)) continue
+      if (enrolledRequests.has(r.id)) continue
       const key = `${(r.parent_email ?? '').toLowerCase().trim()}|${(r.child_name ?? '').toLowerCase().trim()}`
-      if (byPerson.has(key)) continue
+      if (byPerson.has(key) || enrolledPersons.has(key)) continue
       byPerson.add(key)
       const prog = matchProgram(r.desired_course, programs ?? [])
       rows.push({
