@@ -30,6 +30,7 @@ import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WartelisteAntwortRouteImport } from './routes/warteliste_.antwort'
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
@@ -168,6 +169,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WartelisteAntwortRoute = WartelisteAntwortRouteImport.update({
+  id: '/warteliste_/antwort',
+  path: '/warteliste/antwort',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KurseSlugRoute = KurseSlugRouteImport.update({
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
+  '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/widerruf': typeof WiderrufRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
+  '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -507,6 +515,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse_/$slug': typeof KurseSlugRoute
+  '/warteliste_/antwort': typeof WartelisteAntwortRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -566,6 +575,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/email/unsubscribe'
     | '/kurse/$slug'
+    | '/warteliste/antwort'
     | '/admin/anfragen'
     | '/admin/audit'
     | '/admin/benutzer'
@@ -622,6 +632,7 @@ export interface FileRouteTypes {
     | '/widerruf'
     | '/email/unsubscribe'
     | '/kurse/$slug'
+    | '/warteliste/antwort'
     | '/admin/anfragen'
     | '/admin/audit'
     | '/admin/benutzer'
@@ -680,6 +691,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/email/unsubscribe'
     | '/kurse_/$slug'
+    | '/warteliste_/antwort'
     | '/_authenticated/admin/anfragen'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
@@ -738,6 +750,7 @@ export interface RootRouteChildren {
   WiderrufRoute: typeof WiderrufRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
+  WartelisteAntwortRoute: typeof WartelisteAntwortRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
@@ -895,6 +908,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warteliste_/antwort': {
+      id: '/warteliste_/antwort'
+      path: '/warteliste/antwort'
+      fullPath: '/warteliste/antwort'
+      preLoaderRoute: typeof WartelisteAntwortRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kurse_/$slug': {
@@ -1242,6 +1262,7 @@ const rootRouteChildren: RootRouteChildren = {
   WiderrufRoute: WiderrufRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
+  WartelisteAntwortRoute: WartelisteAntwortRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
