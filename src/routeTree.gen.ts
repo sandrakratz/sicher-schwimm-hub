@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WiderrufRouteImport } from './routes/widerruf'
+import { Route as WartelisteRouteImport } from './routes/warteliste'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -68,6 +69,11 @@ import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes
 const WiderrufRoute = WiderrufRouteImport.update({
   id: '/widerruf',
   path: '/widerruf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WartelisteRoute = WartelisteRouteImport.update({
+  id: '/warteliste',
+  path: '/warteliste',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -381,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -437,6 +444,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
@@ -494,6 +502,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
@@ -552,6 +561,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/warteliste'
     | '/widerruf'
     | '/admin'
     | '/email/unsubscribe'
@@ -608,6 +618,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/warteliste'
     | '/widerruf'
     | '/email/unsubscribe'
     | '/kurse/$slug'
@@ -664,6 +675,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/ueber-uns'
     | '/unsubscribe'
+    | '/warteliste'
     | '/widerruf'
     | '/_authenticated/admin'
     | '/email/unsubscribe'
@@ -722,6 +734,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UeberUnsRoute: typeof UeberUnsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  WartelisteRoute: typeof WartelisteRoute
   WiderrufRoute: typeof WiderrufRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
@@ -742,6 +755,13 @@ declare module '@tanstack/react-router' {
       path: '/widerruf'
       fullPath: '/widerruf'
       preLoaderRoute: typeof WiderrufRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warteliste': {
+      id: '/warteliste'
+      path: '/warteliste'
+      fullPath: '/warteliste'
+      preLoaderRoute: typeof WartelisteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unsubscribe': {
@@ -1218,6 +1238,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UeberUnsRoute: UeberUnsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  WartelisteRoute: WartelisteRoute,
   WiderrufRoute: WiderrufRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
