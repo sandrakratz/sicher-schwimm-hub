@@ -749,12 +749,64 @@ export type Database = {
         }
         Relationships: []
       }
+      event_helper_groups: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          event_id: string
+          filled_at: string | null
+          id: string
+          name: string
+          needed_count: number
+          note: string | null
+          sort_order: number
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          event_id: string
+          filled_at?: string | null
+          id?: string
+          name: string
+          needed_count?: number
+          note?: string | null
+          sort_order?: number
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          event_id?: string
+          filled_at?: string | null
+          id?: string
+          name?: string
+          needed_count?: number
+          note?: string | null
+          sort_order?: number
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_helper_groups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_shift_signups: {
         Row: {
           available: boolean
           created_at: string
           ends_at: string | null
           event_id: string
+          group_id: string | null
+          helper_name: string | null
           id: string
           note: string | null
           starts_at: string | null
@@ -766,6 +818,8 @@ export type Database = {
           created_at?: string
           ends_at?: string | null
           event_id: string
+          group_id?: string | null
+          helper_name?: string | null
           id?: string
           note?: string | null
           starts_at?: string | null
@@ -777,6 +831,8 @@ export type Database = {
           created_at?: string
           ends_at?: string | null
           event_id?: string
+          group_id?: string | null
+          helper_name?: string | null
           id?: string
           note?: string | null
           starts_at?: string | null
@@ -789,6 +845,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_shift_signups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "event_helper_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -1226,6 +1289,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_help: { Args: { _user_id: string }; Returns: boolean }
       generate_course_document_no: { Args: never; Returns: string }
       has_active_membership: { Args: { _user_id: string }; Returns: boolean }
       has_role: {

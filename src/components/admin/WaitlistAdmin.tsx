@@ -18,7 +18,41 @@ import {
   updateWaitlistEntry,
   deleteWaitlistEntry,
   migrateWaitingRequests,
+  bookWaitlistPlaceDirect,
 } from "@/lib/waitlist.functions";
+
+const PAYMENT_LABEL: Record<string, { label: string; className: string }> = {
+  none: { label: "Nicht gebucht", className: "bg-slate-100 text-slate-700" },
+  open: { label: "Offen", className: "bg-amber-100 text-amber-900" },
+  overdue: { label: "Überfällig", className: "bg-red-100 text-red-900" },
+  paid: { label: "Bezahlt", className: "bg-emerald-100 text-emerald-900" },
+};
+
+function PaymentCell({ entry }: { entry: Record<string, unknown> }) {
+  const status = (entry["payment_status"] as string) ?? "none";
+  const booking = entry["booking"] as
+    | { paid_at?: string | null; price_amount?: number | null; payment_due_date?: string | null; booked_at?: string | null }
+    | null
+    | undefined;
+  const p = PAYMENT_LABEL[status] ?? PAYMENT_LABEL["none"]!;
+  return (
+    <div className="space-y-1">
+      <Badge className={p.className} variant="secondary">
+        {p.label}
+      </Badge>
+      {booking?.price_amount != null && (
+        <div className="text-xs text-muted-foreground">
+          {Number(booking.price_amount).toFixed(2).replace(".", ",")} €
+        </div>
+      )}
+      {booking?.paid_at ? (
+        <div className="text-xs text-muted-foreground">bezahlt am {formatDateBerlin(booking.paid_at)}</div>
+      ) : booking?.payment_due_date ? (
+        <div className="text-xs text-muted-foreground">fällig {formatDateBerlin(booking.payment_due_date)}</div>
+      ) : null}
+    </div>
+  );
+}
 
 const STATUS_LABEL: Record<string, { label: string; className: string }> = {
   waiting: { label: "Wartend", className: "bg-amber-100 text-amber-900" },
@@ -321,6 +355,19 @@ export function WaitlistAdmin() {
     onError: (e: Error) => toast.error(e.message || "Angebot fehlgeschlagen"),
   });
 
+  const bookDirect = useMutation({
+    mutationFn: (v: { entryId: string; courseId: string }) => bookWaitlistPlaceDirect({ data: v }),
+    onSuccess: (res) => {
+      toast.success(
+        `Verbindlich gebucht: ${res.courseName}. Zahlung bis ${formatDateBerlin(res.paymentDueDate)}${
+          res.immediatePayment ? " (Sofortüberweisung)" : ""
+        }.`,
+      );
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message || "Buchung fehlgeschlagen"),
+  });
+
   const update = useMutation({
     mutationFn: (v: {
       entryId: string;
@@ -420,6 +467,7 @@ export function WaitlistAdmin() {
                   <th className="py-2 pr-3">Eingang</th>
                   <th className="py-2 pr-3">Mitglied</th>
                   <th className="py-2 pr-3">Status</th>
+                  <th className="py-2 pr-3">Zahlung</th>
                   <th className="py-2 pr-3">Aktion</th>
                 </tr>
               </thead>
@@ -538,6 +586,9 @@ export function WaitlistAdmin() {
                         )}
                       </td>
                       <td className="py-2 pr-3">
+                        <PaymentCell entry={e as unknown as WaitlistEntry} />
+                      </td>
+                      <td className="py-2 pr-3">
                         <div className="flex flex-wrap items-center gap-2">
                           {e.status === "waiting" && courses.length > 0 && (
                             <select
@@ -565,6 +616,34 @@ export function WaitlistAdmin() {
                                   {c.name}
                                   {c.free != null ? ` (${c.free} frei)` : ""}
                                   {!meetsMinAge(e.child_dob, c.starts_on, minAge) ? " – zu jung" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {e.status !== "accepted" && courses.length > 0 && (
+                            <select
+                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                              defaultValue=""
+                              disabled={bookDirect.isPending}
+                              onChange={(ev) => {
+                                const courseId = ev.target.value;
+                                ev.target.value = "";
+                                if (!courseId) return;
+                                const c = courses.find((x) => x.id === courseId);
+                                if (
+                                  !confirm(
+                                    `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
+                                  )
+                                )
+                                  return;
+                                bookDirect.mutate({ entryId: e.id, courseId });
+                              }}
+                            >
+                              <option value="">Direkt buchen…</option>
+                              {courses.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                  {c.free != null ? ` (${c.free} frei)` : ""}
                                 </option>
                               ))}
                             </select>
