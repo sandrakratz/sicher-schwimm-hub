@@ -146,11 +146,18 @@ function KursePage() {
                       )}
                     </div>
                     {bookable ? (
-                      <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
-                        <Link to="/kurse/$slug" params={{ slug: c.slug }}>
-                          {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
-                        </Link>
-                      </Button>
+                      <div className="space-y-2">
+                        <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
+                          <Link to="/kurse/$slug" params={{ slug: c.slug }}>
+                            {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
+                          </Link>
+                        </Button>
+                        {openTerms === 0 && (
+                          <Button asChild variant="accent" className="w-full">
+                            <Link to="/warteliste" search={{ programm: c.slug }}>Auf die Warteliste</Link>
+                          </Button>
+                        )}
+                      </div>
                     ) : (
                       <>
                         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep mb-3">
