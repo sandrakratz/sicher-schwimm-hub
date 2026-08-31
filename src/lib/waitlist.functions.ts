@@ -492,27 +492,37 @@ export const offerWaitlistPlace = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+const updateSchema = z.object({
+  entryId: z.string().uuid(),
+  status: z.enum(['waiting', 'removed', 'declined']).optional(),
+  adminNotes: z.string().max(4000).nullable().optional(),
+  appendNote: z.string().trim().max(2000).optional(),
+  programId: z.string().uuid().nullable().optional(),
+  childName: z.string().trim().min(1).max(120).optional(),
+  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  parentName: z.string().trim().min(1).max(120).optional(),
+  parentEmail: z.string().trim().email().max(200).optional(),
+  parentPhone: z.string().trim().max(60).nullable().optional(),
+  isMember: z.boolean().nullable().optional(),
+  notes: z.string().max(4000).nullable().optional(),
+  blocklist: z.boolean().optional(),
+  blocklistReason: z.string().trim().max(500).optional(),
+})
+
 export const updateWaitlistEntry = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: {
-      entryId: string
-      status?: string
-      adminNotes?: string | null
-      programId?: string | null
-    }) =>
-      z
-        .object({
-          entryId: z.string().uuid(),
-          status: z.enum(['waiting', 'removed', 'declined']).optional(),
-          adminNotes: z.string().max(2000).nullable().optional(),
-          programId: z.string().uuid().nullable().optional(),
-        })
-        .parse(input),
-  )
+  .inputValidator((input: unknown) => updateSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertStaff(context)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+    const { data: entry } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('*')
+      .eq('id', data.entryId)
+      .maybeSingle()
+    if (!entry) throw new Error('Eintrag nicht gefunden')
+
     const patch: Record<string, unknown> = {}
     if (data.status) {
       patch['status'] = data.status
@@ -521,14 +531,44 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       patch['offer_expires_at'] = null
     }
     if (data.adminNotes !== undefined) patch['admin_notes'] = data.adminNotes
+    if (data.appendNote) {
+      const { formatDateTimeBerlin } = await import('@/lib/format')
+      const stamp = formatDateTimeBerlin(new Date().toISOString())
+      const prev = (patch['admin_notes'] as string | null) ?? entry.admin_notes ?? ''
+      patch['admin_notes'] = `${prev ? `${prev}\n` : ''}[${stamp}] ${data.appendNote}`
+    }
     if (data.programId !== undefined) {
       patch['program_id'] = data.programId
       patch['course_id'] = null
     }
+    if (data.childName !== undefined) patch['child_name'] = data.childName
+    if (data.childDob !== undefined) patch['child_dob'] = data.childDob
+    if (data.parentName !== undefined) patch['parent_name'] = data.parentName
+    if (data.parentEmail !== undefined) patch['parent_email'] = data.parentEmail
+    if (data.parentPhone !== undefined) patch['parent_phone'] = data.parentPhone || null
+    if (data.isMember !== undefined) patch['is_member'] = data.isMember
+    if (data.notes !== undefined) patch['notes'] = data.notes
+
     const { error } = await supabaseAdmin.from('waitlist_entries').update(patch as never).eq('id', data.entryId)
     if (error) throw new Error(error.message)
+
+    if (data.blocklist) {
+      const email = (entry.parent_email ?? '').trim().toLowerCase() || null
+      const child = (entry.child_name ?? '').trim().replace(/\s+/g, ' ').toLowerCase() || null
+      await supabaseAdmin.from('booking_blocklist').insert({
+        child_name_norm: child,
+        child_dob: entry.child_dob,
+        email_norm: email,
+        reason: data.blocklistReason || 'Von der Warteliste abgemeldet',
+        source: 'manual',
+        active: true,
+        created_by: context.userId,
+      })
+    }
+
     return { ok: true }
   })
+
 
 /**
  * Übernimmt alte Kursanfragen mit Status „Warteliste“ einmalig in die neue
