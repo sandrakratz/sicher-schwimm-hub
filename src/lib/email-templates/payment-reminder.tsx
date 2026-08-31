@@ -157,10 +157,29 @@ const Email = (p: Props) => {
             </Section>
           )}
 
+          {!immediate && (
+            <>
+              <Text style={{ marginTop: '16px' }}>
+                Sollte innerhalb dieser Frist <strong>weder die Zahlung noch eine Rückmeldung</strong> bei uns
+                eingehen, geben wir den reservierten Kursplatz <strong>ohne weitere Ankündigung wieder frei</strong>.
+              </Text>
+              <Text>
+                Da wir Kursplätze verbindlich reservieren und die Nachfrage nach unseren Kursen sehr hoch ist, bitten
+                wir um Verständnis, dass wir Familien, die trotz Fälligkeit weder zahlen noch auf unsere
+                Zahlungserinnerung reagieren, <strong>künftig keine weiteren Kursbuchungen mehr ermöglichen können</strong>.
+              </Text>
+            </>
+          )}
+
           <Text style={{ marginTop: '16px' }}>
-            Sollten Sie die Zahlung bereits veranlasst haben, betrachten Sie diese E-Mail bitte als gegenstandslos.
-            Bei Fragen erreichen Sie uns unter {ORG.email} oder {ORG.phone}.
+            Falls Sie die Zahlung bereits veranlasst haben, betrachten Sie diese E-Mail bitte als gegenstandslos. In
+            diesem Fall freuen wir uns über eine kurze Rückmeldung.
           </Text>
+          <Text>
+            Bei Fragen erreichen Sie uns unter <Link href={`mailto:${ORG.email}`}>{ORG.email}</Link> oder{' '}
+            <strong>{ORG.phone}</strong>.
+          </Text>
+
 
           <Text style={{ marginTop: '16px' }}>Herzliche Grüße</Text>
           <Text style={row}>{ORG.signatory}</Text>
