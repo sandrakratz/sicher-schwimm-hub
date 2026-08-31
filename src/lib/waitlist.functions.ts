@@ -365,7 +365,16 @@ export const listWaitlist = createServerFn({ method: 'GET' })
   .handler(async ({ context }) => {
     await assertStaff(context)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const [{ data: entries }, { data: programs }, { data: courses }] = await Promise.all([
+
+    // Abgelaufene Platzangebote schließen, damit Plätze nicht hängen bleiben
+    try {
+      const { expireOffers } = await import('@/lib/waitlist.server')
+      await expireOffers()
+    } catch (err) {
+      console.error('expireOffers failed', err)
+    }
+
+    const [{ data: entries }, { data: programs }, { data: courses }, { data: blocklist }] = await Promise.all([
       supabaseAdmin.from('waitlist_entries').select('*').order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug,min_age_years').order('sort_order'),
       supabaseAdmin
@@ -373,7 +382,12 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         .select('id,name,program_id,starts_on,max_participants,status,archived_at')
         .is('archived_at', null)
         .order('starts_on'),
+      supabaseAdmin
+        .from('booking_blocklist')
+        .select('email_norm,child_name_norm,child_dob,reason')
+        .eq('active', true),
     ])
+
 
     // Originalanfrage (komplett) nachziehen
     const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
