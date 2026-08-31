@@ -56,7 +56,7 @@ export function SiteHeader() {
             </Link>
           </Button>
           <Button asChild variant="accent" size="sm">
-            <Link to="/warteliste">Auf die Warteliste</Link>
+            <Link to="/warteliste" search={{ programm: undefined }}>Auf die Warteliste</Link>
           </Button>
         </div>
 
@@ -81,7 +81,7 @@ export function SiteHeader() {
                 </Link>
               </Button>
               <Button asChild variant="accent" className="flex-1">
-                <Link to="/warteliste" onClick={() => setOpen(false)}>Auf die Warteliste</Link>
+                <Link to="/warteliste" search={{ programm: undefined }} onClick={() => setOpen(false)}>Auf die Warteliste</Link>
               </Button>
             </div>
           </nav>

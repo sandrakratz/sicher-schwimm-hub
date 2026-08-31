@@ -4,6 +4,6 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 // Bestehende Links und Lesezeichen führen dauerhaft auf /warteliste.
 export const Route = createFileRoute("/kurs-anfragen")({
   beforeLoad: () => {
-    throw redirect({ to: "/warteliste" });
+    throw redirect({ to: "/warteliste", search: { programm: undefined } });
   },
 });
