@@ -33,7 +33,7 @@ export function HelperGroupsPanel({
   trainers,
 }: {
   eventId: string;
-  signups: Array<ShiftSignup & { group_id?: string | null }>;
+  signups: Array<ShiftSignup & { group_id?: string | null; helper_name?: string | null }>;
   trainers: TrainerOption[];
 }) {
   const [groups, setGroups] = useState<HelperGroup[]>([]);

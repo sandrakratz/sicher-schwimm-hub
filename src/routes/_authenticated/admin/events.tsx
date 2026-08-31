@@ -20,6 +20,7 @@ import {
   berlinTime, coverageGaps, coverageSlices, formatRange, signupInterval,
   toBerlinInput, fromBerlinInput, type ShiftSignup,
 } from "@/lib/event-shifts";
+import { HelperGroupsPanel } from "@/components/admin/HelperGroupsPanel";
 
 export const Route = createFileRoute("/_authenticated/admin/events")({
   beforeLoad: async () => {
@@ -324,6 +325,8 @@ function HelperDialog({
                 </p>
               )}
             </div>
+
+            <HelperGroupsPanel eventId={event.id} signups={signups} trainers={trainers} />
 
             <div>
               <div className="mb-2 text-sm font-medium">Rückmeldungen ({signups.length})</div>
