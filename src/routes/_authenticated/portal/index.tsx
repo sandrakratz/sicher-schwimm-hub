@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
+import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, FileText, Newspaper, User as UserIcon } from "lucide-react";
@@ -69,6 +70,8 @@ function Dashboard() {
         <h1 className="font-display text-4xl font-bold text-primary-deep">Hallo {name}! 👋</h1>
         <p className="text-muted-foreground mt-2">Schön, dass Sie da sind. Hier finden Sie Ihre wichtigsten Vereinsinfos.</p>
       </div>
+
+      <OpenAvailabilityNotice />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {([
