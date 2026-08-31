@@ -77,6 +77,16 @@ export const unassignRequestFromCourse = createServerFn({ method: 'POST' })
       entity_id: req.id,
       metadata: { previous_course_id: previousCourseId, new_status: newStatus },
     })
+    // Frei gewordenen Platz automatisch an die Warteliste vergeben
+    if (previousCourseId) {
+      try {
+        const { allocateWaitlist } = await import('@/lib/waitlist.server')
+        await allocateWaitlist(previousCourseId)
+      } catch (err) {
+        console.error('waitlist allocation after unassign failed', err)
+      }
+    }
+
 
     return { ok: true, newStatus }
   })
