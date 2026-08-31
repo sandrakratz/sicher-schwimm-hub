@@ -445,6 +445,9 @@ export function WaitlistAdmin() {
           </CardContent>
         </Card>
       ))}
+
+      <OriginalRequestDialog entry={detail} open={!!detail} onOpenChange={(v) => !v && setDetail(null)} />
+
     </div>
   );
 }
