@@ -60,6 +60,7 @@ import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_aut
 import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
 import { Route as AuthenticatedAdminMitgliederRouteImport } from './routes/_authenticated/admin/mitglieder'
 import { Route as AuthenticatedAdminKurseRouteImport } from './routes/_authenticated/admin/kurse'
+import { Route as AuthenticatedAdminKalenderRouteImport } from './routes/_authenticated/admin/kalender'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin/emails'
 import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authenticated/admin/dokumente'
@@ -345,6 +346,12 @@ const AuthenticatedAdminKurseRoute = AuthenticatedAdminKurseRouteImport.update({
   path: '/kurse',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminKalenderRoute =
+  AuthenticatedAdminKalenderRouteImport.update({
+    id: '/kalender',
+    path: '/kalender',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminEventsRoute =
   AuthenticatedAdminEventsRouteImport.update({
     id: '/events',
@@ -440,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/admin/kalender': typeof AuthenticatedAdminKalenderRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
   '/admin/mitglieder': typeof AuthenticatedAdminMitgliederRoute
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -502,6 +510,7 @@ export interface FileRoutesByTo {
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/admin/kalender': typeof AuthenticatedAdminKalenderRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
   '/admin/mitglieder': typeof AuthenticatedAdminMitgliederRoute
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -567,6 +576,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
+  '/_authenticated/admin/kalender': typeof AuthenticatedAdminKalenderRoute
   '/_authenticated/admin/kurse': typeof AuthenticatedAdminKurseRoute
   '/_authenticated/admin/mitglieder': typeof AuthenticatedAdminMitgliederRoute
   '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -632,6 +642,7 @@ export interface FileRouteTypes {
     | '/admin/dokumente'
     | '/admin/emails'
     | '/admin/events'
+    | '/admin/kalender'
     | '/admin/kurse'
     | '/admin/mitglieder'
     | '/admin/mitgliedschaften'
@@ -694,6 +705,7 @@ export interface FileRouteTypes {
     | '/admin/dokumente'
     | '/admin/emails'
     | '/admin/events'
+    | '/admin/kalender'
     | '/admin/kurse'
     | '/admin/mitglieder'
     | '/admin/mitgliedschaften'
@@ -758,6 +770,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dokumente'
     | '/_authenticated/admin/emails'
     | '/_authenticated/admin/events'
+    | '/_authenticated/admin/kalender'
     | '/_authenticated/admin/kurse'
     | '/_authenticated/admin/mitglieder'
     | '/_authenticated/admin/mitgliedschaften'
@@ -1186,6 +1199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminKurseRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/kalender': {
+      id: '/_authenticated/admin/kalender'
+      path: '/kalender'
+      fullPath: '/admin/kalender'
+      preLoaderRoute: typeof AuthenticatedAdminKalenderRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/events': {
       id: '/_authenticated/admin/events'
       path: '/events'
@@ -1273,6 +1293,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminDokumenteRoute: typeof AuthenticatedAdminDokumenteRoute
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
+  AuthenticatedAdminKalenderRoute: typeof AuthenticatedAdminKalenderRoute
   AuthenticatedAdminKurseRoute: typeof AuthenticatedAdminKurseRoute
   AuthenticatedAdminMitgliederRoute: typeof AuthenticatedAdminMitgliederRoute
   AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
@@ -1294,6 +1315,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminDokumenteRoute: AuthenticatedAdminDokumenteRoute,
     AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
     AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
+    AuthenticatedAdminKalenderRoute: AuthenticatedAdminKalenderRoute,
     AuthenticatedAdminKurseRoute: AuthenticatedAdminKurseRoute,
     AuthenticatedAdminMitgliederRoute: AuthenticatedAdminMitgliederRoute,
     AuthenticatedAdminMitgliedschaftenRoute:

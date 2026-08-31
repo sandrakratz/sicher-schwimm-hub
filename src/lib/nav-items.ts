@@ -6,7 +6,7 @@ export type AppNavItem = {
   to:
     | "/portal" | "/portal/profil" | "/portal/kurse" | "/portal/news" | "/portal/events" | "/portal/dokumente" | "/portal/kontakt"
     | "/trainer" | "/trainer/verfuegbarkeit" | "/trainer/kurse" | "/trainer/mitglieder"
-    | "/admin" | "/admin/benutzer" | "/admin/mitglieder" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/warteliste" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/versandstatus" | "/admin/widerrufe" | "/admin/audit";
+    | "/admin" | "/admin/kalender" | "/admin/benutzer" | "/admin/mitglieder" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/warteliste" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/versandstatus" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
   exact?: boolean;
@@ -39,6 +39,7 @@ export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
 /** Nur mit passender Rolle sichtbar */
 export const adminNav: AppNavItem[] = [
   { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
+  { to: "/admin/kalender", icon: CalendarCheck, label: "Kurskalender", allow: ["admin", "board"] },
   { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board"] },
   { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board"] },
