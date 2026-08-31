@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { buildIcs, googleCalendarUrl, parseTimeRange, type CalendarItem } from "@/lib/ics";
+import { EventShiftSignups } from "@/components/admin/EventShiftSignups";
 
 export const Route = createFileRoute("/_authenticated/admin/verfuegbarkeit")({
   beforeLoad: async () => {
@@ -237,6 +238,10 @@ function AvailabilityPage() {
           Die .ics-Datei kannst du in Google Kalender (Einstellungen → Importieren) und in familywall.com importieren.
         </span>
       </div>
+
+      {me && <EventShiftSignups me={me} trainers={trainers} />}
+
+      <h2 className="font-display text-2xl font-bold text-primary-deep mb-3">Kurstermine</h2>
 
       {loading ? (
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Wird geladen …</CardContent></Card>

@@ -749,6 +749,50 @@ export type Database = {
         }
         Relationships: []
       }
+      event_shift_signups: {
+        Row: {
+          available: boolean
+          created_at: string
+          ends_at: string | null
+          event_id: string
+          id: string
+          note: string | null
+          starts_at: string | null
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          available?: boolean
+          created_at?: string
+          ends_at?: string | null
+          event_id: string
+          id?: string
+          note?: string | null
+          starts_at?: string | null
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          available?: boolean
+          created_at?: string
+          ends_at?: string | null
+          event_id?: string
+          id?: string
+          note?: string | null
+          starts_at?: string | null
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_shift_signups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string
@@ -756,6 +800,8 @@ export type Database = {
           ends_at: string | null
           id: string
           location: string | null
+          signup_enabled: boolean
+          signup_note: string | null
           starts_at: string
           title: string
           updated_at: string
@@ -767,6 +813,8 @@ export type Database = {
           ends_at?: string | null
           id?: string
           location?: string | null
+          signup_enabled?: boolean
+          signup_note?: string | null
           starts_at: string
           title: string
           updated_at?: string
@@ -778,6 +826,8 @@ export type Database = {
           ends_at?: string | null
           id?: string
           location?: string | null
+          signup_enabled?: boolean
+          signup_note?: string | null
           starts_at?: string
           title?: string
           updated_at?: string
