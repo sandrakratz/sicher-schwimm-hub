@@ -95,7 +95,10 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
     await load();
   }
 
-  async function patch(id: string, patchData: Record<string, unknown>) {
+  async function patch(
+    id: string,
+    patchData: { starts_at?: string | null; ends_at?: string | null; note?: string | null },
+  ) {
     const { error } = await supabase.from("event_shift_signups").update(patchData).eq("id", id);
     if (error) return toast.error(error.message);
     await load();
