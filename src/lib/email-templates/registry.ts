@@ -10,6 +10,8 @@ import { template as courseBooking, waitlistTemplate as courseWaitlist } from '.
 import { template as paymentCheckReminder } from './payment-check-reminder'
 import { template as immediatePaymentAlert } from './immediate-payment-alert'
 import { template as paymentReminder } from './payment-reminder'
+import { template as waitlistOffer } from './waitlist-offer'
+import { template as waitlistSignup } from './waitlist-signup'
 
 
 
