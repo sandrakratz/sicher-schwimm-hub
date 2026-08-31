@@ -42,7 +42,7 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
     if (rows.length === 0) { setSignups([]); return; }
     const { data: su } = await supabase
       .from("event_shift_signups")
-      .select("id,event_id,trainer_id,available,starts_at,ends_at,note")
+      .select("id,event_id,trainer_id,available,starts_at,ends_at,note,group_id,helper_name")
       .in("event_id", rows.map(r => r.id));
     setSignups((su as ShiftSignup[]) || []);
   }

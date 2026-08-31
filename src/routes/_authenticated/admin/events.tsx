@@ -87,7 +87,7 @@ function Page() {
     setRows((data as Ev[]) || []);
     const { data: su } = await supabase
       .from("event_shift_signups")
-      .select("id,event_id,trainer_id,available,starts_at,ends_at,note")
+      .select("id,event_id,trainer_id,available,starts_at,ends_at,note,group_id,helper_name")
       .order("starts_at", { ascending: true });
     setSignups((su as ShiftSignup[]) || []);
   }
