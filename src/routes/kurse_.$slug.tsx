@@ -132,7 +132,7 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
                 </div>
               </div>
               <div className="pt-3 border-t space-y-2">
-                <Button asChild variant="accent" className="w-full"><Link to="/warteliste">{LABELS.waitlistCta}</Link></Button>
+                <Button asChild variant="accent" className="w-full"><Link to="/warteliste" search={{}}>{LABELS.waitlistCta}</Link></Button>
                 <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns, sobald Termine feststehen.</p>
               </div>
             </CardContent>
@@ -214,7 +214,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 <p className="text-muted-foreground mb-4">
                   Für diesen Kurs stehen aktuell keine Termine zur Buchung bereit. Gerne nehmen wir Sie auf die Warteliste auf.
                 </p>
-                <Button asChild variant="accent"><Link to="/warteliste">{LABELS.waitlistCta}</Link></Button>
+                <Button asChild variant="accent"><Link to="/warteliste" search={{}}>{LABELS.waitlistCta}</Link></Button>
               </CardContent>
             </Card>
           ) : (
@@ -240,7 +240,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                     </div>
                     <div className="shrink-0">
                       {t.is_full ? (
-                        <Button asChild variant="outline"><Link to="/warteliste">{LABELS.waitlistCta}</Link></Button>
+                        <Button asChild variant="outline"><Link to="/warteliste" search={{}}>{LABELS.waitlistCta}</Link></Button>
                       ) : (
                         <Button variant="accent" onClick={() => setBookingTerm(t)}>Verbindlich buchen</Button>
                       )}
@@ -277,7 +277,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 </div>
               )}
               <div className="pt-3 border-t space-y-2">
-                <Button asChild variant="outline" className="w-full"><Link to="/warteliste">{LABELS.waitlistCta}</Link></Button>
+                <Button asChild variant="outline" className="w-full"><Link to="/warteliste" search={{}}>{LABELS.waitlistCta}</Link></Button>
                 <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.</p>
               </div>
             </CardContent>

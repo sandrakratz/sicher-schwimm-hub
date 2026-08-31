@@ -450,7 +450,7 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       patch['offer_expires_at'] = null
     }
     if (data.adminNotes !== undefined) patch['admin_notes'] = data.adminNotes
-    const { error } = await supabaseAdmin.from('waitlist_entries').update(patch).eq('id', data.entryId)
+    const { error } = await supabaseAdmin.from('waitlist_entries').update(patch as never).eq('id', data.entryId)
     if (error) throw new Error(error.message)
     return { ok: true }
   })

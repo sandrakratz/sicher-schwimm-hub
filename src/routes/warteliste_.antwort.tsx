@@ -40,7 +40,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 function OfferResponsePage() {
-  const { token, aktion } = useSearch({ from: "/warteliste_/antwort" });
+  const { token, aktion } = useSearch({ from: "/warteliste/antwort" });
   const [result, setResult] = useState<null | { accepted: boolean; immediate?: boolean; dueDate?: string }>(null);
   const [loading, setLoading] = useState(false);
 
@@ -214,7 +214,7 @@ function OfferResponsePage() {
               Platz absagen
             </Button>
             <Button variant="accent" asChild>
-              <Link to="/warteliste_/antwort" search={{ token, aktion: "zusage" }}>
+              <Link to="/warteliste/antwort" search={{ token, aktion: "zusage" }}>
                 Doch annehmen
               </Link>
             </Button>
