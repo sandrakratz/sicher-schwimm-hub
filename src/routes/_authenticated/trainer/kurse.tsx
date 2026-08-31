@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
@@ -68,19 +69,14 @@ function Page() {
       )}
 
       {courses.map(c => (
-        <Card key={c.id}>
-          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-lg">{c.name}</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {[c.location, c.schedule, c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            </div>
-            <Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>
-          </CardHeader>
-          <CardContent className="p-0">
+        <CollapsibleCard
+          key={c.id}
+          storageKey={`trainer-kurs-${c.id}`}
+          title={c.name}
+          subtitle={[c.location, c.schedule, c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null].filter(Boolean).join(" · ")}
+          meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
+          contentClassName="px-0"
+        >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -119,8 +115,7 @@ function Page() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       ))}
     </div>
   );
