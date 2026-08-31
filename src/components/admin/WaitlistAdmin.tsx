@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -449,14 +450,12 @@ export function WaitlistAdmin() {
       {grouped.length === 0 && <p className="text-muted-foreground">Keine Einträge auf der Warteliste.</p>}
 
       {grouped.map(([programId, entries]) => (
-        <Card key={programId}>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {programName(programId === "none" ? null : programId)}{" "}
-              <span className="text-sm font-normal text-muted-foreground">({entries.length})</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
+        <CollapsibleCard
+          key={programId}
+          storageKey={`waitlist-${programId}`}
+          title={programName(programId === "none" ? null : programId)}
+          meta={<span className="text-sm text-muted-foreground">{entries.length} Einträge</span>}
+          contentClassName="overflow-x-auto">
             <table className="w-full min-w-[1100px] text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
@@ -699,8 +698,7 @@ export function WaitlistAdmin() {
                 })}
               </tbody>
             </table>
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       ))}
 
       <OriginalRequestDialog
