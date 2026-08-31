@@ -276,9 +276,12 @@ function HelperDialog({
   }
 
   async function updateTime(s: ShiftSignup, field: "starts_at" | "ends_at", value: string) {
+    const iso = fromBerlinInput(value);
+    const payload: { starts_at?: string | null; ends_at?: string | null } =
+      field === "starts_at" ? { starts_at: iso } : { ends_at: iso };
     const { error } = await supabase
       .from("event_shift_signups")
-      .update({ [field]: fromBerlinInput(value) })
+      .update(payload)
       .eq("id", s.id);
     if (error) return toast.error(error.message);
     await onChanged();
