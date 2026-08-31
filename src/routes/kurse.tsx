@@ -9,7 +9,7 @@ import { CancellationButton } from "@/components/CancellationButton";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
 import { formatPrice } from "@/lib/format";
-import { programStatus } from "@/lib/course-status";
+import { programAvailability } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
 import { NOT_BOOKABLE_NOTE, PROGRAM_CARD_SUMMARIES } from "@/lib/upcoming-programs";
 
@@ -80,7 +80,12 @@ function KursePage() {
               const openTerms = c.open_terms ?? 0;
               const hasTerms = (c.terms?.length ?? 0) > 0;
               const bookable = c.bookable !== false;
-              const status = programStatus(openTerms, hasTerms);
+              const status = programAvailability({
+                openTerms,
+                hasTerms,
+                freeSlotsTotal: c.free_slots_total ?? null,
+                waitlistCount: c.waitlist_count ?? 0,
+              });
               const statusLabel = bookable ? status.label : "Geplant – noch nicht buchbar";
               const statusClass = bookable ? status.className : "bg-muted text-muted-foreground";
               const std = formatPrice(c.price_non_member);
@@ -95,7 +100,10 @@ function KursePage() {
                       <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold whitespace-nowrap ${statusClass}`}>{statusLabel}</span>
                     </div>
                     <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
-                    {c.age_range && <div className="text-sm font-semibold text-primary mb-3">{c.age_range}</div>}
+                    {c.age_range && <div className="text-sm font-semibold text-primary mb-1">{c.age_range}</div>}
+                    {bookable && (
+                      <div className="text-xs text-muted-foreground mb-3">{status.detail}</div>
+                    )}
                     {(() => {
                       const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/) : []);
                       if (paras.length === 0) return null;
@@ -138,11 +146,18 @@ function KursePage() {
                       )}
                     </div>
                     {bookable ? (
-                      <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
-                        <Link to="/kurse/$slug" params={{ slug: c.slug }}>
-                          {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
-                        </Link>
-                      </Button>
+                      <div className="space-y-2">
+                        <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
+                          <Link to="/kurse/$slug" params={{ slug: c.slug }}>
+                            {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
+                          </Link>
+                        </Button>
+                        {openTerms === 0 && (
+                          <Button asChild variant="accent" className="w-full">
+                            <Link to="/warteliste" search={{ programm: c.slug }}>Auf die Warteliste</Link>
+                          </Button>
+                        )}
+                      </div>
                     ) : (
                       <>
                         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep mb-3">

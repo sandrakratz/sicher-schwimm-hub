@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
 import { formatPrice } from "@/lib/format";
-import { termStatus } from "@/lib/course-status";
+import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
 import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
@@ -132,7 +132,7 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
                 </div>
               </div>
               <div className="pt-3 border-t space-y-2">
-                <Button asChild variant="accent" className="w-full"><Link to="/warteliste" search={{ programm: undefined }}>{LABELS.waitlistCta}</Link></Button>
+                <Button asChild variant="accent" className="w-full"><Link to="/warteliste" search={{ programm: up.slug }}>{LABELS.waitlistCta}</Link></Button>
                 <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns, sobald Termine feststehen.</p>
               </div>
             </CardContent>
@@ -157,6 +157,12 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
   const paragraphs = (program.description ?? "").split(/\n\s*\n/).filter(Boolean);
   const requirements = (program.requirements ?? "").split("\n").map((r) => r.trim()).filter(Boolean);
   const openTerms = program.terms.filter((t) => !t.is_full).length;
+  const availability = programAvailability({
+    openTerms,
+    hasTerms: program.terms.length > 0,
+    freeSlotsTotal: program.free_slots_total ?? null,
+    waitlistCount: program.waitlist_count ?? 0,
+  });
 
   return (
     <PublicLayout>
@@ -171,10 +177,14 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
       <section className="container mx-auto px-4 py-12 grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary-deep">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <Badge variant="outline" className={availability.className}>{availability.label}</Badge>
+              <span className="text-xs text-primary-deep/80">{availability.detail}</span>
+            </div>
             {openTerms > 0 ? (
               <><strong>Freie Plätze verfügbar.</strong> Sie können unten einen Zeitraum auswählen und verbindlich buchen.</>
             ) : program.terms.length > 0 ? (
-              <><strong>Aktuell ausgebucht.</strong> Gerne nehmen wir Sie auf die Warteliste auf und melden uns, sobald ein Platz frei wird.</>
+              <><strong>Aktuell ausgebucht.</strong> Gerne nehmen wir Sie auf die Warteliste auf – sobald ein Platz frei wird, erhalten Sie automatisch ein Angebot per E-Mail. Vereinsmitglieder werden bevorzugt berücksichtigt.</>
             ) : (
               <><strong>Termine in Planung.</strong> Sobald die Wasserzeiten feststehen, veröffentlichen wir hier die buchbaren Zeiträume.</>
             )}
@@ -214,7 +224,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 <p className="text-muted-foreground mb-4">
                   Für diesen Kurs stehen aktuell keine Termine zur Buchung bereit. Gerne nehmen wir Sie auf die Warteliste auf.
                 </p>
-                <Button asChild variant="accent"><Link to="/warteliste" search={{ programm: undefined }}>{LABELS.waitlistCta}</Link></Button>
+                <Button asChild variant="accent"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button>
               </CardContent>
             </Card>
           ) : (
@@ -235,12 +245,18 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                         {t.starts_on ? formatDateBerlin(t.starts_on) : "Termin folgt"}
                         {t.ends_on ? ` – ${formatDateBerlin(t.ends_on)}` : ""}
                       </div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                        <Users className="h-4 w-4" />
+                        {t.max_participants != null
+                          ? `${t.confirmed_count} von ${t.max_participants} Plätzen belegt${t.is_full ? "" : ` – noch ${t.free_slots} frei`}`
+                          : "Plätze auf Anfrage"}
+                      </div>
                       {t.schedule && <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1"><Clock className="h-4 w-4" />{t.schedule}</div>}
                       {t.location && <div className="text-sm text-muted-foreground flex items-start gap-2 mt-1"><MapPin className="h-4 w-4 mt-0.5" />{t.location}</div>}
                     </div>
                     <div className="shrink-0">
                       {t.is_full ? (
-                        <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: undefined }}>{LABELS.waitlistCta}</Link></Button>
+                        <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button>
                       ) : (
                         <Button variant="accent" onClick={() => setBookingTerm(t)}>Verbindlich buchen</Button>
                       )}
@@ -277,7 +293,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 </div>
               )}
               <div className="pt-3 border-t space-y-2">
-                <Button asChild variant="outline" className="w-full"><Link to="/warteliste" search={{ programm: undefined }}>{LABELS.waitlistCta}</Link></Button>
+                <Button asChild variant="outline" className="w-full"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button>
                 <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.</p>
               </div>
             </CardContent>
