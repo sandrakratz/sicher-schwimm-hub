@@ -322,8 +322,23 @@ export function WaitlistAdmin() {
   });
 
   const update = useMutation({
-    mutationFn: (v: { entryId: string; status?: "waiting" | "removed"; adminNotes?: string; programId?: string | null }) =>
-      updateWaitlistEntry({ data: v }),
+    mutationFn: (v: {
+      entryId: string;
+      status?: "waiting" | "removed";
+      adminNotes?: string;
+      appendNote?: string;
+      programId?: string | null;
+      childName?: string;
+      childDob?: string | null;
+      parentName?: string;
+      parentEmail?: string;
+      parentPhone?: string | null;
+      isMember?: boolean | null;
+      notes?: string | null;
+      blocklist?: boolean;
+      blocklistReason?: string;
+    }) => updateWaitlistEntry({ data: v }),
+
     onSuccess: () => {
       invalidate();
     },
