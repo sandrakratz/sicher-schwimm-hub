@@ -454,6 +454,17 @@ export function WaitlistAdmin() {
                         {e.child_dob && (
                           <div className="text-xs text-muted-foreground">{formatDateBerlin(e.child_dob)}</div>
                         )}
+                        {(e as Record<string, unknown>)["blocked_reason"] ? (
+                          <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                            <ShieldBan className="h-3 w-3" /> Sperrliste
+                          </div>
+                        ) : null}
+                        {(e as Record<string, unknown>)["duplicate_of"] ? (
+                          <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                            <Copy className="h-3 w-3" /> mögliche Dublette
+                          </div>
+                        ) : null}
+
                         <button
                           type="button"
                           className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
