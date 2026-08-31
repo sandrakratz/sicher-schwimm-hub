@@ -377,13 +377,22 @@ export const listWaitlist = createServerFn({ method: 'GET' })
 
     // Originalanfrage (komplett) nachziehen
     const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
-    const requests = new Map<string, Record<string, unknown>>()
+    const requests = new Map<string, Record<string, string | number | boolean | null>>()
     if (requestIds.length) {
       const { data: reqs } = await supabaseAdmin
         .from('course_requests')
         .select('*')
         .in('id', requestIds)
-      for (const r of reqs ?? []) requests.set(r.id, r as unknown as Record<string, unknown>)
+      for (const r of reqs ?? []) {
+        const plain: Record<string, string | number | boolean | null> = {}
+        for (const [k, v] of Object.entries(r as Record<string, unknown>)) {
+          plain[k] =
+            v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
+              ? (v as string | number | boolean | null)
+              : JSON.stringify(v)
+        }
+        requests.set(r.id, plain)
+      }
     }
 
 
