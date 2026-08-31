@@ -169,7 +169,14 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
     }
     candidates = sortCandidates(candidates)
 
+    // Mindestalter zum Kursstart prüfen – zu junge Kinder bleiben auf der Warteliste
+    candidates = candidates.filter((c) =>
+      meetsMinAge(c.child_dob ?? null, course.starts_on ?? null, program?.min_age_years ?? null),
+    )
+    if (candidates.length === 0) continue
+
     for (const entry of candidates.slice(0, free)) {
+
       try {
         offers.push(await createOffer(entry, course, program))
       } catch (err) {
