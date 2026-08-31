@@ -37,4 +37,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'payment-check-reminder': paymentCheckReminder,
   'immediate-payment-alert': immediatePaymentAlert,
   'payment-reminder': paymentReminder,
+  'waitlist-offer': waitlistOffer,
+  'waitlist-signup': waitlistSignup,
 }
