@@ -204,7 +204,7 @@ function Page() {
 
   const [sessOpen, setSessOpen] = useState(false);
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
-  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string; assigned_trainer_id?: string | null }[]>([]);
+  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string; start_time?: string | null; end_time?: string | null; assigned_trainer_id?: string | null }[]>([]);
   const [sessAvail, setSessAvail] = useState<{ session_id: string; trainer_id: string; available: boolean }[]>([]);
   const [sessAssign, setSessAssign] = useState<{ session_id: string; trainer_id: string }[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
@@ -237,7 +237,7 @@ function Page() {
   async function openSessions(c: Course) {
     setSessCourse(c); setSessOpen(true);
     const { data } = await supabase.from("course_sessions")
-      .select("id,session_index,session_date,assigned_trainer_id")
+      .select("id,session_index,session_date,start_time,end_time,assigned_trainer_id")
       .eq("course_id", c.id).order("session_index", { ascending: true });
     const rows = (data as any[]) || [];
     setSessions(rows as any);
@@ -284,8 +284,13 @@ function Page() {
     if (sessions.length >= 10) return toast.error("Maximal 10 Termine");
     const nextIndex = (sessions.reduce((m, s) => Math.max(m, s.session_index), 0) || 0) + 1;
     const today = new Date().toISOString().slice(0, 10);
+    const last = sessions[sessions.length - 1];
     const { error } = await supabase.from("course_sessions").insert({
-      course_id: sessCourse.id, session_index: nextIndex, session_date: today,
+      course_id: sessCourse.id,
+      session_index: nextIndex,
+      session_date: today,
+      start_time: last?.start_time ?? null,
+      end_time: last?.end_time ?? null,
     });
     if (error) return toast.error(error.message);
     await openSessions(sessCourse);
@@ -294,6 +299,12 @@ function Page() {
     const { error } = await supabase.from("course_sessions").update({ session_date: date }).eq("id", id);
     if (error) return toast.error(error.message);
     if (sessCourse) await openSessions(sessCourse);
+  }
+  async function updateSessionTime(id: string, field: "start_time" | "end_time", value: string) {
+    const next = value ? `${value}:00` : null;
+    setSessions(list => list.map(s => (s.id === id ? { ...s, [field]: next } : s)));
+    const { error } = await supabase.from("course_sessions").update({ [field]: next }).eq("id", id);
+    if (error) toast.error(error.message);
   }
   async function removeSession(id: string) {
     const { error } = await supabase.from("course_sessions").delete().eq("id", id);
@@ -1401,7 +1412,7 @@ function Page() {
       <Dialog open={sessOpen} onOpenChange={setSessOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground">Bis zu 10 Termine. Diese werden auf der Excel-Kursliste als Spaltenüberschriften ausgegeben. Trainer melden ihre Verfügbarkeit unter „Verfügbarkeit“.</p>
+          <p className="text-xs text-muted-foreground">Bis zu 10 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender, das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre Verfügbarkeit unter „Verfügbarkeit“.</p>
           <div className="space-y-3">
             {sessions.length === 0 && <div className="text-sm text-muted-foreground">Noch keine Termine.</div>}
             {sessions.map(s => {
@@ -1415,6 +1426,21 @@ function Page() {
                   <div className="flex items-center gap-2">
                     <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
                     <Input type="date" value={s.session_date} onChange={e => updateSessionDate(s.id, e.target.value)} />
+                    <Input
+                      type="time"
+                      className="w-28"
+                      title="Beginn"
+                      value={(s.start_time || "").slice(0, 5)}
+                      onChange={e => updateSessionTime(s.id, "start_time", e.target.value)}
+                    />
+                    <span className="text-xs text-muted-foreground">bis</span>
+                    <Input
+                      type="time"
+                      className="w-28"
+                      title="Ende"
+                      value={(s.end_time || "").slice(0, 5)}
+                      onChange={e => updateSessionTime(s.id, "end_time", e.target.value)}
+                    />
                     <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 pl-10 text-xs">

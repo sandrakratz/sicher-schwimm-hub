@@ -169,7 +169,7 @@ function Page() {
           key={mk}
           storageKey={`cal-${mk}`}
           title={fmtMonth(mk)}
-          description={`${[...days.values()].reduce((s, l) => s + l.length, 0)} Termin(e)`}
+          subtitle={`${[...days.values()].reduce((s, l) => s + l.length, 0)} Termin(e)`}
         >
           <div className="space-y-4">
             {[...days.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([day, list]) => (
