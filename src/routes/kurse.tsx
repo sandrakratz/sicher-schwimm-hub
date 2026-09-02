@@ -209,7 +209,26 @@ function KursePage() {
         <div className="flex justify-center mt-6">
           <CancellationButton />
         </div>
+        <div className="mt-10 max-w-xl mx-auto text-xs text-muted-foreground">
+          <p className="mb-1">📅 Sie suchen einen Kurs unter der Woche?</p>
+          <p className="mb-1">Unsere eigenen Kurse finden derzeit am Wochenende statt.</p>
+          <p className="mb-1">
+            Für Familien, die unter der Woche einen Schwimmkurs suchen, gibt es in Hennef auch Angebote der
+            Schwimmschule Sharky.
+          </p>
+          <p>
+            <a
+              href="https://www.sharky-hennef.de/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground"
+            >
+              ➡️ Zu Sharky Hennef
+            </a>
+          </p>
+        </div>
         <AiImageNotice className="mt-8 text-center" />
+
       </section>
     </PublicLayout>
   );
