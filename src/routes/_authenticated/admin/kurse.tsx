@@ -19,6 +19,7 @@ import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseC
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
+import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
@@ -197,6 +198,7 @@ function Page() {
   const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean } | null>(null);
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
+  const moveToWaitlistFn = useServerFn(moveParticipantToWaitlist);
 
   const [reqOpen, setReqOpen] = useState(false);
   const [reqLoading, setReqLoading] = useState(false);
@@ -577,6 +579,19 @@ function Page() {
     await load();
   }
   async function updatePartStatus(p: Participant, status: "confirmed" | "waiting" | "cancelled") {
+    if (status === "waiting") {
+      // Zugeteiltes Kind zurück auf die Warteliste: Platz freigeben und
+      // Wartelisteneintrag (wieder-)herstellen, damit niemand verloren geht.
+      try {
+        await moveToWaitlistFn({ data: { participantId: p.id } });
+        toast.success("Zurück auf die Warteliste gesetzt");
+      } catch (e: any) {
+        return toast.error(e?.message || "Verschieben auf die Warteliste fehlgeschlagen");
+      }
+      if (partCourse) await openParticipants(partCourse);
+      await load();
+      return;
+    }
     const { error } = await supabase.from("course_participants").update({ status }).eq("id", p.id);
     if (error) return toast.error(error.message);
     if (partCourse) await openParticipants(partCourse);
