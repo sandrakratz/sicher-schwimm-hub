@@ -174,23 +174,29 @@ function KursePage() {
                 </Card>
               );
             })}
+
+            <Card className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
+              <CardContent className="p-6 flex flex-col flex-1">
+                <h3 className="font-display text-xl font-bold text-primary-deep mb-2">Kein passender Platz dabei?</h3>
+                <p className="text-sm text-muted-foreground mb-4 flex-1">
+                  Tragen Sie Ihr Kind unverbindlich auf die Warteliste ein. Sobald ein Platz frei wird, erhalten Sie
+                  automatisch ein Angebot per E-Mail – Vereinsmitglieder werden bevorzugt berücksichtigt.
+                </p>
+                <Button asChild variant="accent" className="w-full">
+                  <Link to="/warteliste" search={{ programm: undefined }}>Auf die Warteliste setzen</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
+              <CardContent className="p-6 flex flex-col flex-1">
+                <BaderegelnCard variant="compact" />
+              </CardContent>
+            </Card>
           </div>
         )}
 
-        <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft text-center">
-          <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Kein passender Platz dabei?</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Tragen Sie Ihr Kind unverbindlich auf die Warteliste ein. Sobald ein Platz frei wird, erhalten Sie
-            automatisch ein Angebot per E-Mail – Vereinsmitglieder werden bevorzugt berücksichtigt.
-          </p>
-          <Button asChild variant="accent">
-            <Link to="/warteliste" search={{ programm: undefined }}>Auf die Warteliste setzen</Link>
-          </Button>
-        </div>
 
-        <div className="mt-12 mx-auto w-full max-w-sm rounded-2xl border bg-card p-5 shadow-soft">
-          <BaderegelnCard variant="compact" />
-        </div>
 
 
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
