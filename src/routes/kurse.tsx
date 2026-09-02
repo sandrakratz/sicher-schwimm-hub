@@ -8,6 +8,7 @@ import { Clock, MapPin, Users, Tag } from "lucide-react";
 import { CancellationButton } from "@/components/CancellationButton";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
+import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { programAvailability } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
