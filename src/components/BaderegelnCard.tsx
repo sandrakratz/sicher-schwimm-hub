@@ -14,14 +14,14 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
     <button
       type="button"
       onClick={() => setOpen(true)}
-      className="group relative block w-full overflow-hidden rounded-xl border bg-muted/30"
+      className={`group relative block w-full overflow-hidden rounded-xl border bg-muted/30 ${variant === "compact" ? "h-40" : ""}`}
       aria-label="Baderegeln-Poster in großer Ansicht öffnen"
     >
       <img
         src={poster.url}
         alt={ALT}
         loading="lazy"
-        className="w-full h-auto transition-transform duration-300 group-hover:scale-[1.02]"
+        className={`w-full transition-transform duration-300 group-hover:scale-[1.02] ${variant === "compact" ? "h-40 object-contain" : "h-auto"}`}
       />
       <span className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold text-primary-deep shadow-soft">
         <Maximize2 className="h-3.5 w-3.5" /> Großansicht
