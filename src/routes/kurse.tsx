@@ -8,6 +8,7 @@ import { Clock, MapPin, Users, Tag } from "lucide-react";
 import { CancellationButton } from "@/components/CancellationButton";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
+import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { programAvailability } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
@@ -187,11 +188,16 @@ function KursePage() {
           </Button>
         </div>
 
+        <div className="mt-12 max-w-4xl mx-auto">
+          <BaderegelnCard />
+        </div>
+
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
           <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>
           <BankDetails />
         </div>
+
 
         <p className="text-center text-sm text-muted-foreground mt-10">
           Mit der Anmeldung gelten unsere{" "}

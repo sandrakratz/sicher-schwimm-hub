@@ -19,6 +19,7 @@ import { Clock, MapPin, Users, Tag, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
+import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
@@ -306,6 +307,13 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
               <BankDetails variant="compact" />
             </CardContent>
           </Card>
+
+          <Card className="border-0 shadow-soft">
+            <CardContent className="p-6">
+              <BaderegelnCard variant="compact" />
+            </CardContent>
+          </Card>
+
         </aside>
       </section>
 
