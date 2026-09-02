@@ -306,6 +306,13 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
               <BankDetails variant="compact" />
             </CardContent>
           </Card>
+
+          <Card className="border-0 shadow-soft">
+            <CardContent className="p-6">
+              <BaderegelnCard variant="compact" />
+            </CardContent>
+          </Card>
+
         </aside>
       </section>
 
