@@ -188,9 +188,10 @@ function KursePage() {
           </Button>
         </div>
 
-        <div className="mt-12 max-w-4xl mx-auto">
-          <BaderegelnCard />
+        <div className="mt-12 mx-auto w-full max-w-sm rounded-2xl border bg-card p-5 shadow-soft">
+          <BaderegelnCard variant="compact" />
         </div>
+
 
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
