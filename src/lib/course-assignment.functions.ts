@@ -320,7 +320,7 @@ export const moveParticipantToWaitlist = createServerFn({ method: 'POST' })
 
     const { data: existing } = await supabaseAdmin
       .from('waitlist_entries')
-      .select('id,status,request_id,parent_email,child_name')
+      .select('id,status,request_id,parent_email,child_name,admin_notes')
 
     const dup = (existing ?? []).find((e) => {
       if (req?.id && e.request_id === req.id) return true
@@ -346,7 +346,7 @@ export const moveParticipantToWaitlist = createServerFn({ method: 'POST' })
           offer_token: null,
           offered_at: null,
           offer_expires_at: null,
-          admin_notes: [dup ? null : null, noteLine].filter(Boolean).join('\n'),
+          admin_notes: [dup.admin_notes, noteLine].filter(Boolean).join('\n'),
         } as never)
         .eq('id', dup.id)
     } else {
