@@ -187,11 +187,16 @@ function KursePage() {
           </Button>
         </div>
 
+        <div className="mt-12 max-w-4xl mx-auto">
+          <BaderegelnCard />
+        </div>
+
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
           <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
           <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>
           <BankDetails />
         </div>
+
 
         <p className="text-center text-sm text-muted-foreground mt-10">
           Mit der Anmeldung gelten unsere{" "}
