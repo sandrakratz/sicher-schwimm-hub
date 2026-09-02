@@ -501,6 +501,7 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
         .select('*')
         .neq('status', 'rejected')
         .is('assigned_course_id', null)
+        .is('waitlist_archived_at', null)
         .order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug').order('sort_order'),
       supabaseAdmin.from('waitlist_entries').select('id,request_id,parent_email,child_name'),
@@ -569,6 +570,21 @@ export const deleteWaitlistEntry = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     await assertStaff(context)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+
+    // Ursprungsanfrage markieren, damit der Eintrag nicht automatisch
+    // erneut aus den alten Kursanfragen importiert wird.
+    const { data: entry } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('request_id')
+      .eq('id', data.entryId)
+      .maybeSingle()
+    if (entry?.request_id) {
+      await supabaseAdmin
+        .from('course_requests')
+        .update({ waitlist_archived_at: new Date().toISOString() } as never)
+        .eq('id', entry.request_id)
+    }
+
     const { error } = await supabaseAdmin.from('waitlist_entries').delete().eq('id', data.entryId)
     if (error) throw new Error(error.message)
     return { ok: true }
