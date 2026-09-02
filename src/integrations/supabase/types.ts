@@ -364,6 +364,7 @@ export type Database = {
           status: Database["public"]["Enums"]["request_status"]
           swimming_level: string | null
           updated_at: string
+          waitlist_archived_at: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -385,6 +386,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["request_status"]
           swimming_level?: string | null
           updated_at?: string
+          waitlist_archived_at?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -406,6 +408,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["request_status"]
           swimming_level?: string | null
           updated_at?: string
+          waitlist_archived_at?: string | null
         }
         Relationships: [
           {
