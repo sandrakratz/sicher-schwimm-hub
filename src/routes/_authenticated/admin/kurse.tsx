@@ -195,7 +195,7 @@ function Page() {
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
-  const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean } | null>(null);
+  const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean; notify: "unpaid" | "agreed" | "none"; note: string } | null>(null);
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
   const moveToWaitlistFn = useServerFn(moveParticipantToWaitlist);
@@ -602,21 +602,28 @@ function Page() {
       participant: p,
       reason: p.paid ? "" : "Nichtzahlung",
       blocklist: !p.paid,
+      notify: p.paid ? "agreed" : "unpaid",
+      note: "",
     });
   }
   async function confirmRemovePart() {
     if (!removeState) return;
     setRemoving(true);
     try {
-      await removeParticipantFn({
+      const res: any = await removeParticipantFn({
         data: {
           participantId: removeState.participant.id,
           reason: removeState.reason,
           blocklist: removeState.blocklist,
+          notify: removeState.participant.participant_email ? removeState.notify : "none",
+          note: removeState.note,
         },
       });
       toast.success(
-        removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
+        [
+          removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
+          res?.emailed ? "E-Mail an die Eltern versendet" : null,
+        ].filter(Boolean).join(" · "),
       );
       setRemovePart(null);
       if (partCourse) await openParticipants(partCourse);
@@ -1537,7 +1544,7 @@ function Page() {
                 <Label>Grund</Label>
                 <Select
                   value={["Nichtzahlung", "Rücktritt der Eltern", "Sonstiges"].includes(removeState.reason) ? removeState.reason : "Sonstiges"}
-                  onValueChange={v => setRemovePart(s => s && { ...s, reason: v === "Sonstiges" ? "" : v, blocklist: v === "Nichtzahlung" ? true : s.blocklist })}
+                  onValueChange={v => setRemovePart(s => s && { ...s, reason: v === "Sonstiges" ? "" : v, blocklist: v === "Nichtzahlung" ? true : s.blocklist, notify: v === "Nichtzahlung" ? "unpaid" : s.notify })}
                 >
                   <SelectTrigger><SelectValue placeholder="Grund wählen" /></SelectTrigger>
                   <SelectContent>
@@ -1552,6 +1559,36 @@ function Page() {
                   placeholder="Notiz zum Grund (optional)"
                   rows={2}
                 />
+              </div>
+              <div className="space-y-1">
+                <Label>E-Mail an die Eltern</Label>
+                <Select
+                  value={removeState.participant.participant_email ? removeState.notify : "none"}
+                  disabled={!removeState.participant.participant_email}
+                  onValueChange={v => setRemovePart(s => s && { ...s, notify: v as "unpaid" | "agreed" | "none", blocklist: v === "unpaid" ? true : s.blocklist })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unpaid">Platz freigegeben (keine Rückmeldung/Zahlung)</SelectItem>
+                    <SelectItem value="agreed">Abmeldung wie besprochen (z. B. Krankheit)</SelectItem>
+                    <SelectItem value="none">Keine E-Mail senden</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Hint>
+                  {!removeState.participant.participant_email
+                    ? "Keine E-Mail-Adresse hinterlegt – es kann keine E-Mail versendet werden."
+                    : removeState.notify === "none"
+                      ? "Es wird keine E-Mail versendet."
+                      : `Empfänger: ${removeState.participant.participant_email}`}
+                </Hint>
+                {removeState.notify !== "none" && !!removeState.participant.participant_email && (
+                  <Textarea
+                    value={removeState.note}
+                    onChange={e => setRemovePart(s => s && { ...s, note: e.target.value })}
+                    placeholder="Persönliche Ergänzung für die E-Mail (optional)"
+                    rows={3}
+                  />
+                )}
               </div>
               <label className="flex items-start gap-2 text-sm">
                 <Checkbox
