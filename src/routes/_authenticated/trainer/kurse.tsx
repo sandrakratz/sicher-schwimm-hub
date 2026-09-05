@@ -71,9 +71,10 @@ function Page() {
         </CardContent></Card>
       )}
 
-      {courses.map(c => (
+      {courses.map((c, i) => (
         <CollapsibleCard
           key={c.id}
+          defaultOpen={i === 0}
           storageKey={`trainer-kurs-${c.id}`}
           title={c.name}
           subtitle={[c.location, c.schedule, c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null].filter(Boolean).join(" · ")}
