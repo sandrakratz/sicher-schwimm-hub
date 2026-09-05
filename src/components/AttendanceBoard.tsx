@@ -214,7 +214,8 @@ export function AttendanceBoard({
         })}
       </div>
 
-      <Table className="hidden md:table">
+      <div className="hidden md:block">
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Kind</TableHead>
