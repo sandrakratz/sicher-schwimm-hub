@@ -9,6 +9,7 @@ import { listMyTrainerCourses, type TrainerCourse } from "@/lib/trainer-courses.
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
+import { ParticipantCard } from "@/components/trainer/ParticipantCard";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
