@@ -187,7 +187,11 @@ export function AttendanceBoard({
           return (
             <div key={p.id} className="rounded-lg border p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-semibold">{p.name}</span>
+                <span className="flex min-w-0 items-center truncate text-sm font-semibold">
+                  <BeltNo no={p.no} />
+                  <span className="truncate">{p.name}</span>
+                </span>
+
                 {rec && (
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     {formatDateTimeBerlin(rec.updated_at)}
