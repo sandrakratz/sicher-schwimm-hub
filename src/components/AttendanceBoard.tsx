@@ -16,7 +16,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { toast } from "sonner";
 
-export type AttendanceParticipant = { id: string; name: string };
+export type AttendanceParticipant = { id: string; name: string; no?: number | null };
+
+/** Kleine Gurt-Nummer (1–10) vor dem Namen. */
+function BeltNo({ no }: { no?: number | null }) {
+  if (!no) return null;
+  return (
+    <span className="mr-2 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded border px-1 text-[11px] font-semibold text-muted-foreground">
+      {no}
+    </span>
+  );
+}
 
 const STATUS_OPTIONS: { value: AttendanceStatus; label: string; className: string }[] = [
   { value: "present", label: "Anwesend", className: "bg-green-600 text-white border-transparent" },
