@@ -8,6 +8,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { listMyTrainerCourses, type TrainerCourse } from "@/lib/trainer-courses.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
+import { AttendanceBoard } from "@/components/AttendanceBoard";
+
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   beforeLoad: async () => {
