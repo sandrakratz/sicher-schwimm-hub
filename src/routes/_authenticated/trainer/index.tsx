@@ -148,9 +148,10 @@ function TrainerHome() {
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Aktuell bist du für keine kommenden Termine eingeteilt.</CardContent></Card>
       ) : (
         <div className="space-y-3">
-          {groups.map(([courseId, g]) => (
+          {groups.map(([courseId, g], i) => (
             <CollapsibleCard
               key={courseId}
+              defaultOpen={i === 0}
               storageKey={`trainer-home-${courseId}`}
               className="border-0 shadow-soft"
               title={g.name}
