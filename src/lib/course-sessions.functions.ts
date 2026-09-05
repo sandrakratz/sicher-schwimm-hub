@@ -28,19 +28,36 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     const { data: sessionsData } = await supabase
       .from("course_sessions")
-      .select("session_index,session_date")
+      .select("id,session_index,session_date")
       .eq("course_id", data.courseId)
       .order("session_index", { ascending: true });
     const sessions = sessionsData || [];
 
     const { data: partsData } = await supabase
       .from("course_participants")
-      .select("participant_name,participant_phone,date_of_birth,notes,status")
+      .select("id,participant_name,participant_phone,date_of_birth,notes,status")
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
     const participants = (partsData || []).slice().sort((a, b) =>
       (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
     );
+
+    // Online erfasste Anwesenheiten (x = anwesend, e = entschuldigt, f = gefehlt)
+    const attendanceMark = new Map<string, string>(); // `${sessionId}:${participantId}`
+    if (sessions.length > 0) {
+      const { data: attRows } = await supabase
+        .from("course_attendance")
+        .select("session_id,participant_id,status")
+        .in("session_id", sessions.map((s) => s.id));
+      const symbol: Record<string, string> = { present: "x", excused: "e", absent: "f" };
+      (attRows || []).forEach((r) => {
+        attendanceMark.set(
+          `${r.session_id}:${r.participant_id}`,
+          symbol[r.status as string] || "",
+        );
+      });
+    }
+
 
     const firstSessionDate =
       sessions.find((s) => s.session_index === 1)?.session_date ||
