@@ -278,6 +278,7 @@ export function AttendanceBoard({
           })}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
