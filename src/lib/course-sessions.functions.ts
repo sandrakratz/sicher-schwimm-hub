@@ -117,6 +117,12 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     metaRow.font = { italic: true, size: 10 };
     ws.mergeCells(metaRow.number, 1, metaRow.number, 18);
 
+    const legendRow = ws.addRow([
+      "Anwesenheit (online erfasst): x = anwesend · e = entschuldigt · f = gefehlt · leer = nicht erfasst",
+    ]);
+    legendRow.font = { italic: true, size: 9 };
+    ws.mergeCells(legendRow.number, 1, legendRow.number, 18);
+
     ws.addRow([]);
 
     // Column headers
@@ -146,19 +152,28 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         .replace(/\s+/g, " ")
         .trim();
     participants.forEach((p, idx) => {
+      const sessionCells = Array.from({ length: 10 }, (_, i) => {
+        const s = sessions.find((x) => x.session_index === i + 1);
+        if (!s) return "";
+        return attendanceMark.get(`${s.id}:${p.id}`) || "";
+      });
       const row = ws.addRow([
         idx + 1,
         formatName(p.participant_name),
         "",
         "",
-        "", "", "", "", "", "", "", "", "", "",
+        ...sessionCells,
         p.participant_phone || "",
         ageAt(p.date_of_birth, firstSessionDate),
         p.notes || "",
       ]);
       row.alignment = { vertical: "middle", wrapText: true };
       row.height = 22;
+      for (let c = 5; c <= 14; c++) {
+        row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+      }
     });
+
 
     // Ensure at least a few blank rows for printing if no participants
     if (participants.length === 0) {
