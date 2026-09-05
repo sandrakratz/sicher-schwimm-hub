@@ -9,6 +9,7 @@ import { listMyTrainerCourses, type TrainerCourse } from "@/lib/trainer-courses.
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
+import { ParticipantCard } from "@/components/trainer/ParticipantCard";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -70,54 +71,17 @@ function Page() {
         </CardContent></Card>
       )}
 
-      {courses.map(c => (
+      {courses.map((c, i) => (
         <CollapsibleCard
           key={c.id}
+          defaultOpen={i === 0}
           storageKey={`trainer-kurs-${c.id}`}
           title={c.name}
           subtitle={[c.location, c.schedule, c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null].filter(Boolean).join(" · ")}
           meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
           contentClassName="px-0"
         >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kind</TableHead>
-                  <TableHead>Geburtsdatum</TableHead>
-                  <TableHead>Kontakt Eltern</TableHead>
-                  <TableHead>Hinweise</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Zahlung</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {c.participants.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
-                )}
-                {c.participants.map(p => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.name || "—"}</TableCell>
-                    <TableCell>{p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "—"}</TableCell>
-                    <TableCell className="text-xs">
-                      <div>{p.email || "—"}</div>
-                      <div className="text-muted-foreground">{p.phone || "—"}</div>
-                    </TableCell>
-                    <TableCell className="max-w-[16rem] whitespace-pre-wrap text-xs">{p.notes || "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{STATUS_LABEL[p.status] || p.status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {p.paid ? (
-                        <Badge className="border-transparent bg-green-600 text-white">bezahlt</Badge>
-                      ) : (
-                        <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="space-y-2 border-t px-6 py-4">
+            <div className="space-y-2 px-4 pb-4 sm:px-6">
               <h3 className="text-sm font-semibold">Anwesenheit erfassen</h3>
               <AttendanceBoard
                 courseId={c.id}
@@ -125,6 +89,57 @@ function Page() {
                   .filter(p => p.status !== "cancelled")
                   .map(p => ({ id: p.id, name: p.name || "—" }))}
               />
+            </div>
+
+            <div className="border-t pt-2 md:hidden">
+              <h3 className="px-4 py-2 text-sm font-semibold">Teilnehmende</h3>
+              {c.participants.length === 0 && (
+                <p className="px-4 pb-4 text-sm text-muted-foreground">Noch keine Teilnehmenden.</p>
+              )}
+              {c.participants.map(p => (
+                <ParticipantCard key={p.id} p={p} />
+              ))}
+            </div>
+
+            <div className="hidden border-t md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kind</TableHead>
+                    <TableHead>Geburtsdatum</TableHead>
+                    <TableHead>Kontakt Eltern</TableHead>
+                    <TableHead>Hinweise</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Zahlung</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {c.participants.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
+                  )}
+                  {c.participants.map(p => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.name || "—"}</TableCell>
+                      <TableCell>{p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "—"}</TableCell>
+                      <TableCell className="text-xs">
+                        <div>{p.email || "—"}</div>
+                        <div className="text-muted-foreground">{p.phone || "—"}</div>
+                      </TableCell>
+                      <TableCell className="max-w-[16rem] whitespace-pre-wrap text-xs">{p.notes || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{STATUS_LABEL[p.status] || p.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {p.paid ? (
+                          <Badge className="border-transparent bg-green-600 text-white">bezahlt</Badge>
+                        ) : (
+                          <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
         </CollapsibleCard>
 

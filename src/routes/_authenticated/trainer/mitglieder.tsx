@@ -8,6 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { listActiveMembers, type ActiveMember } from "@/lib/members-list.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
+import { MemberCard } from "@/components/trainer/MemberCard";
 
 export const Route = createFileRoute("/_authenticated/trainer/mitglieder")({
   beforeLoad: async () => {
@@ -37,6 +38,7 @@ function Page() {
   const [rows, setRows] = useState<ActiveMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [visible, setVisible] = useState(20);
   const load = useServerFn(listActiveMembers);
 
   useEffect(() => {
@@ -85,8 +87,8 @@ function Page() {
       <Input
         placeholder="Nach Name oder E-Mail suchen…"
         value={query}
-        onChange={e => setQuery(e.target.value)}
-        className="max-w-sm"
+        onChange={e => { setQuery(e.target.value); setVisible(20); }}
+        className="h-11 max-w-sm"
       />
 
       <CollapsibleCard
@@ -95,6 +97,26 @@ function Page() {
         storageKey="trainer-mitglieder"
         contentClassName="px-0"
       >
+          <div className="md:hidden">
+            {loading && <p className="px-4 py-3 text-sm text-muted-foreground">Lädt…</p>}
+            {!loading && filtered.length === 0 && (
+              <p className="px-4 py-3 text-sm text-muted-foreground">Keine aktiven Mitglieder gefunden.</p>
+            )}
+            {filtered.slice(0, visible).map(m => (
+              <MemberCard key={m.id} m={m as any} />
+            ))}
+            {filtered.length > visible && (
+              <button
+                type="button"
+                onClick={() => setVisible(v => v + 20)}
+                className="min-h-12 w-full text-sm font-semibold text-primary"
+              >
+                Mehr anzeigen ({filtered.length - visible})
+              </button>
+            )}
+          </div>
+
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -149,6 +171,7 @@ function Page() {
               ))}
             </TableBody>
           </Table>
+          </div>
       </CollapsibleCard>
     </div>
   );
