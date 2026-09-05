@@ -8,6 +8,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { listActiveMembers, type ActiveMember } from "@/lib/members-list.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
+import { MemberCard } from "@/components/trainer/MemberCard";
 
 export const Route = createFileRoute("/_authenticated/trainer/mitglieder")({
   beforeLoad: async () => {
@@ -86,8 +87,8 @@ function Page() {
       <Input
         placeholder="Nach Name oder E-Mail suchen…"
         value={query}
-        onChange={e => setQuery(e.target.value)}
-        className="max-w-sm"
+        onChange={e => { setQuery(e.target.value); setVisible(20); }}
+        className="h-11 max-w-sm"
       />
 
       <CollapsibleCard
