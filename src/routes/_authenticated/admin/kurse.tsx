@@ -20,6 +20,8 @@ import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
+import { AttendanceBoard } from "@/components/AttendanceBoard";
+
 
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
@@ -1522,6 +1524,13 @@ function Page() {
 
             })}
           </div>
+          {sessCourse && (
+            <div className="mt-4 space-y-2 border-t pt-4">
+              <h3 className="text-sm font-semibold">Anwesenheit</h3>
+              <AttendanceBoard courseId={sessCourse.id} />
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setSessOpen(false)}>Schließen</Button>
             <Button onClick={addSession} disabled={sessions.length >= 10}><Plus className="h-4 w-4" /> Termin hinzufügen</Button>

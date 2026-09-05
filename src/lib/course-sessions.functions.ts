@@ -28,19 +28,36 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     const { data: sessionsData } = await supabase
       .from("course_sessions")
-      .select("session_index,session_date")
+      .select("id,session_index,session_date")
       .eq("course_id", data.courseId)
       .order("session_index", { ascending: true });
     const sessions = sessionsData || [];
 
     const { data: partsData } = await supabase
       .from("course_participants")
-      .select("participant_name,participant_phone,date_of_birth,notes,status")
+      .select("id,participant_name,participant_phone,date_of_birth,notes,status")
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
     const participants = (partsData || []).slice().sort((a, b) =>
       (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
     );
+
+    // Online erfasste Anwesenheiten (x = anwesend, e = entschuldigt, f = gefehlt)
+    const attendanceMark = new Map<string, string>(); // `${sessionId}:${participantId}`
+    if (sessions.length > 0) {
+      const { data: attRows } = await supabase
+        .from("course_attendance")
+        .select("session_id,participant_id,status")
+        .in("session_id", sessions.map((s) => s.id));
+      const symbol: Record<string, string> = { present: "x", excused: "e", absent: "f" };
+      (attRows || []).forEach((r) => {
+        attendanceMark.set(
+          `${r.session_id}:${r.participant_id}`,
+          symbol[r.status as string] || "",
+        );
+      });
+    }
+
 
     const firstSessionDate =
       sessions.find((s) => s.session_index === 1)?.session_date ||
@@ -100,6 +117,12 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     metaRow.font = { italic: true, size: 10 };
     ws.mergeCells(metaRow.number, 1, metaRow.number, 18);
 
+    const legendRow = ws.addRow([
+      "Anwesenheit (online erfasst): x = anwesend · e = entschuldigt · f = gefehlt · leer = nicht erfasst",
+    ]);
+    legendRow.font = { italic: true, size: 9 };
+    ws.mergeCells(legendRow.number, 1, legendRow.number, 18);
+
     ws.addRow([]);
 
     // Column headers
@@ -129,19 +152,28 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         .replace(/\s+/g, " ")
         .trim();
     participants.forEach((p, idx) => {
+      const sessionCells = Array.from({ length: 10 }, (_, i) => {
+        const s = sessions.find((x) => x.session_index === i + 1);
+        if (!s) return "";
+        return attendanceMark.get(`${s.id}:${p.id}`) || "";
+      });
       const row = ws.addRow([
         idx + 1,
         formatName(p.participant_name),
         "",
         "",
-        "", "", "", "", "", "", "", "", "", "",
+        ...sessionCells,
         p.participant_phone || "",
         ageAt(p.date_of_birth, firstSessionDate),
         p.notes || "",
       ]);
       row.alignment = { vertical: "middle", wrapText: true };
       row.height = 22;
+      for (let c = 5; c <= 14; c++) {
+        row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+      }
     });
+
 
     // Ensure at least a few blank rows for printing if no participants
     if (participants.length === 0) {

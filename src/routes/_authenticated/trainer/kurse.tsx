@@ -8,6 +8,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { listMyTrainerCourses, type TrainerCourse } from "@/lib/trainer-courses.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
+import { AttendanceBoard } from "@/components/AttendanceBoard";
+
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   beforeLoad: async () => {
@@ -115,7 +117,17 @@ function Page() {
                 ))}
               </TableBody>
             </Table>
+            <div className="space-y-2 border-t px-6 py-4">
+              <h3 className="text-sm font-semibold">Anwesenheit erfassen</h3>
+              <AttendanceBoard
+                courseId={c.id}
+                participants={c.participants
+                  .filter(p => p.status !== "cancelled")
+                  .map(p => ({ id: p.id, name: p.name || "—" }))}
+              />
+            </div>
         </CollapsibleCard>
+
       ))}
     </div>
   );
