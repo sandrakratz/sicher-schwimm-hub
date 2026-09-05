@@ -95,6 +95,26 @@ function Page() {
         storageKey="trainer-mitglieder"
         contentClassName="px-0"
       >
+          <div className="md:hidden">
+            {loading && <p className="px-4 py-3 text-sm text-muted-foreground">Lädt…</p>}
+            {!loading && filtered.length === 0 && (
+              <p className="px-4 py-3 text-sm text-muted-foreground">Keine aktiven Mitglieder gefunden.</p>
+            )}
+            {filtered.slice(0, visible).map(m => (
+              <MemberCard key={m.id} m={m as any} />
+            ))}
+            {filtered.length > visible && (
+              <button
+                type="button"
+                onClick={() => setVisible(v => v + 20)}
+                className="min-h-12 w-full text-sm font-semibold text-primary"
+              >
+                Mehr anzeigen ({filtered.length - visible})
+              </button>
+            )}
+          </div>
+
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
