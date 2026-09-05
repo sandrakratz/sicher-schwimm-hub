@@ -1216,6 +1216,56 @@ export type Database = {
         }
         Relationships: []
       }
+      trainer_session_attendance: {
+        Row: {
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          present: boolean
+          recorded_at: string
+          recorded_by: string | null
+          session_id: string
+          trainer_id: string
+          updated_at: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          present?: boolean
+          recorded_at?: string
+          recorded_by?: string | null
+          session_id: string
+          trainer_id: string
+          updated_at?: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          present?: boolean
+          recorded_at?: string
+          recorded_by?: string | null
+          session_id?: string
+          trainer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_session_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "course_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
