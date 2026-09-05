@@ -21,6 +21,7 @@ import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
+import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 
 
 
@@ -1528,6 +1529,8 @@ function Page() {
             <div className="mt-4 space-y-2 border-t pt-4">
               <h3 className="text-sm font-semibold">Anwesenheit</h3>
               <AttendanceBoard courseId={sessCourse.id} />
+              <h3 className="pt-4 text-sm font-semibold">Trainer-Anwesenheit (Steuernachweis)</h3>
+              <TrainerAttendancePanel courseId={sessCourse.id} />
             </div>
           )}
 
