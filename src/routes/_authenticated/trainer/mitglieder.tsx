@@ -169,6 +169,7 @@ function Page() {
               ))}
             </TableBody>
           </Table>
+          </div>
       </CollapsibleCard>
     </div>
   );
