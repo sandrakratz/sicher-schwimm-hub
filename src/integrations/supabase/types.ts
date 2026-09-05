@@ -154,6 +154,54 @@ export type Database = {
         }
         Relationships: []
       }
+      course_attendance: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          participant_id: string
+          recorded_by: string | null
+          session_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          participant_id: string
+          recorded_by?: string | null
+          session_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          participant_id?: string
+          recorded_by?: string | null
+          session_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_attendance_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "course_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "course_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_participants: {
         Row: {
           achievement: string | null
@@ -1321,6 +1369,7 @@ export type Database = {
     Enums: {
       account_status: "pending" | "active" | "disabled" | "archived"
       app_role: "admin" | "board" | "trainer" | "member" | "parent"
+      attendance_status: "present" | "excused" | "absent"
       cancellation_status: "eingegangen" | "in_bearbeitung" | "abgeschlossen"
       course_status:
         | "planned"
@@ -1468,6 +1517,7 @@ export const Constants = {
     Enums: {
       account_status: ["pending", "active", "disabled", "archived"],
       app_role: ["admin", "board", "trainer", "member", "parent"],
+      attendance_status: ["present", "excused", "absent"],
       cancellation_status: ["eingegangen", "in_bearbeitung", "abgeschlossen"],
       course_status: [
         "planned",
