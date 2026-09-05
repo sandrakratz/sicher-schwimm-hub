@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { portalNav, visibleAdminNav, visibleTrainerNav, type Role } from "@/lib/nav-items";
+import { TrainerMobileNav } from "@/components/trainer/TrainerMobileNav";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
