@@ -147,8 +147,8 @@ function Page() {
               </Table>
             </div>
         </CollapsibleCard>
-
-      ))}
+        );
+      })}
     </div>
   );
 }
