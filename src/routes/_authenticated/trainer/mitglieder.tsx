@@ -37,6 +37,7 @@ function Page() {
   const [rows, setRows] = useState<ActiveMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [visible, setVisible] = useState(20);
   const load = useServerFn(listActiveMembers);
 
   useEffect(() => {
