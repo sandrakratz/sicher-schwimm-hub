@@ -298,7 +298,7 @@ export function AvailabilityBoard() {
                             variant="outline"
                             disabled={busy === s.id}
                             onClick={() => setAvailability(s.id, state === false ? null : false)}
-                            className={state === false ? "border-transparent bg-red-600 text-white hover:bg-red-700" : ""}
+                            className={`min-h-11 flex-1 sm:flex-none ${state === false ? "border-transparent bg-red-600 text-white hover:bg-red-700" : ""}`}
                           >
                             <X className="h-4 w-4" /> Kann nicht
                           </Button>
