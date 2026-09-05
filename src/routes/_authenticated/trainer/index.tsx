@@ -87,35 +87,61 @@ function TrainerHome() {
     return Array.from(map.entries());
   }, [upcoming]);
 
+  const next = upcoming[0];
+
   return (
-    <div className="max-w-4xl">
-      <h1 className="font-display text-3xl font-bold text-primary-deep mb-2">Trainerbereich</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Hier siehst du nur deine eigenen Termine und kannst deine Verfügbarkeit pflegen.
-      </p>
+    <div className="max-w-4xl space-y-4">
+      <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">Trainerbereich</h1>
 
       <OpenAvailabilityNotice />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-4">
+      {next && (
+        <Card className="border-0 shadow-soft bg-primary/5">
+          <CardContent className="p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nächster Einsatz</div>
+            <div className="mt-1 text-base font-bold text-primary-deep">{next.course?.name ?? "Kurs"}</div>
+            <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{formatDateBerlin(next.session_date)}</span>
+              {next.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{next.course.location}</span>}
+            </div>
+            <Link
+              to="/trainer/kurse"
+              className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground sm:w-auto"
+            >
+              Anwesenheit erfassen
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
         <StatCard label="Einsätze gesamt" value={rows.length} />
-        <StatCard label={`Einsätze ${currentYear}`} value={thisYear.length} />
-        <StatCard label="Bereits geleistet" value={past.length} />
         <StatCard label="Noch anstehend" value={upcoming.length} />
       </div>
-      <p className="mb-6 text-xs text-muted-foreground">
-        Die Anzahl der Einsätze zählt alle Kurstermine, für die du eingeteilt bist – nutzbar für die Abrechnung.
-      </p>
 
-      <div className="mb-6">
-        <Link
-          to="/trainer/verfuegbarkeit"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >
-          <CalendarCheck className="h-4 w-4" /> Verfügbarkeit eintragen
-        </Link>
-      </div>
+      <CollapsibleCard
+        storageKey="trainer-home-stats"
+        defaultOpen={false}
+        className="border-0 shadow-soft"
+        title="Weitere Zahlen für die Abrechnung"
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label={`Einsätze ${currentYear}`} value={thisYear.length} />
+          <StatCard label="Bereits geleistet" value={past.length} />
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Gezählt werden alle Kurstermine, für die du eingeteilt bist.
+        </p>
+      </CollapsibleCard>
 
-      <h2 className="font-display text-2xl font-bold text-primary-deep mb-3">Meine nächsten Einsätze</h2>
+      <Link
+        to="/trainer/verfuegbarkeit"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-primary px-4 text-sm font-semibold text-primary sm:w-auto"
+      >
+        <CalendarCheck className="h-4 w-4" /> Verfügbarkeit eintragen
+      </Link>
+
+      <h2 className="font-display text-xl font-bold text-primary-deep sm:text-2xl">Meine nächsten Einsätze</h2>
       {loading ? (
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Wird geladen …</CardContent></Card>
       ) : groups.length === 0 ? (
