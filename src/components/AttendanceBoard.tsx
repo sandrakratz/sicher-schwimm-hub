@@ -151,7 +151,7 @@ export function AttendanceBoard({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Select value={sessionId} onValueChange={setSessionId}>
-          <SelectTrigger className="w-[16rem]">
+          <SelectTrigger className="h-11 w-full sm:w-[16rem]">
             <SelectValue placeholder="Termin wählen" />
           </SelectTrigger>
           <SelectContent>
@@ -168,7 +168,53 @@ export function AttendanceBoard({
         </span>
       </div>
 
-      <Table>
+      {/* Mobile: große Tipp-Flächen pro Kind */}
+      <div className="space-y-2 md:hidden">
+        {people.length === 0 && <p className="text-sm text-muted-foreground">Keine Teilnehmenden.</p>}
+        {people.map(p => {
+          const rec = byParticipant.get(p.id);
+          return (
+            <div key={p.id} className="rounded-lg border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-sm font-semibold">{p.name}</span>
+                {rec && (
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {formatDateTimeBerlin(rec.updated_at)}
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {STATUS_OPTIONS.map(o => (
+                  <Button
+                    key={o.value}
+                    type="button"
+                    variant={rec?.status === o.value ? "default" : "outline"}
+                    disabled={readOnly || busy === p.id}
+                    className="min-h-11 px-1 text-xs"
+                    onClick={() => update(p.id, rec?.status === o.value ? null : o.value, rec?.note ?? null)}
+                  >
+                    {o.label}
+                  </Button>
+                ))}
+              </div>
+              {rec && (
+                <Input
+                  className="mt-2 h-11 text-sm"
+                  defaultValue={rec.note || ""}
+                  placeholder="Hinweis (optional)"
+                  disabled={readOnly}
+                  onBlur={e => {
+                    const v = e.target.value;
+                    if ((rec.note || "") !== v) update(p.id, rec.status, v);
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <Table className="hidden md:table">
         <TableHeader>
           <TableRow>
             <TableHead>Kind</TableHead>
