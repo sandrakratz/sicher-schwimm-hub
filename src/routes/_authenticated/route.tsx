@@ -130,8 +130,9 @@ function AuthLayout() {
           <Link to="/portal" className="flex items-center gap-2 font-bold"><Waves className="h-5 w-5" /> Portal</Link>
           <Button onClick={logout} variant="ghost" size="sm" className="text-sidebar-foreground" aria-label="Abmelden"><LogOut className="h-4 w-4" /></Button>
         </header>
-        <main className="flex-1 p-6 lg:p-10">
+        <main className="flex-1 p-4 sm:p-6 lg:p-10">
           <Outlet />
+          <TrainerMobileNav />
         </main>
       </div>
     </div>
