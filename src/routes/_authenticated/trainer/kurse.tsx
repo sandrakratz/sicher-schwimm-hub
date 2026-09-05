@@ -10,6 +10,7 @@ import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { ParticipantCard } from "@/components/trainer/ParticipantCard";
+import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -71,7 +72,9 @@ function Page() {
         </CardContent></Card>
       )}
 
-      {courses.map((c, i) => (
+      {courses.map((c, i) => {
+        const beltNo = buildBeltNumbers(c.participants);
+        return (
         <CollapsibleCard
           key={c.id}
           defaultOpen={i === 0}
@@ -87,7 +90,7 @@ function Page() {
                 courseId={c.id}
                 participants={c.participants
                   .filter(p => p.status !== "cancelled")
-                  .map(p => ({ id: p.id, name: p.name || "—" }))}
+                  .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
               />
             </div>
 
@@ -97,7 +100,7 @@ function Page() {
                 <p className="px-4 pb-4 text-sm text-muted-foreground">Noch keine Teilnehmenden.</p>
               )}
               {c.participants.map(p => (
-                <ParticipantCard key={p.id} p={p} />
+                <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
               ))}
             </div>
 
@@ -105,6 +108,7 @@ function Page() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">Nr.</TableHead>
                     <TableHead>Kind</TableHead>
                     <TableHead>Geburtsdatum</TableHead>
                     <TableHead>Kontakt Eltern</TableHead>
@@ -115,10 +119,11 @@ function Page() {
                 </TableHeader>
                 <TableBody>
                   {c.participants.length === 0 && (
-                    <TableRow><TableCell colSpan={6} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
                   )}
                   {c.participants.map(p => (
                     <TableRow key={p.id}>
+                      <TableCell className="text-xs text-muted-foreground">{beltNo.get(p.id) ?? "—"}</TableCell>
                       <TableCell className="font-medium">{p.name || "—"}</TableCell>
                       <TableCell>{p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "—"}</TableCell>
                       <TableCell className="text-xs">
@@ -142,8 +147,8 @@ function Page() {
               </Table>
             </div>
         </CollapsibleCard>
-
-      ))}
+        );
+      })}
     </div>
   );
 }

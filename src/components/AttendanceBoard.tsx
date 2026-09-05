@@ -187,7 +187,11 @@ export function AttendanceBoard({
           return (
             <div key={p.id} className="rounded-lg border p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-sm font-semibold">{p.name}</span>
+                <span className="flex min-w-0 items-center truncate text-sm font-semibold">
+                  <BeltNo no={p.no} />
+                  <span className="truncate">{p.name}</span>
+                </span>
+
                 {rec && (
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     {formatDateTimeBerlin(rec.updated_at)}
@@ -245,7 +249,9 @@ export function AttendanceBoard({
             const rec = byParticipant.get(p.id);
             return (
               <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="flex items-center"><BeltNo no={p.no} />{p.name}</span>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {STATUS_OPTIONS.map(o => (
