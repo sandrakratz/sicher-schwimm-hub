@@ -180,8 +180,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       for (let i = 0; i < 5; i++) ws.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
 
-    // Trainer-Unterschriftenblock: Namen in Spalte 1, Unterschrift je Kurstermin
-    let trainerNames: string[] = [];
+    // Trainer-Nachweisblock: Namen in Spalte 1, Anwesenheit je Kurstermin
+    let trainerList: { id: string; name: string }[] = [];
+    const trainerMark = new Map<string, string>(); // `${sessionId}:${trainerId}`
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: roleRows } = await supabaseAdmin
@@ -194,17 +195,32 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
           .from("profiles")
           .select("id,first_name,last_name,email")
           .in("id", ids);
-        trainerNames = (profs || [])
-          .map((p: any) => [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "")
-          .filter(Boolean)
-          .sort((a: string, b: string) => a.localeCompare(b, "de"));
+        trainerList = (profs || [])
+          .map((p: any) => ({
+            id: p.id as string,
+            name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "",
+          }))
+          .filter((t) => t.name)
+          .sort((a, b) => a.name.localeCompare(b.name, "de"));
+      }
+      if (sessions.length > 0) {
+        const { data: tAtt } = await supabaseAdmin
+          .from("trainer_session_attendance")
+          .select("session_id,trainer_id,present,confirmed_at")
+          .in("session_id", sessions.map((s) => s.id));
+        (tAtt || []).forEach((r: any) => {
+          if (!r.present) return;
+          trainerMark.set(`${r.session_id}:${r.trainer_id}`, r.confirmed_at ? "x" : "(x)");
+        });
       }
     } catch (err) {
       console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
     }
 
     ws.addRow([]);
-    const trainerTitle = ws.addRow(["Trainer – Anwesenheit (Unterschrift je Kurstermin)"]);
+    const trainerTitle = ws.addRow([
+      "Trainer – Anwesenheitsnachweis (x = bestätigt · (x) = eingetragen, noch nicht bestätigt · leer = keine Angabe)",
+    ]);
     trainerTitle.font = { bold: true, size: 12 };
     ws.mergeCells(trainerTitle.number, 1, trainerTitle.number, headers.length);
 
@@ -227,12 +243,22 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     trainerHeaderRow.height = 28;
 
     const trainerRowsStart = trainerHeaderRow.number + 1;
-    const namesForRows = trainerNames.length > 0 ? trainerNames : ["", "", "", "", ""];
-    for (const n of namesForRows) {
-      const row = ws.addRow([n, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    const rowsForTrainers: { id: string; name: string }[] =
+      trainerList.length > 0 ? trainerList : [{ id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }];
+    for (const t of rowsForTrainers) {
+      const marks = Array.from({ length: 10 }, (_, i) => {
+        const s = sessions.find((x) => x.session_index === i + 1);
+        if (!s || !t.id) return "";
+        return trainerMark.get(`${s.id}:${t.id}`) || "";
+      });
+      const row = ws.addRow([t.name, "", "", "", ...marks, "", "", ""]);
       row.alignment = { vertical: "middle", wrapText: true };
+      for (let c = 5; c <= 14; c++) {
+        row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+      }
       row.height = 26;
     }
+
     const trainerRowsEnd = ws.lastRow!.number;
 
     for (let r = trainerHeaderRow.number; r <= trainerRowsEnd; r++) {
