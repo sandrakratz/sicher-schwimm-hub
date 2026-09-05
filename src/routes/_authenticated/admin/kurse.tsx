@@ -20,6 +20,8 @@ import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
+import { AttendanceBoard } from "@/components/AttendanceBoard";
+
 
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
