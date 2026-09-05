@@ -249,7 +249,9 @@ export function AttendanceBoard({
             const rec = byParticipant.get(p.id);
             return (
               <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="flex items-center"><BeltNo no={p.no} />{p.name}</span>
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {STATUS_OPTIONS.map(o => (
