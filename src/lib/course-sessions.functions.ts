@@ -180,8 +180,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       for (let i = 0; i < 5; i++) ws.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
 
-    // Trainer-Unterschriftenblock: Namen in Spalte 1, Unterschrift je Kurstermin
-    let trainerNames: string[] = [];
+    // Trainer-Nachweisblock: Namen in Spalte 1, Anwesenheit je Kurstermin
+    let trainerList: { id: string; name: string }[] = [];
+    const trainerMark = new Map<string, string>(); // `${sessionId}:${trainerId}`
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: roleRows } = await supabaseAdmin
@@ -194,17 +195,32 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
           .from("profiles")
           .select("id,first_name,last_name,email")
           .in("id", ids);
-        trainerNames = (profs || [])
-          .map((p: any) => [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "")
-          .filter(Boolean)
-          .sort((a: string, b: string) => a.localeCompare(b, "de"));
+        trainerList = (profs || [])
+          .map((p: any) => ({
+            id: p.id as string,
+            name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "",
+          }))
+          .filter((t) => t.name)
+          .sort((a, b) => a.name.localeCompare(b.name, "de"));
+      }
+      if (sessions.length > 0) {
+        const { data: tAtt } = await supabaseAdmin
+          .from("trainer_session_attendance")
+          .select("session_id,trainer_id,present,confirmed_at")
+          .in("session_id", sessions.map((s) => s.id));
+        (tAtt || []).forEach((r: any) => {
+          if (!r.present) return;
+          trainerMark.set(`${r.session_id}:${r.trainer_id}`, r.confirmed_at ? "x" : "(x)");
+        });
       }
     } catch (err) {
       console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
     }
 
     ws.addRow([]);
-    const trainerTitle = ws.addRow(["Trainer – Anwesenheit (Unterschrift je Kurstermin)"]);
+    const trainerTitle = ws.addRow([
+      "Trainer – Anwesenheitsnachweis (x = bestätigt · (x) = eingetragen, noch nicht bestätigt · leer = keine Angabe)",
+    ]);
     trainerTitle.font = { bold: true, size: 12 };
     ws.mergeCells(trainerTitle.number, 1, trainerTitle.number, headers.length);
 
@@ -227,12 +243,22 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     trainerHeaderRow.height = 28;
 
     const trainerRowsStart = trainerHeaderRow.number + 1;
-    const namesForRows = trainerNames.length > 0 ? trainerNames : ["", "", "", "", ""];
-    for (const n of namesForRows) {
-      const row = ws.addRow([n, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    const rowsForTrainers: { id: string; name: string }[] =
+      trainerList.length > 0 ? trainerList : [{ id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }];
+    for (const t of rowsForTrainers) {
+      const marks = Array.from({ length: 10 }, (_, i) => {
+        const s = sessions.find((x) => x.session_index === i + 1);
+        if (!s || !t.id) return "";
+        return trainerMark.get(`${s.id}:${t.id}`) || "";
+      });
+      const row = ws.addRow([t.name, "", "", "", ...marks, "", "", ""]);
       row.alignment = { vertical: "middle", wrapText: true };
+      for (let c = 5; c <= 14; c++) {
+        row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+      }
       row.height = 26;
     }
+
     const trainerRowsEnd = ws.lastRow!.number;
 
     for (let r = trainerHeaderRow.number; r <= trainerRowsEnd; r++) {
@@ -766,4 +792,172 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
     }
 
     return { filename, base64, rows: participants.length, missingDocNo };
+  });
+
+/** Jahresnachweis je Trainer:in (ein Blatt pro Person) für die Steuer. */
+export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { year: number }) => {
+    const y = Number(d?.year);
+    if (!Number.isInteger(y) || y < 2020 || y > 2100) throw new Error("year required");
+    return { year: y };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const isStaff =
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
+      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data;
+    if (!isStaff) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const from = `${data.year}-01-01`;
+    const to = `${data.year}-12-31`;
+
+    const { data: sessions } = await supabaseAdmin
+      .from("course_sessions")
+      .select("id,session_index,session_date,start_time,end_time,course_id,courses(name,location)")
+      .gte("session_date", from)
+      .lte("session_date", to)
+      .order("session_date", { ascending: true });
+    const list = (sessions || []) as any[];
+
+    const { data: att } = list.length
+      ? await supabaseAdmin
+          .from("trainer_session_attendance")
+          .select("session_id,trainer_id,present,note,recorded_at,confirmed_at,confirmed_by")
+          .in("session_id", list.map((s) => s.id))
+      : { data: [] as any[] };
+    const rows = (att || []) as any[];
+
+    const ids = Array.from(
+      new Set([...rows.map((r) => r.trainer_id), ...rows.map((r) => r.confirmed_by).filter(Boolean)]),
+    );
+    const nameOf = new Map<string, string>();
+    if (ids.length > 0) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id,first_name,last_name,email")
+        .in("id", ids);
+      (profs || []).forEach((p: any) => {
+        nameOf.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—");
+      });
+    }
+
+    function fmtDe2(s: string | null): string {
+      if (!s) return "";
+      const [y, m, d] = s.split("-");
+      return y && m && d ? `${d}.${m}.${y}` : s;
+    }
+    function hours(start: string | null, end: string | null): number {
+      if (!start || !end) return 0;
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const diff = eh * 60 + em - (sh * 60 + sm);
+      return diff > 0 ? Math.round((diff / 60) * 100) / 100 : 0;
+    }
+
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "sicher-schwimmen.com";
+    wb.created = new Date();
+
+    const byTrainer = new Map<string, any[]>();
+    rows.filter((r) => r.present).forEach((r) => {
+      const arr = byTrainer.get(r.trainer_id) || [];
+      arr.push(r);
+      byTrainer.set(r.trainer_id, arr);
+    });
+
+    const sortedTrainers = Array.from(byTrainer.keys()).sort((a, b) =>
+      (nameOf.get(a) || "").localeCompare(nameOf.get(b) || "", "de"),
+    );
+
+    if (sortedTrainers.length === 0) {
+      const ws = wb.addWorksheet("Nachweis");
+      ws.addRow([`Trainer-Nachweis ${data.year}`]).font = { bold: true, size: 14 };
+      ws.addRow(["Für dieses Jahr wurden noch keine Trainer-Anwesenheiten erfasst."]);
+    }
+
+    let sheetNo = 0;
+    for (const tid of sortedTrainers) {
+      sheetNo++;
+      const label = (nameOf.get(tid) || "Trainer").replace(/[\\/*?:[\]]/g, " ").slice(0, 28) || `Trainer ${sheetNo}`;
+      const ws = wb.addWorksheet(label);
+      const title = ws.addRow([`Anwesenheitsnachweis ${data.year} – ${nameOf.get(tid) || "Trainer"}`]);
+      title.font = { bold: true, size: 14 };
+      ws.mergeCells(title.number, 1, title.number, 7);
+      ws.addRow([]);
+      const head = ws.addRow(["Datum", "Kurs", "Ort", "Beginn", "Ende", "Stunden", "Bestätigt am / durch"]);
+      head.font = { bold: true };
+      head.alignment = { vertical: "middle", wrapText: true };
+
+      const entries = (byTrainer.get(tid) || [])
+        .map((r) => ({ r, s: list.find((x) => x.id === r.session_id) }))
+        .filter((e) => e.s)
+        .sort((a, b) => String(a.s.session_date).localeCompare(String(b.s.session_date)));
+
+      let sumHours = 0;
+      for (const { r, s } of entries) {
+        const h = hours(s.start_time, s.end_time);
+        sumHours += h;
+        ws.addRow([
+          fmtDe2(s.session_date),
+          s.courses?.name || "—",
+          s.courses?.location || "—",
+          s.start_time ? s.start_time.slice(0, 5) : "—",
+          s.end_time ? s.end_time.slice(0, 5) : "—",
+          h || "",
+          r.confirmed_at
+            ? `${new Date(r.confirmed_at).toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" })}${
+                r.confirmed_by ? ` · ${nameOf.get(r.confirmed_by) || ""}` : ""
+              }`
+            : "offen",
+        ]);
+      }
+
+      const sumRow = ws.addRow([
+        "Summe",
+        `${entries.length} Einsätze`,
+        "",
+        "",
+        "",
+        Math.round(sumHours * 100) / 100,
+        "",
+      ]);
+      sumRow.font = { bold: true };
+
+      [14, 34, 24, 10, 10, 10, 28].forEach((w, i) => (ws.getColumn(i + 1).width = w));
+      for (let r = head.number; r <= sumRow.number; r++) {
+        for (let c = 1; c <= 7; c++) {
+          ws.getCell(r, c).border = {
+            top: { style: "thin" }, left: { style: "thin" },
+            bottom: { style: "thin" }, right: { style: "thin" },
+          };
+        }
+      }
+      for (let c = 1; c <= 7; c++) {
+        ws.getCell(head.number, c).fill = {
+          type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F1FA" },
+        };
+      }
+      ws.addRow([]);
+      ws.addRow(["Bestätigt durch den Vorstand:", "", "", "Datum / Unterschrift:"]);
+    }
+
+    const buf = await wb.xlsx.writeBuffer();
+    const base64 = Buffer.from(buf).toString("base64");
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, userId, {
+        action: "trainer_proof_exported",
+        entity: "course_sessions",
+        entity_id: String(data.year),
+        metadata: { trainers: sortedTrainers.length },
+      });
+    } catch (err) {
+      console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
+    }
+
+    return { filename: `Trainer-Nachweis_${data.year}.xlsx`, base64 };
   });

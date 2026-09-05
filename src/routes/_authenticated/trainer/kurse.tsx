@@ -9,6 +9,7 @@ import { listMyTrainerCourses, type TrainerCourse } from "@/lib/trainer-courses.
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
+import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 
@@ -92,6 +93,11 @@ function Page() {
                   .filter(p => p.status !== "cancelled")
                   .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
               />
+            </div>
+
+            <div className="space-y-2 border-t px-4 py-4 sm:px-6">
+              <h3 className="text-sm font-semibold">Meine Anwesenheit (Nachweis)</h3>
+              <TrainerAttendancePanel courseId={c.id} />
             </div>
 
             <div className="border-t pt-2 md:hidden">
