@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
-import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv } from "@/lib/course-sessions.functions";
+import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv, generateTrainerProofXlsx } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
@@ -217,6 +217,8 @@ function Page() {
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportingTax, setExportingTax] = useState<string | null>(null);
   const exportXlsx = useServerFn(generateCourseListXlsx);
+  const exportTrainerProof = useServerFn(generateTrainerProofXlsx);
+  const [proofBusy, setProofBusy] = useState(false);
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
   const [exportingConf, setExportingConf] = useState<string | null>(null);
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
@@ -336,6 +338,27 @@ function Page() {
       toast.error(e?.message || "Export fehlgeschlagen");
     } finally {
       setExporting(null);
+    }
+  }
+
+  async function downloadTrainerProof() {
+    setProofBusy(true);
+    try {
+      const res = await exportTrainerProof({ data: { year: new Date().getFullYear() } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Trainer-Nachweis erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setProofBusy(false);
     }
   }
 
@@ -870,7 +893,14 @@ function Page() {
             ? "Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite."
             : "Hier siehst du nur die Kurse, in denen du als Trainer eingetragen bist."}</p>
         </div>
-        {canManage && <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>}
+        {canManage && (
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={proofBusy} onClick={downloadTrainerProof}>
+              <FileSpreadsheet className="h-4 w-4" /> {proofBusy ? "Erstelle…" : `Trainer-Nachweis ${new Date().getFullYear()}`}
+            </Button>
+            <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
