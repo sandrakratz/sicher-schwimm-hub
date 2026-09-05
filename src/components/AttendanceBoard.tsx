@@ -98,7 +98,8 @@ export function AttendanceBoard({
       setPeople(
         ((data as { id: string; participant_name: string | null }[]) || [])
           .map(p => ({ id: p.id, name: p.participant_name || "—" }))
-          .sort((a, b) => a.name.localeCompare(b.name, "de")),
+          .sort((a, b) => a.name.localeCompare(b.name, "de"))
+          .map((p, i) => ({ ...p, no: i + 1 })),
       );
     })();
     return () => {
