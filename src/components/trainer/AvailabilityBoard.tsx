@@ -262,7 +262,7 @@ export function AvailabilityBoard() {
                     const assignedToMe = assignedIds.includes(me);
                     const others = assignedIds.filter(id => id !== me).map(trainerName);
                     return (
-                      <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                      <div key={s.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <div className="text-sm font-medium">
                             {s.session_index}. Termin · {weekday(s.session_date)}, {formatDateBerlin(s.session_date)}
@@ -274,7 +274,7 @@ export function AvailabilityBoard() {
                             <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center gap-2 sm:w-auto">
                           <a
                             href={googleLink(s)}
                             target="_blank"
@@ -289,7 +289,7 @@ export function AvailabilityBoard() {
                             variant="outline"
                             disabled={busy === s.id}
                             onClick={() => setAvailability(s.id, state === true ? null : true)}
-                            className={state === true ? "border-transparent bg-green-600 text-white hover:bg-green-700" : ""}
+                            className={`min-h-11 flex-1 sm:flex-none ${state === true ? "border-transparent bg-green-600 text-white hover:bg-green-700" : ""}`}
                           >
                             <Check className="h-4 w-4" /> Kann
                           </Button>
