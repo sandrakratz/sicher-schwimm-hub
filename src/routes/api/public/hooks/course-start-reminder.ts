@@ -58,9 +58,9 @@ export const Route = createFileRoute('/api/public/hooks/course-start-reminder')(
 
           const first = sessions?.[0]
           const firstDate = first?.session_date ?? c.starts_on
-          const firstTime = first?.start_time
-            ? `${String(first.start_time).slice(0, 5)}${first.end_time ? `–${String(first.end_time).slice(0, 5)}` : ''}`
-            : null
+          // Elternzeiten kommen bewusst aus dem Zeitplan des Kurses,
+          // die Terminzeiten sind die internen Trainer-Zeiten.
+          const firstTime: string | null = null
 
           const { data: participants } = await supabaseAdmin
             .from('course_participants')
