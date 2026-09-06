@@ -10,6 +10,7 @@ import {
 } from "@/lib/trainer-attendance.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { toast } from "sonner";
 
