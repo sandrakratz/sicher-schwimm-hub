@@ -17,6 +17,7 @@ export interface CourseTerm {
   is_full: boolean
   price_member: number | null
   price_non_member: number | null
+  course_info: string | null
 }
 
 export interface CourseProgram {
@@ -35,6 +36,7 @@ export interface CourseProgram {
   payment_due_days: number
   bookable: boolean
   sort_order: number
+  course_info: string | null
   terms: Array<CourseTerm>
   open_terms: number
   /** Summe der freien Plätze über alle Termine (null, wenn keine Kapazität hinterlegt ist) */
@@ -66,7 +68,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
 
   const { data: courses } = await supabaseAdmin
     .from('courses')
-    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at')
+    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info')
     .in('program_id', programIds)
     .eq('is_public', true)
     .is('archived_at', null)
@@ -123,6 +125,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
           is_full: free != null && free <= 0,
           price_member: c.price_member ?? p.price_member,
           price_non_member: c.price_non_member ?? p.price_non_member,
+          course_info: (c as any).course_info ?? (p as any).course_info ?? null,
         }
       })
 
@@ -142,6 +145,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
       payment_due_days: p.payment_due_days,
       bookable: (p as any).bookable !== false,
       sort_order: p.sort_order,
+      course_info: (p as any).course_info ?? null,
       terms,
       open_terms: terms.filter((t) => !t.is_full).length,
       free_slots_total: terms.some((t) => t.free_slots != null)
@@ -402,6 +406,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         course_starts_on: course.starts_on,
         course_ends_on: course.ends_on,
         course_description: program?.description ?? course.description,
+        course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
         unit_count: course.unit_count ?? null,
         waitlist: isFull,
         is_member: data.isMember,

@@ -16,6 +16,7 @@ interface Props {
   course_starts_on?: string
   course_ends_on?: string
   course_description?: string
+  course_info?: string
   issued_at?: string
   status_label?: string
   admin_notes?: string

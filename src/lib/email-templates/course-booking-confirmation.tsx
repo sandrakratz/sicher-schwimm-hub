@@ -13,6 +13,7 @@ interface Props {
   course_starts_on?: string
   course_ends_on?: string
   course_description?: string
+  course_info?: string
   unit_count?: number | null
   waitlist?: boolean
   is_member?: boolean | null
