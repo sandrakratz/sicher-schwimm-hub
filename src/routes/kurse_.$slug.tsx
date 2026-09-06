@@ -217,6 +217,15 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
             </Card>
           )}
 
+          {program.course_info && (
+            <Card className="border-0 shadow-soft">
+              <CardContent className="p-6">
+                <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Ablauf &amp; Wichtiges für den Kurstag</h2>
+                <p className="whitespace-pre-line text-sm text-muted-foreground">{program.course_info}</p>
+              </CardContent>
+            </Card>
+          )}
+
           <h2 className="font-display text-2xl font-bold text-primary-deep">Buchbare Zeiträume</h2>
 
           {program.terms.length === 0 ? (

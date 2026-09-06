@@ -131,6 +131,7 @@ export async function bookWaitlistEntry(
       course_starts_on: course.starts_on,
       course_ends_on: course.ends_on,
       course_description: program?.description ?? course.description,
+      course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
       unit_count: course.unit_count ?? null,
       waitlist: false,
       is_member: entry.is_member,

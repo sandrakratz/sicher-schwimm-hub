@@ -329,6 +329,7 @@ export type Database = {
         Row: {
           age_range: string | null
           bookable: boolean
+          course_info: string | null
           created_at: string
           description: string | null
           duration: string | null
@@ -350,6 +351,7 @@ export type Database = {
         Insert: {
           age_range?: string | null
           bookable?: boolean
+          course_info?: string | null
           created_at?: string
           description?: string | null
           duration?: string | null
@@ -371,6 +373,7 @@ export type Database = {
         Update: {
           age_range?: string | null
           bookable?: boolean
+          course_info?: string | null
           created_at?: string
           description?: string | null
           duration?: string | null
@@ -592,6 +595,7 @@ export type Database = {
         Row: {
           age_range: string | null
           archived_at: string | null
+          course_info: string | null
           created_at: string
           description: string | null
           duration: string | null
@@ -617,6 +621,7 @@ export type Database = {
         Insert: {
           age_range?: string | null
           archived_at?: string | null
+          course_info?: string | null
           created_at?: string
           description?: string | null
           duration?: string | null
@@ -642,6 +647,7 @@ export type Database = {
         Update: {
           age_range?: string | null
           archived_at?: string | null
+          course_info?: string | null
           created_at?: string
           description?: string | null
           duration?: string | null

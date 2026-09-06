@@ -138,6 +138,7 @@ type Course = {
   archived_at: string | null;
   program_id: string | null;
   unit_count: number | null;
+  course_info: string | null;
 };
 
 function Hint({ children }: { children: React.ReactNode }) {
@@ -161,6 +162,7 @@ type ProgramRow = {
   is_public: boolean;
   bookable: boolean;
   sort_order: number;
+  course_info: string | null;
 };
 
 
@@ -503,6 +505,7 @@ function Page() {
       min_age_years: editingProg.min_age_years ?? null,
       description: editingProg.description || null,
       requirements: editingProg.requirements || null,
+      course_info: editingProg.course_info || null,
       duration: editingProg.duration || null,
       location: editingProg.location || null,
       price_member: editingProg.price_member ?? null,
@@ -723,6 +726,7 @@ function Page() {
       price_member: p?.price_member ?? 150,
       price_non_member: p?.price_non_member ?? 200,
       payment_due_days: p?.payment_due_days ?? 14,
+      course_info: p?.course_info ?? null,
     });
     setOpen(true);
   }
@@ -749,6 +753,7 @@ function Page() {
       payment_due_days: editing.payment_due_days ?? 14,
       program_id: editing.program_id || null,
       unit_count: editing.unit_count ?? null,
+      course_info: editing.course_info || null,
     };
 
 
@@ -980,6 +985,7 @@ function Page() {
               <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen abweichenden Ort haben.</Hint></div>
               <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
               <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
+              <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editingProg.course_info || ""} onChange={e => setEditingProg(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.</Hint></div>
               <div className="grid sm:grid-cols-4 gap-3">
                 <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
                 <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
@@ -1040,6 +1046,7 @@ function Page() {
             </div>
             <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
             <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
+              <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editingProg.course_info || ""} onChange={e => setEditingProg(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.</Hint></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
               <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
@@ -1112,6 +1119,7 @@ function Page() {
                 </Select>
               </div>
             </div>
+            <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editing.course_info || ""} onChange={e => setEditing(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Erscheint auf der Kursdetailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail 3 Tage vor Kursstart. Absätze und Zeilen bleiben erhalten.</Hint></div>
             <div><Label>Zeitplan</Label><Input value={editing.schedule || ""} onChange={e => setEditing(p => ({ ...p, schedule: e.target.value }))} placeholder="z.B. Mo & Mi 17:00–18:00" /></div>
             <div className="grid grid-cols-3 gap-3 border-t pt-3">
               <div>

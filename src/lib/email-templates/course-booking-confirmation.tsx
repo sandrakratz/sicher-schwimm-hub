@@ -13,6 +13,7 @@ interface Props {
   course_starts_on?: string
   course_ends_on?: string
   course_description?: string
+  course_info?: string
   unit_count?: number | null
   waitlist?: boolean
   is_member?: boolean | null
@@ -184,6 +185,14 @@ const Email = (p: Props) => {
             <>
               <Hr />
               <Text>{p.course_description}</Text>
+            </>
+          )}
+
+          {p.course_info && (
+            <>
+              <Hr />
+              <Text style={{ marginTop: '16px' }}><strong>Ablauf &amp; Wichtiges für den Kurstag</strong></Text>
+              <Text style={{ whiteSpace: 'pre-line' }}>{p.course_info}</Text>
             </>
           )}
 
