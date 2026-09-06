@@ -38,7 +38,7 @@ const Email = (p: Props) => {
                 {p.first_session_time ? `, ${p.first_session_time} Uhr` : ''}
               </Text>
             )}
-            {!p.first_session_date && p.course_schedule && (
+            {p.course_schedule && (
               <Text style={{ margin: '4px 0' }}><strong>Zeiten:</strong> {p.course_schedule}</Text>
             )}
             {p.course_location && (
