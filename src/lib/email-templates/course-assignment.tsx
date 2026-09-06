@@ -90,6 +90,13 @@ const Email = (p: Props) => {
           </>
         )}
 
+        {p.course_info && (
+          <>
+            <Text style={{ marginTop: '16px' }}><strong>Ablauf &amp; Wichtiges für den Kurstag</strong></Text>
+            <Text style={{ whiteSpace: 'pre-line' }}>{p.course_info}</Text>
+          </>
+        )}
+
         {showPayment && (
           <>
             <Hr />

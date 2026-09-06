@@ -188,6 +188,14 @@ const Email = (p: Props) => {
             </>
           )}
 
+          {p.course_info && (
+            <>
+              <Hr />
+              <Text style={{ marginTop: '16px' }}><strong>Ablauf &amp; Wichtiges für den Kurstag</strong></Text>
+              <Text style={{ whiteSpace: 'pre-line' }}>{p.course_info}</Text>
+            </>
+          )}
+
           <Text style={{ marginTop: '16px' }}>
             Vielen Dank für Ihre Anmeldung. Wir freuen uns auf die Teilnahme am Schwimmkurs.
           </Text>
