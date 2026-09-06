@@ -34,13 +34,24 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
   const [me, setMe] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>("");
 
   async function refresh() {
     const res = await load({ data: { courseId } });
     setSessions(res.sessions);
     setRows(res.rows);
     setIsStaff(res.isStaff);
+    setSessionId(prev => {
+      if (prev && res.sessions.some(s => s.id === prev)) return prev;
+      const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+      const next =
+        res.sessions.find(s => s.session_date === today) ||
+        res.sessions.find(s => s.session_date >= today) ||
+        res.sessions[res.sessions.length - 1];
+      return next?.id || "";
+    });
   }
+
 
   useEffect(() => {
     let cancelled = false;
