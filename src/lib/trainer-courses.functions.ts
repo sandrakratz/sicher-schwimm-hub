@@ -164,11 +164,10 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
 
     try {
       const { logAudit } = await import("@/lib/audit.server");
-      await logAudit({
-        actorId: context.userId,
+      await logAudit(null, context.userId, {
         action: "participant.phone_updated",
         entity: "course_participants",
-        entityId: participant.id as string,
+        entity_id: participant.id as string,
         metadata: { course_id: participant.course_id, request_id: participant.request_id, phone: value },
       });
     } catch { /* Audit-Fehler dürfen die Erfassung nicht blockieren */ }
