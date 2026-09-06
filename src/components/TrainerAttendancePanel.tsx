@@ -10,6 +10,7 @@ import {
 } from "@/lib/trainer-attendance.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -33,13 +34,24 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
   const [me, setMe] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string>("");
 
   async function refresh() {
     const res = await load({ data: { courseId } });
     setSessions(res.sessions);
     setRows(res.rows);
     setIsStaff(res.isStaff);
+    setSessionId(prev => {
+      if (prev && res.sessions.some(s => s.id === prev)) return prev;
+      const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+      const next =
+        res.sessions.find(s => s.session_date === today) ||
+        res.sessions.find(s => s.session_date >= today) ||
+        res.sessions[res.sessions.length - 1];
+      return next?.id || "";
+    });
   }
+
 
   useEffect(() => {
     let cancelled = false;
@@ -90,90 +102,99 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
     return <p className="text-sm text-muted-foreground">Für diesen Kurs sind noch keine Termine angelegt.</p>;
   }
 
+  const s = sessions.find(x => x.id === sessionId) ?? sessions[0];
+  const entries = rows.filter(r => r.session_id === s.id);
+  const mine = entries.find(r => r.trainer_id === me);
+  const openCount = entries.filter(r => !r.confirmed_at).length;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Nachweis für die Abrechnung: Trainer:innen bestätigen ihre eigene Anwesenheit, der Vorstand zeichnet gegen.
       </p>
-      {sessions.map(s => {
-        const entries = rows.filter(r => r.session_id === s.id);
-        const mine = entries.find(r => r.trainer_id === me);
-        const openCount = entries.filter(r => !r.confirmed_at).length;
-        return (
-          <div key={s.id} className="rounded-lg border p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-semibold">{sessionLabel(s)}</span>
-              {isStaff && entries.length > 0 && (
-                openCount > 0 ? (
-                  <Button size="sm" disabled={busy === s.id} onClick={() => confirmSession(s.id, true)}>
-                    {openCount} Eintrag/Einträge bestätigen
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="outline" disabled={busy === s.id} onClick={() => confirmSession(s.id, false)}>
-                    Bestätigung aufheben
-                  </Button>
-                )
+
+      <Select value={s.id} onValueChange={setSessionId}>
+        <SelectTrigger className="h-11 w-full sm:w-[16rem]">
+          <SelectValue placeholder="Termin wählen" />
+        </SelectTrigger>
+        <SelectContent>
+          {sessions.map(x => (
+            <SelectItem key={x.id} value={x.id}>{sessionLabel(x)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <div className="rounded-lg border p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-semibold">{sessionLabel(s)}</span>
+          {isStaff && entries.length > 0 && (
+            openCount > 0 ? (
+              <Button size="sm" disabled={busy === s.id} onClick={() => confirmSession(s.id, true)}>
+                {openCount} Eintrag/Einträge bestätigen
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" disabled={busy === s.id} onClick={() => confirmSession(s.id, false)}>
+                Bestätigung aufheben
+              </Button>
+            )
+          )}
+        </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-sm">
+          <Button
+            type="button"
+            variant={mine?.present === true ? "default" : "outline"}
+            className="min-h-11 text-xs"
+            disabled={busy === s.id || !!mine?.confirmed_at}
+            onClick={() => toggleOwn(s.id, mine?.present === true ? null : true)}
+          >
+            Ich war anwesend
+          </Button>
+          <Button
+            type="button"
+            variant={mine?.present === false ? "default" : "outline"}
+            className="min-h-11 text-xs"
+            disabled={busy === s.id || !!mine?.confirmed_at}
+            onClick={() => toggleOwn(s.id, mine?.present === false ? null : false)}
+          >
+            Nicht anwesend
+          </Button>
+        </div>
+        {mine?.confirmed_at && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Vom Vorstand bestätigt – Änderung nicht mehr möglich.
+          </p>
+        )}
+
+        <div className="mt-2 space-y-1">
+          {entries.length === 0 && <span className="text-xs text-muted-foreground">Noch keine Eintragungen.</span>}
+          {entries.map(r => (
+            <div key={r.trainer_id} className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge
+                className={
+                  r.present
+                    ? "border-transparent bg-green-600 text-white"
+                    : "border-transparent bg-red-100 text-red-900"
+                }
+              >
+                {r.trainer_name}: {r.present ? "anwesend" : "nicht anwesend"}
+              </Badge>
+              <span className="text-muted-foreground">erfasst {formatDateTimeBerlin(r.recorded_at)}</span>
+              {r.confirmed_at ? (
+                <span className="text-green-700">
+                  bestätigt {formatDateTimeBerlin(r.confirmed_at)}
+                  {r.confirmed_by_name ? ` · ${r.confirmed_by_name}` : ""}
+                </span>
+              ) : (
+                <span className="text-amber-700">noch nicht bestätigt</span>
               )}
             </div>
-
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-sm">
-              <Button
-                type="button"
-                variant={mine?.present === true ? "default" : "outline"}
-                className="min-h-11 text-xs"
-                disabled={busy === s.id || !!mine?.confirmed_at}
-                onClick={() => toggleOwn(s.id, mine?.present === true ? null : true)}
-              >
-                Ich war anwesend
-              </Button>
-              <Button
-                type="button"
-                variant={mine?.present === false ? "default" : "outline"}
-                className="min-h-11 text-xs"
-                disabled={busy === s.id || !!mine?.confirmed_at}
-                onClick={() => toggleOwn(s.id, mine?.present === false ? null : false)}
-              >
-                Nicht anwesend
-              </Button>
-            </div>
-            {mine?.confirmed_at && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Vom Vorstand bestätigt – Änderung nicht mehr möglich.
-              </p>
-            )}
-
-            <div className="mt-2 space-y-1">
-              {entries.length === 0 && <span className="text-xs text-muted-foreground">Noch keine Eintragungen.</span>}
-              {entries.map(r => (
-                <div key={r.trainer_id} className="flex flex-wrap items-center gap-2 text-xs">
-                  <Badge
-                    className={
-                      r.present
-                        ? "border-transparent bg-green-600 text-white"
-                        : "border-transparent bg-red-100 text-red-900"
-                    }
-                  >
-                    {r.trainer_name}: {r.present ? "anwesend" : "nicht anwesend"}
-                  </Badge>
-                  <span className="text-muted-foreground">
-                    erfasst {formatDateTimeBerlin(r.recorded_at)}
-                  </span>
-                  {r.confirmed_at ? (
-                    <span className="text-green-700">
-                      bestätigt {formatDateTimeBerlin(r.confirmed_at)}
-                      {r.confirmed_by_name ? ` · ${r.confirmed_by_name}` : ""}
-                    </span>
-                  ) : (
-                    <span className="text-amber-700">noch nicht bestätigt</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
 
 export default TrainerAttendancePanel;
