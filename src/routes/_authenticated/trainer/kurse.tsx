@@ -12,6 +12,7 @@ import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
+import { PhoneEditor } from "@/components/trainer/PhoneEditor";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -41,6 +42,15 @@ function Page() {
   const [courses, setCourses] = useState<TrainerCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const load = useServerFn(listMyTrainerCourses);
+
+  const applyPhone = (participantId: string, phone: string | null) => {
+    setCourses(prev =>
+      prev.map(c => ({
+        ...c,
+        participants: c.participants.map(p => (p.id === participantId ? { ...p, phone } : p)),
+      })),
+    );
+  };
 
   useEffect(() => {
     (async () => {
@@ -106,7 +116,13 @@ function Page() {
                 <p className="px-4 pb-4 text-sm text-muted-foreground">Noch keine Teilnehmenden.</p>
               )}
               {c.participants.map(p => (
-                <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
+                <ParticipantCard
+                  key={p.id}
+                  p={p}
+                  no={beltNo.get(p.id) ?? null}
+                  editablePhone
+                  onPhoneSaved={applyPhone}
+                />
               ))}
             </div>
 
@@ -134,7 +150,13 @@ function Page() {
                       <TableCell>{p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "—"}</TableCell>
                       <TableCell className="text-xs">
                         <div>{p.email || "—"}</div>
-                        <div className="text-muted-foreground">{p.phone || "—"}</div>
+                        <div className="mt-1">
+                          <PhoneEditor
+                            participantId={p.id}
+                            phone={p.phone}
+                            onSaved={phone => applyPhone(p.id, phone)}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell className="max-w-[16rem] whitespace-pre-wrap text-xs">{p.notes || "—"}</TableCell>
                       <TableCell>

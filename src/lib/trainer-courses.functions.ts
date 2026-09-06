@@ -104,3 +104,73 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
         })),
     }));
   });
+
+/**
+ * Telefonnummer der Eltern für eine:n Teilnehmende:n nacherfassen/korrigieren.
+ * Erlaubt für Admin/Vorstand sowie Trainer:innen des jeweiligen Kurses.
+ * Die Nummer wird zusätzlich in die zugehörige Kursanfrage übernommen.
+ */
+export const updateParticipantPhone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string; phone: string }) => input)
+  .handler(async ({ data, context }): Promise<{ phone: string | null }> => {
+    const { data: roleRows } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const roles = (roleRows || []).map((r: { role: string }) => r.role);
+    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    if (!isStaff && !roles.includes("trainer")) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+
+    const phone = data.phone.trim();
+    if (phone.length > 0 && !/^[+0-9 ()/.-]{5,32}$/.test(phone)) {
+      throw new Error("Bitte eine gültige Telefonnummer eingeben.");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: participant, error: pErr } = await supabaseAdmin
+      .from("course_participants")
+      .select("id,course_id,request_id,participant_name")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!participant) throw new Error("Teilnehmende:r nicht gefunden.");
+
+    if (!isStaff) {
+      const { data: allowed } = await context.supabase.rpc("is_trainer_of_course", {
+        _trainer_id: context.userId,
+        _course_id: participant.course_id as string,
+      });
+      if (!allowed) throw new Response("Forbidden", { status: 403 });
+    }
+
+    const value = phone.length > 0 ? phone : null;
+
+    const { error: upErr } = await supabaseAdmin
+      .from("course_participants")
+      .update({ participant_phone: value })
+      .eq("id", participant.id as string);
+    if (upErr) throw new Error(upErr.message);
+
+    if (participant.request_id) {
+      await supabaseAdmin
+        .from("course_requests")
+        .update({ parent_phone: value })
+        .eq("id", participant.request_id as string);
+    }
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, context.userId, {
+        action: "participant.phone_updated",
+        entity: "course_participants",
+        entity_id: participant.id as string,
+        metadata: { course_id: participant.course_id, request_id: participant.request_id, phone: value },
+      });
+    } catch { /* Audit-Fehler dürfen die Erfassung nicht blockieren */ }
+
+    return { phone: value };
+  });
