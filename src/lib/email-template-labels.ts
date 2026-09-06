@@ -4,6 +4,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   'membership-application': 'Mitgliedsantrag (Benachrichtigung an den Verein)',
   'course-request': 'Kursanfrage (Benachrichtigung an den Verein)',
   'course-assignment': 'Kurszuteilung (Benachrichtigung an Eltern)',
+  'course-start-reminder': 'Erinnerung 3 Tage vor Kursstart',
   'contact-message': 'Kontaktnachricht (Benachrichtigung an den Verein)',
   'new-registration': 'Neue Registrierung (Benachrichtigung an den Verein)',
   'cancellation-internal': 'Widerruf (Benachrichtigung an den Verein)',

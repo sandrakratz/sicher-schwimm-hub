@@ -14,6 +14,7 @@ import { template as waitlistOffer } from './waitlist-offer'
 import { template as waitlistSignup } from './waitlist-signup'
 import { template as courseRemovalUnpaid } from './course-removal-unpaid'
 import { template as courseRemovalAgreed } from './course-removal-agreed'
+import { template as courseStartReminder } from './course-start-reminder'
 
 
 
@@ -43,4 +44,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'waitlist-signup': waitlistSignup,
   'course-removal-unpaid': courseRemovalUnpaid,
   'course-removal-agreed': courseRemovalAgreed,
+  'course-start-reminder': courseStartReminder,
 }
