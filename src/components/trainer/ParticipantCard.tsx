@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Phone, Mail } from "lucide-react";
+import { ChevronDown, Mail, Phone } from "lucide-react";
+import { PhoneEditor } from "@/components/trainer/PhoneEditor";
 import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,10 +27,14 @@ export function ParticipantCard({
   p,
   showPayment = true,
   no,
+  editablePhone = false,
+  onPhoneSaved,
 }: {
   p: ParticipantCardData;
   showPayment?: boolean;
   no?: number | null;
+  editablePhone?: boolean;
+  onPhoneSaved?: (participantId: string, phone: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -63,10 +68,18 @@ export function ParticipantCard({
 
       {open && (
         <div className="space-y-2 px-4 pb-4 text-sm">
-          {p.phone && (
-            <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2 text-primary">
-              <Phone className="h-4 w-4" /> {p.phone}
-            </a>
+          {editablePhone ? (
+            <PhoneEditor
+              participantId={p.id}
+              phone={p.phone}
+              onSaved={phone => onPhoneSaved?.(p.id, phone)}
+            />
+          ) : (
+            p.phone && (
+              <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2 text-primary">
+                <Phone className="h-4 w-4" /> {p.phone}
+              </a>
+            )
           )}
           {p.email && (
             <a href={`mailto:${p.email}`} className="flex min-h-11 items-center gap-2 break-all text-primary">
