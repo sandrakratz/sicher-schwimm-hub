@@ -65,6 +65,10 @@ function WaitlistPage() {
       setDone(true);
       return;
     }
+    if (!String(fd.get("program_id") || "").trim()) {
+      toast.error("Bitte wählen Sie den gewünschten Kurs aus.");
+      return;
+    }
     if (fd.get("gdpr_consent") !== "on") {
       toast.error("Bitte bestätigen Sie die Datenschutzhinweise.");
       return;
