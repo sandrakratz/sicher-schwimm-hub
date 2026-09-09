@@ -123,7 +123,7 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
         parent_phone: data.parentPhone || '',
         child_name: data.childName,
         child_dob: data.childDob || '',
-        desired_course: [programName, courseName].filter(Boolean).join(' – ') || 'Warteliste',
+        desired_course: [programName, courseName].filter(Boolean).join(' – ') || 'Ohne Angabe',
         health_info: data.notes || '',
         message: 'Neue Eintragung auf der Warteliste über die Webseite',
         submitted_at: new Date().toISOString(),
