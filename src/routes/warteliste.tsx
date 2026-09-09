@@ -65,6 +65,10 @@ function WaitlistPage() {
       setDone(true);
       return;
     }
+    if (!String(fd.get("program_id") || "").trim()) {
+      toast.error("Bitte wählen Sie den gewünschten Kurs aus.");
+      return;
+    }
     if (fd.get("gdpr_consent") !== "on") {
       toast.error("Bitte bestätigen Sie die Datenschutzhinweise.");
       return;
@@ -135,14 +139,15 @@ function WaitlistPage() {
               <HoneypotField />
 
               <div className="space-y-2">
-                <Label htmlFor="program_id">Gewünschtes Angebot</Label>
+                <Label htmlFor="program_id">Gewünschter Kurs *</Label>
                 <select
                   id="program_id"
                   name="program_id"
+                  required
                   defaultValue={preselected ?? ""}
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                 >
-                  <option value="">Keine Angabe / egal</option>
+                  <option value="" disabled>Bitte Kurs auswählen</option>
                   {(programs ?? []).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
