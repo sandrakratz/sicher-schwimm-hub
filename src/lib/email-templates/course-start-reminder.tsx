@@ -24,7 +24,7 @@ const Email = (p: Props) => {
       <Body style={{ backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif', color: '#0f172a' }}>
         <Container style={{ padding: '24px', maxWidth: '600px' }}>
           <Heading style={{ color: '#0c4a6e' }}>Bald geht&apos;s los!</Heading>
-          <Text>Hallo {p.parent_name || ''},</Text>
+          <Text>{p.parent_name ? `Hallo ${p.parent_name},` : 'Hallo,'}</Text>
           <Text>
             in wenigen Tagen startet der Kurs{p.child_name ? <> für <strong>{p.child_name}</strong></> : null}. Hier
             noch einmal die wichtigsten Informationen für den Kurstag.
