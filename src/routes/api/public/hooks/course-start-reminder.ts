@@ -64,7 +64,7 @@ export const Route = createFileRoute('/api/public/hooks/course-start-reminder')(
 
           const { data: participants } = await supabaseAdmin
             .from('course_participants')
-            .select('id,participant_name,participant_email')
+            .select('id,participant_name,participant_email,request_id,course_requests(parent_name)')
             .eq('course_id', c.id)
             .eq('status', 'confirmed')
 
@@ -87,7 +87,8 @@ export const Route = createFileRoute('/api/public/hooks/course-start-reminder')(
               idempotencyKey,
               metadata: { participant_id: p.id, course_id: c.id },
               templateData: {
-                parent_name: p.participant_name,
+                parent_name:
+                  ((p as any).course_requests?.parent_name as string | null) ?? null,
                 child_name: p.participant_name,
                 course_name: c.name,
                 program_name: program?.name ?? null,
