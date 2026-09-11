@@ -178,8 +178,8 @@ function WaitlistPage() {
                   <Input id="child_name" name="child_name" required maxLength={120} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="child_dob">Geburtsdatum</Label>
-                  <Input id="child_dob" name="child_dob" type="date" />
+                  <Label htmlFor="child_dob">Geburtsdatum des Kindes *</Label>
+                  <Input id="child_dob" name="child_dob" type="date" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parent_name">Name Elternteil *</Label>
