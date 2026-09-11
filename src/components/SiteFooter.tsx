@@ -5,6 +5,7 @@ import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
 const logo = logoAsset.url;
 import { Mail, Phone, MapPin } from "lucide-react";
 import { SocialLinks } from "@/components/SocialLinks";
+import { ReweSfvBanner } from "@/components/ReweSfvBanner";
 
 export function SiteFooter() {
   return (
@@ -28,6 +29,7 @@ export function SiteFooter() {
             <li><Link to="/mitgliedschaft" className="hover:text-accent">Mitgliedschaft</Link></li>
             <li><Link to="/kurse" className="hover:text-accent">Kurse</Link></li>
           </ul>
+          <ReweSfvBanner variant="compact" className="mt-4" />
         </div>
 
         <div>
