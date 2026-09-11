@@ -9,11 +9,14 @@ const joinSchema = z.object({
   courseId: z.string().uuid().optional().nullable(),
   parentName: z.string().trim().min(2).max(120),
   parentEmail: z.string().trim().email().max(200),
-  parentPhone: z.string().trim().max(60).optional().or(z.literal('')),
+  parentPhone: z.string().trim().min(5).max(60),
   childName: z.string().trim().min(2).max(120),
-  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  swimmingLevel: z.string().trim().min(1).max(200),
+  isMember: z.boolean(),
   notes: z.string().trim().max(2000).optional().or(z.literal('')),
   gdprConsent: z.literal(true),
+  contactPermission: z.literal(true),
   website: z.string().max(0).optional(),
 })
 
