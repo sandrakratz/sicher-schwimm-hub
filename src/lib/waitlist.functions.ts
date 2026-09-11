@@ -94,8 +94,8 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
         parent_name: data.parentName,
         parent_email: data.parentEmail,
         parent_phone: data.parentPhone || null,
-        is_member: mem ? mem.status === 'active' : null,
-        notes: data.notes || null,
+        is_member: mem ? mem.status === 'active' : data.isMember,
+        notes: [`Schwimmlevel: ${data.swimmingLevel}`, data.notes || null].filter(Boolean).join('\n'),
         gdpr_consent: true,
         status: 'waiting',
       })
