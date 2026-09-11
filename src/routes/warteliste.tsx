@@ -190,15 +190,47 @@ function WaitlistPage() {
                   <Input id="parent_email" name="parent_email" type="email" required maxLength={200} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="parent_phone">Telefon</Label>
-                  <Input id="parent_phone" name="parent_phone" maxLength={60} />
+                  <Label htmlFor="parent_phone">Telefon *</Label>
+                  <Input id="parent_phone" name="parent_phone" required minLength={5} maxLength={60} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="swimming_level">Schwimmlevel des Kindes *</Label>
+                  <select
+                    id="swimming_level"
+                    name="swimming_level"
+                    required
+                    defaultValue=""
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="" disabled>Bitte auswählen</option>
+                    <option value="Keine Wassererfahrung">Keine Wassererfahrung</option>
+                    <option value="Wassergewöhnt, kann nicht schwimmen">Wassergewöhnt, kann nicht schwimmen</option>
+                    <option value="Erste Schwimmversuche">Erste Schwimmversuche</option>
+                    <option value="Seepferdchen">Seepferdchen vorhanden</option>
+                    <option value="Sicherer Schwimmer">Sicherer Schwimmer</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="is_member">Vereinsmitglied? *</Label>
+                  <select
+                    id="is_member"
+                    name="is_member"
+                    required
+                    defaultValue=""
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="" disabled>Bitte auswählen</option>
+                    <option value="ja">Ja, wir sind Mitglied</option>
+                    <option value="nein">Nein</option>
+                  </select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Anmerkungen (z. B. Schwimmerfahrung, Wunschzeiten)</Label>
+                <Label htmlFor="notes">Anmerkungen (z. B. Wunschzeiten, Besonderheiten)</Label>
                 <Textarea id="notes" name="notes" rows={4} maxLength={2000} />
               </div>
+
 
               <div className="flex items-start gap-3">
                 <Checkbox id="gdpr_consent" name="gdpr_consent" />
