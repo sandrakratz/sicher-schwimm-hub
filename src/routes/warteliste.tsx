@@ -243,6 +243,14 @@ function WaitlistPage() {
                 </Label>
               </div>
 
+              <div className="flex items-start gap-3">
+                <Checkbox id="contact_permission" name="contact_permission" />
+                <Label htmlFor="contact_permission" className="text-sm font-normal leading-relaxed">
+                  Ich bin damit einverstanden, dass der Verein mich per E-Mail oder Telefon zu Kursplätzen kontaktiert. *
+                </Label>
+              </div>
+
+
               <SubmitButton loading={loading}>Auf die Warteliste setzen</SubmitButton>
             </form>
           </CardContent>
