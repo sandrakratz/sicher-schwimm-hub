@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AiImageNotice } from "@/components/AiImageNotice";
+import { ReweSfvBanner } from "@/components/ReweSfvBanner";
 import { LABELS } from "@/lib/labels";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,11 @@ function Home() {
             />
           </div>
         </div>
+      </section>
+
+      {/* REWE Scheine für Vereine */}
+      <section className="container mx-auto px-4 pt-10">
+        <ReweSfvBanner />
       </section>
 
       {/* Why */}

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Calendar, MapPin } from "lucide-react";
+import { ReweSfvBanner } from "@/components/ReweSfvBanner";
 
 
 export const Route = createFileRoute("/news")({
@@ -69,6 +70,7 @@ function Page() {
         </div>
       </section>
       <section className="container mx-auto px-4 py-16 max-w-4xl space-y-12">
+        <ReweSfvBanner />
         {events.length > 0 && (
           <div className="space-y-4">
             <h2 className="font-display text-2xl font-bold text-primary-deep">Kommende Termine</h2>
