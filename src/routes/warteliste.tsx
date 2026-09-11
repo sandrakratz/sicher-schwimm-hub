@@ -69,8 +69,21 @@ function WaitlistPage() {
       toast.error("Bitte wählen Sie den gewünschten Kurs aus.");
       return;
     }
+    if (!String(fd.get("swimming_level") || "").trim()) {
+      toast.error("Bitte geben Sie das Schwimmlevel des Kindes an.");
+      return;
+    }
+    const memberValue = String(fd.get("is_member") || "");
+    if (memberValue !== "ja" && memberValue !== "nein") {
+      toast.error("Bitte geben Sie an, ob Ihr Kind bereits Vereinsmitglied ist.");
+      return;
+    }
     if (fd.get("gdpr_consent") !== "on") {
       toast.error("Bitte bestätigen Sie die Datenschutzhinweise.");
+      return;
+    }
+    if (fd.get("contact_permission") !== "on") {
+      toast.error("Bitte stimmen Sie der Kontaktaufnahme zu.");
       return;
     }
     setLoading(true);
@@ -83,8 +96,11 @@ function WaitlistPage() {
           parentPhone: String(fd.get("parent_phone") || ""),
           childName: String(fd.get("child_name") || ""),
           childDob: String(fd.get("child_dob") || ""),
+          swimmingLevel: String(fd.get("swimming_level") || ""),
+          isMember: memberValue === "ja",
           notes: String(fd.get("notes") || ""),
           gdprConsent: true,
+          contactPermission: true,
         },
       });
       if (!res.ok) {
@@ -162,8 +178,8 @@ function WaitlistPage() {
                   <Input id="child_name" name="child_name" required maxLength={120} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="child_dob">Geburtsdatum</Label>
-                  <Input id="child_dob" name="child_dob" type="date" />
+                  <Label htmlFor="child_dob">Geburtsdatum des Kindes *</Label>
+                  <Input id="child_dob" name="child_dob" type="date" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parent_name">Name Elternteil *</Label>
@@ -174,15 +190,47 @@ function WaitlistPage() {
                   <Input id="parent_email" name="parent_email" type="email" required maxLength={200} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="parent_phone">Telefon</Label>
-                  <Input id="parent_phone" name="parent_phone" maxLength={60} />
+                  <Label htmlFor="parent_phone">Telefon *</Label>
+                  <Input id="parent_phone" name="parent_phone" required minLength={5} maxLength={60} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="swimming_level">Schwimmlevel des Kindes *</Label>
+                  <select
+                    id="swimming_level"
+                    name="swimming_level"
+                    required
+                    defaultValue=""
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="" disabled>Bitte auswählen</option>
+                    <option value="Keine Wassererfahrung">Keine Wassererfahrung</option>
+                    <option value="Wassergewöhnt, kann nicht schwimmen">Wassergewöhnt, kann nicht schwimmen</option>
+                    <option value="Erste Schwimmversuche">Erste Schwimmversuche</option>
+                    <option value="Seepferdchen">Seepferdchen vorhanden</option>
+                    <option value="Sicherer Schwimmer">Sicherer Schwimmer</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="is_member">Vereinsmitglied? *</Label>
+                  <select
+                    id="is_member"
+                    name="is_member"
+                    required
+                    defaultValue=""
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="" disabled>Bitte auswählen</option>
+                    <option value="ja">Ja, wir sind Mitglied</option>
+                    <option value="nein">Nein</option>
+                  </select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Anmerkungen (z. B. Schwimmerfahrung, Wunschzeiten)</Label>
+                <Label htmlFor="notes">Anmerkungen (z. B. Wunschzeiten, Besonderheiten)</Label>
                 <Textarea id="notes" name="notes" rows={4} maxLength={2000} />
               </div>
+
 
               <div className="flex items-start gap-3">
                 <Checkbox id="gdpr_consent" name="gdpr_consent" />
@@ -194,6 +242,14 @@ function WaitlistPage() {
                   gelesen und bin mit der Speicherung meiner Daten zur Bearbeitung der Warteliste einverstanden. *
                 </Label>
               </div>
+
+              <div className="flex items-start gap-3">
+                <Checkbox id="contact_permission" name="contact_permission" />
+                <Label htmlFor="contact_permission" className="text-sm font-normal leading-relaxed">
+                  Ich bin damit einverstanden, dass der Verein mich per E-Mail oder Telefon zu Kursplätzen kontaktiert. *
+                </Label>
+              </div>
+
 
               <SubmitButton loading={loading}>Auf die Warteliste setzen</SubmitButton>
             </form>
