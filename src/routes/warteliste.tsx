@@ -69,8 +69,21 @@ function WaitlistPage() {
       toast.error("Bitte wählen Sie den gewünschten Kurs aus.");
       return;
     }
+    if (!String(fd.get("swimming_level") || "").trim()) {
+      toast.error("Bitte geben Sie das Schwimmlevel des Kindes an.");
+      return;
+    }
+    const memberValue = String(fd.get("is_member") || "");
+    if (memberValue !== "ja" && memberValue !== "nein") {
+      toast.error("Bitte geben Sie an, ob Ihr Kind bereits Vereinsmitglied ist.");
+      return;
+    }
     if (fd.get("gdpr_consent") !== "on") {
       toast.error("Bitte bestätigen Sie die Datenschutzhinweise.");
+      return;
+    }
+    if (fd.get("contact_permission") !== "on") {
+      toast.error("Bitte stimmen Sie der Kontaktaufnahme zu.");
       return;
     }
     setLoading(true);
@@ -83,8 +96,11 @@ function WaitlistPage() {
           parentPhone: String(fd.get("parent_phone") || ""),
           childName: String(fd.get("child_name") || ""),
           childDob: String(fd.get("child_dob") || ""),
+          swimmingLevel: String(fd.get("swimming_level") || ""),
+          isMember: memberValue === "ja",
           notes: String(fd.get("notes") || ""),
           gdprConsent: true,
+          contactPermission: true,
         },
       });
       if (!res.ok) {
