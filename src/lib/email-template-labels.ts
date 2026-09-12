@@ -16,6 +16,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   'course-removal-agreed': 'Kursabmeldung wie besprochen',
   'course-request-reply': 'Antwort auf eine Kursanfrage',
   'message-reply': 'Antwort auf eine Nachricht',
+  'waitlist-reply': 'Rückfrage zu einem Wartelisten-Eintrag',
   signup: 'Registrierung – E-Mail-Bestätigung',
   recovery: 'Passwort zurücksetzen',
   magiclink: 'Anmeldelink (Magic Link)',
