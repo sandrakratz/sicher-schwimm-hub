@@ -61,15 +61,16 @@ function mergeByMessageId(rows: EmailLogRow[]): ReplyEntry[] {
 }
 
 async function loadReplies(
-  templateName: string,
+  templateName: string | string[],
   recipientEmail: string,
   createdAt: string,
 ): Promise<ReplyEntry[]> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const names = Array.isArray(templateName) ? templateName : [templateName]
   const { data: rows } = await supabaseAdmin
     .from('email_send_log')
     .select('id, message_id, created_at, status, subject, body_html, body_text, error_message')
-    .eq('template_name', templateName)
+    .in('template_name', names)
     .ilike('recipient_email', recipientEmail)
     .gte('created_at', createdAt)
     .order('created_at', { ascending: false })
