@@ -26,3 +26,11 @@ export const getCourseRequestConversation = createServerFn({ method: 'POST' })
     const { getCourseRequestConversationData } = await import('@/lib/conversation.server')
     return getCourseRequestConversationData(context.supabase, context.userId, data.requestId)
   })
+
+export const getWaitlistConversation = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { entryId: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { getWaitlistConversationData } = await import('@/lib/conversation.server')
+    return getWaitlistConversationData(context.supabase, context.userId, data.entryId)
+  })
