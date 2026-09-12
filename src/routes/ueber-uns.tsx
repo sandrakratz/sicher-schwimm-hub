@@ -197,7 +197,11 @@ function Page() {
         </div>
         <p className="text-sm text-muted-foreground text-center max-w-2xl mx-auto mt-8">
           Sicher Schwimmen e.V. ist im Vereinsregister beim Amtsgericht Siegburg unter der
-          Register-Nr. VR 4149 eingetragen.
+          Register-Nr. VR 4149 eingetragen und Mitglied im{" "}
+          <a href={ASSOCIATION.url} target="_blank" rel="noopener noreferrer" className="underline">
+            {ASSOCIATION.name}
+          </a>
+          .
         </p>
       </section>
 
