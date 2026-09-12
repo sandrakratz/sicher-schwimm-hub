@@ -70,7 +70,7 @@ export function ConversationTimeline({
   original,
   reloadKey,
 }: {
-  kind: "message" | "course-request";
+  kind: "message" | "course-request" | "waitlist";
   id: string;
   original: { title: string; when: string; from: string; body: string };
   reloadKey?: unknown;
