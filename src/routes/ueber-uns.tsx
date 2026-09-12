@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { AiImageNotice } from "@/components/AiImageNotice";
 import { SocialLinks } from "@/components/SocialLinks";
-import { SOCIAL } from "@/lib/billing-config";
+import { SOCIAL, ASSOCIATION } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
