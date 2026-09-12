@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.prevent_profile_status_selfchange() FROM PUBLIC, anon, authenticated;
