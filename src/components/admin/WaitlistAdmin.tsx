@@ -134,6 +134,8 @@ function OriginalRequestDialog({
     if (!entry) return;
     setEdit(false);
     setNote("");
+    setReplyBody("");
+    setReplySubject("");
     setForm({
       childName: String(entry["child_name"] ?? ""),
       childDob: String(entry["child_dob"] ?? ""),
