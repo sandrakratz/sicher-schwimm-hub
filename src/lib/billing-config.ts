@@ -35,6 +35,12 @@ export const SOCIAL = [
   { key: "instagram", label: "Instagram", url: "https://www.instagram.com/sicherschwimmen/" },
 ] as const;
 
+/** Verbandsmitgliedschaft des Vereins. */
+export const ASSOCIATION = {
+  name: "Schwimmverband NRW",
+  url: "https://www.schwimmverband.nrw",
+} as const;
+
 /** Einheitliche Ortsangabe für Kurse (genauer Kursort wird später zugeordnet). */
 export const COURSE_LOCATION = "Schwimmbad im Rhein-Sieg-Kreis";
 
