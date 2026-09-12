@@ -111,6 +111,11 @@ function OriginalRequestDialog({
   const g = (k: string) => (r ? r[k] : (entry as Record<string, unknown> | null)?.[k]) ?? null;
 
   const [edit, setEdit] = useState(false);
+  const replyFn = useServerFn(replyToWaitlistEntry);
+  const [replySubject, setReplySubject] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [replyBusy, setReplyBusy] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [form, setForm] = useState({
     childName: "",
     childDob: "",
