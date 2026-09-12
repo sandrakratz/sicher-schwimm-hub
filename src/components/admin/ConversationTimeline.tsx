@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeBerlin } from "@/lib/format";
-import { getMessageConversation, getCourseRequestConversation, type ReplyEntry } from "@/lib/conversation.functions";
+import {
+  getMessageConversation,
+  getCourseRequestConversation,
+  getWaitlistConversation,
+  type ReplyEntry,
+} from "@/lib/conversation.functions";
 
 const STATUS_VARIANT: Record<string, { label: string; className: string }> = {
   sent: { label: "Gesendet", className: "bg-green-600 hover:bg-green-700 text-white" },
