@@ -1,4 +1,4 @@
-import { CONTACT_ITEMS } from "@/lib/billing-config";
+import { CONTACT_ITEMS, ASSOCIATION } from "@/lib/billing-config";
 import { LABELS } from "@/lib/labels";
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
@@ -29,6 +29,17 @@ export function SiteFooter() {
             <li><Link to="/mitgliedschaft" className="hover:text-accent">Mitgliedschaft</Link></li>
             <li><Link to="/kurse" className="hover:text-accent">Kurse</Link></li>
           </ul>
+          <p className="mt-4 text-sm opacity-90">
+            Mitglied im{" "}
+            <a
+              href={ASSOCIATION.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-accent"
+            >
+              {ASSOCIATION.name}
+            </a>
+          </p>
           <ReweSfvBanner variant="compact" className="mt-4" />
         </div>
 

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PublicLayout } from "@/components/PublicLayout";
 import { AiImageNotice } from "@/components/AiImageNotice";
 import { SocialLinks } from "@/components/SocialLinks";
-import { SOCIAL } from "@/lib/billing-config";
+import { SOCIAL, ASSOCIATION } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
@@ -197,7 +197,11 @@ function Page() {
         </div>
         <p className="text-sm text-muted-foreground text-center max-w-2xl mx-auto mt-8">
           Sicher Schwimmen e.V. ist im Vereinsregister beim Amtsgericht Siegburg unter der
-          Register-Nr. VR 4149 eingetragen.
+          Register-Nr. VR 4149 eingetragen und Mitglied im{" "}
+          <a href={ASSOCIATION.url} target="_blank" rel="noopener noreferrer" className="underline">
+            {ASSOCIATION.name}
+          </a>
+          .
         </p>
       </section>
 
