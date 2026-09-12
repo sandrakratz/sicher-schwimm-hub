@@ -85,7 +85,9 @@ export function ConversationTimeline({
       try {
         const res = kind === "message"
           ? await getMessageConversation({ data: { messageId: id } })
-          : await getCourseRequestConversation({ data: { requestId: id } });
+          : kind === "waitlist"
+            ? await getWaitlistConversation({ data: { entryId: id } })
+            : await getCourseRequestConversation({ data: { requestId: id } });
         if (!cancelled) setReplies(res.replies);
       } catch {
         if (!cancelled) setReplies([]);
