@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
+import { replyToWaitlistEntry } from "@/lib/waitlist-reply.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
@@ -111,6 +114,11 @@ function OriginalRequestDialog({
   const g = (k: string) => (r ? r[k] : (entry as Record<string, unknown> | null)?.[k]) ?? null;
 
   const [edit, setEdit] = useState(false);
+  const replyFn = useServerFn(replyToWaitlistEntry);
+  const [replySubject, setReplySubject] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [replyBusy, setReplyBusy] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [form, setForm] = useState({
     childName: "",
     childDob: "",
@@ -126,6 +134,8 @@ function OriginalRequestDialog({
     if (!entry) return;
     setEdit(false);
     setNote("");
+    setReplyBody("");
+    setReplySubject("");
     setForm({
       childName: String(entry["child_name"] ?? ""),
       childDob: String(entry["child_dob"] ?? ""),
@@ -261,6 +271,66 @@ function OriginalRequestDialog({
                 </Button>
               </>
             )}
+
+            <ConversationTimeline
+              kind="waitlist"
+              id={entry.id}
+              reloadKey={reloadKey}
+              original={{
+                title: `Wartelisten-Eintrag${entry["child_name"] ? ` – ${String(entry["child_name"])}` : ""}`,
+                when: String(entry["created_at"] ?? ""),
+                from: `${String(entry["parent_name"] ?? "")} <${String(entry["parent_email"] ?? "")}>`,
+                body: String(entry["notes"] ?? g("message") ?? "—"),
+              }}
+            />
+
+            <div className="space-y-2 rounded-md border p-3">
+              <h3 className="font-semibold">Rückfrage an die Familie senden</h3>
+              <p className="text-xs text-muted-foreground">
+                Die E-Mail geht an {String(entry["parent_email"] ?? "—")} und erscheint anschließend im Verlauf.
+              </p>
+              <label className="block text-sm">
+                Betreff (optional)
+                <Input
+                  value={replySubject}
+                  maxLength={300}
+                  onChange={(e) => setReplySubject(e.target.value)}
+                  placeholder={`Rückfrage zu Ihrem Wartelisten-Eintrag – ${String(entry["child_name"] ?? "")}`}
+                />
+              </label>
+              <label className="block text-sm">
+                Nachricht
+                <Textarea
+                  rows={5}
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  placeholder="Ihre Rückfrage an die Eltern …"
+                />
+              </label>
+              <Button
+                size="sm"
+                disabled={replyBusy || replyBody.trim().length < 2 || !entry["parent_email"]}
+                onClick={async () => {
+                  setReplyBusy(true);
+                  try {
+                    await replyFn({
+                      data: { entryId: entry.id, body: replyBody, subject: replySubject },
+                    });
+                    toast.success("E-Mail gesendet");
+                    setReplyBody("");
+                    setReplySubject("");
+                    setReloadKey((k) => k + 1);
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Senden fehlgeschlagen");
+                  } finally {
+                    setReplyBusy(false);
+                  }
+                }}
+              >
+                {replyBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                E-Mail senden
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

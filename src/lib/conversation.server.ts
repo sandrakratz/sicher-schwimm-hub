@@ -61,15 +61,16 @@ function mergeByMessageId(rows: EmailLogRow[]): ReplyEntry[] {
 }
 
 async function loadReplies(
-  templateName: string,
+  templateName: string | string[],
   recipientEmail: string,
   createdAt: string,
 ): Promise<ReplyEntry[]> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const names = Array.isArray(templateName) ? templateName : [templateName]
   const { data: rows } = await supabaseAdmin
     .from('email_send_log')
     .select('id, message_id, created_at, status, subject, body_html, body_text, error_message')
-    .eq('template_name', templateName)
+    .in('template_name', names)
     .ilike('recipient_email', recipientEmail)
     .gte('created_at', createdAt)
     .order('created_at', { ascending: false })
@@ -102,4 +103,23 @@ export async function getCourseRequestConversationData(supabase: any, userId: st
 
   if (error || !request) return { replies: [] as ReplyEntry[] }
   return { replies: await loadReplies('course-request-reply', request.parent_email, request.created_at) }
+}
+
+export async function getWaitlistConversationData(supabase: any, userId: string, entryId: string) {
+  await assertStaff(supabase, userId)
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data: entry, error } = await supabaseAdmin
+    .from('waitlist_entries')
+    .select('id, parent_email, created_at')
+    .eq('id', entryId)
+    .single()
+
+  if (error || !entry) return { replies: [] as ReplyEntry[] }
+  return {
+    replies: await loadReplies(
+      ['waitlist-reply', 'course-request-reply', 'waitlist-offer', 'course-booking-confirmation'],
+      entry.parent_email,
+      entry.created_at,
+    ),
+  }
 }

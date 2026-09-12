@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTimeBerlin } from "@/lib/format";
-import { getMessageConversation, getCourseRequestConversation, type ReplyEntry } from "@/lib/conversation.functions";
+import {
+  getMessageConversation,
+  getCourseRequestConversation,
+  getWaitlistConversation,
+  type ReplyEntry,
+} from "@/lib/conversation.functions";
 
 const STATUS_VARIANT: Record<string, { label: string; className: string }> = {
   sent: { label: "Gesendet", className: "bg-green-600 hover:bg-green-700 text-white" },
@@ -65,7 +70,7 @@ export function ConversationTimeline({
   original,
   reloadKey,
 }: {
-  kind: "message" | "course-request";
+  kind: "message" | "course-request" | "waitlist";
   id: string;
   original: { title: string; when: string; from: string; body: string };
   reloadKey?: unknown;
@@ -80,7 +85,9 @@ export function ConversationTimeline({
       try {
         const res = kind === "message"
           ? await getMessageConversation({ data: { messageId: id } })
-          : await getCourseRequestConversation({ data: { requestId: id } });
+          : kind === "waitlist"
+            ? await getWaitlistConversation({ data: { entryId: id } })
+            : await getCourseRequestConversation({ data: { requestId: id } });
         if (!cancelled) setReplies(res.replies);
       } catch {
         if (!cancelled) setReplies([]);
