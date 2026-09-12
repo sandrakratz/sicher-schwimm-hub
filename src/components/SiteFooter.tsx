@@ -1,4 +1,4 @@
-import { CONTACT_ITEMS } from "@/lib/billing-config";
+import { CONTACT_ITEMS, ASSOCIATION } from "@/lib/billing-config";
 import { LABELS } from "@/lib/labels";
 import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
