@@ -12,7 +12,7 @@ const SITE_BASE_URL = 'https://sicher-schwimmen.com'
  */
 export const suggestMatchForRequest = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { email: string }) => input)
+  .inputValidator((input: { email: string; requestId?: string | null }) => input)
   .handler(async ({ data, context }) => {
     const { userId } = context
     const { data: isStaff } = await context.supabase.rpc('is_staff', { _user_id: userId })
@@ -20,7 +20,37 @@ export const suggestMatchForRequest = createServerFn({ method: 'POST' })
 
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const email = (data.email || '').trim().toLowerCase()
+
+    // Feste Verknüpfung der Anfrage bevorzugen
+    if (data.requestId) {
+      const { data: req } = await supabaseAdmin
+        .from('course_requests')
+        .select('profile_id,membership_id')
+        .eq('id', data.requestId)
+        .maybeSingle()
+      const linkedProfile = (req as any)?.profile_id as string | null | undefined
+      const linkedMembership = (req as any)?.membership_id as string | null | undefined
+      if (linkedProfile || linkedMembership) {
+        const [{ data: prof }, { data: mem }] = await Promise.all([
+          linkedProfile
+            ? supabaseAdmin.from('profiles').select('id,email,first_name,last_name').eq('id', linkedProfile).maybeSingle()
+            : Promise.resolve({ data: null }),
+          linkedMembership
+            ? supabaseAdmin.from('memberships').select('status').eq('id', linkedMembership).maybeSingle()
+            : Promise.resolve({ data: null }),
+        ])
+        return {
+          isMember: mem ? (mem as { status: string }).status === 'active' : null,
+          parentUserId: (prof as any)?.id ?? null,
+          parentLabel: prof
+            ? [(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(' ') || (prof as any).email
+            : null,
+        }
+      }
+    }
+
     if (!email) return { isMember: null, parentUserId: null, parentLabel: null }
+
 
     const [memRes, profRes] = await Promise.all([
       supabaseAdmin.from('memberships').select('id,status').ilike('email', email).limit(1).maybeSingle(),
@@ -121,20 +151,28 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
 
     const participantName = req.child_name || req.parent_name
 
-    // Wenn kein parent_user_id übergeben wurde: per E-Mail-Match nachschlagen
-    let parentUserId = data.parentUserId ?? null
+    // Kontoverknüpfung: fest hinterlegte Verknüpfung bevorzugen, sonst E-Mail-Abgleich
+    let parentUserId = data.parentUserId ?? (req as any).profile_id ?? null
     if (!parentUserId && req.parent_email) {
       const { data: prof } = await supabaseAdmin
         .from('profiles').select('id').ilike('email', req.parent_email).limit(1).maybeSingle()
       parentUserId = prof?.id ?? null
     }
 
-    // Wenn kein isMember übergeben: per E-Mail-Match in memberships
+    // Mitgliedstatus: fest verknüpfte Mitgliedschaft bevorzugen
     let isMember: boolean | null = data.isMember ?? null
-    if (isMember == null && req.parent_email) {
-      const { data: mem } = await supabaseAdmin
-        .from('memberships').select('status').ilike('email', req.parent_email).limit(1).maybeSingle()
-      if (mem) isMember = mem.status === 'active'
+    if (isMember == null) {
+      const membershipId = (req as any).membership_id as string | null
+      if (membershipId) {
+        const { data: mem } = await supabaseAdmin
+          .from('memberships').select('status').eq('id', membershipId).maybeSingle()
+        if (mem) isMember = mem.status === 'active'
+      }
+      if (isMember == null && req.parent_email) {
+        const { data: mem } = await supabaseAdmin
+          .from('memberships').select('status').ilike('email', req.parent_email).limit(1).maybeSingle()
+        if (mem) isMember = mem.status === 'active'
+      }
     }
 
     // Preis bestimmen: explizit übergebener Preis ODER aus Kurs ableiten

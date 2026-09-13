@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { CheckCircle2, ListOrdered } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { joinWaitlist } from "@/lib/waitlist.functions";
+import { useContactDefaults } from "@/hooks/use-contact-defaults";
 
 export const Route = createFileRoute("/warteliste")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -57,6 +58,7 @@ function WaitlistPage() {
   });
 
   const preselected = programs?.find((p) => p.slug === search.programm)?.id;
+  const { defaults, ready } = useContactDefaults();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -151,8 +153,18 @@ function WaitlistPage() {
 
         <Card>
           <CardContent className="pt-6">
+            {!ready ? (
+              <p className="py-6 text-center text-muted-foreground">Formular wird vorbereitet…</p>
+            ) : (
             <form onSubmit={onSubmit} className="space-y-5">
               <HoneypotField />
+
+              {defaults.signedIn && (
+                <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                  Ihre bekannten Kontaktdaten sind bereits eingetragen – bitte nur noch prüfen und ergänzen.
+                </p>
+              )}
+
 
               <div className="space-y-2">
                 <Label htmlFor="program_id">Gewünschter Kurs *</Label>
@@ -183,15 +195,15 @@ function WaitlistPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parent_name">Name Elternteil *</Label>
-                  <Input id="parent_name" name="parent_name" required maxLength={120} />
+                  <Input id="parent_name" name="parent_name" required maxLength={120} defaultValue={defaults.fullName} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parent_email">E-Mail *</Label>
-                  <Input id="parent_email" name="parent_email" type="email" required maxLength={200} />
+                  <Input id="parent_email" name="parent_email" type="email" required maxLength={200} defaultValue={defaults.email} />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="parent_phone">Telefon *</Label>
-                  <Input id="parent_phone" name="parent_phone" required minLength={5} maxLength={60} />
+                  <Input id="parent_phone" name="parent_phone" required minLength={5} maxLength={60} defaultValue={defaults.phone} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="swimming_level">Schwimmlevel des Kindes *</Label>
@@ -216,7 +228,7 @@ function WaitlistPage() {
                     id="is_member"
                     name="is_member"
                     required
-                    defaultValue=""
+                    defaultValue={defaults.isMember === null ? "" : defaults.isMember ? "ja" : "nein"}
                     className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   >
                     <option value="" disabled>Bitte auswählen</option>
@@ -253,6 +265,7 @@ function WaitlistPage() {
 
               <SubmitButton loading={loading}>Auf die Warteliste setzen</SubmitButton>
             </form>
+            )}
           </CardContent>
         </Card>
       </section>

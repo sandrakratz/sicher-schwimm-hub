@@ -141,6 +141,7 @@ function Page() {
                   <TableHead>E-Mail</TableHead>
                   <TableHead>Grund</TableHead>
                   <TableHead>Quelle</TableHead>
+                  <TableHead>Zugehörige Anfrage</TableHead>
                   <TableHead>Erstellt</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
@@ -156,6 +157,22 @@ function Page() {
                       <Badge variant={e.source === "manual" ? "secondary" : "outline"}>
                         {e.source === "manual" ? "manuell" : "Ablehnung"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {e.request ? (
+                        <div className="space-y-0.5">
+                          <div className="font-medium">{e.request.child_name || e.request.parent_name || "Anfrage"}</div>
+                          <div className="text-muted-foreground">{e.request.parent_email || "—"}</div>
+                          {e.request.desired_course && (
+                            <div className="text-muted-foreground">Wunsch: {e.request.desired_course}</div>
+                          )}
+                          {e.request.created_at && (
+                            <div className="text-muted-foreground">vom {formatDateBerlin(e.request.created_at)}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDateTimeBerlin(e.created_at)}</TableCell>
                     <TableCell className="text-right space-x-2 whitespace-nowrap">

@@ -296,6 +296,29 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     .slice()
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
+  /** Notiz, Gesundheitshinweise und Originalnachricht direkt in der Liste sichtbar machen. */
+  function NoteCell({ item }: { item: Item }) {
+    const health = (item.health_info || "").trim();
+    const message = (item.message || "").trim();
+    const note = (item.admin_notes || "").trim();
+    if (!health && !message && !note) return <span className="text-xs text-muted-foreground">—</span>;
+    return (
+      <div className="space-y-1 text-xs">
+        {note && <span className="block truncate text-muted-foreground" title={note}>{note}</span>}
+        {health && (
+          <span className="block truncate text-amber-700" title={health}>
+            Gesundheit: {health}
+          </span>
+        )}
+        {message && (
+          <span className="block truncate text-muted-foreground" title={message}>
+            Nachricht: {message}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   // In der Kursanfragen-Übersicht werden Wartelisten-Einträge ausgeblendet,
   // da sie einen eigenen Menüpunkt „Warteliste“ haben.
   const visibleRows = isWaiting
@@ -331,7 +354,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
             <TableHead>Geburtsdatum</TableHead>
             <TableHead>Wunschkurs</TableHead>
             <TableHead>Sharky</TableHead>
-            <TableHead>Notiz</TableHead>
+            <TableHead>Notiz &amp; Hinweise</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -350,12 +373,8 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
               <TableCell onClick={(e) => e.stopPropagation()}>
                 <SharkyButton active={!!r.referred_sharky} busy={sharkyBusyId === r.id} onClick={() => toggleSharky(r)} />
               </TableCell>
-              <TableCell className="max-w-[220px]">
-                {r.admin_notes ? (
-                  <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
+              <TableCell className="max-w-[260px]">
+                <NoteCell item={r} />
               </TableCell>
               <TableCell className="text-right">
                 <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button>
@@ -390,7 +409,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
             <TableHead>{mode === "assigned" ? "Zugewiesener Kurs" : "Wunschkurs"}</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Sharky</TableHead>
-            <TableHead>Notiz</TableHead>
+            <TableHead>Notiz &amp; Hinweise</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -419,12 +438,8 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <SharkyButton active={!!r.referred_sharky} busy={sharkyBusyId === r.id} onClick={() => toggleSharky(r)} />
                 </TableCell>
-                <TableCell className="max-w-[220px]">
-                  {r.admin_notes ? (
-                    <span className="block truncate text-xs text-muted-foreground" title={r.admin_notes}>{r.admin_notes}</span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
+                <TableCell className="max-w-[260px]">
+                  <NoteCell item={r} />
                 </TableCell>
                 <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelected(r); }}>Details</Button></TableCell>
               </TableRow>

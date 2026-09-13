@@ -406,10 +406,12 @@ export type Database = {
           gdpr_consent: boolean
           health_info: string | null
           id: string
+          membership_id: string | null
           message: string | null
           parent_email: string
           parent_name: string
           parent_phone: string | null
+          profile_id: string | null
           referred_sharky: boolean
           referred_sharky_at: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -428,10 +430,12 @@ export type Database = {
           gdpr_consent?: boolean
           health_info?: string | null
           id?: string
+          membership_id?: string | null
           message?: string | null
           parent_email: string
           parent_name: string
           parent_phone?: string | null
+          profile_id?: string | null
           referred_sharky?: boolean
           referred_sharky_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -450,10 +454,12 @@ export type Database = {
           gdpr_consent?: boolean
           health_info?: string | null
           id?: string
+          membership_id?: string | null
           message?: string | null
           parent_email?: string
           parent_name?: string
           parent_phone?: string | null
+          profile_id?: string | null
           referred_sharky?: boolean
           referred_sharky_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -467,6 +473,20 @@ export type Database = {
             columns: ["assigned_course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_requests_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1303,6 +1323,7 @@ export type Database = {
           gdpr_consent: boolean
           id: string
           is_member: boolean | null
+          membership_id: string | null
           notes: string | null
           offer_course_id: string | null
           offer_expires_at: string | null
@@ -1312,6 +1333,7 @@ export type Database = {
           parent_name: string
           parent_phone: string | null
           parent_user_id: string | null
+          profile_id: string | null
           program_id: string | null
           request_id: string | null
           responded_at: string | null
@@ -1327,6 +1349,7 @@ export type Database = {
           gdpr_consent?: boolean
           id?: string
           is_member?: boolean | null
+          membership_id?: string | null
           notes?: string | null
           offer_course_id?: string | null
           offer_expires_at?: string | null
@@ -1336,6 +1359,7 @@ export type Database = {
           parent_name: string
           parent_phone?: string | null
           parent_user_id?: string | null
+          profile_id?: string | null
           program_id?: string | null
           request_id?: string | null
           responded_at?: string | null
@@ -1351,6 +1375,7 @@ export type Database = {
           gdpr_consent?: boolean
           id?: string
           is_member?: boolean | null
+          membership_id?: string | null
           notes?: string | null
           offer_course_id?: string | null
           offer_expires_at?: string | null
@@ -1360,6 +1385,7 @@ export type Database = {
           parent_name?: string
           parent_phone?: string | null
           parent_user_id?: string | null
+          profile_id?: string | null
           program_id?: string | null
           request_id?: string | null
           responded_at?: string | null
@@ -1375,10 +1401,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "waitlist_entries_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "waitlist_entries_offer_course_id_fkey"
             columns: ["offer_course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {

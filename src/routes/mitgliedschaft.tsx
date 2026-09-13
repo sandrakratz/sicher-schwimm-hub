@@ -16,6 +16,7 @@ import { HoneypotField, SubmitButton } from "@/components/form-support";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useServerFn } from "@tanstack/react-start";
 import { submitMembershipSignup } from "@/lib/membership-signup.functions";
+import { useContactDefaults } from "@/hooks/use-contact-defaults";
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
@@ -85,6 +86,7 @@ function Page() {
   const [done, setDone] = useState(false);
   const [accountResult, setAccountResult] = useState<"none" | "created" | "created_no_password" | "exists" | "failed">("none");
   const signupFn = useServerFn(submitMembershipSignup);
+  const { defaults, ready } = useContactDefaults();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -300,7 +302,7 @@ function Page() {
               <p className="text-sm text-muted-foreground mb-6">
                 Hinweis: Die Mitgliedschaft wird erst nach Genehmigung durch den Vereinsvorstand aktiv.
               </p>
-              <form onSubmit={onSubmit} className="space-y-6">
+              <form key={ready ? "prefilled" : "loading"} onSubmit={onSubmit} className="space-y-6">
                 <div>
                   <Label>Mitgliedschaftsart</Label>
                   <Select value={tier} onValueChange={setTier}>
@@ -311,14 +313,14 @@ function Page() {
                   </Select>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} /></div>
-                  <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} /></div>
-                  <div><Label htmlFor="date_of_birth">Geburtsdatum</Label><Input id="date_of_birth" type="date" name="date_of_birth" /></div>
-                  <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} /></div>
-                  <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" maxLength={40} /></div>
-                  <div><Label htmlFor="address_street">Straße & Nr.</Label><Input id="address_street" name="address_street" maxLength={200} /></div>
-                  <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" maxLength={20} /></div>
-                  <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" maxLength={100} /></div>
+                  <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} defaultValue={defaults.firstName} /></div>
+                  <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} defaultValue={defaults.lastName} /></div>
+                  <div><Label htmlFor="date_of_birth">Geburtsdatum</Label><Input id="date_of_birth" type="date" name="date_of_birth" defaultValue={defaults.dateOfBirth} /></div>
+                  <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} defaultValue={defaults.email} /></div>
+                  <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" maxLength={40} defaultValue={defaults.phone} /></div>
+                  <div><Label htmlFor="address_street">Straße & Nr.</Label><Input id="address_street" name="address_street" maxLength={200} defaultValue={defaults.street} /></div>
+                  <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" maxLength={20} defaultValue={defaults.zip} /></div>
+                  <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" maxLength={100} defaultValue={defaults.city} /></div>
                 </div>
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-3">Erziehungsberechtigte/r (bei Minderjährigen)</h3>

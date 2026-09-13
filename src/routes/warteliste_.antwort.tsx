@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { getWaitlistOffer, respondWaitlistOffer } from "@/lib/waitlist.functions";
+import { useContactDefaults } from "@/hooks/use-contact-defaults";
 
 export const Route = createFileRoute("/warteliste_/antwort")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -49,6 +50,8 @@ function OfferResponsePage() {
     enabled: !!token,
     queryFn: () => getWaitlistOffer({ data: { token } }),
   });
+
+  const { defaults, ready } = useContactDefaults();
 
   if (!token) {
     return (
@@ -222,6 +225,7 @@ function OfferResponsePage() {
         </div>
       ) : (
         <form
+          key={ready ? "prefilled" : "loading"}
           className="mt-8 space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
@@ -234,15 +238,15 @@ function OfferResponsePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2 md:col-span-3">
               <Label htmlFor="street">Straße und Hausnummer *</Label>
-              <Input id="street" name="street" required maxLength={160} />
+              <Input id="street" name="street" required maxLength={160} defaultValue={defaults.street} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="zip">PLZ *</Label>
-              <Input id="zip" name="zip" required maxLength={12} />
+              <Input id="zip" name="zip" required maxLength={12} defaultValue={defaults.zip} />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="city">Ort *</Label>
-              <Input id="city" name="city" required maxLength={120} />
+              <Input id="city" name="city" required maxLength={120} defaultValue={defaults.city} />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
