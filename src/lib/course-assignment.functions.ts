@@ -121,20 +121,28 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
 
     const participantName = req.child_name || req.parent_name
 
-    // Wenn kein parent_user_id übergeben wurde: per E-Mail-Match nachschlagen
-    let parentUserId = data.parentUserId ?? null
+    // Kontoverknüpfung: fest hinterlegte Verknüpfung bevorzugen, sonst E-Mail-Abgleich
+    let parentUserId = data.parentUserId ?? (req as any).profile_id ?? null
     if (!parentUserId && req.parent_email) {
       const { data: prof } = await supabaseAdmin
         .from('profiles').select('id').ilike('email', req.parent_email).limit(1).maybeSingle()
       parentUserId = prof?.id ?? null
     }
 
-    // Wenn kein isMember übergeben: per E-Mail-Match in memberships
+    // Mitgliedstatus: fest verknüpfte Mitgliedschaft bevorzugen
     let isMember: boolean | null = data.isMember ?? null
-    if (isMember == null && req.parent_email) {
-      const { data: mem } = await supabaseAdmin
-        .from('memberships').select('status').ilike('email', req.parent_email).limit(1).maybeSingle()
-      if (mem) isMember = mem.status === 'active'
+    if (isMember == null) {
+      const membershipId = (req as any).membership_id as string | null
+      if (membershipId) {
+        const { data: mem } = await supabaseAdmin
+          .from('memberships').select('status').eq('id', membershipId).maybeSingle()
+        if (mem) isMember = mem.status === 'active'
+      }
+      if (isMember == null && req.parent_email) {
+        const { data: mem } = await supabaseAdmin
+          .from('memberships').select('status').ilike('email', req.parent_email).limit(1).maybeSingle()
+        if (mem) isMember = mem.status === 'active'
+      }
     }
 
     // Preis bestimmen: explizit übergebener Preis ODER aus Kurs ableiten
