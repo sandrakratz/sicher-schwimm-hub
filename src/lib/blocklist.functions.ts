@@ -38,7 +38,30 @@ export const listBlocklist = createServerFn({ method: 'POST' })
       .select('id,child_name_norm,child_dob,email_norm,reason,source,request_id,active,created_at')
       .order('created_at', { ascending: false })
     if (error) throw new Error(error.message)
-    return { entries: (data ?? []) as BlocklistEntry[] }
+
+    const rows = (data ?? []) as BlocklistEntry[]
+    const requestIds = rows.map((r) => r.request_id).filter((v): v is string => !!v)
+    const byId = new Map<string, NonNullable<BlocklistEntry['request']>>()
+    if (requestIds.length) {
+      const { data: reqs } = await supabaseAdmin
+        .from('course_requests')
+        .select('id,parent_name,parent_email,child_name,desired_course,status,created_at')
+        .in('id', requestIds)
+      for (const r of reqs ?? []) {
+        byId.set(r.id, {
+          parent_name: r.parent_name,
+          parent_email: r.parent_email,
+          child_name: r.child_name,
+          desired_course: r.desired_course,
+          status: r.status,
+          created_at: r.created_at,
+        })
+      }
+    }
+
+    return {
+      entries: rows.map((r) => ({ ...r, request: r.request_id ? byId.get(r.request_id) ?? null : null })),
+    }
   })
 
 const addSchema = z.object({
