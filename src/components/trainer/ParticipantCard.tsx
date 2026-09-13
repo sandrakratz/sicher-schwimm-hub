@@ -104,6 +104,20 @@ export function ParticipantCard({
               )}
             </div>
           )}
+          {editableResult && (
+            <div className="border-t pt-3">
+              <p className="mb-2 text-xs font-semibold">Kursergebnis</p>
+              <ParticipantResultEditor
+                participantId={p.id}
+                value={{
+                  goal_reached: p.goal_reached ?? null,
+                  badge: p.badge ?? null,
+                  achievement: p.achievement ?? null,
+                }}
+                onSaved={onResultSaved}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
