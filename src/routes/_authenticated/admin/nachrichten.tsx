@@ -203,22 +203,27 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
 
 
   return (
-    <Card className="border-0 shadow-soft">
-      <CardContent className="p-6 space-y-4">
+    <Card className={`border-0 shadow-soft ${unread ? "border-l-4 border-l-accent" : ""}`}>
+      <CardContent className="p-4 space-y-4">
         <div className="flex items-start justify-between flex-wrap gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge>
-              <Badge variant={m.status === "new" ? "default" : "outline"}>{STATUS_LABEL[m.status] || m.status}</Badge>
-              <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(m.created_at)}</span>
+          <button type="button" onClick={toggle} className="flex min-w-0 flex-1 items-start gap-2 text-left">
+            {open ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge>
+                <Badge variant={unread ? "default" : "outline"}>{STATUS_LABEL[m.status] || m.status}</Badge>
+                <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(m.created_at)}</span>
+              </div>
+              <div className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}>
+                {m.subject || "(Kein Betreff)"}
+              </div>
+              <div className="truncate text-sm text-muted-foreground">
+                {m.from_name} · {m.from_email}
+                {!open && m.body ? ` — ${m.body.replace(/\s+/g, " ").slice(0, 90)}` : ""}
+              </div>
             </div>
-            <h2 className="font-display text-xl font-bold text-primary-deep mt-2">{m.subject || "(Kein Betreff)"}</h2>
-            <div className="text-sm mt-1">
-              <span className="font-semibold">{m.from_name}</span>{" "}
-              <a href={`mailto:${m.from_email}`} className="text-accent hover:underline">&lt;{m.from_email}&gt;</a>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </button>
+          <div className={`items-center gap-2 ${open ? "flex" : "hidden"}`}>
             <Select value={m.status} onValueChange={(v) => onStatus(m.id, v)}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
