@@ -331,7 +331,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
             <TableHead>Geburtsdatum</TableHead>
             <TableHead>Wunschkurs</TableHead>
             <TableHead>Sharky</TableHead>
-            <TableHead>Notiz</TableHead>
+            <TableHead>Notiz &amp; Hinweise</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
