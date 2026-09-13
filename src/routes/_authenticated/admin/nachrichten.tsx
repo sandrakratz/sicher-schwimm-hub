@@ -94,32 +94,75 @@ function Page() {
 
   const filtered = filter === "all" ? rows : rows.filter(m => m.status === filter);
 
+  // Gemeinsamer Posteingang: zusätzlich Kursanfragen und Wartelisten-Einträge
+  const [source, setSource] = useState<"all" | "message" | "course-request" | "waitlist">("all");
+  const [inbox, setInbox] = useState<InboxItem[] | null>(null);
+  useEffect(() => {
+    listInbox()
+      .then(r => setInbox(r.items))
+      .catch(() => setInbox([]));
+  }, []);
+
+  const showMessages = source === "all" || source === "message";
+  const otherItems = (inbox ?? []).filter(i => source === "all" || i.source === source);
+  const showOthers = source !== "message";
+
+  // Alles gemeinsam nach Datum sortieren, wenn „Alle“ gewählt ist
+  const combined: Array<{ when: string; node: React.ReactNode }> = [];
+  if (showMessages) {
+    for (const m of filtered) {
+      combined.push({
+        when: m.created_at,
+        node: <MessageCard key={`msg-${m.id}`} m={m} onStatus={updateStatus} onNotes={saveNotes} onDelete={deleteMsg} />,
+      });
+    }
+  }
+  if (showOthers) {
+    for (const i of otherItems) {
+      if (i.source === "message") continue;
+      combined.push({ when: i.created_at, node: <InboxItemCard key={`${i.source}-${i.id}`} item={i} /> });
+    }
+  }
+  combined.sort((a, b) => b.when.localeCompare(a.when));
+
   return (
     <div className="max-w-5xl space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-3xl font-bold text-primary-deep">Nachrichten</h1>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="new">Neu</SelectItem>
-            <SelectItem value="read">Gelesen</SelectItem>
-            <SelectItem value="replied">Beantwortet</SelectItem>
-            <SelectItem value="archived">Archiviert</SelectItem>
-          </SelectContent>
-        </Select>
+        <div>
+          <h1 className="font-display text-3xl font-bold text-primary-deep">Posteingang</h1>
+          <p className="text-sm text-muted-foreground">
+            Kontaktformular, Kursanfragen und Warteliste an einer Stelle – mit vollständigem Antwortverlauf.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Select value={source} onValueChange={(v) => setSource(v as typeof source)}>
+            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Quellen</SelectItem>
+              <SelectItem value="message">Kontaktformular</SelectItem>
+              <SelectItem value="course-request">Kursanfragen</SelectItem>
+              <SelectItem value="waitlist">Warteliste</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filter} onValueChange={setFilter} disabled={source !== "all" && source !== "message"}>
+            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Status</SelectItem>
+              <SelectItem value="new">Neu</SelectItem>
+              <SelectItem value="read">Gelesen</SelectItem>
+              <SelectItem value="replied">Beantwortet</SelectItem>
+              <SelectItem value="archived">Archiviert</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {loading && <p className="text-muted-foreground text-sm">Lade …</p>}
-      {!loading && filtered.length === 0 && (
-        <Card className="border-0 shadow-soft"><CardContent className="p-10 text-center text-muted-foreground">Keine Nachrichten.</CardContent></Card>
+      {(loading || inbox === null) && <p className="text-muted-foreground text-sm">Lade …</p>}
+      {!loading && inbox !== null && combined.length === 0 && (
+        <Card className="border-0 shadow-soft"><CardContent className="p-10 text-center text-muted-foreground">Keine Einträge.</CardContent></Card>
       )}
 
-      <div className="space-y-4">
-        {filtered.map(m => (
-          <MessageCard key={m.id} m={m} onStatus={updateStatus} onNotes={saveNotes} onDelete={deleteMsg} />
-        ))}
-      </div>
+      <div className="space-y-4">{combined.map(c => c.node)}</div>
     </div>
   );
 }
