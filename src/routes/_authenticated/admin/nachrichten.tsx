@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { formatDateTimeBerlin } from "@/lib/format";
 import { replyToMessage } from "@/lib/messages.functions";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
+import { InboxItemCard } from "@/components/admin/InboxItemCard";
+import { listInbox, type InboxItem } from "@/lib/inbox.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
