@@ -95,19 +95,29 @@ function Page() {
           meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
           contentClassName="px-0"
         >
+            {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
             <div className="space-y-2 px-4 pb-4 sm:px-6">
-              <h3 className="text-sm font-semibold">Anwesenheit erfassen</h3>
-              <AttendanceBoard
-                courseId={c.id}
-                participants={c.participants
-                  .filter(p => p.status !== "cancelled")
-                  .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
-              />
-            </div>
-
-            <div className="space-y-2 border-t px-4 py-4 sm:px-6">
-              <h3 className="text-sm font-semibold">Meine Anwesenheit (Nachweis)</h3>
-              <TrainerAttendancePanel courseId={c.id} />
+              <h3 className="text-sm font-semibold">Anwesenheit</h3>
+              <Tabs defaultValue="kinder">
+                <TabsList>
+                  <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
+                  <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
+                </TabsList>
+                <TabsContent value="kinder" className="mt-3">
+                  <AttendanceBoard
+                    courseId={c.id}
+                    participants={c.participants
+                      .filter(p => p.status !== "cancelled")
+                      .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
+                  />
+                </TabsContent>
+                <TabsContent value="trainer" className="mt-3">
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Dein eigener Nachweis für die Übungsleiterpauschale.
+                  </p>
+                  <TrainerAttendancePanel courseId={c.id} />
+                </TabsContent>
+              </Tabs>
             </div>
 
             <div className="border-t pt-2 md:hidden">
