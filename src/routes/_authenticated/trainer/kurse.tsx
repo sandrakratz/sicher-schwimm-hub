@@ -14,6 +14,7 @@ import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 import { PhoneEditor } from "@/components/trainer/PhoneEditor";
+import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -49,6 +50,15 @@ function Page() {
       prev.map(c => ({
         ...c,
         participants: c.participants.map(p => (p.id === participantId ? { ...p, phone } : p)),
+      })),
+    );
+  };
+
+  const applyResult = (participantId: string, result: ParticipantResult) => {
+    setCourses(prev =>
+      prev.map(c => ({
+        ...c,
+        participants: c.participants.map(p => (p.id === participantId ? { ...p, ...result } : p)),
       })),
     );
   };
@@ -133,6 +143,8 @@ function Page() {
                   no={beltNo.get(p.id) ?? null}
                   editablePhone
                   onPhoneSaved={applyPhone}
+                  editableResult
+                  onResultSaved={applyResult}
                 />
               ))}
             </div>
@@ -148,11 +160,12 @@ function Page() {
                     <TableHead>Hinweise</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Zahlung</TableHead>
+                    <TableHead className="w-[22rem]">Kursergebnis</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {c.participants.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
                   )}
                   {c.participants.map(p => (
                     <TableRow key={p.id}>
@@ -179,6 +192,17 @@ function Page() {
                         ) : (
                           <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
                         )}
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <ParticipantResultEditor
+                          participantId={p.id}
+                          value={{
+                            goal_reached: p.goal_reached ?? null,
+                            badge: p.badge ?? null,
+                            achievement: p.achievement ?? null,
+                          }}
+                          onSaved={applyResult}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

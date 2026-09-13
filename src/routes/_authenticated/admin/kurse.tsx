@@ -677,9 +677,6 @@ function Page() {
       date_of_birth: editPart.date_of_birth || null,
       status: editPart.status,
       notes: editPart.notes?.trim() || null,
-      goal_reached: editPart.goal_reached,
-      achievement: editPart.achievement?.trim() || null,
-      badge: editPart.badge?.trim() || null,
       paid: editPart.paid,
       paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
       paid_by: editPart.paid ? userId : null,
@@ -1466,24 +1463,17 @@ function Page() {
 
               <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Award className="h-4 w-4" /> Kursergebnis</div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="text-sm space-y-1">
                   <div>
-                    <Label>Kursziel erreicht?</Label>
-                    <Select
-                      value={editPart.goal_reached == null ? "unset" : editPart.goal_reached ? "yes" : "no"}
-                      onValueChange={(v) => setEditPart(p => p && { ...p, goal_reached: v === "unset" ? null : v === "yes" })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unset">— Offen —</SelectItem>
-                        <SelectItem value="yes">Ja, erreicht</SelectItem>
-                        <SelectItem value="no">Nein, nicht erreicht</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <span className="text-muted-foreground">Kursziel: </span>
+                    {editPart.goal_reached === true ? "erreicht" : editPart.goal_reached === false ? "nicht erreicht" : "offen"}
                   </div>
-                  <div><Label>Abzeichen</Label><Input placeholder="z.B. Seepferdchen, Bronze" value={editPart.badge || ""} onChange={e => setEditPart(p => p && { ...p, badge: e.target.value })} /></div>
+                  <div><span className="text-muted-foreground">Abzeichen: </span>{editPart.badge || "—"}</div>
+                  <div className="whitespace-pre-wrap"><span className="text-muted-foreground">Geschafft / Anmerkungen: </span>{editPart.achievement || "—"}</div>
                 </div>
-                <div className="mt-3"><Label>Geschafft / Anmerkungen zum Ergebnis</Label><Textarea rows={3} placeholder="z.B. 25m geschwommen, Sprung vom Beckenrand …" value={editPart.achievement || ""} onChange={e => setEditPart(p => p && { ...p, achievement: e.target.value })} /></div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Das Kursergebnis wird von den Trainer:innen vor Ort im Trainerbereich unter „Meine Kurse“ erfasst.
+                </p>
               </div>
 
               {canManage && <div className="border-t pt-3 mt-2">

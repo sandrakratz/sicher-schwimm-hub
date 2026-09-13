@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Mail, Phone } from "lucide-react";
 import { PhoneEditor } from "@/components/trainer/PhoneEditor";
+import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,9 @@ export type ParticipantCardData = {
   notes: string | null;
   status: string;
   paid?: boolean;
+  goal_reached?: boolean | null;
+  badge?: string | null;
+  achievement?: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -29,12 +33,16 @@ export function ParticipantCard({
   no,
   editablePhone = false,
   onPhoneSaved,
+  editableResult = false,
+  onResultSaved,
 }: {
   p: ParticipantCardData;
   showPayment?: boolean;
   no?: number | null;
   editablePhone?: boolean;
   onPhoneSaved?: (participantId: string, phone: string | null) => void;
+  editableResult?: boolean;
+  onResultSaved?: (participantId: string, result: ParticipantResult) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -94,6 +102,20 @@ export function ParticipantCard({
               ) : (
                 <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
               )}
+            </div>
+          )}
+          {editableResult && (
+            <div className="border-t pt-3">
+              <p className="mb-2 text-xs font-semibold">Kursergebnis</p>
+              <ParticipantResultEditor
+                participantId={p.id}
+                value={{
+                  goal_reached: p.goal_reached ?? null,
+                  badge: p.badge ?? null,
+                  achievement: p.achievement ?? null,
+                }}
+                onSaved={onResultSaved}
+              />
             </div>
           )}
         </div>
