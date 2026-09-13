@@ -225,6 +225,7 @@ function OfferResponsePage() {
         </div>
       ) : (
         <form
+          key={ready ? "prefilled" : "loading"}
           className="mt-8 space-y-5"
           onSubmit={(e) => {
             e.preventDefault();
