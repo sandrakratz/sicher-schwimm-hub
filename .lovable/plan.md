@@ -40,4 +40,4 @@ Ergebnis der Prüfung: Die Abläufe funktionieren, aber Eltern geben dieselben A
 
 ## Umfang
 
-Ich würde mit Schritt 1 beginnen und Schritt 2 im selben Zug umsetzen, wenn es gut läuft. Schritt 3 nur auf Zuruf. Texte, Design und bestehende Abläufe bleiben sonst unverändert.
+Alle drei Schritte werden umgesetzt – zuerst 1, dann 2, zum Schluss das Aufräumen in Schritt 3. Texte, Design und bestehende Abläufe bleiben sonst unverändert.
