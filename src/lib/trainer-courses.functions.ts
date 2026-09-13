@@ -155,11 +155,29 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
       .eq("id", participant.id as string);
     if (upErr) throw new Error(upErr.message);
 
+    // Die Nummer nur an einer Stelle pflegen: zugehörige Anfrage, Wartelisteneintrag
+    // und (falls noch leer) das Benutzerprofil werden mitgeführt.
     if (participant.request_id) {
       await supabaseAdmin
         .from("course_requests")
         .update({ parent_phone: value })
         .eq("id", participant.request_id as string);
+      await supabaseAdmin
+        .from("waitlist_entries")
+        .update({ parent_phone: value })
+        .eq("request_id", participant.request_id as string);
+    }
+
+    const profileId = (participant.parent_user_id ?? participant.user_id) as string | null;
+    if (profileId && value) {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("phone")
+        .eq("id", profileId)
+        .maybeSingle();
+      if (prof && !prof.phone) {
+        await supabaseAdmin.from("profiles").update({ phone: value }).eq("id", profileId);
+      }
     }
 
     try {
