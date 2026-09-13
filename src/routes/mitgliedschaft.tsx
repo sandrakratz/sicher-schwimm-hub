@@ -313,14 +313,14 @@ function Page() {
                   </Select>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} /></div>
-                  <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} /></div>
-                  <div><Label htmlFor="date_of_birth">Geburtsdatum</Label><Input id="date_of_birth" type="date" name="date_of_birth" /></div>
-                  <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} /></div>
-                  <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" maxLength={40} /></div>
-                  <div><Label htmlFor="address_street">Straße & Nr.</Label><Input id="address_street" name="address_street" maxLength={200} /></div>
-                  <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" maxLength={20} /></div>
-                  <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" maxLength={100} /></div>
+                  <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} defaultValue={defaults.firstName} /></div>
+                  <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} defaultValue={defaults.lastName} /></div>
+                  <div><Label htmlFor="date_of_birth">Geburtsdatum</Label><Input id="date_of_birth" type="date" name="date_of_birth" defaultValue={defaults.dateOfBirth} /></div>
+                  <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} defaultValue={defaults.email} /></div>
+                  <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" maxLength={40} defaultValue={defaults.phone} /></div>
+                  <div><Label htmlFor="address_street">Straße & Nr.</Label><Input id="address_street" name="address_street" maxLength={200} defaultValue={defaults.street} /></div>
+                  <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" maxLength={20} defaultValue={defaults.zip} /></div>
+                  <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" maxLength={100} defaultValue={defaults.city} /></div>
                 </div>
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-3">Erziehungsberechtigte/r (bei Minderjährigen)</h3>
