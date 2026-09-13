@@ -285,26 +285,29 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
         </div>
 
 
-        <ConversationTimeline
-          kind="message"
-          id={m.id}
-          original={{
-            title: m.subject || "(Kein Betreff)",
-            when: m.created_at,
-            from: `${m.from_name} <${m.from_email}>`,
-            body: m.body,
-          }}
-          reloadKey={reloadKey}
-        />
+        {open && (
+          <>
+            <ConversationTimeline
+              kind="message"
+              id={m.id}
+              original={{
+                title: m.subject || "(Kein Betreff)",
+                when: m.created_at,
+                from: `${m.from_name} <${m.from_email}>`,
+                body: m.body,
+              }}
+              reloadKey={reloadKey}
+            />
 
-
-        <div>
-          <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Interne Notizen</label>
-          <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="mt-1" placeholder="Nur für Admins sichtbar …" />
-          <div className="flex justify-end mt-2">
-            <Button size="sm" variant="outline" onClick={() => onNotes(m.id, notes)} disabled={notes === (m.internal_notes || "")}>Notiz speichern</Button>
-          </div>
-        </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Interne Notizen</label>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="mt-1" placeholder="Nur für Admins sichtbar …" />
+              <div className="flex justify-end mt-2">
+                <Button size="sm" variant="outline" onClick={() => onNotes(m.id, notes)} disabled={notes === (m.internal_notes || "")}>Notiz speichern</Button>
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
