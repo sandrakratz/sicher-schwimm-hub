@@ -390,7 +390,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
             <TableHead>{mode === "assigned" ? "Zugewiesener Kurs" : "Wunschkurs"}</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Sharky</TableHead>
-            <TableHead>Notiz</TableHead>
+            <TableHead>Notiz &amp; Hinweise</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
