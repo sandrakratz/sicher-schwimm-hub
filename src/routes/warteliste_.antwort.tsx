@@ -238,15 +238,15 @@ function OfferResponsePage() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2 md:col-span-3">
               <Label htmlFor="street">Straße und Hausnummer *</Label>
-              <Input id="street" name="street" required maxLength={160} />
+              <Input id="street" name="street" required maxLength={160} defaultValue={defaults.street} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="zip">PLZ *</Label>
-              <Input id="zip" name="zip" required maxLength={12} />
+              <Input id="zip" name="zip" required maxLength={12} defaultValue={defaults.zip} />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="city">Ort *</Label>
-              <Input id="city" name="city" required maxLength={120} />
+              <Input id="city" name="city" required maxLength={120} defaultValue={defaults.city} />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
