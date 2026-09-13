@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -969,20 +970,37 @@ function Page() {
             <DialogTitle>{detailId === "unassigned" ? "Zeiträume ohne Kursangebot" : detailProgram?.name || "Kurs"}</DialogTitle>
           </DialogHeader>
 
-          {canManage && detailId !== "unassigned" && detailProgram && (
+          {canManage && detailId !== "unassigned" && detailProgram ? (
+            <Tabs defaultValue="zeitraeume">
+              <TabsList>
+                <TabsTrigger value="zeitraeume">Kurszeiträume</TabsTrigger>
+                <TabsTrigger value="angaben">Kursangaben</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="zeitraeume" className="mt-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">Termine, Plätze und Buchbarkeit je Zeitraum.</p>
+                  <Button size="sm" onClick={() => startNewTerm(detailProgram)}>
+                    <Plus className="h-4 w-4" /> Neuer Zeitraum
+                  </Button>
+                </div>
+                {renderTermTable(detailId)}
+              </TabsContent>
+
+              <TabsContent value="angaben" className="mt-4">
             <div className="space-y-3 border rounded-md p-4">
               <div>
                 <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Diese Angaben steuern die öffentliche Darstellung: die Kurskarte in der Kursübersicht (/kurse) und die Detailseite
-                  (/kurse/{editingProg.slug || detailProgram.slug}). Kurszeiträume, Termine und Buchbarkeit werden weiter unten je Zeitraum gepflegt.
+                  (/kurse/{editingProg.slug || detailProgram.slug}). Kurszeiträume, Termine und Buchbarkeit werden im Reiter „Kurszeiträume" gepflegt.
                 </p>
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value }))} /></div>
                 <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /><Hint>Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern verändert bestehende Links.</Hint></div>
               </div>
-              <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen abweichenden Ort haben.</Hint></div>
+              <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können einen abweichenden Ort haben.</Hint></div>
               <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
               <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
               <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editingProg.course_info || ""} onChange={e => setEditingProg(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.</Hint></div>
@@ -1015,8 +1033,9 @@ function Page() {
                 </div>
               </div>
             </div>
-          )}
-
+              </TabsContent>
+            </Tabs>
+          ) : (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="font-semibold text-sm">Kurszeiträume</div>
@@ -1028,6 +1047,8 @@ function Page() {
             </div>
             {renderTermTable(detailId === "unassigned" ? null : detailId)}
           </div>
+          )}
+
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDetailId(null)}>Schließen</Button>
