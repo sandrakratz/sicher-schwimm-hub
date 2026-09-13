@@ -10,6 +10,9 @@ export type TrainerParticipant = {
   status: string;
   notes: string | null;
   paid: boolean;
+  goal_reached: boolean | null;
+  badge: string | null;
+  achievement: string | null;
 };
 
 export type TrainerCourse = {
@@ -78,7 +81,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
 
     const { data: parts } = await supabaseAdmin
       .from("course_participants")
-      .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid")
+      .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement")
       .in("course_id", ids)
       .neq("status", "cancelled")
       .order("participant_name", { ascending: true });
@@ -101,6 +104,9 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
           status: p.status as string,
           notes: (p.notes ?? null) as string | null,
           paid: Boolean(p.paid),
+          goal_reached: (p.goal_reached ?? null) as boolean | null,
+          badge: (p.badge ?? null) as string | null,
+          achievement: (p.achievement ?? null) as string | null,
         })),
     }));
   });
