@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Reply, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Reply, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTimeBerlin } from "@/lib/format";
@@ -174,6 +174,15 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Eingeklappte Listenansicht wie in einem E-Mail-Programm
+  const [open, setOpen] = useState(false);
+  const unread = m.status === "new";
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && unread) onStatus(m.id, "read");
+  }
 
   async function sendReply() {
     if (replyBody.trim().length < 2) { toast.error("Bitte Antworttext eingeben"); return; }
@@ -194,22 +203,27 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
 
 
   return (
-    <Card className="border-0 shadow-soft">
-      <CardContent className="p-6 space-y-4">
+    <Card className={`border-0 shadow-soft ${unread ? "border-l-4 border-l-accent" : ""}`}>
+      <CardContent className="p-4 space-y-4">
         <div className="flex items-start justify-between flex-wrap gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge>
-              <Badge variant={m.status === "new" ? "default" : "outline"}>{STATUS_LABEL[m.status] || m.status}</Badge>
-              <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(m.created_at)}</span>
+          <button type="button" onClick={toggle} className="flex min-w-0 flex-1 items-start gap-2 text-left">
+            {open ? <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge>
+                <Badge variant={unread ? "default" : "outline"}>{STATUS_LABEL[m.status] || m.status}</Badge>
+                <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(m.created_at)}</span>
+              </div>
+              <div className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}>
+                {m.subject || "(Kein Betreff)"}
+              </div>
+              <div className="truncate text-sm text-muted-foreground">
+                {m.from_name} · {m.from_email}
+                {!open && m.body ? ` — ${m.body.replace(/\s+/g, " ").slice(0, 90)}` : ""}
+              </div>
             </div>
-            <h2 className="font-display text-xl font-bold text-primary-deep mt-2">{m.subject || "(Kein Betreff)"}</h2>
-            <div className="text-sm mt-1">
-              <span className="font-semibold">{m.from_name}</span>{" "}
-              <a href={`mailto:${m.from_email}`} className="text-accent hover:underline">&lt;{m.from_email}&gt;</a>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </button>
+          <div className={`items-center gap-2 ${open ? "flex" : "hidden"}`}>
             <Select value={m.status} onValueChange={(v) => onStatus(m.id, v)}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -271,26 +285,29 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
         </div>
 
 
-        <ConversationTimeline
-          kind="message"
-          id={m.id}
-          original={{
-            title: m.subject || "(Kein Betreff)",
-            when: m.created_at,
-            from: `${m.from_name} <${m.from_email}>`,
-            body: m.body,
-          }}
-          reloadKey={reloadKey}
-        />
+        {open && (
+          <>
+            <ConversationTimeline
+              kind="message"
+              id={m.id}
+              original={{
+                title: m.subject || "(Kein Betreff)",
+                when: m.created_at,
+                from: `${m.from_name} <${m.from_email}>`,
+                body: m.body,
+              }}
+              reloadKey={reloadKey}
+            />
 
-
-        <div>
-          <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Interne Notizen</label>
-          <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="mt-1" placeholder="Nur für Admins sichtbar …" />
-          <div className="flex justify-end mt-2">
-            <Button size="sm" variant="outline" onClick={() => onNotes(m.id, notes)} disabled={notes === (m.internal_notes || "")}>Notiz speichern</Button>
-          </div>
-        </div>
+            <div>
+              <label className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Interne Notizen</label>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="mt-1" placeholder="Nur für Admins sichtbar …" />
+              <div className="flex justify-end mt-2">
+                <Button size="sm" variant="outline" onClick={() => onNotes(m.id, notes)} disabled={notes === (m.internal_notes || "")}>Notiz speichern</Button>
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
