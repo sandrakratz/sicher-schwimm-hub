@@ -14,6 +14,7 @@ import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 import { PhoneEditor } from "@/components/trainer/PhoneEditor";
+import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -49,6 +50,15 @@ function Page() {
       prev.map(c => ({
         ...c,
         participants: c.participants.map(p => (p.id === participantId ? { ...p, phone } : p)),
+      })),
+    );
+  };
+
+  const applyResult = (participantId: string, result: ParticipantResult) => {
+    setCourses(prev =>
+      prev.map(c => ({
+        ...c,
+        participants: c.participants.map(p => (p.id === participantId ? { ...p, ...result } : p)),
       })),
     );
   };
