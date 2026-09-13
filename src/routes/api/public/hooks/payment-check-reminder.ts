@@ -5,8 +5,11 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
     handlers: {
       POST: async ({ request }) => {
         const apiKey = request.headers.get('apikey') ?? ''
-        const expected = process.env['SUPABASE_ANON_KEY'] ?? ''
-        if (!expected || apiKey !== expected) {
+        const accepted = [
+          process.env['SUPABASE_ANON_KEY'],
+          process.env['SUPABASE_PUBLISHABLE_KEY'],
+        ].filter(Boolean) as string[]
+        if (accepted.length === 0 || !apiKey || !accepted.includes(apiKey)) {
           return new Response(JSON.stringify({ error: 'unauthorized' }), {
             status: 401,
             headers: { 'Content-Type': 'application/json' },
