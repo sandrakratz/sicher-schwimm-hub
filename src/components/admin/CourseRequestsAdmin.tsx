@@ -296,6 +296,29 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     .slice()
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
+  /** Notiz, Gesundheitshinweise und Originalnachricht direkt in der Liste sichtbar machen. */
+  function NoteCell({ item }: { item: Item }) {
+    const health = (item.health_info || "").trim();
+    const message = (item.message || "").trim();
+    const note = (item.admin_notes || "").trim();
+    if (!health && !message && !note) return <span className="text-xs text-muted-foreground">—</span>;
+    return (
+      <div className="space-y-1 text-xs">
+        {note && <span className="block truncate text-muted-foreground" title={note}>{note}</span>}
+        {health && (
+          <span className="block truncate text-amber-700" title={health}>
+            Gesundheit: {health}
+          </span>
+        )}
+        {message && (
+          <span className="block truncate text-muted-foreground" title={message}>
+            Nachricht: {message}
+          </span>
+        )}
+      </div>
+    );
+  }
+
   // In der Kursanfragen-Übersicht werden Wartelisten-Einträge ausgeblendet,
   // da sie einen eigenen Menüpunkt „Warteliste“ haben.
   const visibleRows = isWaiting
