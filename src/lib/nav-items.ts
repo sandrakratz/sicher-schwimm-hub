@@ -48,7 +48,7 @@ export const adminNav: AppNavItem[] = [
   { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
   { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
   { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
-  { to: "/admin/nachrichten", icon: MailOpen, label: "Nachrichten", allow: ["admin", "board"] },
+  { to: "/admin/nachrichten", icon: MailOpen, label: "Posteingang", allow: ["admin", "board"] },
   { to: "/admin/emails", icon: Send, label: "Gesendete E-Mails", allow: ["admin", "board"] },
   { to: "/admin/versandstatus", icon: Activity, label: "Versandstatus", allow: ["admin", "board"] },
   { to: "/admin/widerrufe", icon: FileText, label: "Widerrufe", allow: ["admin", "board"] },
