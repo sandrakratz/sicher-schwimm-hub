@@ -12,6 +12,15 @@ export type BlocklistEntry = {
   request_id: string | null
   active: boolean
   created_at: string
+  /** Kurzinfo zur ursprünglichen Kursanfrage, falls der Eintrag daraus entstand */
+  request?: {
+    parent_name: string | null
+    parent_email: string | null
+    child_name: string | null
+    desired_course: string | null
+    status: string | null
+    created_at: string | null
+  } | null
 }
 
 async function assertStaff(context: { supabase: any; userId: string }) {
