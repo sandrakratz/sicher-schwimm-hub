@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { getWaitlistOffer, respondWaitlistOffer } from "@/lib/waitlist.functions";
+import { useContactDefaults } from "@/hooks/use-contact-defaults";
 
 export const Route = createFileRoute("/warteliste_/antwort")({
   validateSearch: (search: Record<string, unknown>) => ({

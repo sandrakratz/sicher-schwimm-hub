@@ -302,7 +302,7 @@ function Page() {
               <p className="text-sm text-muted-foreground mb-6">
                 Hinweis: Die Mitgliedschaft wird erst nach Genehmigung durch den Vereinsvorstand aktiv.
               </p>
-              <form onSubmit={onSubmit} className="space-y-6">
+              <form key={ready ? "prefilled" : "loading"} onSubmit={onSubmit} className="space-y-6">
                 <div>
                   <Label>Mitgliedschaftsart</Label>
                   <Select value={tier} onValueChange={setTier}>
