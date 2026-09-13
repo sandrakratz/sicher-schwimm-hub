@@ -33,12 +33,16 @@ export function ParticipantCard({
   no,
   editablePhone = false,
   onPhoneSaved,
+  editableResult = false,
+  onResultSaved,
 }: {
   p: ParticipantCardData;
   showPayment?: boolean;
   no?: number | null;
   editablePhone?: boolean;
   onPhoneSaved?: (participantId: string, phone: string | null) => void;
+  editableResult?: boolean;
+  onResultSaved?: (participantId: string, result: ParticipantResult) => void;
 }) {
   const [open, setOpen] = useState(false);
 
