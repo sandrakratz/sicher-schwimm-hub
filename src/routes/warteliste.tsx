@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { CheckCircle2, ListOrdered } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { joinWaitlist } from "@/lib/waitlist.functions";
+import { useContactDefaults } from "@/hooks/use-contact-defaults";
 
 export const Route = createFileRoute("/warteliste")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -57,6 +58,7 @@ function WaitlistPage() {
   });
 
   const preselected = programs?.find((p) => p.slug === search.programm)?.id;
+  const { defaults, ready } = useContactDefaults();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
