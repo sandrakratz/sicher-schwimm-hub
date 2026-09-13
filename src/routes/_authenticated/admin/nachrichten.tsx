@@ -174,6 +174,15 @@ function MessageCard({ m, onStatus, onNotes, onDelete }: { m: Msg; onStatus: (id
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Eingeklappte Listenansicht wie in einem E-Mail-Programm
+  const [open, setOpen] = useState(false);
+  const unread = m.status === "new";
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && unread) onStatus(m.id, "read");
+  }
 
   async function sendReply() {
     if (replyBody.trim().length < 2) { toast.error("Bitte Antworttext eingeben"); return; }
