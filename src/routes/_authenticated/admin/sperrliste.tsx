@@ -141,6 +141,7 @@ function Page() {
                   <TableHead>E-Mail</TableHead>
                   <TableHead>Grund</TableHead>
                   <TableHead>Quelle</TableHead>
+                  <TableHead>Zugehörige Anfrage</TableHead>
                   <TableHead>Erstellt</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
