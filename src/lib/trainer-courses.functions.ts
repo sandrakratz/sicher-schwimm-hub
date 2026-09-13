@@ -133,7 +133,7 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
 
     const { data: participant, error: pErr } = await supabaseAdmin
       .from("course_participants")
-      .select("id,course_id,request_id,participant_name")
+      .select("id,course_id,request_id,participant_name,parent_user_id,user_id")
       .eq("id", data.participantId)
       .maybeSingle();
     if (pErr) throw new Error(pErr.message);
