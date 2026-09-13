@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ExternalLink, Reply } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, Reply } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 import { replyToCourseRequest } from "@/lib/course-requests.functions";
@@ -21,13 +21,47 @@ const SOURCE_LABEL: Record<InboxItem["source"], string> = {
   waitlist: "Warteliste",
 };
 
-/** Kursanfragen und Wartelisten-Einträge im gemeinsamen Posteingang beantworten. */
+const READ_KEY = "admin-inbox-read";
+
+function readSet(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    return new Set(JSON.parse(window.localStorage.getItem(READ_KEY) || "[]") as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function markRead(key: string) {
+  if (typeof window === "undefined") return;
+  const s = readSet();
+  s.add(key);
+  try {
+    window.localStorage.setItem(READ_KEY, JSON.stringify([...s].slice(-500)));
+  } catch {
+    /* Speicher nicht verfügbar – dann bleibt der Eintrag ungelesen */
+  }
+}
+
+/** Kursanfragen und Wartelisten-Einträge im gemeinsamen Posteingang – eingeklappt wie eine Mailliste. */
 export function InboxItemCard({ item }: { item: InboxItem }) {
+  const key = `${item.source}:${item.id}`;
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(() => !readSet().has(key));
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [subject, setSubject] = useState(`Re: ${item.subject}`);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && unread) {
+      markRead(key);
+      setUnread(false);
+    }
+  }
 
   async function send() {
     if (body.trim().length < 2) {
@@ -42,7 +76,7 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
         await replyToCourseRequest({ data: { requestId: item.id, body, subject } });
       }
       toast.success("Antwort gesendet");
-      setOpen(false);
+      setDialogOpen(false);
       setBody("");
       setReloadKey((k) => k + 1);
     } catch (e: unknown) {
@@ -53,27 +87,34 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
   }
 
   return (
-    <Card className="border-0 shadow-soft">
-      <CardContent className="space-y-4 p-6">
+    <Card className={`border-0 shadow-soft ${unread ? "border-l-4 border-l-accent" : ""}`}>
+      <CardContent className="space-y-4 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{SOURCE_LABEL[item.source]}</Badge>
-              <Badge variant="outline">{item.statusLabel}</Badge>
-              <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(item.created_at)}</span>
+          <button type="button" onClick={toggle} className="flex min-w-0 flex-1 items-start gap-2 text-left">
+            {open ? (
+              <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+            )}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{SOURCE_LABEL[item.source]}</Badge>
+                <Badge variant="outline">{item.statusLabel}</Badge>
+                {unread && <Badge>Ungelesen</Badge>}
+                <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(item.created_at)}</span>
+              </div>
+              <div className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}>
+                {item.subject}
+              </div>
+              <div className="truncate text-sm text-muted-foreground">
+                {item.name}
+                {item.email ? ` · ${item.email}` : ""}
+                {!open && item.body ? ` — ${item.body.replace(/\s+/g, " ").slice(0, 90)}` : ""}
+              </div>
             </div>
-            <h2 className="font-display mt-2 text-xl font-bold text-primary-deep">{item.subject}</h2>
-            <div className="mt-1 text-sm">
-              <span className="font-semibold">{item.name}</span>{" "}
-              {item.email && (
-                <a href={`mailto:${item.email}`} className="text-accent hover:underline">
-                  &lt;{item.email}&gt;
-                </a>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => setOpen(true)} disabled={!item.email}>
+          </button>
+          <div className={`items-center gap-2 ${open ? "flex" : "hidden"}`}>
+            <Button size="sm" onClick={() => setDialogOpen(true)} disabled={!item.email}>
               <Reply className="mr-1 h-4 w-4" />
               Antworten
             </Button>
@@ -86,19 +127,21 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
           </div>
         </div>
 
-        <ConversationTimeline
-          kind={item.source}
-          id={item.id}
-          original={{
-            title: item.subject,
-            when: item.created_at,
-            from: `${item.name}${item.email ? ` <${item.email}>` : ""}`,
-            body: item.body,
-          }}
-          reloadKey={reloadKey}
-        />
+        {open && (
+          <ConversationTimeline
+            kind={item.source}
+            id={item.id}
+            original={{
+              title: item.subject,
+              when: item.created_at,
+              from: `${item.name}${item.email ? ` <${item.email}>` : ""}`,
+              body: item.body,
+            }}
+            reloadKey={reloadKey}
+          />
+        )}
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Antwort an {item.name}</DialogTitle>
@@ -130,7 +173,7 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>
+              <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={sending}>
                 Abbrechen
               </Button>
               <Button onClick={send} disabled={sending}>
