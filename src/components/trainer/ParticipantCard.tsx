@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Mail, Phone } from "lucide-react";
 import { PhoneEditor } from "@/components/trainer/PhoneEditor";
+import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +15,9 @@ export type ParticipantCardData = {
   notes: string | null;
   status: string;
   paid?: boolean;
+  goal_reached?: boolean | null;
+  badge?: string | null;
+  achievement?: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
