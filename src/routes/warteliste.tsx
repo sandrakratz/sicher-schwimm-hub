@@ -228,7 +228,7 @@ function WaitlistPage() {
                     id="is_member"
                     name="is_member"
                     required
-                    defaultValue=""
+                    defaultValue={defaults.isMember === null ? "" : defaults.isMember ? "ja" : "nein"}
                     className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   >
                     <option value="" disabled>Bitte auswählen</option>
@@ -265,6 +265,7 @@ function WaitlistPage() {
 
               <SubmitButton loading={loading}>Auf die Warteliste setzen</SubmitButton>
             </form>
+            )}
           </CardContent>
         </Card>
       </section>
