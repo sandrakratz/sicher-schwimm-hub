@@ -51,6 +51,8 @@ function OfferResponsePage() {
     queryFn: () => getWaitlistOffer({ data: { token } }),
   });
 
+  const { defaults, ready } = useContactDefaults();
+
   if (!token) {
     return (
       <Frame>
