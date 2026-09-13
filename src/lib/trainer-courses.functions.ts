@@ -198,3 +198,74 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
 
     return { phone: value };
   });
+
+/**
+ * Kursergebnis (Kursziel, Abzeichen, Anmerkung) durch Trainer:innen vor Ort erfassen.
+ * Erlaubt für Admin/Vorstand sowie Trainer:innen des jeweiligen Kurses.
+ */
+export const updateParticipantResult = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: {
+      participantId: string;
+      goalReached: boolean | null;
+      badge: string;
+      achievement: string;
+    }) => {
+      if (!input?.participantId) throw new Error("Teilnehmende:r fehlt.");
+      if (input.goalReached !== null && typeof input.goalReached !== "boolean") {
+        throw new Error("Ungültige Angabe zum Kursziel.");
+      }
+      return input;
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const { data: roleRows } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const roles = (roleRows || []).map((r: { role: string }) => r.role);
+    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    if (!isStaff && !roles.includes("trainer")) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: participant, error: pErr } = await supabaseAdmin
+      .from("course_participants")
+      .select("id,course_id")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!participant) throw new Error("Teilnehmende:r nicht gefunden.");
+
+    if (!isStaff) {
+      const { data: allowed } = await context.supabase.rpc("is_trainer_of_course", {
+        _trainer_id: context.userId,
+        _course_id: participant.course_id as string,
+      });
+      if (!allowed) throw new Response("Forbidden", { status: 403 });
+    }
+
+    const badge = data.badge.trim() || null;
+    const achievement = data.achievement.trim() || null;
+
+    const { error: upErr } = await supabaseAdmin
+      .from("course_participants")
+      .update({ goal_reached: data.goalReached, badge, achievement })
+      .eq("id", participant.id as string);
+    if (upErr) throw new Error(upErr.message);
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, context.userId, {
+        action: "participant.result_updated",
+        entity: "course_participants",
+        entity_id: participant.id as string,
+        metadata: { course_id: participant.course_id, goal_reached: data.goalReached, badge, achievement },
+      });
+    } catch { /* Audit-Fehler dürfen die Erfassung nicht blockieren */ }
+
+    return { goal_reached: data.goalReached, badge, achievement };
+  });
