@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Calendar, MapPin } from "lucide-react";
 import { ReweSfvBanner } from "@/components/ReweSfvBanner";
+import { MediaAttachment } from "@/components/MediaAttachment";
 
 
 export const Route = createFileRoute("/news")({
@@ -22,14 +23,16 @@ export const Route = createFileRoute("/news")({
   component: Page,
 });
 
+type Media = { image_url: string | null; image_alt: string | null; image_mime: string | null };
+
 type News = {
   id: string;
   title: string;
   excerpt: string | null;
-  content: string;
+  content: string | null;
   category: string;
   published_at: string | null;
-};
+} & Media;
 
 type EventItem = {
   id: string;
@@ -38,7 +41,7 @@ type EventItem = {
   location: string | null;
   starts_at: string;
   ends_at: string | null;
-};
+} & Media;
 
 function Page() {
   const [items, setItems] = useState<News[]>([]);
@@ -46,14 +49,14 @@ function Page() {
   useEffect(() => {
     supabase
       .from("news")
-      .select("id,title,excerpt,content,category,published_at")
+      .select("id,title,excerpt,content,category,published_at,image_url,image_alt,image_mime")
       .eq("published", true)
       .eq("visibility", "public")
       .order("published_at", { ascending: false })
       .then(({ data }) => setItems((data as News[]) || []));
     supabase
       .from("events")
-      .select("id,title,description,location,starts_at,ends_at")
+      .select("id,title,description,location,starts_at,ends_at,image_url,image_alt,image_mime")
       .eq("visibility", "public")
       .gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true })
@@ -84,6 +87,7 @@ function Page() {
                     <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" />{formatDateTimeBerlin(e.starts_at)}{e.ends_at ? ` – ${formatDateTimeBerlin(e.ends_at)}` : ""}</span>
                     {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{e.location}</span>}
                   </div>
+                  <MediaAttachment path={e.image_url} alt={e.image_alt} mime={e.image_mime} />
                   {e.description && <p className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{e.description}</p>}
                 </CardContent>
               </Card>
@@ -115,9 +119,12 @@ function Page() {
                   {n.excerpt && (
                     <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>
                   )}
-                  <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">
-                    {n.content}
-                  </div>
+                  <MediaAttachment path={n.image_url} alt={n.image_alt} mime={n.image_mime} />
+                  {n.content && (
+                    <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">
+                      {n.content}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))

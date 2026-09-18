@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { Calendar, MapPin } from "lucide-react";
+import { MediaAttachment } from "@/components/MediaAttachment";
 
 export const Route = createFileRoute("/_authenticated/portal/events")({
   component: Page,
@@ -18,6 +19,9 @@ type Ev = {
   starts_at: string;
   ends_at: string | null;
   visibility: "public" | "members" | "trainers" | "admin";
+  image_url: string | null;
+  image_alt: string | null;
+  image_mime: string | null;
 };
 
 const VISIBILITY_LABEL: Record<string, string> = {
@@ -59,6 +63,7 @@ function Page() {
             </div>
             <Badge variant="secondary">{VISIBILITY_LABEL[e.visibility] || e.visibility}</Badge>
           </div>
+          <MediaAttachment path={e.image_url} alt={e.image_alt} mime={e.image_mime} />
           {e.description && <p className="text-sm text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{e.description}</p>}
         </CardContent>
       </Card>

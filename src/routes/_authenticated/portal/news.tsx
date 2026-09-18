@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateBerlin } from "@/lib/format";
+import { MediaAttachment } from "@/components/MediaAttachment";
 
 export const Route = createFileRoute("/_authenticated/portal/news")({
   component: NewsList,
@@ -32,7 +33,8 @@ function NewsList() {
               </div>
               <h2 className="font-display text-xl font-bold text-primary-deep mt-1">{n.title}</h2>
               {n.excerpt && <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>}
-              <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{n.content}</div>
+              <MediaAttachment path={n.image_url} alt={n.image_alt} mime={n.image_mime} />
+              {n.content && <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{n.content}</div>}
             </CardContent></Card>
           ))}
         </div>
