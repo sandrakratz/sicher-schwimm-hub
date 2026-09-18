@@ -62,7 +62,6 @@ export const listInbox = createServerFn({ method: "POST" })
         .from("waitlist_entries")
         .select("id,parent_name,parent_email,child_name,notes,status,created_at")
         .in("status", OPEN_WAITLIST)
-        .is("waitlist_archived_at", null)
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
