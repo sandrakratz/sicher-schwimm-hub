@@ -47,8 +47,8 @@ export const listInbox = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Nur offene Vorgänge gehören in den Posteingang – erledigte bleiben in der Warteliste sichtbar.
-    const OPEN_REQUEST = ["new", "under_review"];
-    const OPEN_WAITLIST = ["waiting", "offered"];
+    const OPEN_REQUEST = ["new", "under_review"] as const;
+    const OPEN_WAITLIST = ["waiting", "offered"] as const;
 
     const [requests, waitlist] = await Promise.all([
       supabaseAdmin
