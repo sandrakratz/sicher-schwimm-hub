@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
+import { MediaUploadField } from "@/components/admin/MediaUploadField";
 
 export const Route = createFileRoute("/_authenticated/admin/news")({
   beforeLoad: async () => {
@@ -43,6 +44,9 @@ type News = {
   visibility: "public" | "members" | "trainers" | "admin";
   published: boolean;
   published_at: string | null;
+  image_url: string | null;
+  image_alt: string | null;
+  image_mime: string | null;
 };
 
 function slugify(s: string) {
@@ -64,13 +68,17 @@ function Page() {
   function startEdit(n: News) { setEditing(n); setOpen(true); }
 
   async function save() {
-    if (!editing.title || !editing.content) return toast.error("Titel und Inhalt erforderlich");
+    if (!editing.title) return toast.error("Titel erforderlich");
+    if (!editing.content && !editing.image_url) return toast.error("Bitte Text eingeben oder Bild/PDF hochladen");
     const publish = !!editing.published;
     const payload: any = {
       title: editing.title,
       slug: editing.slug || slugify(editing.title),
       excerpt: editing.excerpt || null,
-      content: editing.content,
+      content: editing.content || "",
+      image_url: editing.image_url || null,
+      image_alt: editing.image_alt || null,
+      image_mime: editing.image_mime || null,
       category: editing.category || "general",
       visibility: editing.visibility || "public",
       published: publish,
@@ -142,7 +150,15 @@ function Page() {
               <div><Label>Slug</Label><Input value={editing.slug || ""} onChange={e => setEditing(p => ({ ...p, slug: e.target.value }))} /></div>
             </div>
             <div><Label>Kurzbeschreibung</Label><Textarea rows={2} value={editing.excerpt || ""} onChange={e => setEditing(p => ({ ...p, excerpt: e.target.value }))} /></div>
-            <div><Label>Inhalt * (Markdown)</Label><Textarea rows={10} value={editing.content || ""} onChange={e => setEditing(p => ({ ...p, content: e.target.value }))} /></div>
+            <div><Label>Inhalt (optional, wenn ein Bild hochgeladen ist)</Label><Textarea rows={10} value={editing.content || ""} onChange={e => setEditing(p => ({ ...p, content: e.target.value }))} /></div>
+            <MediaUploadField
+              folder="news"
+              value={editing.image_url}
+              mime={editing.image_mime}
+              alt={editing.image_alt}
+              onChange={v => setEditing(p => ({ ...p, ...v }))}
+              onAltChange={v => setEditing(p => ({ ...p, image_alt: v }))}
+            />
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Kategorie</Label><Input value={editing.category || ""} onChange={e => setEditing(p => ({ ...p, category: e.target.value }))} placeholder="general / event / kurs ..." /></div>
               <div>
