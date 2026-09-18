@@ -945,6 +945,9 @@ export type Database = {
           description: string | null
           ends_at: string | null
           id: string
+          image_alt: string | null
+          image_mime: string | null
+          image_url: string | null
           location: string | null
           signup_enabled: boolean
           signup_note: string | null
@@ -958,6 +961,9 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
+          image_alt?: string | null
+          image_mime?: string | null
+          image_url?: string | null
           location?: string | null
           signup_enabled?: boolean
           signup_note?: string | null
@@ -971,6 +977,9 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
+          image_alt?: string | null
+          image_mime?: string | null
+          image_url?: string | null
           location?: string | null
           signup_enabled?: boolean
           signup_note?: string | null
@@ -1132,10 +1141,13 @@ export type Database = {
         Row: {
           author_id: string | null
           category: string
-          content: string
+          content: string | null
           created_at: string
           excerpt: string | null
           id: string
+          image_alt: string | null
+          image_mime: string | null
+          image_url: string | null
           published: boolean
           published_at: string | null
           slug: string
@@ -1146,10 +1158,13 @@ export type Database = {
         Insert: {
           author_id?: string | null
           category?: string
-          content: string
+          content?: string | null
           created_at?: string
           excerpt?: string | null
           id?: string
+          image_alt?: string | null
+          image_mime?: string | null
+          image_url?: string | null
           published?: boolean
           published_at?: string | null
           slug: string
@@ -1160,10 +1175,13 @@ export type Database = {
         Update: {
           author_id?: string | null
           category?: string
-          content?: string
+          content?: string | null
           created_at?: string
           excerpt?: string | null
           id?: string
+          image_alt?: string | null
+          image_mime?: string | null
+          image_url?: string | null
           published?: boolean
           published_at?: string | null
           slug?: string
