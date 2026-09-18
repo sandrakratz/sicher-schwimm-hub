@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Calendar, MapPin } from "lucide-react";
 import { ReweSfvBanner } from "@/components/ReweSfvBanner";
+import { MediaAttachment } from "@/components/MediaAttachment";
 
 
 export const Route = createFileRoute("/news")({
@@ -22,14 +23,16 @@ export const Route = createFileRoute("/news")({
   component: Page,
 });
 
+type Media = { image_url: string | null; image_alt: string | null; image_mime: string | null };
+
 type News = {
   id: string;
   title: string;
   excerpt: string | null;
-  content: string;
+  content: string | null;
   category: string;
   published_at: string | null;
-};
+} & Media;
 
 type EventItem = {
   id: string;
@@ -38,7 +41,7 @@ type EventItem = {
   location: string | null;
   starts_at: string;
   ends_at: string | null;
-};
+} & Media;
 
 function Page() {
   const [items, setItems] = useState<News[]>([]);
