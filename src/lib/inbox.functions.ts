@@ -46,17 +46,25 @@ export const listInbox = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Nur offene Vorgänge gehören in den Posteingang – erledigte bleiben in der Warteliste sichtbar.
+    const OPEN_REQUEST = ["new", "under_review"];
+    const OPEN_WAITLIST = ["waiting", "offered"];
+
     const [requests, waitlist] = await Promise.all([
       supabaseAdmin
         .from("course_requests")
         .select("id,parent_name,parent_email,child_name,desired_course,message,health_info,status,created_at")
+        .in("status", OPEN_REQUEST)
+        .is("waitlist_archived_at", null)
         .order("created_at", { ascending: false })
-        .limit(300),
+        .limit(100),
       supabaseAdmin
         .from("waitlist_entries")
         .select("id,parent_name,parent_email,child_name,notes,status,created_at")
+        .in("status", OPEN_WAITLIST)
+        .is("waitlist_archived_at", null)
         .order("created_at", { ascending: false })
-        .limit(300),
+        .limit(100),
     ]);
 
     const items: InboxItem[] = [];
