@@ -22,6 +22,7 @@ import {
   toBerlinInput, fromBerlinInput, type ShiftSignup,
 } from "@/lib/event-shifts";
 import { HelperGroupsPanel } from "@/components/admin/HelperGroupsPanel";
+import { MediaUploadField } from "@/components/admin/MediaUploadField";
 
 export const Route = createFileRoute("/_authenticated/admin/events")({
   beforeLoad: async () => {
@@ -57,6 +58,9 @@ type Ev = {
   visibility: "public" | "members" | "trainers" | "admin";
   signup_enabled: boolean;
   signup_note: string | null;
+  image_url: string | null;
+  image_alt: string | null;
+  image_mime: string | null;
 };
 
 function toLocal(s?: string | null) {
@@ -111,6 +115,9 @@ function Page() {
       visibility: editing.visibility || "public",
       signup_enabled: !!editing.signup_enabled,
       signup_note: editing.signup_note || null,
+      image_url: editing.image_url || null,
+      image_alt: editing.image_alt || null,
+      image_mime: editing.image_mime || null,
     };
     const res = editing.id
       ? await supabase.from("events").update(payload).eq("id", editing.id)
@@ -186,7 +193,15 @@ function Page() {
           <DialogHeader><DialogTitle>{editing.id ? "Event bearbeiten" : "Neues Event"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Titel *</Label><Input value={editing.title || ""} onChange={e => setEditing(p => ({ ...p, title: e.target.value }))} /></div>
-            <div><Label>Beschreibung</Label><Textarea rows={3} value={editing.description || ""} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} /></div>
+            <div><Label>Beschreibung (optional, wenn ein Bild hochgeladen ist)</Label><Textarea rows={3} value={editing.description || ""} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} /></div>
+            <MediaUploadField
+              folder="events"
+              value={editing.image_url}
+              mime={editing.image_mime}
+              alt={editing.image_alt}
+              onChange={v => setEditing(p => ({ ...p, ...v }))}
+              onAltChange={v => setEditing(p => ({ ...p, image_alt: v }))}
+            />
             <div><Label>Ort</Label><Input value={editing.location || ""} onChange={e => setEditing(p => ({ ...p, location: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Start *</Label><Input type="datetime-local" value={toLocal(editing.starts_at)} onChange={e => setEditing(p => ({ ...p, starts_at: fromLocal(e.target.value) || p.starts_at }))} /></div>
