@@ -47,7 +47,9 @@ function markRead(key: string) {
 export function InboxItemCard({ item }: { item: InboxItem }) {
   const key = `${item.source}:${item.id}`;
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(() => !readSet().has(key));
+  // Nur Vorgänge der letzten 30 Tage gelten als „ungelesen“ – ältere sind längst bekannt.
+  const recent = Date.now() - new Date(item.created_at).getTime() < 30 * 24 * 60 * 60 * 1000;
+  const [unread, setUnread] = useState(() => recent && !readSet().has(key));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [subject, setSubject] = useState(`Re: ${item.subject}`);
   const [body, setBody] = useState("");
