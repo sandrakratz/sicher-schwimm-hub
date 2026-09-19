@@ -199,6 +199,12 @@ function Home() {
             <MapPin className="h-4 w-4 text-accent shrink-0" aria-hidden="true" />
             {COURSE_LOCATION} – der genaue Kursort wird rechtzeitig bekannt gegeben.
           </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Sie fragen sich, was Ihr Kind für das Seepferdchen können muss?{" "}
+            <Link to="/ratgeber/seepferdchen-anforderungen" className="text-primary-deep underline underline-offset-4">
+              Alle Seepferdchen-Anforderungen im Überblick
+            </Link>
+          </p>
         </div>
       </section>
 
