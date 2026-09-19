@@ -19,17 +19,21 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
         const { queueTemplateEmail } = await import('@/lib/email-send.server')
 
-        const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+        // Erinnerung 3 Tage vor Ablauf der Zahlungsfrist
+        const inThreeDays = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10)
 
         const { data: participants, error } = await supabaseAdmin
           .from('course_participants')
           .select(
-            'id,participant_name,participant_email,price_amount,document_no,created_at,course_id,courses(name,starts_on,ends_on,course_programs(name))',
+            'id,participant_name,participant_email,price_amount,document_no,created_at,payment_due_date,course_id,courses(name,starts_on,ends_on,course_programs(name))',
           )
           .eq('online_booking', true)
           .eq('status', 'confirmed')
           .eq('paid', false)
-          .lte('created_at', cutoff)
+          .not('payment_due_date', 'is', null)
+          .lte('payment_due_date', inThreeDays)
 
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), {
@@ -68,6 +72,7 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
               course_starts_on: course?.starts_on ?? null,
               course_ends_on: course?.ends_on ?? null,
               booked_at: p.created_at,
+              payment_due_date: p.payment_due_date,
               price_amount: p.price_amount,
               document_no: p.document_no,
               payment_reference: p.document_no
