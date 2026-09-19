@@ -65,6 +65,11 @@ function KursePage() {
             Vom ersten Plantschen bis zum Goldabzeichen – wir haben den richtigen
             Kurs für jedes Alter und jedes Niveau.
           </p>
+          <p className="text-white/85 mt-4">
+            <Link to="/ratgeber/seepferdchen-anforderungen" className="underline underline-offset-4">
+              Was muss mein Kind für das Seepferdchen können?
+            </Link>
+          </p>
         </div>
       </section>
 
