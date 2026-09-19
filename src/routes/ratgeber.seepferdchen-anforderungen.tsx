@@ -189,7 +189,7 @@ function Page() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link to="/warteliste">Platz auf der Warteliste sichern</Link>
+                <Link to="/warteliste" search={{ programm: undefined }}>Platz auf der Warteliste sichern</Link>
               </Button>
             </div>
           </CardContent>
