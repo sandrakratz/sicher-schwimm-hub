@@ -106,7 +106,10 @@ function Page() {
   const showMessages = source === "all" || source === "message";
   const otherItems = (inbox ?? []).filter(i => source === "all" || i.source === source);
   // Kursanfragen und Warteliste sind immer offene Vorgänge – sie gehören zu „Neu“.
-  const showOthers = source !== "message" && (filter === "all" || filter === "new");
+  // Wird gezielt nach diesen Quellen gefiltert, gilt der Status-Filter nicht (er ist dann deaktiviert).
+  const showOthers = source === "course-request" || source === "waitlist"
+    ? true
+    : source !== "message" && (filter === "all" || filter === "new");
 
   // Alles gemeinsam nach Datum sortieren, wenn „Alle“ gewählt ist
   const combined: Array<{ when: string; node: React.ReactNode }> = [];

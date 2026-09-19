@@ -34,19 +34,16 @@ export function MediaUploadField({ folder, value, mime, alt, onChange, onAltChan
     const path = `${folder}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
     const { error } = await supabase.storage.from("media").upload(path, f, { upsert: false, contentType: f.type });
     if (error) { setBusy(false); return toast.error(error.message); }
-    const old = value;
+    // Alte Datei bleibt bestehen, bis gespeichert wird – sonst wäre sie beim Abbrechen verloren.
     onChange({ image_url: path, image_mime: f.type });
-    if (old) await supabase.storage.from("media").remove([old]);
     setBusy(false);
     toast.success("Datei hochgeladen");
   }
 
-  async function removeFile() {
+  function removeFile() {
     if (!value) return;
-    setBusy(true);
-    await supabase.storage.from("media").remove([value]);
+    // Nur aus dem Formular entfernen; endgültig gelöscht wird erst beim Speichern.
     onChange({ image_url: null, image_mime: null });
-    setBusy(false);
   }
 
   return (
