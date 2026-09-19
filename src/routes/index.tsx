@@ -62,7 +62,7 @@ function Home() {
       <section className="relative overflow-hidden bg-hero text-white">
         <img
           src={heroPool}
-          alt=""
+          alt="Ruhiges Schwimmbecken eines Hallenbads mit klarem blauem Wasser und Bahnenmarkierungen"
           className="absolute inset-0 h-full w-full object-cover opacity-25"
           width={1920}
           height={1280}
