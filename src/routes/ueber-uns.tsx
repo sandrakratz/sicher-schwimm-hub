@@ -37,7 +37,7 @@ function Page() {
 
       <section className="container mx-auto px-4 py-16 grid lg:grid-cols-2 gap-12 items-center">
         <div>
-          <img src={parentChild} alt="" className="rounded-3xl shadow-card" width={1024} height={768} loading="lazy" />
+          <img src={parentChild} alt="Elternteil begleitet ein Kind beim Schwimmenlernen im Wasser und hält es sicher fest" className="rounded-3xl shadow-card" width={1024} height={768} loading="lazy" />
           <AiImageNotice className="mt-4" />
         </div>
 
