@@ -31,6 +31,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WartelisteAntwortRouteImport } from './routes/warteliste_.antwort'
+import { Route as RatgeberSeepferdchenAnforderungenRouteImport } from './routes/ratgeber.seepferdchen-anforderungen'
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
@@ -183,6 +184,12 @@ const WartelisteAntwortRoute = WartelisteAntwortRouteImport.update({
   path: '/warteliste/antwort',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RatgeberSeepferdchenAnforderungenRoute =
+  RatgeberSeepferdchenAnforderungenRouteImport.update({
+    id: '/ratgeber/seepferdchen-anforderungen',
+    path: '/ratgeber/seepferdchen-anforderungen',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const KurseSlugRoute = KurseSlugRouteImport.update({
   id: '/kurse_/$slug',
   path: '/kurse/$slug',
@@ -447,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
+  '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
   '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -511,6 +519,7 @@ export interface FileRoutesByTo {
   '/widerruf': typeof WiderrufRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
+  '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
   '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -578,6 +587,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse_/$slug': typeof KurseSlugRoute
+  '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
   '/warteliste_/antwort': typeof WartelisteAntwortRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
@@ -645,6 +655,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/email/unsubscribe'
     | '/kurse/$slug'
+    | '/ratgeber/seepferdchen-anforderungen'
     | '/warteliste/antwort'
     | '/admin/anfragen'
     | '/admin/audit'
@@ -709,6 +720,7 @@ export interface FileRouteTypes {
     | '/widerruf'
     | '/email/unsubscribe'
     | '/kurse/$slug'
+    | '/ratgeber/seepferdchen-anforderungen'
     | '/warteliste/antwort'
     | '/admin/anfragen'
     | '/admin/audit'
@@ -775,6 +787,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/email/unsubscribe'
     | '/kurse_/$slug'
+    | '/ratgeber/seepferdchen-anforderungen'
     | '/warteliste_/antwort'
     | '/_authenticated/admin/anfragen'
     | '/_authenticated/admin/audit'
@@ -841,6 +854,7 @@ export interface RootRouteChildren {
   WiderrufRoute: typeof WiderrufRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
+  RatgeberSeepferdchenAnforderungenRoute: typeof RatgeberSeepferdchenAnforderungenRoute
   WartelisteAntwortRoute: typeof WartelisteAntwortRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
@@ -1008,6 +1022,13 @@ declare module '@tanstack/react-router' {
       path: '/warteliste/antwort'
       fullPath: '/warteliste/antwort'
       preLoaderRoute: typeof WartelisteAntwortRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ratgeber/seepferdchen-anforderungen': {
+      id: '/ratgeber/seepferdchen-anforderungen'
+      path: '/ratgeber/seepferdchen-anforderungen'
+      fullPath: '/ratgeber/seepferdchen-anforderungen'
+      preLoaderRoute: typeof RatgeberSeepferdchenAnforderungenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kurse_/$slug': {
@@ -1415,6 +1436,8 @@ const rootRouteChildren: RootRouteChildren = {
   WiderrufRoute: WiderrufRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
+  RatgeberSeepferdchenAnforderungenRoute:
+    RatgeberSeepferdchenAnforderungenRoute,
   WartelisteAntwortRoute: WartelisteAntwortRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
