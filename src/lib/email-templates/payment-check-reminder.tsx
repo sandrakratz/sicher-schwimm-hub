@@ -13,6 +13,7 @@ interface Props {
   course_starts_on?: string | null
   course_ends_on?: string | null
   booked_at?: string | null
+  payment_due_date?: string | null
   price_amount?: number | null
   document_no?: string | null
   payment_reference?: string | null
@@ -41,8 +42,8 @@ const Email = (p: Props) => (
       <Container style={{ padding: '24px', maxWidth: '600px' }}>
         <Heading style={{ color: '#0c4a6e', fontSize: '20px' }}>Bitte Geldeingang prüfen</Heading>
         <Text>
-          Die verbindliche Buchung liegt 14 Tage zurück und ist im Adminbereich noch nicht als bezahlt markiert.
-          Bitte prüfen Sie den Geldeingang auf dem Vereinskonto.
+          Die Zahlungsfrist dieser verbindlichen Buchung läuft in den nächsten 3 Tagen ab und die Buchung ist
+          im Adminbereich noch nicht als bezahlt markiert. Bitte prüfen Sie den Geldeingang auf dem Vereinskonto.
         </Text>
         <Hr />
         <Section style={{ backgroundColor: '#f0f9ff', padding: '14px 16px', borderRadius: '8px' }}>
@@ -54,6 +55,10 @@ const Email = (p: Props) => (
           <Line label="Kursangebot:" value={p.program_name || '—'} />
           <Line label="Kurszeitraum:" value={p.course_name || '—'} />
           <Line label="Gebucht am:" value={p.booked_at ? formatDateBerlin(p.booked_at) : '—'} />
+          <Line
+            label="Zahlungsfrist:"
+            value={p.payment_due_date ? formatDateBerlin(p.payment_due_date) : '—'}
+          />
           <Line label="Betrag:" value={formatEuro(p.price_amount ?? null)} />
           <Line label="Dokument-Nr.:" value={p.document_no || '—'} />
           <Line label="Verwendungszweck:" value={p.payment_reference || '—'} />
@@ -77,7 +82,7 @@ export const template = {
     `Geldeingang prüfen – ${d.child_name || 'Teilnehmer/in'}${
       d.course_starts_on ? ` (Kursbeginn ${formatDateBerlin(d.course_starts_on)})` : ''
     }`,
-  displayName: 'Zahlungsprüfung 14 Tage nach Buchung (Admin)',
+  displayName: 'Zahlungsprüfung 3 Tage vor Ablauf der Zahlungsfrist (Admin)',
   to: 'info@sicher-schwimmen.com',
   previewData: {
     child_name: 'Max Beispiel',
@@ -87,6 +92,7 @@ export const template = {
     course_name: 'Seepferdchen Kurhaus Oktober 2026',
     course_starts_on: '2026-10-11',
     booked_at: '2026-08-04',
+    payment_due_date: '2026-09-22',
     price_amount: 200,
     document_no: 'SK-2026-00123',
     payment_reference: 'SK-2026-00123 / Max Beispiel',
