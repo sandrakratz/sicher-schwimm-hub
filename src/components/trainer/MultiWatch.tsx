@@ -55,6 +55,8 @@ export function MultiWatch({
   const [elapsed, setElapsed] = useState(0);
   const [laps, setLaps] = useState<Record<string, SwimStyle[]>>({});
   const [stopped, setStopped] = useState<Record<string, number>>({});
+  // Zwischenzeit: wann die Pflichtstrecke erreicht war (Uhr läuft weiter).
+  const [splits, setSplits] = useState<Record<string, number>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const startRef = useRef<number | null>(null);
   const wakeRef = useRef<WakeLockLike | null>(null);
