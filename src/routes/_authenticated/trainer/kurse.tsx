@@ -142,7 +142,7 @@ function Page() {
 
             {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
             <div className="space-y-2 px-4 pb-4 sm:px-6">
-              <h3 className="text-sm font-semibold">Anwesenheit</h3>
+              <h3 className="text-sm font-semibold">Anwesenheit &amp; Zeitnahme</h3>
               <Tabs defaultValue="kinder">
                 <TabsList>
                   <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
