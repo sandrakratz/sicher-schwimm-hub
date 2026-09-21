@@ -18,6 +18,7 @@ import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard, ParticipantDetails } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
+import { MultiWatch } from "@/components/trainer/MultiWatch";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -141,10 +142,11 @@ function Page() {
 
             {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
             <div className="space-y-2 px-4 pb-4 sm:px-6">
-              <h3 className="text-sm font-semibold">Anwesenheit</h3>
+              <h3 className="text-sm font-semibold">Anwesenheit &amp; Zeitnahme</h3>
               <Tabs defaultValue="kinder">
                 <TabsList>
                   <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
+                  <TabsTrigger value="zeitnahme">Zeitnahme</TabsTrigger>
                   <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
                 </TabsList>
                 <TabsContent value="kinder" className="mt-3">
@@ -169,6 +171,31 @@ function Page() {
                         />
                       );
                     }}
+                  />
+                </TabsContent>
+                <TabsContent value="zeitnahme" className="mt-3">
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Bis zu 4 Kinder gleichzeitig stoppen und die Bahnen je Lage zählen.
+                  </p>
+                  <MultiWatch
+                    location={c.location}
+                    participants={c.participants
+                      .filter(p => p.status !== "cancelled")
+                      .map(p => ({
+                        id: p.id,
+                        name: p.name || "—",
+                        no: beltNo.get(p.id) ?? null,
+                        result: {
+                          goal_reached: p.goal_reached,
+                          badge: p.badge,
+                          achievement: p.achievement,
+                          exam_level: p.exam_level,
+                          exam_criteria: p.exam_criteria,
+                          exam_date: p.exam_date,
+                          exam_pass_no: p.exam_pass_no,
+                        },
+                      }))}
+                    onSaved={applyResult}
                   />
                 </TabsContent>
                 <TabsContent value="trainer" className="mt-3">
