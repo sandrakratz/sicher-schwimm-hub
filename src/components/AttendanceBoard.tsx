@@ -45,11 +45,16 @@ export function AttendanceBoard({
   courseId,
   participants,
   readOnly = false,
+  renderDetails,
 }: {
   courseId: string;
   participants?: AttendanceParticipant[];
   readOnly?: boolean;
+  /** Details zum Kind, die beim Klick auf den Namen aufklappen. */
+  renderDetails?: (participantId: string) => ReactNode;
 }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const toggleOpen = (id: string) => setOpenId(v => (v === id ? null : id));
   const load = useServerFn(listCourseAttendance);
   const save = useServerFn(setAttendance);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
