@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -43,11 +45,16 @@ export function AttendanceBoard({
   courseId,
   participants,
   readOnly = false,
+  renderDetails,
 }: {
   courseId: string;
   participants?: AttendanceParticipant[];
   readOnly?: boolean;
+  /** Details zum Kind, die beim Klick auf den Namen aufklappen. */
+  renderDetails?: (participantId: string) => ReactNode;
 }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const toggleOpen = (id: string) => setOpenId(v => (v === id ? null : id));
   const load = useServerFn(listCourseAttendance);
   const save = useServerFn(setAttendance);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
@@ -187,10 +194,28 @@ export function AttendanceBoard({
           return (
             <div key={p.id} className="rounded-lg border p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center truncate text-sm font-semibold">
-                  <BeltNo no={p.no} />
-                  <span className="truncate">{p.name}</span>
-                </span>
+                {renderDetails ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleOpen(p.id)}
+                    aria-expanded={openId === p.id}
+                    className="flex min-h-11 min-w-0 flex-1 items-center text-left text-sm font-semibold"
+                  >
+                    <BeltNo no={p.no} />
+                    <span className="truncate">{p.name}</span>
+                    <ChevronDown
+                      className={cn(
+                        "ml-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                        openId === p.id && "rotate-180",
+                      )}
+                    />
+                  </button>
+                ) : (
+                  <span className="flex min-w-0 items-center truncate text-sm font-semibold">
+                    <BeltNo no={p.no} />
+                    <span className="truncate">{p.name}</span>
+                  </span>
+                )}
 
                 {rec && (
                   <span className="shrink-0 text-[11px] text-muted-foreground">
@@ -224,6 +249,9 @@ export function AttendanceBoard({
                   }}
                 />
               )}
+              {renderDetails && openId === p.id && (
+                <div className="mt-3 border-t pt-3">{renderDetails(p.id)}</div>
+              )}
             </div>
           );
         })}
@@ -248,9 +276,28 @@ export function AttendanceBoard({
           {people.map(p => {
             const rec = byParticipant.get(p.id);
             return (
-              <TableRow key={p.id}>
+              <Fragment key={p.id}>
+              <TableRow>
                 <TableCell className="font-medium">
-                  <span className="flex items-center"><BeltNo no={p.no} />{p.name}</span>
+                  {renderDetails ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleOpen(p.id)}
+                      aria-expanded={openId === p.id}
+                      className="flex items-center text-left hover:underline"
+                    >
+                      <BeltNo no={p.no} />
+                      {p.name}
+                      <ChevronDown
+                        className={cn(
+                          "ml-1 h-4 w-4 text-muted-foreground transition-transform",
+                          openId === p.id && "rotate-180",
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <span className="flex items-center"><BeltNo no={p.no} />{p.name}</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
@@ -291,6 +338,12 @@ export function AttendanceBoard({
                   )}
                 </TableCell>
               </TableRow>
+              {renderDetails && openId === p.id && (
+                <TableRow>
+                  <TableCell colSpan={4} className="bg-muted/30">{renderDetails(p.id)}</TableCell>
+                </TableRow>
+              )}
+              </Fragment>
             );
           })}
         </TableBody>

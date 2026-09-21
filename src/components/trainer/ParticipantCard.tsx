@@ -30,6 +30,74 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Storniert",
 };
 
+/** Detailangaben zu einem Kind (Kontakt, Hinweise, Zahlung, Prüfungsnachweis). */
+export function ParticipantDetails({
+  p,
+  showPayment = true,
+  editablePhone = false,
+  onPhoneSaved,
+  editableResult = false,
+  onResultSaved,
+}: {
+  p: ParticipantCardData;
+  showPayment?: boolean;
+  editablePhone?: boolean;
+  onPhoneSaved?: (participantId: string, phone: string | null) => void;
+  editableResult?: boolean;
+  onResultSaved?: (participantId: string, result: ParticipantResult) => void;
+}) {
+  return (
+    <div className="space-y-2 text-sm">
+      <div className="text-xs text-muted-foreground">
+        Geburtsdatum: {p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "unbekannt"}
+        {" · "}Status: {STATUS_LABEL[p.status] || p.status}
+      </div>
+      {editablePhone ? (
+        <PhoneEditor participantId={p.id} phone={p.phone} onSaved={phone => onPhoneSaved?.(p.id, phone)} />
+      ) : (
+        p.phone && (
+          <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2 text-primary">
+            <Phone className="h-4 w-4" /> {p.phone}
+          </a>
+        )
+      )}
+      {p.email && (
+        <a href={`mailto:${p.email}`} className="flex min-h-11 items-center gap-2 break-all text-primary">
+          <Mail className="h-4 w-4 shrink-0" /> {p.email}
+        </a>
+      )}
+      {p.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{p.notes}</p>}
+      {showPayment && (
+        <div>
+          {p.paid ? (
+            <Badge className="border-transparent bg-green-600 text-white">bezahlt</Badge>
+          ) : (
+            <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
+          )}
+        </div>
+      )}
+      {editableResult && (
+        <div className="border-t pt-3">
+          <p className="mb-2 text-xs font-semibold">Prüfungsnachweis</p>
+          <ParticipantResultEditor
+            participantId={p.id}
+            value={{
+              goal_reached: p.goal_reached ?? null,
+              badge: p.badge ?? null,
+              achievement: p.achievement ?? null,
+              exam_level: p.exam_level ?? null,
+              exam_criteria: p.exam_criteria ?? {},
+              exam_date: p.exam_date ?? null,
+              exam_pass_no: p.exam_pass_no ?? null,
+            }}
+            onSaved={onResultSaved}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Kompakte Teilnehmer-Karte für kleine Displays. */
 export function ParticipantCard({
   p,
@@ -79,53 +147,15 @@ export function ParticipantCard({
       </button>
 
       {open && (
-        <div className="space-y-2 px-4 pb-4 text-sm">
-          {editablePhone ? (
-            <PhoneEditor
-              participantId={p.id}
-              phone={p.phone}
-              onSaved={phone => onPhoneSaved?.(p.id, phone)}
-            />
-          ) : (
-            p.phone && (
-              <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2 text-primary">
-                <Phone className="h-4 w-4" /> {p.phone}
-              </a>
-            )
-          )}
-          {p.email && (
-            <a href={`mailto:${p.email}`} className="flex min-h-11 items-center gap-2 break-all text-primary">
-              <Mail className="h-4 w-4 shrink-0" /> {p.email}
-            </a>
-          )}
-          {p.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{p.notes}</p>}
-          {showPayment && (
-            <div>
-              {p.paid ? (
-                <Badge className="border-transparent bg-green-600 text-white">bezahlt</Badge>
-              ) : (
-                <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
-              )}
-            </div>
-          )}
-          {editableResult && (
-            <div className="border-t pt-3">
-              <p className="mb-2 text-xs font-semibold">Prüfungsnachweis</p>
-              <ParticipantResultEditor
-                participantId={p.id}
-                value={{
-                  goal_reached: p.goal_reached ?? null,
-                  badge: p.badge ?? null,
-                  achievement: p.achievement ?? null,
-                  exam_level: p.exam_level ?? null,
-                  exam_criteria: p.exam_criteria ?? {},
-                  exam_date: p.exam_date ?? null,
-                  exam_pass_no: p.exam_pass_no ?? null,
-                }}
-                onSaved={onResultSaved}
-              />
-            </div>
-          )}
+        <div className="px-4 pb-4">
+          <ParticipantDetails
+            p={p}
+            showPayment={showPayment}
+            editablePhone={editablePhone}
+            onPhoneSaved={onPhoneSaved}
+            editableResult={editableResult}
+            onResultSaved={onResultSaved}
+          />
         </div>
       )}
     </div>

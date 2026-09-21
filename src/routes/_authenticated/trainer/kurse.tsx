@@ -5,7 +5,6 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listMyTrainerCourses,
@@ -16,10 +15,9 @@ import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
-import { ParticipantCard } from "@/components/trainer/ParticipantCard";
+import { ParticipantCard, ParticipantDetails } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
-import { PhoneEditor } from "@/components/trainer/PhoneEditor";
-import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
+import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -39,11 +37,6 @@ export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   }),
 });
 
-const STATUS_LABEL: Record<string, string> = {
-  confirmed: "Bestätigt",
-  waiting: "Warteliste",
-  cancelled: "Storniert",
-};
 
 function Page() {
   const [courses, setCourses] = useState<TrainerCourse[]>([]);
@@ -155,11 +148,27 @@ function Page() {
                   <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
                 </TabsList>
                 <TabsContent value="kinder" className="mt-3">
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den Prüfungsnachweis zu öffnen.
+                  </p>
                   <AttendanceBoard
                     courseId={c.id}
                     participants={c.participants
                       .filter(p => p.status !== "cancelled")
                       .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
+                    renderDetails={id => {
+                      const p = c.participants.find(x => x.id === id);
+                      if (!p) return null;
+                      return (
+                        <ParticipantDetails
+                          p={p}
+                          editablePhone
+                          onPhoneSaved={applyPhone}
+                          editableResult
+                          onResultSaved={applyResult}
+                        />
+                      );
+                    }}
                   />
                 </TabsContent>
                 <TabsContent value="trainer" className="mt-3">
@@ -171,88 +180,16 @@ function Page() {
               </Tabs>
             </div>
 
-            <div className="border-t pt-2 md:hidden">
-              <h3 className="px-4 py-2 text-sm font-semibold">Teilnehmende</h3>
-              {c.participants.length === 0 && (
-                <p className="px-4 pb-4 text-sm text-muted-foreground">Noch keine Teilnehmenden.</p>
-              )}
-              {c.participants.map(p => (
-                <ParticipantCard
-                  key={p.id}
-                  p={p}
-                  no={beltNo.get(p.id) ?? null}
-                  editablePhone
-                  onPhoneSaved={applyPhone}
-                  editableResult
-                  onResultSaved={applyResult}
-                />
-              ))}
-            </div>
-
-            <div className="hidden border-t md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">Nr.</TableHead>
-                    <TableHead>Kind</TableHead>
-                    <TableHead>Geburtsdatum</TableHead>
-                    <TableHead>Kontakt Eltern</TableHead>
-                    <TableHead>Hinweise</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Zahlung</TableHead>
-                    <TableHead className="w-[22rem]">Kursergebnis</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {c.participants.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-muted-foreground">Noch keine Teilnehmenden.</TableCell></TableRow>
-                  )}
-                  {c.participants.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="text-xs text-muted-foreground">{beltNo.get(p.id) ?? "—"}</TableCell>
-                      <TableCell className="font-medium">{p.name || "—"}</TableCell>
-                      <TableCell>{p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "—"}</TableCell>
-                      <TableCell className="text-xs">
-                        <div>{p.email || "—"}</div>
-                        <div className="mt-1">
-                          <PhoneEditor
-                            participantId={p.id}
-                            phone={p.phone}
-                            onSaved={phone => applyPhone(p.id, phone)}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-[16rem] whitespace-pre-wrap text-xs">{p.notes || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{STATUS_LABEL[p.status] || p.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {p.paid ? (
-                          <Badge className="border-transparent bg-green-600 text-white">bezahlt</Badge>
-                        ) : (
-                          <Badge className="border-transparent bg-amber-100 text-amber-900">offen</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="align-top">
-                        <ParticipantResultEditor
-                          participantId={p.id}
-                          value={{
-                            goal_reached: p.goal_reached ?? null,
-                            badge: p.badge ?? null,
-                            achievement: p.achievement ?? null,
-                            exam_level: p.exam_level ?? null,
-                            exam_criteria: p.exam_criteria ?? {},
-                            exam_date: p.exam_date ?? null,
-                            exam_pass_no: p.exam_pass_no ?? null,
-                          }}
-                          onSaved={applyResult}
-                        />
-                      </TableCell>
-                    </TableRow>
+            {c.participants.some(p => p.status === "cancelled") && (
+              <div className="border-t pt-2">
+                <h3 className="px-4 py-2 text-sm font-semibold text-muted-foreground">Stornierte Anmeldungen</h3>
+                {c.participants
+                  .filter(p => p.status === "cancelled")
+                  .map(p => (
+                    <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
                   ))}
-                </TableBody>
-              </Table>
-            </div>
+              </div>
+            )}
         </CollapsibleCard>
         );
       })}
