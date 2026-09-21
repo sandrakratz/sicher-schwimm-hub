@@ -37,11 +37,6 @@ export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   }),
 });
 
-const STATUS_LABEL: Record<string, string> = {
-  confirmed: "Bestätigt",
-  waiting: "Warteliste",
-  cancelled: "Storniert",
-};
 
 function Page() {
   const [courses, setCourses] = useState<TrainerCourse[]>([]);
