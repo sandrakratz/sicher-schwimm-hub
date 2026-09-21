@@ -98,9 +98,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
     criteria: [
       {
         key: "800m",
-        label: "800 m Schwimmen in höchstens 30 Minuten (650 m Bauch-/Rückenlage, 150 m andere Lage)",
-        valueLabel: "Zeit",
+        label:
+          "30 Minuten Dauerschwimmen, dabei mindestens 800 m (650 m Bauch-/Rückenlage, 150 m andere Lage)",
+        valueLabel: "Zeit bei 800 m",
         valuePlaceholder: "z. B. 27:10",
+        totalLabel: "Gesamt in 30 Min.",
+        totalPlaceholder: "z. B. 66 Bahnen (825 m)",
       },
       {
         key: "50m_brust",
