@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { exportExamProtocol } from "@/lib/trainer-courses.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -225,6 +226,8 @@ function Page() {
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
   const [exportingConf, setExportingConf] = useState<string | null>(null);
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
+  const exportProtocolFn = useServerFn(exportExamProtocol);
+  const [exportingProtocol, setExportingProtocol] = useState<string | null>(null);
   const [exportingCsv, setExportingCsv] = useState<string | null>(null);
   const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
   const remindFn = useServerFn(sendPaymentReminders);
@@ -404,6 +407,27 @@ function Page() {
       toast.error(e?.message || "Export fehlgeschlagen");
     } finally {
       setExportingConf(null);
+    }
+  }
+
+  // Prüfungsprotokoll nach DPO für die Vereinsakte.
+  async function exportProtocol(c: Course) {
+    setExportingProtocol(c.id);
+    try {
+      const res = await exportProtocolFn({ data: { courseId: c.id } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url; a.download = res.filename;
+      document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+      toast.success("Prüfungsprotokoll erstellt");
+    } catch (e: any) {
+      toast.error(e?.message || "Export fehlgeschlagen");
+    } finally {
+      setExportingProtocol(null);
     }
   }
 
@@ -832,6 +856,13 @@ function Page() {
             title="Kursbestätigungen einzeln als ZIP"
             onClick={() => exportConfirmations(c, "zip")}
           ><FileArchive className="h-4 w-4" /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "ZIP"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={exportingProtocol === c.id}
+            title="Prüfungsprotokoll nach DPO für die Vereinsakte"
+            onClick={() => exportProtocol(c)}
+          ><FileText className="h-4 w-4" /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll"}</Button>
           <Button
             variant="ghost"
             size="sm"

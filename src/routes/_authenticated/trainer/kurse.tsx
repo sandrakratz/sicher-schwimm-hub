@@ -3,10 +3,15 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
-import { listMyTrainerCourses, type TrainerCourse } from "@/lib/trainer-courses.functions";
+import {
+  listMyTrainerCourses,
+  exportExamProtocol,
+  type TrainerCourse,
+} from "@/lib/trainer-courses.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
@@ -63,6 +68,30 @@ function Page() {
     );
   };
 
+  const exportProtocol = useServerFn(exportExamProtocol);
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  // Prüfungsprotokoll nach DPO als PDF für die Vereinsakte herunterladen.
+  async function downloadProtocol(courseId: string) {
+    setExporting(courseId);
+    try {
+      const res = await exportProtocol({ data: { courseId } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message || "Export fehlgeschlagen");
+    } finally {
+      setExporting(null);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -106,6 +135,17 @@ function Page() {
           meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
           contentClassName="px-0"
         >
+            <div className="px-4 pb-2 sm:px-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadProtocol(c.id)}
+                disabled={exporting === c.id}
+              >
+                {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
+              </Button>
+            </div>
+
             {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
             <div className="space-y-2 px-4 pb-4 sm:px-6">
               <h3 className="text-sm font-semibold">Anwesenheit</h3>
@@ -200,6 +240,10 @@ function Page() {
                             goal_reached: p.goal_reached ?? null,
                             badge: p.badge ?? null,
                             achievement: p.achievement ?? null,
+                            exam_level: p.exam_level ?? null,
+                            exam_criteria: p.exam_criteria ?? {},
+                            exam_date: p.exam_date ?? null,
+                            exam_pass_no: p.exam_pass_no ?? null,
                           }}
                           onSaved={applyResult}
                         />
