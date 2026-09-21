@@ -155,11 +155,27 @@ function Page() {
                   <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
                 </TabsList>
                 <TabsContent value="kinder" className="mt-3">
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den Prüfungsnachweis zu öffnen.
+                  </p>
                   <AttendanceBoard
                     courseId={c.id}
                     participants={c.participants
                       .filter(p => p.status !== "cancelled")
                       .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
+                    renderDetails={id => {
+                      const p = c.participants.find(x => x.id === id);
+                      if (!p) return null;
+                      return (
+                        <ParticipantDetails
+                          p={p}
+                          editablePhone
+                          onPhoneSaved={applyPhone}
+                          editableResult
+                          onResultSaved={applyResult}
+                        />
+                      );
+                    }}
                   />
                 </TabsContent>
                 <TabsContent value="trainer" className="mt-3">
