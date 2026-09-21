@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { ExamCriteriaState } from "@/lib/swim-exams";
 
 export type TrainerParticipant = {
   id: string;
@@ -13,6 +14,10 @@ export type TrainerParticipant = {
   goal_reached: boolean | null;
   badge: string | null;
   achievement: string | null;
+  exam_level: string | null;
+  exam_criteria: ExamCriteriaState;
+  exam_date: string | null;
+  exam_pass_no: string | null;
 };
 
 export type TrainerCourse = {
