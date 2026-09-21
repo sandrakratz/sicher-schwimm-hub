@@ -249,6 +249,9 @@ export function AttendanceBoard({
                   }}
                 />
               )}
+              {renderDetails && openId === p.id && (
+                <div className="mt-3 border-t pt-3">{renderDetails(p.id)}</div>
+              )}
             </div>
           );
         })}
