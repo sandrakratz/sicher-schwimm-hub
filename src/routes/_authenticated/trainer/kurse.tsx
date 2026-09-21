@@ -135,6 +135,17 @@ function Page() {
           meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
           contentClassName="px-0"
         >
+            <div className="px-4 pb-2 sm:px-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadProtocol(c.id)}
+                disabled={exporting === c.id}
+              >
+                {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
+              </Button>
+            </div>
+
             {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
             <div className="space-y-2 px-4 pb-4 sm:px-6">
               <h3 className="text-sm font-semibold">Anwesenheit</h3>
