@@ -265,7 +265,11 @@ export function MultiWatch({
 
       {/* Spalten pro Kind */}
       {chosen.length > 0 && (
-        <div className={`grid gap-3 ${chosen.length > 1 ? "grid-cols-2" : "grid-cols-1"} lg:grid-cols-${Math.min(chosen.length, 4)}`}>
+        <div
+          className={`grid gap-3 ${chosen.length > 1 ? "grid-cols-2" : "grid-cols-1"} ${
+            chosen.length >= 4 ? "lg:grid-cols-4" : chosen.length === 3 ? "lg:grid-cols-3" : ""
+          }`}
+        >
           {chosen.map(p => {
             const s = statsFor(p.id);
             return (
