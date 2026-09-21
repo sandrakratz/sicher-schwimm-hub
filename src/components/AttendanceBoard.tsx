@@ -276,9 +276,28 @@ export function AttendanceBoard({
           {people.map(p => {
             const rec = byParticipant.get(p.id);
             return (
+              <>
               <TableRow key={p.id}>
                 <TableCell className="font-medium">
-                  <span className="flex items-center"><BeltNo no={p.no} />{p.name}</span>
+                  {renderDetails ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleOpen(p.id)}
+                      aria-expanded={openId === p.id}
+                      className="flex items-center text-left hover:underline"
+                    >
+                      <BeltNo no={p.no} />
+                      {p.name}
+                      <ChevronDown
+                        className={cn(
+                          "ml-1 h-4 w-4 text-muted-foreground transition-transform",
+                          openId === p.id && "rotate-180",
+                        )}
+                      />
+                    </button>
+                  ) : (
+                    <span className="flex items-center"><BeltNo no={p.no} />{p.name}</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
