@@ -18,6 +18,10 @@ export type ParticipantCardData = {
   goal_reached?: boolean | null;
   badge?: string | null;
   achievement?: string | null;
+  exam_level?: string | null;
+  exam_criteria?: Record<string, { done?: boolean; value?: string | null }>;
+  exam_date?: string | null;
+  exam_pass_no?: string | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
