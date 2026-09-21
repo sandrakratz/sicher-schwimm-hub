@@ -5,7 +5,6 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listMyTrainerCourses,
