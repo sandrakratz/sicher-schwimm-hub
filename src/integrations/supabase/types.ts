@@ -211,6 +211,12 @@ export type Database = {
           date_of_birth: string | null
           document_issued_at: string | null
           document_no: string | null
+          exam_criteria: Json
+          exam_date: string | null
+          exam_level: string | null
+          exam_pass_no: string | null
+          exam_recorded_at: string | null
+          exam_recorded_by: string | null
           goal_reached: boolean | null
           id: string
           is_member: boolean | null
@@ -246,6 +252,12 @@ export type Database = {
           date_of_birth?: string | null
           document_issued_at?: string | null
           document_no?: string | null
+          exam_criteria?: Json
+          exam_date?: string | null
+          exam_level?: string | null
+          exam_pass_no?: string | null
+          exam_recorded_at?: string | null
+          exam_recorded_by?: string | null
           goal_reached?: boolean | null
           id?: string
           is_member?: boolean | null
@@ -281,6 +293,12 @@ export type Database = {
           date_of_birth?: string | null
           document_issued_at?: string | null
           document_no?: string | null
+          exam_criteria?: Json
+          exam_date?: string | null
+          exam_level?: string | null
+          exam_pass_no?: string | null
+          exam_recorded_at?: string | null
+          exam_recorded_by?: string | null
           goal_reached?: boolean | null
           id?: string
           is_member?: boolean | null
