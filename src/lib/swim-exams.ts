@@ -79,9 +79,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
       { key: "sprung_kopf", label: "Sprung kopfwärts vom Beckenrand" },
       {
         key: "400m",
-        label: "400 m Schwimmen in höchstens 25 Minuten (300 m Bauch-/Rückenlage, 100 m andere Lage)",
-        valueLabel: "Zeit",
-        valuePlaceholder: "z. B. 21:30",
+        label:
+          "20 Minuten Dauerschwimmen, dabei mindestens 400 m (300 m Bauch-/Rückenlage, 100 m andere Lage)",
+        valueLabel: "Zeit bei 400 m",
+        valuePlaceholder: "z. B. 17:30",
+        totalLabel: "Gesamt in 20 Min.",
+        totalPlaceholder: "z. B. 34 Bahnen (425 m)",
       },
       { key: "tieftauchen", label: "2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes" },
       { key: "strecke_10m", label: "10 m Streckentauchen mit Abstoßen vom Beckenrand" },
