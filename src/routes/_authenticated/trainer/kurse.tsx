@@ -15,10 +15,9 @@ import { formatDateBerlin } from "@/lib/format";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
-import { ParticipantCard } from "@/components/trainer/ParticipantCard";
+import { ParticipantCard, ParticipantDetails } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
-import { PhoneEditor } from "@/components/trainer/PhoneEditor";
-import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
+import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
