@@ -86,7 +86,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
 
     const { data: parts } = await supabaseAdmin
       .from("course_participants")
-      .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement")
+      .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no")
       .in("course_id", ids)
       .neq("status", "cancelled")
       .order("participant_name", { ascending: true });
