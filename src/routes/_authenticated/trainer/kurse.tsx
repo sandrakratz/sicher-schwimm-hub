@@ -172,6 +172,31 @@ function Page() {
                     }}
                   />
                 </TabsContent>
+                <TabsContent value="zeitnahme" className="mt-3">
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Bis zu 4 Kinder gleichzeitig stoppen und die Bahnen je Lage zählen.
+                  </p>
+                  <MultiWatch
+                    location={c.location}
+                    participants={c.participants
+                      .filter(p => p.status !== "cancelled")
+                      .map(p => ({
+                        id: p.id,
+                        name: p.name || "—",
+                        no: beltNo.get(p.id) ?? null,
+                        result: {
+                          goal_reached: p.goal_reached,
+                          badge: p.badge,
+                          achievement: p.achievement,
+                          exam_level: p.exam_level,
+                          exam_criteria: p.exam_criteria,
+                          exam_date: p.exam_date,
+                          exam_pass_no: p.exam_pass_no,
+                        },
+                      }))}
+                    onSaved={applyResult}
+                  />
+                </TabsContent>
                 <TabsContent value="trainer" className="mt-3">
                   <p className="mb-2 text-xs text-muted-foreground">
                     Dein eigener Nachweis für die Übungsleiterpauschale.
