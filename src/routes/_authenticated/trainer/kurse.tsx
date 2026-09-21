@@ -18,6 +18,7 @@ import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard, ParticipantDetails } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
+import { MultiWatch } from "@/components/trainer/MultiWatch";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
