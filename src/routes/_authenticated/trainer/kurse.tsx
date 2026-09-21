@@ -146,6 +146,7 @@ function Page() {
               <Tabs defaultValue="kinder">
                 <TabsList>
                   <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
+                  <TabsTrigger value="zeitnahme">Zeitnahme</TabsTrigger>
                   <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
                 </TabsList>
                 <TabsContent value="kinder" className="mt-3">
