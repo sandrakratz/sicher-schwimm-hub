@@ -325,8 +325,16 @@ export function MultiWatch({
                     <div className={s.rueckenOk ? "text-green-700" : ""}>Rücken {s.ruecken}/{rueckenLaps}</div>
                   </div>
                 )}
+                {s.split != null && (
+                  <div className="mt-1 text-xs font-medium text-green-700">
+                    Mindeststrecke bei {formatClock(s.split)}
+                    {discipline.minDurationSec && !s.durationOk
+                      ? ` – weiter bis ${formatClock(discipline.minDurationSec)}`
+                      : ""}
+                  </div>
+                )}
                 {stopped[p.id] != null && (
-                  <div className="mt-1 text-xs font-medium">Zeit: {formatClock(stopped[p.id]!)}</div>
+                  <div className="mt-1 text-xs font-medium">Endzeit: {formatClock(stopped[p.id]!)}</div>
                 )}
 
                 <div className="mt-2 space-y-1">
