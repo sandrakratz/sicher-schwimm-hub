@@ -194,10 +194,28 @@ export function AttendanceBoard({
           return (
             <div key={p.id} className="rounded-lg border p-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center truncate text-sm font-semibold">
-                  <BeltNo no={p.no} />
-                  <span className="truncate">{p.name}</span>
-                </span>
+                {renderDetails ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleOpen(p.id)}
+                    aria-expanded={openId === p.id}
+                    className="flex min-h-11 min-w-0 flex-1 items-center text-left text-sm font-semibold"
+                  >
+                    <BeltNo no={p.no} />
+                    <span className="truncate">{p.name}</span>
+                    <ChevronDown
+                      className={cn(
+                        "ml-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                        openId === p.id && "rotate-180",
+                      )}
+                    />
+                  </button>
+                ) : (
+                  <span className="flex min-w-0 items-center truncate text-sm font-semibold">
+                    <BeltNo no={p.no} />
+                    <span className="truncate">{p.name}</span>
+                  </span>
+                )}
 
                 {rec && (
                   <span className="shrink-0 text-[11px] text-muted-foreground">
