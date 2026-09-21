@@ -105,6 +105,7 @@ export function MultiWatch({
     setElapsed(0);
     setLaps(Object.fromEntries(selected.map(id => [id, []])));
     setStopped({});
+    setSplits({});
     setRunning(true);
   }
 
@@ -118,16 +119,37 @@ export function MultiWatch({
     setElapsed(0);
     setLaps({});
     setStopped({});
+    setSplits({});
   }
 
   function addLap(id: string, style: SwimStyle) {
     if (!running) return;
     if (navigator.vibrate) navigator.vibrate(20);
-    setLaps(prev => ({ ...prev, [id]: [...(prev[id] || []), style] }));
+    const now = startRef.current != null ? (Date.now() - startRef.current) / 1000 : elapsed;
+    setLaps(prev => {
+      const next = [...(prev[id] || []), style];
+      // Zwischenzeit festhalten, sobald die Pflichtstrecke erreicht ist –
+      // die Uhr läuft danach bis zum Ende der Prüfungszeit weiter.
+      if (next.length >= totalLaps) {
+        setSplits(sp => (sp[id] != null ? sp : { ...sp, [id]: now }));
+      }
+      return { ...prev, [id]: next };
+    });
   }
 
   function undoLap(id: string) {
-    setLaps(prev => ({ ...prev, [id]: (prev[id] || []).slice(0, -1) }));
+    setLaps(prev => {
+      const next = (prev[id] || []).slice(0, -1);
+      if (next.length < totalLaps) {
+        setSplits(sp => {
+          if (sp[id] == null) return sp;
+          const copy = { ...sp };
+          delete copy[id];
+          return copy;
+        });
+      }
+      return { ...prev, [id]: next };
+    });
   }
 
   function finishChild(id: string) {
@@ -143,13 +165,14 @@ export function MultiWatch({
     const bauch = brust + kraul;
     const meters = list.length * pool;
     const time = stopped[id] ?? elapsed;
+    const split = splits[id] ?? null;
     const distanceOk = list.length >= totalLaps;
     const bauchOk = bauch >= bauchLaps;
     const rueckenOk = ruecken >= rueckenLaps;
     const durationOk = discipline.minDurationSec ? time >= discipline.minDurationSec : true;
     const withinMax = discipline.maxDurationSec ? time <= discipline.maxDurationSec : true;
     return {
-      list, brust, kraul, ruecken, bauch, meters, time,
+      list, brust, kraul, ruecken, bauch, meters, time, split,
       distanceOk, bauchOk, rueckenOk, durationOk, withinMax,
       passed: distanceOk && bauchOk && rueckenOk && durationOk && withinMax,
     };
@@ -162,8 +185,16 @@ export function MultiWatch({
     // Ergebnis nur in den passenden Prüfungsnachweis schreiben.
     const criteria: ExamCriteriaState =
       existingLevel === level ? { ...(p.result.exam_criteria || {}) } : {};
-    const note = `${formatClock(s.time)} (${formatMeters(s.meters)}, ${s.list.length} Bahnen)`;
-    criteria[discipline.criterionKey] = { done: s.passed, value: note.slice(0, 40) };
+    // Beim Dauerschwimmen: Zwischenzeit der Pflichtstrecke + Gesamtleistung.
+    const value = formatClock(s.split ?? s.time);
+    const total = discipline.minDurationSec
+      ? `${s.list.length} Bahnen (${formatMeters(s.meters)}) in ${formatClock(s.time)}`
+      : `${s.list.length} Bahnen (${formatMeters(s.meters)})`;
+    criteria[discipline.criterionKey] = {
+      done: s.passed,
+      value: value.slice(0, 40),
+      total: total.slice(0, 40),
+    };
     setSavingId(p.id);
     try {
       const res = await save({
