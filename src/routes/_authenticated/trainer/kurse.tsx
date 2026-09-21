@@ -68,6 +68,30 @@ function Page() {
     );
   };
 
+  const exportProtocol = useServerFn(exportExamProtocol);
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  // Prüfungsprotokoll nach DPO als PDF für die Vereinsakte herunterladen.
+  async function downloadProtocol(courseId: string) {
+    setExporting(courseId);
+    try {
+      const res = await exportProtocol({ data: { courseId } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message || "Export fehlgeschlagen");
+    } finally {
+      setExporting(null);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
