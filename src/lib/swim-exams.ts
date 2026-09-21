@@ -60,9 +60,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
       { key: "sprung_kopf", label: "Sprung kopfwärts vom Beckenrand" },
       {
         key: "200m",
-        label: "200 m Schwimmen in höchstens 15 Minuten (150 m Bauch-/Rückenlage, 50 m andere Lage)",
-        valueLabel: "Zeit",
+        label:
+          "15 Minuten Dauerschwimmen, dabei mindestens 200 m (150 m Bauch-/Rückenlage, 50 m andere Lage)",
+        valueLabel: "Zeit bei 200 m",
         valuePlaceholder: "z. B. 11:45",
+        totalLabel: "Gesamt in 15 Min.",
+        totalPlaceholder: "z. B. 18 Bahnen (225 m)",
       },
       { key: "tieftauchen", label: "Ca. 2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes" },
       { key: "paketsprung", label: "Paketsprung vom Startblock oder 1-m-Brett" },
