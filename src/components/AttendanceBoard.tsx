@@ -276,8 +276,8 @@ export function AttendanceBoard({
           {people.map(p => {
             const rec = byParticipant.get(p.id);
             return (
-              <>
-              <TableRow key={p.id}>
+              <Fragment key={p.id}>
+              <TableRow>
                 <TableCell className="font-medium">
                   {renderDetails ? (
                     <button
