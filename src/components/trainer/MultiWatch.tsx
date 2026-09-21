@@ -256,10 +256,12 @@ export function MultiWatch({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Soll: {totalLaps} Bahnen ({formatMeters(discipline.meters)})
+        Mindeststrecke: {totalLaps} Bahnen ({formatMeters(discipline.meters)})
         {bauchLaps > 0 && ` · davon mind. ${bauchLaps} Bahnen Bauchlage (Brust/Kraul) und ${rueckenLaps} Bahnen Rücken`}
-        {discipline.minDurationSec ? ` · volle ${formatClock(discipline.minDurationSec)} Minuten durchschwimmen` : ""}
-        {discipline.maxDurationSec ? ` · Höchstzeit ${formatClock(discipline.maxDurationSec)}` : ""}
+        {discipline.minDurationSec
+          ? ` · Dauerschwimmen: die vollen ${formatClock(discipline.minDurationSec)} Minuten weiterschwimmen, auch wenn die Strecke früher geschafft ist`
+          : ""}
+        {discipline.maxDurationSec ? ` · Schwimmen auf Zeit, Höchstzeit ${formatClock(discipline.maxDurationSec)}` : ""}
       </p>
 
       {!running && (
