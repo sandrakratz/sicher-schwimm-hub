@@ -112,6 +112,10 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
           goal_reached: (p.goal_reached ?? null) as boolean | null,
           badge: (p.badge ?? null) as string | null,
           achievement: (p.achievement ?? null) as string | null,
+          exam_level: (p.exam_level ?? null) as string | null,
+          exam_criteria: ((p.exam_criteria ?? {}) as ExamCriteriaState),
+          exam_date: (p.exam_date ?? null) as string | null,
+          exam_pass_no: (p.exam_pass_no ?? null) as string | null,
         })),
     }));
   });
