@@ -338,6 +338,12 @@ export function AttendanceBoard({
                   )}
                 </TableCell>
               </TableRow>
+              {renderDetails && openId === p.id && (
+                <TableRow>
+                  <TableCell colSpan={4} className="bg-muted/30">{renderDetails(p.id)}</TableCell>
+                </TableRow>
+              )}
+              </>
             );
           })}
         </TableBody>
