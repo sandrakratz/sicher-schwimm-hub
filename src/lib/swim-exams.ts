@@ -9,6 +9,9 @@ export type ExamCriterion = {
   /** Zusätzliches Freitextfeld, z. B. für die gestoppte Zeit. */
   valueLabel?: string;
   valuePlaceholder?: string;
+  /** Zweites Feld, z. B. Gesamtbahnen/-strecke in der vollen Schwimmzeit. */
+  totalLabel?: string;
+  totalPlaceholder?: string;
 };
 
 export type ExamLevel = {
@@ -120,7 +123,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
 ];
 
 /** Einzelner Prüfungsteil, wie er gespeichert wird. */
-export type ExamCriterionState = { done?: boolean; value?: string | null };
+export type ExamCriterionState = {
+  done?: boolean;
+  value?: string | null;
+  /** Zweiter Wert, z. B. Gesamtbahnen in der vollen Schwimmzeit. */
+  total?: string | null;
+};
 export type ExamCriteriaState = Record<string, ExamCriterionState>;
 
 export function findExamLevel(key: string | null | undefined): ExamLevel | null {
