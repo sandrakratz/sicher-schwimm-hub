@@ -225,6 +225,8 @@ function Page() {
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
   const [exportingConf, setExportingConf] = useState<string | null>(null);
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
+  const exportProtocolFn = useServerFn(exportExamProtocol);
+  const [exportingProtocol, setExportingProtocol] = useState<string | null>(null);
   const [exportingCsv, setExportingCsv] = useState<string | null>(null);
   const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
   const remindFn = useServerFn(sendPaymentReminders);
