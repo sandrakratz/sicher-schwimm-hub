@@ -149,7 +149,10 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
       for (const c of level.criteria) {
         const state = p.criteria?.[c.key];
         const mark = state?.done ? "[X]" : "[  ]";
-        const suffix = state?.value ? ` (${c.valueLabel || "Wert"}: ${state.value})` : "";
+        const parts: string[] = [];
+        if (state?.value) parts.push(`${c.valueLabel || "Wert"}: ${state.value}`);
+        if (state?.total) parts.push(`${c.totalLabel || "Gesamt"}: ${state.total}`);
+        const suffix = parts.length ? ` (${parts.join(" · ")})` : "";
         const lines = wrap(`${mark} ${c.label}${suffix}`, font, 9, WIDTH - 16);
         for (const line of lines) {
           ensure(16);

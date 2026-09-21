@@ -55,7 +55,7 @@ export function ParticipantResultEditor({
   const doneCount = countCriteriaDone(level, criteria);
   const complete = allCriteriaDone(level, criteria);
 
-  function setCriterion(key: string, patch: { done?: boolean; value?: string }) {
+  function setCriterion(key: string, patch: { done?: boolean; value?: string; total?: string }) {
     setCriteria(prev => {
       const next = { ...prev, [key]: { ...prev[key], ...patch } };
       // Sobald alle Teile erfüllt sind, das Gesamtergebnis vorschlagen.
@@ -139,12 +139,28 @@ export function ParticipantResultEditor({
                     <span>{c.label}</span>
                   </label>
                   {c.valueLabel && (
-                    <Input
-                      className="ml-6 h-8 w-32"
-                      placeholder={c.valuePlaceholder || c.valueLabel}
-                      value={state.value || ""}
-                      onChange={e => setCriterion(c.key, { value: e.target.value })}
-                    />
+                    <div className="ml-6 space-y-1">
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground">{c.valueLabel}</Label>
+                        <Input
+                          className="h-8 w-40"
+                          placeholder={c.valuePlaceholder || c.valueLabel}
+                          value={state.value || ""}
+                          onChange={e => setCriterion(c.key, { value: e.target.value })}
+                        />
+                      </div>
+                      {c.totalLabel && (
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">{c.totalLabel}</Label>
+                          <Input
+                            className="h-8 w-52"
+                            placeholder={c.totalPlaceholder || c.totalLabel}
+                            value={state.total || ""}
+                            onChange={e => setCriterion(c.key, { total: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               );

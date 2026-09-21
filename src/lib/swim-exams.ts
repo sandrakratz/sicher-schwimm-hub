@@ -9,6 +9,9 @@ export type ExamCriterion = {
   /** Zusätzliches Freitextfeld, z. B. für die gestoppte Zeit. */
   valueLabel?: string;
   valuePlaceholder?: string;
+  /** Zweites Feld, z. B. Gesamtbahnen/-strecke in der vollen Schwimmzeit. */
+  totalLabel?: string;
+  totalPlaceholder?: string;
 };
 
 export type ExamLevel = {
@@ -57,9 +60,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
       { key: "sprung_kopf", label: "Sprung kopfwärts vom Beckenrand" },
       {
         key: "200m",
-        label: "200 m Schwimmen in höchstens 15 Minuten (150 m Bauch-/Rückenlage, 50 m andere Lage)",
-        valueLabel: "Zeit",
+        label:
+          "15 Minuten Dauerschwimmen, dabei mindestens 200 m (150 m Bauch-/Rückenlage, 50 m andere Lage)",
+        valueLabel: "Zeit bei 200 m",
         valuePlaceholder: "z. B. 11:45",
+        totalLabel: "Gesamt in 15 Min.",
+        totalPlaceholder: "z. B. 18 Bahnen (225 m)",
       },
       { key: "tieftauchen", label: "Ca. 2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes" },
       { key: "paketsprung", label: "Paketsprung vom Startblock oder 1-m-Brett" },
@@ -73,9 +79,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
       { key: "sprung_kopf", label: "Sprung kopfwärts vom Beckenrand" },
       {
         key: "400m",
-        label: "400 m Schwimmen in höchstens 25 Minuten (300 m Bauch-/Rückenlage, 100 m andere Lage)",
-        valueLabel: "Zeit",
-        valuePlaceholder: "z. B. 21:30",
+        label:
+          "20 Minuten Dauerschwimmen, dabei mindestens 400 m (300 m Bauch-/Rückenlage, 100 m andere Lage)",
+        valueLabel: "Zeit bei 400 m",
+        valuePlaceholder: "z. B. 17:30",
+        totalLabel: "Gesamt in 20 Min.",
+        totalPlaceholder: "z. B. 34 Bahnen (425 m)",
       },
       { key: "tieftauchen", label: "2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes" },
       { key: "strecke_10m", label: "10 m Streckentauchen mit Abstoßen vom Beckenrand" },
@@ -89,9 +98,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
     criteria: [
       {
         key: "800m",
-        label: "800 m Schwimmen in höchstens 30 Minuten (650 m Bauch-/Rückenlage, 150 m andere Lage)",
-        valueLabel: "Zeit",
+        label:
+          "30 Minuten Dauerschwimmen, dabei mindestens 800 m (650 m Bauch-/Rückenlage, 150 m andere Lage)",
+        valueLabel: "Zeit bei 800 m",
         valuePlaceholder: "z. B. 27:10",
+        totalLabel: "Gesamt in 30 Min.",
+        totalPlaceholder: "z. B. 66 Bahnen (825 m)",
       },
       {
         key: "50m_brust",
@@ -120,7 +132,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
 ];
 
 /** Einzelner Prüfungsteil, wie er gespeichert wird. */
-export type ExamCriterionState = { done?: boolean; value?: string | null };
+export type ExamCriterionState = {
+  done?: boolean;
+  value?: string | null;
+  /** Zweiter Wert, z. B. Gesamtbahnen in der vollen Schwimmzeit. */
+  total?: string | null;
+};
 export type ExamCriteriaState = Record<string, ExamCriterionState>;
 
 export function findExamLevel(key: string | null | undefined): ExamLevel | null {

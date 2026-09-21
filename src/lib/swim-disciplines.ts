@@ -33,7 +33,7 @@ export type Discipline = {
 export const DISCIPLINES: Discipline[] = [
   {
     key: "bronze_200",
-    label: "Bronze – 200 m in 15 Minuten",
+    label: "Bronze – 15 Min. Dauerschwimmen (mind. 200 m)",
     examLevel: "bronze",
     criterionKey: "200m",
     meters: 200,
@@ -44,18 +44,18 @@ export const DISCIPLINES: Discipline[] = [
   },
   {
     key: "silber_400",
-    label: "Silber – 400 m in 25 Minuten",
+    label: "Silber – 20 Min. Dauerschwimmen (mind. 400 m)",
     examLevel: "silber",
     criterionKey: "400m",
     meters: 400,
-    minDurationSec: 25 * 60,
+    minDurationSec: 20 * 60,
     bauchMeters: 300,
     rueckenMeters: 100,
     styles: ["brust", "kraul", "ruecken"],
   },
   {
     key: "gold_800",
-    label: "Gold – 800 m in 30 Minuten",
+    label: "Gold – 30 Min. Dauerschwimmen (mind. 800 m)",
     examLevel: "gold",
     criterionKey: "800m",
     meters: 800,

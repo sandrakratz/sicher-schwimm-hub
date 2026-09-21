@@ -277,7 +277,10 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
         const entry = data.examCriteria?.[c.key];
         if (!entry) continue;
         const value = typeof entry.value === "string" ? entry.value.trim().slice(0, 40) : null;
-        if (entry.done || value) criteria[c.key] = { done: Boolean(entry.done), value: value || null };
+        const total = typeof entry.total === "string" ? entry.total.trim().slice(0, 40) : null;
+        if (entry.done || value || total) {
+          criteria[c.key] = { done: Boolean(entry.done), value: value || null, total: total || null };
+        }
       }
     }
 
