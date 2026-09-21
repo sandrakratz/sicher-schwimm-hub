@@ -858,6 +858,13 @@ function Page() {
           <Button
             variant="ghost"
             size="sm"
+            disabled={exportingProtocol === c.id}
+            title="Prüfungsprotokoll nach DPO für die Vereinsakte"
+            onClick={() => exportProtocol(c)}
+          ><FileText className="h-4 w-4" /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll"}</Button>
+          <Button
+            variant="ghost"
+            size="sm"
             disabled={exportingCsv === c.id}
             title="Rechnungsposten als CSV für WISO MeinVerein Web"
             onClick={() => exportMeinVerein(c)}
