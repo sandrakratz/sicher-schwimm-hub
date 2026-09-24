@@ -157,7 +157,7 @@ function Page() {
                     courseId={c.id}
                     participants={c.participants
                       .filter(p => p.status !== "cancelled")
-                      .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null }))}
+                      .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null, hint: p.notes }))}
                     renderDetails={id => {
                       const p = c.participants.find(x => x.id === id);
                       if (!p) return null;
