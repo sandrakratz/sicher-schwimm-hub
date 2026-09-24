@@ -182,6 +182,18 @@ export function MultiWatch({
     const s = statsFor(p.id);
     const level = discipline.examLevel;
     const existingLevel = p.result.exam_level || "";
+    const hasOther =
+      existingLevel !== "" &&
+      existingLevel !== level &&
+      Object.values(p.result.exam_criteria || {}).some(v => v?.done || v?.value || v?.total);
+    if (
+      hasOther &&
+      !window.confirm(
+        `${p.name} hat bereits einen Prüfungsnachweis für eine andere Stufe. Beim Übernehmen wird dieser ersetzt. Fortfahren?`,
+      )
+    ) {
+      return;
+    }
     // Ergebnis nur in den passenden Prüfungsnachweis schreiben.
     const criteria: ExamCriteriaState =
       existingLevel === level ? { ...(p.result.exam_criteria || {}) } : {};

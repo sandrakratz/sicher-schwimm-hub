@@ -153,10 +153,39 @@ export function AttendanceBoard({
 
   if (sessions.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Für diesen Kurs sind noch keine Termine angelegt. Sobald Termine eingetragen sind, kann hier die
-        Anwesenheit erfasst werden.
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Für diesen Kurs sind noch keine Termine angelegt. Sobald Termine eingetragen sind, kann hier die
+          Anwesenheit erfasst werden.
+        </p>
+        {people.length === 0 && <p className="text-sm text-muted-foreground">Keine Teilnehmenden.</p>}
+        {people.map(p => (
+          <div key={p.id} className="rounded-lg border p-3">
+            {renderDetails ? (
+              <button
+                type="button"
+                onClick={() => toggleOpen(p.id)}
+                aria-expanded={openId === p.id}
+                className="flex min-h-11 w-full items-center text-left text-sm font-semibold"
+              >
+                <BeltNo no={p.no} />
+                <span className="truncate">{p.name}</span>
+                <ChevronDown
+                  className={cn(
+                    "ml-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                    openId === p.id && "rotate-180",
+                  )}
+                />
+              </button>
+            ) : (
+              <span className="flex items-center text-sm font-semibold"><BeltNo no={p.no} />{p.name}</span>
+            )}
+            {renderDetails && openId === p.id && (
+              <div className="mt-3 border-t pt-3">{renderDetails(p.id)}</div>
+            )}
+          </div>
+        ))}
+      </div>
     );
   }
 
