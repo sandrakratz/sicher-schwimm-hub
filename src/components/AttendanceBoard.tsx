@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,13 +12,28 @@ import {
 } from "@/lib/attendance.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { toast } from "sonner";
 
-export type AttendanceParticipant = { id: string; name: string; no?: number | null };
+export type AttendanceParticipant = { id: string; name: string; no?: number | null; hint?: string | null };
+
+/** Wichtiger Dauer-Hinweis zum Kind (Gesundheit, Angst …) – immer sichtbar. */
+function ChildHint({ hint, className }: { hint?: string | null; className?: string }) {
+  if (!hint?.trim()) return null;
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900",
+        className,
+      )}
+    >
+      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span className="whitespace-pre-wrap">{hint}</span>
+    </div>
+  );
+}
 
 /** Kleine Gurt-Nummer (1–10) vor dem Namen. */
 function BeltNo({ no }: { no?: number | null }) {
@@ -98,13 +113,13 @@ export function AttendanceBoard({
     (async () => {
       const { data } = await supabase
         .from("course_participants")
-        .select("id,participant_name,status")
+        .select("id,participant_name,status,notes")
         .eq("course_id", courseId)
         .neq("status", "cancelled");
       if (cancelled) return;
       setPeople(
-        ((data as { id: string; participant_name: string | null }[]) || [])
-          .map(p => ({ id: p.id, name: p.participant_name || "—" }))
+        ((data as { id: string; participant_name: string | null; notes: string | null }[]) || [])
+          .map(p => ({ id: p.id, name: p.participant_name || "—", hint: p.notes }))
           .sort((a, b) => a.name.localeCompare(b.name, "de"))
           .map((p, i) => ({ ...p, no: i + 1 })),
       );
@@ -180,6 +195,7 @@ export function AttendanceBoard({
             ) : (
               <span className="flex items-center text-sm font-semibold"><BeltNo no={p.no} />{p.name}</span>
             )}
+            <ChildHint hint={p.hint} className="mt-2" />
             {renderDetails && openId === p.id && (
               <div className="mt-3 border-t pt-3">{renderDetails(p.id)}</div>
             )}
@@ -252,6 +268,7 @@ export function AttendanceBoard({
                   </span>
                 )}
               </div>
+              <ChildHint hint={p.hint} className="mt-2" />
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {STATUS_OPTIONS.map(o => (
                   <Button
@@ -260,24 +277,12 @@ export function AttendanceBoard({
                     variant={rec?.status === o.value ? "default" : "outline"}
                     disabled={readOnly || busy === p.id}
                     className="min-h-11 px-1 text-xs"
-                    onClick={() => update(p.id, rec?.status === o.value ? null : o.value, rec?.note ?? null)}
+                    onClick={() => update(p.id, rec?.status === o.value ? null : o.value, null)}
                   >
                     {o.label}
                   </Button>
                 ))}
               </div>
-              {rec && (
-                <Input
-                  className="mt-2 h-11 text-sm"
-                  defaultValue={rec.note || ""}
-                  placeholder="Hinweis (optional)"
-                  disabled={readOnly}
-                  onBlur={e => {
-                    const v = e.target.value;
-                    if ((rec.note || "") !== v) update(p.id, rec.status, v);
-                  }}
-                />
-              )}
               {renderDetails && openId === p.id && (
                 <div className="mt-3 border-t pt-3">{renderDetails(p.id)}</div>
               )}
@@ -292,7 +297,7 @@ export function AttendanceBoard({
           <TableRow>
             <TableHead>Kind</TableHead>
             <TableHead>Anwesenheit</TableHead>
-            <TableHead>Hinweis</TableHead>
+            <TableHead>Wichtiger Hinweis</TableHead>
             <TableHead>Zuletzt gespeichert</TableHead>
           </TableRow>
         </TableHeader>
@@ -337,24 +342,15 @@ export function AttendanceBoard({
                         size="sm"
                         variant={rec?.status === o.value ? "default" : "outline"}
                         disabled={readOnly || busy === p.id}
-                        onClick={() => update(p.id, rec?.status === o.value ? null : o.value, rec?.note ?? null)}
+                        onClick={() => update(p.id, rec?.status === o.value ? null : o.value, null)}
                       >
                         {o.label}
                       </Button>
                     ))}
                   </div>
                 </TableCell>
-                <TableCell>
-                  <Input
-                    className="h-8 text-xs"
-                    defaultValue={rec?.note || ""}
-                    placeholder="optional"
-                    disabled={readOnly || !rec}
-                    onBlur={e => {
-                      const v = e.target.value;
-                      if (rec && (rec.note || "") !== v) update(p.id, rec.status, v);
-                    }}
-                  />
+                <TableCell className="max-w-xs">
+                  {p.hint?.trim() ? <ChildHint hint={p.hint} /> : <span className="text-xs text-muted-foreground">—</span>}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {rec ? (
