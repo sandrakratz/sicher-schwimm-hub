@@ -68,7 +68,6 @@ export function ParticipantDetails({
           <Mail className="h-4 w-4 shrink-0" /> {p.email}
         </a>
       )}
-      {p.notes && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{p.notes}</p>}
       {showPayment && (
         <div>
           {p.paid ? (

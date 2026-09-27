@@ -157,7 +157,9 @@ function Page() {
                     courseId={c.id}
                     participants={c.participants
                       .filter(p => p.status !== "cancelled")
-                      .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null, hint: p.notes }))}
+                      .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null, hint: p.notes, paid: p.paid }))}
+                    editableHints
+                    onHintSaved={(id, hint) => setCourses(prev => prev.map(cc => ({ ...cc, participants: cc.participants.map(pp => (pp.id === id ? { ...pp, notes: hint } : pp)) })))}
                     renderDetails={id => {
                       const p = c.participants.find(x => x.id === id);
                       if (!p) return null;
