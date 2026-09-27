@@ -21,16 +21,12 @@ import { toast } from "sonner";
 
 export type AttendanceParticipant = { id: string; name: string; no?: number | null; hint?: string | null; paid?: boolean | null };
 
-/** Bezahl-Ampel direkt am Namen. */
+/** Nur unbezahlte Kinder werden markiert – bezahlt ist der Normalfall. */
 function PaidBadge({ paid }: { paid?: boolean | null }) {
-  if (paid == null) return null;
-  return paid ? (
-    <span className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-full bg-green-600 px-2 py-0.5 text-[11px] font-semibold text-white">
-      <CheckCircle2 className="h-3 w-3" /> bezahlt
-    </span>
-  ) : (
-    <span className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">
-      <AlertTriangle className="h-3 w-3" /> NICHT bezahlt
+  if (paid !== false) return null;
+  return (
+    <span className="ml-2 inline-flex shrink-0 items-center rounded-full bg-destructive px-2 py-0.5 text-[11px] font-bold text-destructive-foreground">
+      nicht bezahlt
     </span>
   );
 }
