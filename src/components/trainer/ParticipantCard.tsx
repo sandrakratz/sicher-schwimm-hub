@@ -5,6 +5,8 @@ import { PhoneEditor } from "@/components/trainer/PhoneEditor";
 import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PartialCertificateActions } from "@/components/trainer/PartialCertificateActions";
+import { allCriteriaDone, countCriteriaDone, type ExamCriteriaState } from "@/lib/swim-exams";
 
 export type ParticipantCardData = {
   id: string;
@@ -92,6 +94,12 @@ export function ParticipantDetails({
             }}
             onSaved={onResultSaved}
           />
+          {countCriteriaDone(p.exam_level, (p.exam_criteria ?? {}) as ExamCriteriaState) > 0 &&
+            !allCriteriaDone(p.exam_level, (p.exam_criteria ?? {}) as ExamCriteriaState) && (
+              <div className="mt-3">
+                <PartialCertificateActions participantId={p.id} />
+              </div>
+            )}
         </div>
       )}
     </div>
