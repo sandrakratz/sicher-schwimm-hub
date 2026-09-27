@@ -1703,7 +1703,7 @@ function Page() {
           {sessCourse && (
             <div className="mt-4 space-y-2 border-t pt-4">
               <h3 className="text-sm font-semibold">Anwesenheit</h3>
-              <AttendanceBoard courseId={sessCourse.id} />
+              <AttendanceBoard courseId={sessCourse.id} editableHints />
               <h3 className="pt-4 text-sm font-semibold">Trainer-Anwesenheit (Steuernachweis)</h3>
               <TrainerAttendancePanel courseId={sessCourse.id} />
             </div>
