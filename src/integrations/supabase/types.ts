@@ -640,8 +640,10 @@ export type Database = {
           ends_on: string | null
           id: string
           is_public: boolean
+          lanes: number | null
           location: string | null
           max_participants: number | null
+          min_participants: number | null
           name: string
           payment_due_days: number
           price_member: number | null
@@ -649,9 +651,11 @@ export type Database = {
           program_id: string | null
           schedule: string | null
           slug: string
+          start_tentative: boolean
           starts_on: string | null
           status: Database["public"]["Enums"]["course_status"]
           target_group: string | null
+          tentative_note: string | null
           trainer_id: string | null
           unit_count: number | null
           updated_at: string
@@ -666,8 +670,10 @@ export type Database = {
           ends_on?: string | null
           id?: string
           is_public?: boolean
+          lanes?: number | null
           location?: string | null
           max_participants?: number | null
+          min_participants?: number | null
           name: string
           payment_due_days?: number
           price_member?: number | null
@@ -675,9 +681,11 @@ export type Database = {
           program_id?: string | null
           schedule?: string | null
           slug: string
+          start_tentative?: boolean
           starts_on?: string | null
           status?: Database["public"]["Enums"]["course_status"]
           target_group?: string | null
+          tentative_note?: string | null
           trainer_id?: string | null
           unit_count?: number | null
           updated_at?: string
@@ -692,8 +700,10 @@ export type Database = {
           ends_on?: string | null
           id?: string
           is_public?: boolean
+          lanes?: number | null
           location?: string | null
           max_participants?: number | null
+          min_participants?: number | null
           name?: string
           payment_due_days?: number
           price_member?: number | null
@@ -701,9 +711,11 @@ export type Database = {
           program_id?: string | null
           schedule?: string | null
           slug?: string
+          start_tentative?: boolean
           starts_on?: string | null
           status?: Database["public"]["Enums"]["course_status"]
           target_group?: string | null
+          tentative_note?: string | null
           trainer_id?: string | null
           unit_count?: number | null
           updated_at?: string

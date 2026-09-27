@@ -255,6 +255,17 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                         {t.starts_on ? formatDateBerlin(t.starts_on) : "Termin folgt"}
                         {t.ends_on ? ` – ${formatDateBerlin(t.ends_on)}` : ""}
                       </div>
+                      {t.start_tentative && (
+                        <div className="text-sm mt-1 rounded bg-accent/15 px-2 py-1 text-foreground">
+                          Voraussichtlicher Kursstart – {t.tentative_note || "Termin unter Vorbehalt, kann sich noch verschieben"}. Bei Verschiebung informieren wir alle Eltern; der Kursumfang bleibt erhalten.
+                        </div>
+                      )}
+                      {(t.min_participants || t.lanes) && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {t.lanes ? `${t.lanes} ${t.lanes === 1 ? "Bahn" : "Bahnen"}` : ""}{t.lanes && t.min_participants ? " · " : ""}
+                          {t.min_participants ? `Mindestens ${t.min_participants} Teilnehmende – sonst kann der Kurs vor Beginn abgesagt werden` : ""}
+                        </div>
+                      )}
                       <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                         <Users className="h-4 w-4" />
                         {t.max_participants != null

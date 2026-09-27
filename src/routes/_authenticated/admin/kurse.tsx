@@ -141,6 +141,10 @@ type Course = {
   program_id: string | null;
   unit_count: number | null;
   course_info: string | null;
+  min_participants?: number | null;
+  lanes?: number | null;
+  start_tentative?: boolean;
+  tentative_note?: string | null;
 };
 
 function Hint({ children }: { children: React.ReactNode }) {
@@ -776,6 +780,10 @@ function Page() {
       program_id: editing.program_id || null,
       unit_count: editing.unit_count ?? null,
       course_info: editing.course_info || null,
+      min_participants: editing.min_participants ?? null,
+      lanes: editing.lanes ?? null,
+      start_tentative: !!editing.start_tentative,
+      tentative_note: editing.tentative_note || null,
     };
 
 
@@ -1159,6 +1167,14 @@ function Page() {
               <div><Label>Start</Label><Input type="date" value={editing.starts_on || ""} onChange={e => setEditing(p => ({ ...p, starts_on: e.target.value || null }))} /></div>
               <div><Label>Ende</Label><Input type="date" value={editing.ends_on || ""} onChange={e => setEditing(p => ({ ...p, ends_on: e.target.value || null }))} /></div>
               <div><Label>Max. Plätze</Label><Input type="number" value={editing.max_participants ?? ""} onChange={e => setEditing(p => ({ ...p, max_participants: e.target.value ? Number(e.target.value) : null }))} /></div>
+              <div><Label>Mindestteilnehmerzahl</Label><Input type="number" value={editing.min_participants ?? ""} onChange={e => setEditing(p => ({ ...p, min_participants: e.target.value ? Number(e.target.value) : null }))} placeholder="z.B. 14" /></div>
+              <div>
+                <Label>Bahnen</Label>
+                <Select value={editing.lanes ? String(editing.lanes) : "none"} onValueChange={v => setEditing(p => ({ ...p, lanes: v === "none" ? null : Number(v) }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="none">Keine Angabe</SelectItem><SelectItem value="1">1 Bahn</SelectItem><SelectItem value="2">2 Bahnen</SelectItem></SelectContent>
+                </Select>
+              </div>
               <div><Label>Anzahl der Einheiten</Label><Input type="number" value={editing.unit_count ?? ""} onChange={e => setEditing(p => ({ ...p, unit_count: e.target.value ? Number(e.target.value) : null }))} placeholder="z.B. 12" /></div>
               <div>
                 <Label>Status</Label>
@@ -1167,6 +1183,10 @@ function Page() {
                   <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="rounded-md border p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!editing.start_tentative} onCheckedChange={v => setEditing(p => ({ ...p, start_tentative: !!v }))} /> Starttermin unter Vorbehalt (z. B. Wiedereröffnung / Sanierung)</label>
+              {editing.start_tentative && (<><Input value={editing.tentative_note || ""} onChange={e => setEditing(p => ({ ...p, tentative_note: e.target.value }))} placeholder="vorbehaltlich der Wiedereröffnung der Sportschule Hennef" /><Hint>Wird bei Kursbeginn auf der Webseite angezeigt. Buchung und Zahlungsfrist laufen normal.</Hint></>)}
             </div>
             <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editing.course_info || ""} onChange={e => setEditing(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Erscheint auf der Kursdetailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail 3 Tage vor Kursstart. Absätze und Zeilen bleiben erhalten.</Hint></div>
             <div><Label>Zeitplan</Label><Input value={editing.schedule || ""} onChange={e => setEditing(p => ({ ...p, schedule: e.target.value }))} placeholder="z.B. Mo & Mi 17:00–18:00" /></div>

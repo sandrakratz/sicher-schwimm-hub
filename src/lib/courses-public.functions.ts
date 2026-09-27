@@ -18,6 +18,10 @@ export interface CourseTerm {
   price_member: number | null
   price_non_member: number | null
   course_info: string | null
+  min_participants: number | null
+  lanes: number | null
+  start_tentative: boolean
+  tentative_note: string | null
 }
 
 export interface CourseProgram {
@@ -68,7 +72,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
 
   const { data: courses } = await supabaseAdmin
     .from('courses')
-    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info')
+    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info,min_participants,lanes,start_tentative,tentative_note')
     .in('program_id', programIds)
     .eq('is_public', true)
     .is('archived_at', null)
@@ -118,6 +122,10 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
           starts_on: c.starts_on,
           ends_on: c.ends_on,
           schedule: c.schedule,
+          min_participants: c.min_participants ?? null,
+          lanes: c.lanes ?? null,
+          start_tentative: !!c.start_tentative,
+          tentative_note: c.tentative_note ?? null,
           location: c.location ?? p.location,
           max_participants: c.max_participants,
           confirmed_count: confirmed,

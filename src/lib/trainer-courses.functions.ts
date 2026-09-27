@@ -379,7 +379,8 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
       .select("first_name,last_name")
       .eq("id", context.userId)
       .maybeSingle();
-    const examinerName = [me?.first_name, me?.last_name].filter(Boolean).join(" ") || "—";
+    void me;
+    const examinerName = "Michael Kratz, staatl. gepr. Fachkraft für Bäderbetriebe (Reg.-Nr. 88-5169, Regierungspräsident Düsseldorf)";
 
     const { renderExamProtocolPdf } = await import("@/lib/exam-protocol-pdf.server");
     const bytes = await renderExamProtocolPdf({
