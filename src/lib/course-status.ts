@@ -39,7 +39,7 @@ export function termStatus(isFull: boolean, freeSlots: number | null | undefined
   const label = isFull
     ? "Ausgebucht"
     : freeSlots != null
-      ? `${freeSlots} freie Plätze`
+      ? (freeSlots === 1 ? "1 freier Platz" : `${freeSlots} freie Plätze`)
       : "Plätze frei";
   return { tone, label, className: TONE_CLASS[tone] };
 }
@@ -63,7 +63,7 @@ export function programAvailability(input: {
   if (openTerms > 0) {
     const label =
       freeSlotsTotal != null && freeSlotsTotal > 0
-        ? `${freeSlotsTotal} freie${freeSlotsTotal === 1 ? 'r' : ''} Platz${freeSlotsTotal === 1 ? '' : 'ätze'}`
+        ? (freeSlotsTotal === 1 ? '1 freier Platz' : `${freeSlotsTotal} freie Plätze`)
         : 'Plätze frei'
     return {
       tone: 'open',
