@@ -693,7 +693,7 @@ export function WaitlistAdmin() {
                       </td>
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          {e.status === "waiting" && (courses.length > 0 || true) && courses.length > 0 && (
+                          {e.status === "waiting" && courses.length > 0 && (
                             <select
                               className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                               defaultValue=""
