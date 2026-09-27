@@ -21,7 +21,7 @@ export type ParticipantCardData = {
   badge?: string | null;
   achievement?: string | null;
   exam_level?: string | null;
-  exam_criteria?: Record<string, { done?: boolean; value?: string | null }>;
+  exam_criteria?: import("@/lib/swim-exams").ExamCriteriaState;
   exam_date?: string | null;
   exam_pass_no?: string | null;
 };
