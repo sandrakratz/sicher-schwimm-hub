@@ -516,9 +516,6 @@ export function WaitlistAdmin() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowClosed((v) => !v)}>
-            {showClosed ? "Nur offene zeigen" : "Alle Einträge zeigen"}
-          </Button>
           <Button size="sm" onClick={() => allocate.mutate(null)} disabled={allocate.isPending}>
             {allocate.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Plätze jetzt vergeben
@@ -526,14 +523,38 @@ export function WaitlistAdmin() {
         </div>
       </div>
 
-      {grouped.length === 0 && <p className="text-muted-foreground">Keine Einträge auf der Warteliste.</p>}
+      <div className="flex flex-wrap gap-2 border-b pb-2">
+        {([
+          ["waiting", "Wartend auf Platz"],
+          ["offered", "Laufende Angebote"],
+          ["done", "Erledigt / Archiv"],
+        ] as const).map(([key, label]) => (
+          <Button key={key} size="sm" variant={view === key ? "default" : "outline"} onClick={() => setView(key)}>
+            {label} ({tabCounts[key]})
+          </Button>
+        ))}
+      </div>
+
+      {view === "waiting" && (data?.courses ?? []).some((c) => c.max_participants != null) && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {(data?.courses ?? [])
+            .filter((c) => c.max_participants != null)
+            .map((c) => (
+              <span key={c.id} className="rounded-md border bg-muted/40 px-2 py-1">
+                <strong>{c.name}</strong>: {c.confirmed} gebucht · {c.held} angeboten · {c.free} frei
+              </span>
+            ))}
+        </div>
+      )}
+
+      {grouped.length === 0 && <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>}
 
       {grouped.map(([programId, entries]) => (
         <CollapsibleCard
           key={programId}
           storageKey={`waitlist-${programId}`}
           title={programName(programId === "none" ? null : programId)}
-          meta={<span className="text-sm text-muted-foreground">{entries.length} Einträge</span>}
+          meta={<span className="text-sm text-muted-foreground">{entries.length} {view === "waiting" ? "wartend" : view === "offered" ? "Angebote aktiv" : "Einträge"}</span>}
           contentClassName="overflow-x-auto">
             <table className="w-full min-w-[1100px] text-sm">
               <thead>
@@ -557,9 +578,12 @@ export function WaitlistAdmin() {
                   const suggestion = !e.program_id ? matchProgram(wish ?? e.notes, programs) : null;
                   const minAge = program?.min_age_years ?? null;
                   const readyOn = minAgeReachedOn(e.child_dob, minAge);
-                  const courses = (data?.courses ?? []).filter(
-                    (c) => (!e.program_id || c.program_id === e.program_id) && c.free !== 0,
-                  );
+                  const fits = (c: { program_id: string | null }) =>
+                    !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
+                  const courses = (data?.courses ?? [])
+                    .filter((c) => c.free !== 0)
+                    .map((c) => ({ ...c, fits: fits(c) }))
+                    .sort((a, b) => Number(b.fits) - Number(a.fits));
                   const tooYoungEverywhere =
                     !!e.child_dob &&
                     minAge != null &&
