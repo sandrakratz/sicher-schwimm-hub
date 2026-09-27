@@ -650,6 +650,7 @@ export type Database = {
           price_non_member: number | null
           program_id: string | null
           schedule: string | null
+          session_breaks: Json
           slug: string
           start_tentative: boolean
           starts_on: string | null
@@ -680,6 +681,7 @@ export type Database = {
           price_non_member?: number | null
           program_id?: string | null
           schedule?: string | null
+          session_breaks?: Json
           slug: string
           start_tentative?: boolean
           starts_on?: string | null
@@ -710,6 +712,7 @@ export type Database = {
           price_non_member?: number | null
           program_id?: string | null
           schedule?: string | null
+          session_breaks?: Json
           slug?: string
           start_tentative?: boolean
           starts_on?: string | null

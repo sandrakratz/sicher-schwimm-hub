@@ -1,0 +1,1 @@
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS session_breaks jsonb NOT NULL DEFAULT '[]'::jsonb;
