@@ -31,7 +31,7 @@ export async function expireOffers(): Promise<number> {
 }
 
 /** Ermittelt freie Plätze eines Kurses (Kontingent minus bestätigte Teilnehmer und offene Angebote). */
-async function freeSlots(courseId: string, maxParticipants: number | null): Promise<number | null> {
+export async function freeSlots(courseId: string, maxParticipants: number | null): Promise<number | null> {
   if (maxParticipants == null) return null
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const [{ data: parts }, { data: offers }] = await Promise.all([
@@ -145,17 +145,20 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
   const relevant = (courses ?? []).filter((c) => !c.ends_on || c.ends_on >= today)
 
   const offers: AllocationResult['offers'] = []
+  const { data: allPrograms } = await supabaseAdmin.from('course_programs').select('id,slug')
+  const { relatedProgramIds } = await import('@/lib/waitlist-programs')
 
   for (const course of relevant) {
     const program = (course as any).course_programs ?? null
     const free = await freeSlots(course.id, course.max_participants)
     if (free == null || free <= 0) continue
 
+    const pids = relatedProgramIds(program?.id ?? null, allPrograms ?? [])
     const { data: entries } = await supabaseAdmin
       .from('waitlist_entries')
       .select('*')
       .eq('status', 'waiting')
-      .or(`course_id.eq.${course.id}${program ? `,program_id.eq.${program.id}` : ''}`)
+      .or([`course_id.eq.${course.id}`, ...pids.map((id) => `program_id.eq.${id}`)].join(','))
 
     let candidates = sortCandidates(entries ?? [])
     if (candidates.length === 0) continue

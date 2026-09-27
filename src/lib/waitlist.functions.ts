@@ -372,11 +372,19 @@ export const listWaitlist = createServerFn({ method: 'GET' })
 
 
       programs: programs ?? [],
-      courses: (courses ?? []).map((c) => ({
-        ...c,
-        confirmed: counts.get(c.id) ?? 0,
-        free: c.max_participants != null ? Math.max(0, c.max_participants - (counts.get(c.id) ?? 0)) : null,
-      })),
+      courses: (courses ?? []).map((c) => {
+        const nowIso = new Date().toISOString()
+        const held = (entries ?? []).filter(
+          (e) => e.status === 'offered' && e.offer_course_id === c.id && (!e.offer_expires_at || e.offer_expires_at >= nowIso),
+        ).length
+        const confirmed = counts.get(c.id) ?? 0
+        return {
+          ...c,
+          confirmed,
+          held,
+          free: c.max_participants != null ? Math.max(0, c.max_participants - confirmed - held) : null,
+        }
+      }),
     }
 
   })
@@ -406,7 +414,9 @@ export const offerWaitlistPlace = createServerFn({ method: 'POST' })
     if (!entry || !course) throw new Error('Eintrag oder Kurs nicht gefunden')
     if (entry.status !== 'waiting') throw new Error('Für diesen Eintrag läuft bereits ein Angebot')
 
-    const { offerPlaceManually } = await import('@/lib/waitlist.server')
+    const { offerPlaceManually, freeSlots } = await import('@/lib/waitlist.server')
+    const free = await freeSlots(course.id, course.max_participants)
+    if (free != null && free <= 0) throw new Error('In diesem Kurs ist kein Platz mehr frei')
     await offerPlaceManually(entry, course, (course as any).course_programs ?? null)
     return { ok: true }
   })

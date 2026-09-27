@@ -15,6 +15,7 @@ import { AlertTriangle, Copy, FileText, Loader2, Pencil, RefreshCw, Send, Shield
 
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
+import { relatedProgramIds } from "@/lib/waitlist-programs";
 import {
   listWaitlist,
   runWaitlistAllocation,
@@ -378,7 +379,7 @@ function NotesCell({
 
 export function WaitlistAdmin() {
   const qc = useQueryClient();
-  const [showClosed, setShowClosed] = useState(false);
+  const [view, setView] = useState<"waiting" | "offered" | "done">("waiting");
   const [detail, setDetail] = useState<WaitlistEntry | null>(null);
   const migratedOnce = useRef(false);
 
@@ -475,10 +476,18 @@ export function WaitlistAdmin() {
   const programs = data?.programs ?? [];
   const programName = (id: string | null) => programs.find((p) => p.id === id)?.name ?? "Ohne Zuordnung";
   const programById = (id: string | null) => programs.find((p) => p.id === id) ?? null;
+  const courseName = (id: unknown) => (data?.courses ?? []).find((c) => c.id === id)?.name ?? "Kurs";
+
+  const allEntries = data?.entries ?? [];
+  const tabCounts = {
+    waiting: allEntries.filter((e) => e.status === "waiting").length,
+    offered: allEntries.filter((e) => e.status === "offered").length,
+    done: allEntries.filter((e) => !["waiting", "offered"].includes(e.status)).length,
+  };
 
   const grouped = useMemo(() => {
-    const entries = (data?.entries ?? []).filter((e) =>
-      showClosed ? true : ["waiting", "offered"].includes(e.status),
+    const entries = allEntries.filter((e) =>
+      view === "waiting" ? e.status === "waiting" : view === "offered" ? e.status === "offered" : !["waiting", "offered"].includes(e.status),
     );
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
@@ -486,7 +495,8 @@ export function WaitlistAdmin() {
       map.set(key, [...(map.get(key) ?? []), e]);
     }
     return [...map.entries()];
-  }, [data, showClosed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, view]);
 
   if (isLoading) {
     return (
@@ -507,9 +517,6 @@ export function WaitlistAdmin() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowClosed((v) => !v)}>
-            {showClosed ? "Nur offene zeigen" : "Alle Einträge zeigen"}
-          </Button>
           <Button size="sm" onClick={() => allocate.mutate(null)} disabled={allocate.isPending}>
             {allocate.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
             Plätze jetzt vergeben
@@ -517,14 +524,38 @@ export function WaitlistAdmin() {
         </div>
       </div>
 
-      {grouped.length === 0 && <p className="text-muted-foreground">Keine Einträge auf der Warteliste.</p>}
+      <div className="flex flex-wrap gap-2 border-b pb-2">
+        {([
+          ["waiting", "Wartend auf Platz"],
+          ["offered", "Laufende Angebote"],
+          ["done", "Erledigt / Archiv"],
+        ] as const).map(([key, label]) => (
+          <Button key={key} size="sm" variant={view === key ? "default" : "outline"} onClick={() => setView(key)}>
+            {label} ({tabCounts[key]})
+          </Button>
+        ))}
+      </div>
+
+      {view === "waiting" && (data?.courses ?? []).some((c) => c.max_participants != null) && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {(data?.courses ?? [])
+            .filter((c) => c.max_participants != null)
+            .map((c) => (
+              <span key={c.id} className="rounded-md border bg-muted/40 px-2 py-1">
+                <strong>{c.name}</strong>: {c.confirmed} gebucht · {c.held} angeboten · {c.free} frei
+              </span>
+            ))}
+        </div>
+      )}
+
+      {grouped.length === 0 && <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>}
 
       {grouped.map(([programId, entries]) => (
         <CollapsibleCard
           key={programId}
           storageKey={`waitlist-${programId}`}
           title={programName(programId === "none" ? null : programId)}
-          meta={<span className="text-sm text-muted-foreground">{entries.length} Einträge</span>}
+          meta={<span className="text-sm text-muted-foreground">{entries.length} {view === "waiting" ? "wartend" : view === "offered" ? "Angebote aktiv" : "Einträge"}</span>}
           contentClassName="overflow-x-auto">
             <table className="w-full min-w-[1100px] text-sm">
               <thead>
@@ -548,9 +579,12 @@ export function WaitlistAdmin() {
                   const suggestion = !e.program_id ? matchProgram(wish ?? e.notes, programs) : null;
                   const minAge = program?.min_age_years ?? null;
                   const readyOn = minAgeReachedOn(e.child_dob, minAge);
-                  const courses = (data?.courses ?? []).filter(
-                    (c) => (!e.program_id || c.program_id === e.program_id) && c.free !== 0,
-                  );
+                  const fits = (c: { program_id: string | null }) =>
+                    !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
+                  const courses = (data?.courses ?? [])
+                    .filter((c) => c.free !== 0)
+                    .map((c) => ({ ...c, fits: fits(c) }))
+                    .sort((a, b) => Number(b.fits) - Number(a.fits));
                   const tooYoungEverywhere =
                     !!e.child_dob &&
                     minAge != null &&
@@ -650,7 +684,7 @@ export function WaitlistAdmin() {
                         </Badge>
                         {e.status === "offered" && e.offer_expires_at && (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            Frist: {formatDateBerlin(e.offer_expires_at)}
+                            {courseName(e.offer_course_id)} · Frist: {formatDateBerlin(e.offer_expires_at)}
                           </div>
                         )}
                       </td>
@@ -682,7 +716,7 @@ export function WaitlistAdmin() {
                               <option value="">Platz anbieten…</option>
                               {courses.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.name}
+                                  {c.fits ? "" : "(anderes Angebot) "}{c.name}
                                   {c.free != null ? ` (${c.free} frei)` : ""}
                                   {!meetsMinAge(e.child_dob, c.starts_on, minAge) ? " – zu jung" : ""}
                                 </option>
@@ -711,7 +745,7 @@ export function WaitlistAdmin() {
                               <option value="">Direkt buchen…</option>
                               {courses.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.name}
+                                  {c.fits ? "" : "(anderes Angebot) "}{c.name}
                                   {c.free != null ? ` (${c.free} frei)` : ""}
                                 </option>
                               ))}

@@ -86,13 +86,24 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
 
   const counts = new Map<string, number>()
   if (relevant.length > 0) {
-    const { data: parts } = await supabaseAdmin
-      .from('course_participants')
-      .select('course_id,status')
-      .in('course_id', relevant.map((c) => c.id))
+    const ids = relevant.map((c) => c.id)
+    const [{ data: parts }, { data: held }] = await Promise.all([
+      supabaseAdmin.from('course_participants').select('course_id,status').in('course_id', ids),
+      supabaseAdmin
+        .from('waitlist_entries')
+        .select('offer_course_id')
+        .eq('status', 'offered')
+        .in('offer_course_id', ids)
+        .gte('offer_expires_at', new Date().toISOString()),
+    ])
     for (const p of parts ?? []) {
       if (p.status !== 'confirmed') continue
       counts.set(p.course_id, (counts.get(p.course_id) ?? 0) + 1)
+    }
+    // Plätze mit laufendem Wartelisten-Angebot sind reserviert
+    for (const h of held ?? []) {
+      if (!h.offer_course_id) continue
+      counts.set(h.offer_course_id, (counts.get(h.offer_course_id) ?? 0) + 1)
     }
   }
 
@@ -347,13 +358,10 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       }
     }
 
-    // Belegung prüfen
-    const { data: parts } = await supabaseAdmin
-      .from('course_participants')
-      .select('id,status')
-      .eq('course_id', course.id)
-    const confirmed = (parts ?? []).filter((p) => p.status === 'confirmed').length
-    const isFull = course.max_participants != null && confirmed >= course.max_participants
+    // Belegung prüfen (inkl. reservierter Plätze aus laufenden Wartelisten-Angeboten)
+    const { freeSlots } = await import('@/lib/waitlist.server')
+    const free = await freeSlots(course.id, course.max_participants)
+    const isFull = free != null && free <= 0
     const status: 'confirmed' | 'waiting' = isFull ? 'waiting' : 'confirmed'
 
     const price = data.isMember
