@@ -299,6 +299,7 @@ function Page() {
   }
 
   const [bulkText, setBulkText] = useState("");
+  const [formSessText, setFormSessText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   async function importSessions() {
     if (!sessCourse) return;
@@ -794,6 +795,11 @@ function Page() {
 
   async function save() {
     if (!editing.name) return toast.error("Name erforderlich");
+    const parsedList = formSessText.trim() ? parseSessionList(formSessText) : [];
+    const realList = parsedList.filter(p => !p.isBreak);
+    if (formSessText.trim() && realList.length === 0) return toast.error("In der Terminliste wurden keine Termine erkannt.");
+    if (realList.length > 30) return toast.error("Maximal 30 Termine");
+    if (realList.length > 0 && editing.id && !window.confirm(`Die bisherigen Termine dieses Zeitraums (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${realList.length} neue ersetzt. Fortfahren?`)) return;
     const payload: any = {
       name: editing.name,
       slug: editing.slug || slugify(`${editing.name}${editing.starts_on ? ` ${editing.starts_on}` : ""}`),
@@ -819,13 +825,34 @@ function Page() {
       start_tentative: !!editing.start_tentative,
       tentative_note: editing.tentative_note || null,
     };
-
+    if (realList.length > 0) {
+      const first = realList[0], last = realList[realList.length - 1];
+      payload.starts_on = first.date;
+      payload.ends_on = last.date;
+      payload.unit_count = realList.length;
+      payload.session_breaks = parsedList.filter(p => p.isBreak).map(p => ({ date: p.date, note: p.note || "kein Termin" }));
+      if (!editing.schedule && first.start) {
+        const wd = new Date(`${first.date}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
+        payload.schedule = `${wd} ${first.start}${first.end ? `–${first.end}` : ""} Uhr`;
+      }
+      if (!editing.slug && !editing.id) payload.slug = slugify(`${editing.name} ${first.date}`);
+    }
 
     const res = editing.id
-      ? await supabase.from("courses").update(payload).eq("id", editing.id)
-      : await supabase.from("courses").insert(payload);
+      ? await supabase.from("courses").update(payload).eq("id", editing.id).select("id").single()
+      : await supabase.from("courses").insert(payload).select("id").single();
     if (res.error) return toast.error(res.error.message);
-    toast.success("Gespeichert");
+    const courseId = res.data?.id as string | undefined;
+    if (courseId && realList.length > 0) {
+      const del = await supabase.from("course_sessions").delete().eq("course_id", courseId);
+      if (del.error) return toast.error(del.error.message);
+      const ins = await supabase.from("course_sessions").insert(realList.map((p, i) => ({
+        course_id: courseId, session_index: i + 1, session_date: p.date, start_time: p.start, end_time: p.end,
+      })));
+      if (ins.error) return toast.error(ins.error.message);
+    }
+    toast.success(realList.length ? `Gespeichert – ${realList.length} Termine übernommen` : "Gespeichert");
+    setFormSessText("");
     setOpen(false);
     await load();
   }
