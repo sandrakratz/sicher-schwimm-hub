@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { FileText } from "lucide-react";
+import { getPublicMediaUrl } from "@/lib/media-public.functions";
 
 export function useMediaUrl(path?: string | null) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     if (!path) { setUrl(null); return; }
-    supabase.storage.from("media").createSignedUrl(path, 60 * 60).then(({ data }) => {
-      if (active) setUrl(data?.signedUrl ?? null);
+    supabase.storage.from("media").createSignedUrl(path, 60 * 60).then(async ({ data }) => {
+      let signed = data?.signedUrl ?? null;
+      // Besucher ohne Anmeldung: Link über den Server, nur für öffentliche Beiträge.
+      if (!signed) {
+        try { signed = (await getPublicMediaUrl({ data: { path } })).url; } catch { signed = null; }
+      }
+      if (active) setUrl(signed);
     });
     return () => { active = false; };
   }, [path]);
