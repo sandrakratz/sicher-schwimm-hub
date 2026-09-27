@@ -160,3 +160,41 @@ export const cancelCourse = createServerFn({ method: 'POST' })
     const paidCount = (parts ?? []).filter(p => p.paid).length
     return { ok: true, moved, sent, paidCount }
   })
+
+/** Eilnachricht (z. B. Ausfall, Badschließung) an alle gebuchten Eltern eines Kurses. */
+export const broadcastCourseMessage = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    courseId: z.string().uuid(),
+    subject: z.string().trim().min(3).max(200),
+    message: z.string().trim().min(5).max(4000),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId)
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { data: course } = await supabaseAdmin.from('courses').select('id,name').eq('id', data.courseId).maybeSingle()
+    if (!course) throw new Error('Kurs nicht gefunden')
+    const { queueTemplateEmail } = await import('@/lib/email-send.server')
+    const { data: parts } = await supabaseAdmin.from('course_participants')
+      .select('id,participant_name,participant_email').eq('course_id', course.id).eq('status', 'confirmed')
+    const stamp = Date.now()
+    const seen = new Set<string>()
+    let sent = 0
+    for (const p of parts ?? []) {
+      const email = p.participant_email?.trim().toLowerCase()
+      if (!email || seen.has(email)) continue
+      seen.add(email)
+      const kids = (parts ?? []).filter((x) => x.participant_email?.trim().toLowerCase() === email).map((x) => x.participant_name).filter(Boolean).join(' und ')
+      const r = await queueTemplateEmail({
+        templateName: 'course-broadcast',
+        recipientEmail: p.participant_email!,
+        senderUserId: context.userId,
+        idempotencyKey: `course-broadcast-${course.id}-${p.id}-${stamp}`,
+        templateData: { subject: data.subject, message: data.message, course_name: course.name, child_name: kids || null },
+      })
+      if (r.queued) sent++
+    }
+    const { logAudit } = await import('@/lib/audit.server')
+    await logAudit(null, context.userId, { action: 'course.broadcast', entity: 'courses', entity_id: course.id, metadata: { subject: data.subject, sent } })
+    return { sent, total: seen.size }
+  })
