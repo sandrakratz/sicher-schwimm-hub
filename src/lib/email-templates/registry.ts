@@ -19,6 +19,7 @@ import { template as courseRemovalAgreed } from './course-removal-agreed'
 import { template as courseStartReminder } from './course-start-reminder'
 import { rescheduleTemplate, cancelTemplate } from './course-lifecycle'
 import { template as partialCertificate } from './partial-certificate'
+import { template as courseTransfer } from './course-transfer'
 
 
 
@@ -54,4 +55,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'partial-certificate': partialCertificate,
   'course-rescheduled': rescheduleTemplate,
   'course-cancelled': cancelTemplate,
+  'course-transfer': courseTransfer,
 }

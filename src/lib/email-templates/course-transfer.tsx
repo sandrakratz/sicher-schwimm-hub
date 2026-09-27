@@ -50,7 +50,7 @@ const Transfer = (p: Props) => (
               Restbetrag von <strong>{p.amount_due}</strong>
               {p.due_date ? <> – bitte bis <strong>{p.due_date}</strong> überweisen</> : null}.
             </Text>
-            <Text style={row}>Empfänger: {BILLING.accountHolder ?? ORG.name}</Text>
+            <Text style={row}>Empfänger: {BILLING.recipient}</Text>
             <Text style={row}>IBAN: {BILLING.iban}</Text>
             {p.reference ? <Text style={row}>Verwendungszweck: {p.reference}</Text> : null}
           </>
