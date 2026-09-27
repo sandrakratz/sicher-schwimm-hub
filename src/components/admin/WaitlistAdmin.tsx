@@ -378,7 +378,7 @@ function NotesCell({
 
 export function WaitlistAdmin() {
   const qc = useQueryClient();
-  const [showClosed, setShowClosed] = useState(false);
+  const [view, setView] = useState<"waiting" | "offered" | "done">("waiting");
   const [detail, setDetail] = useState<WaitlistEntry | null>(null);
   const migratedOnce = useRef(false);
 
@@ -475,10 +475,18 @@ export function WaitlistAdmin() {
   const programs = data?.programs ?? [];
   const programName = (id: string | null) => programs.find((p) => p.id === id)?.name ?? "Ohne Zuordnung";
   const programById = (id: string | null) => programs.find((p) => p.id === id) ?? null;
+  const courseName = (id: unknown) => (data?.courses ?? []).find((c) => c.id === id)?.name ?? "Kurs";
+
+  const allEntries = data?.entries ?? [];
+  const tabCounts = {
+    waiting: allEntries.filter((e) => e.status === "waiting").length,
+    offered: allEntries.filter((e) => e.status === "offered").length,
+    done: allEntries.filter((e) => !["waiting", "offered"].includes(e.status)).length,
+  };
 
   const grouped = useMemo(() => {
-    const entries = (data?.entries ?? []).filter((e) =>
-      showClosed ? true : ["waiting", "offered"].includes(e.status),
+    const entries = allEntries.filter((e) =>
+      view === "waiting" ? e.status === "waiting" : view === "offered" ? e.status === "offered" : !["waiting", "offered"].includes(e.status),
     );
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
@@ -486,7 +494,8 @@ export function WaitlistAdmin() {
       map.set(key, [...(map.get(key) ?? []), e]);
     }
     return [...map.entries()];
-  }, [data, showClosed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, view]);
 
   if (isLoading) {
     return (
