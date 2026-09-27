@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown } from "lucide-react";
+import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown, ArrowRightLeft, Lock } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv, generateTrainerProofXlsx } from "@/lib/course-sessions.functions";
@@ -25,6 +25,7 @@ import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleActions";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
+import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 
 
 
@@ -47,6 +48,7 @@ type Participant = {
   participant_phone: string | null;
   status: "confirmed" | "waiting" | "cancelled";
   notes: string | null;
+  internal_notes?: string | null;
   date_of_birth: string | null;
   goal_reached: boolean | null;
   achievement: string | null;
@@ -208,6 +210,7 @@ function Page() {
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
+  const [transferPart, setTransferPart] = useState<Participant | null>(null);
   const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean; notify: "unpaid" | "agreed" | "none"; note: string } | null>(null);
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
@@ -740,6 +743,7 @@ function Page() {
       date_of_birth: editPart.date_of_birth || null,
       status: editPart.status,
       notes: editPart.notes?.trim() || null,
+      internal_notes: editPart.internal_notes?.trim() || null,
       paid: editPart.paid,
       paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
       paid_by: editPart.paid ? userId : null,
@@ -1432,9 +1436,14 @@ function Page() {
                         </TableCell>
                       );
                     })()}
-                    <TableCell className="text-xs max-w-[200px] truncate">{p.notes || "—"}</TableCell>
+                    <TableCell className="text-xs max-w-[220px]">
+                      {p.notes && <div className="truncate rounded bg-amber-50 px-1 text-amber-900" title={p.notes}>{p.notes}</div>}
+                      {canManage && p.internal_notes && <div className="mt-0.5 flex items-center gap-1 truncate text-muted-foreground" title={p.internal_notes}><Lock className="h-3 w-3 shrink-0" />{p.internal_notes}</div>}
+                      {!p.notes && !(canManage && p.internal_notes) && "—"}
+                    </TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
+                      {canManage && p.status !== "cancelled" && <Button variant="ghost" size="sm" title="Kind umbuchen / Kurs wechseln" onClick={() => setTransferPart(p)}><ArrowRightLeft className="h-4 w-4" /></Button>}
                       {canManage && <Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                     </TableCell>
                   </TableRow>
@@ -1519,6 +1528,13 @@ function Page() {
 
 
 
+      <TransferParticipantDialog
+        participant={transferPart}
+        courses={rows.filter(c => !(c as any).archived_at).map(c => ({ id: c.id, name: c.name, schedule: c.schedule, location: c.location, free: c.max_participants != null ? c.max_participants - (counts[c.id]?.confirmed ?? 0) : null }))}
+        onClose={() => setTransferPart(null)}
+        onDone={async () => { setTransferPart(null); if (partCourse) await openParticipants(partCourse); await load(); }}
+      />
+
       <Dialog open={!!editPart} onOpenChange={v => !v && setEditPart(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Teilnehmer bearbeiten</DialogTitle></DialogHeader>
@@ -1544,7 +1560,8 @@ function Page() {
                   </Select>
                 </div>
               </div>
-              <div><Label>Notiz</Label><Textarea rows={2} value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-2"><Label>Wichtiger Hinweis zum Kind (für Trainer sichtbar)</Label><Textarea rows={2} placeholder="Gesundheit, Ängste, Besonderheiten …" value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
+              {canManage && <div className="rounded-md border bg-muted/40 p-2"><Label className="flex items-center gap-1"><Lock className="h-3 w-3" />Interne Notiz (nur Vorstand – Trainer sehen das nicht)</Label><Textarea rows={2} placeholder="Zahlungsabsprache, Geschwisterkind, Umbuchung …" value={editPart.internal_notes || ""} onChange={e => setEditPart(p => p && { ...p, internal_notes: e.target.value })} /></div>}
 
               {canManage && <div className="border-t pt-3 mt-2">
                 <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
