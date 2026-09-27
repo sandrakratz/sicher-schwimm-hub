@@ -55,9 +55,11 @@ export function ParticipantResultEditor({
   const doneCount = countCriteriaDone(level, criteria);
   const complete = allCriteriaDone(level, criteria);
 
-  function setCriterion(key: string, patch: { done?: boolean; value?: string; total?: string }) {
+  function setCriterion(key: string, patch: { done?: boolean; value?: string; total?: string; date?: string | null }) {
     setCriteria(prev => {
-      const next = { ...prev, [key]: { ...prev[key], ...patch } };
+      const extra =
+        patch.done === true && !prev[key]?.date ? { date: todayIso() } : patch.done === false ? { date: null, by_name: null, by_id: null } : {};
+      const next = { ...prev, [key]: { ...prev[key], ...extra, ...patch } };
       // Sobald alle Teile erfüllt sind, das Gesamtergebnis vorschlagen.
       if (patch.done && allCriteriaDone(level, next)) {
         setGoal(true);
@@ -138,6 +140,20 @@ export function ParticipantResultEditor({
                     />
                     <span>{c.label}</span>
                   </label>
+                  {state.done && (
+                    <div className="ml-6 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <Input
+                        type="date"
+                        aria-label="Datum der Teilprüfung"
+                        className="h-8 w-40"
+                        value={state.date || ""}
+                        onChange={e => setCriterion(c.key, { date: e.target.value || null })}
+                      />
+                      <span>
+                        Abgenommen von: <span className="font-medium text-foreground">{state.by_name || "dir (beim Speichern)"}</span>
+                      </span>
+                    </div>
+                  )}
                   {c.valueLabel && (
                     <div className="ml-6 space-y-1">
                       <div>

@@ -273,14 +273,39 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
     const level = findExamLevel(examLevel);
     const criteria: ExamCriteriaState = {};
     if (level) {
+      // Bisherigen Stand laden, damit Datum und Prüfer:in je Teilprüfung erhalten bleiben.
+      const { data: prevRow } = await supabaseAdmin
+        .from("course_participants")
+        .select("exam_criteria")
+        .eq("id", data.participantId)
+        .maybeSingle();
+      const prev = ((prevRow?.exam_criteria ?? {}) as ExamCriteriaState) || {};
+      const { data: me } = await supabaseAdmin
+        .from("profiles")
+        .select("first_name,last_name,email")
+        .eq("id", context.userId)
+        .maybeSingle();
+      const myName =
+        [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim() || me?.email || "Unbekannt";
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+      const isIso = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
       for (const c of level.criteria) {
         const entry = data.examCriteria?.[c.key];
         if (!entry) continue;
         const value = typeof entry.value === "string" ? entry.value.trim().slice(0, 40) : null;
         const total = typeof entry.total === "string" ? entry.total.trim().slice(0, 40) : null;
-        if (entry.done || value || total) {
-          criteria[c.key] = { done: Boolean(entry.done), value: value || null, total: total || null };
-        }
+        if (!(entry.done || value || total)) continue;
+        const old = prev[c.key];
+        const done = Boolean(entry.done);
+        const wasDone = old?.done === true;
+        criteria[c.key] = {
+          done,
+          value: value || null,
+          total: total || null,
+          date: done ? (isIso(entry.date) ? entry.date! : isIso(old?.date) ? old!.date! : today) : null,
+          by_id: done ? (wasDone && old?.by_id ? old.by_id : context.userId) : null,
+          by_name: done ? (wasDone && old?.by_name ? old.by_name : myName) : null,
+        };
       }
     }
 

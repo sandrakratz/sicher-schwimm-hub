@@ -137,6 +137,11 @@ export type ExamCriterionState = {
   value?: string | null;
   /** Zweiter Wert, z. B. Gesamtbahnen in der vollen Schwimmzeit. */
   total?: string | null;
+  /** Datum der Teilprüfung (YYYY-MM-DD). */
+  date?: string | null;
+  /** Wer die Teilprüfung abgenommen hat (wird serverseitig gesetzt). */
+  by_id?: string | null;
+  by_name?: string | null;
 };
 export type ExamCriteriaState = Record<string, ExamCriterionState>;
 
@@ -161,4 +166,13 @@ export function countCriteriaDone(levelKey: string | null | undefined, state: Ex
   const level = findExamLevel(levelKey);
   if (!level) return 0;
   return level.criteria.filter(c => state?.[c.key]?.done === true).length;
+}
+
+/** Frühestes Datum einer bestandenen Teilprüfung. */
+export function firstCriterionDate(state: ExamCriteriaState): string | null {
+  const dates = Object.values(state || {})
+    .filter(v => v?.done && v.date)
+    .map(v => v.date as string)
+    .sort();
+  return dates[0] ?? null;
 }

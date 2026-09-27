@@ -8,6 +8,7 @@ import {
   allCriteriaDone,
   countCriteriaDone,
   findExamLevel,
+  firstCriterionDate,
   type ExamCriteriaState,
 } from "@/lib/swim-exams";
 import { LOGO_JPG_B64, SIGNATURE_PNG_B64, STAMP_PNG_B64 } from "@/lib/pdf-branding.server";
@@ -136,7 +137,8 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
     const done = st?.done === true;
     const lines = wrap(c.label, done ? bold : font, 9.5, WIDTH - 150);
     text(done ? "[X]" : "[  ]", { size: 10, b: true, color: done ? GREEN : MUTED });
-    text(done ? `Bestanden${input.examDate ? ` am ${deDate(input.examDate)}` : ""}` : "Noch abzulegen", {
+    const doneDate = st?.date ?? input.examDate;
+    text(done ? `Bestanden${doneDate ? ` am ${deDate(doneDate)}` : ""}` : "Noch abzulegen", {
       size: 9,
       b: done,
       x: RIGHT - 118,
@@ -161,7 +163,7 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
   text("Wichtiger Hinweis zur Frist", { size: 10.5, b: true });
   y -= 14;
   para(
-    `Nach der DPO müssen alle Teilleistungen eines Abzeichens innerhalb eines Zeitraums von 2 Monaten abgelegt werden. Die fehlenden Teilleistungen sind daher bis spätestens ${deDate(input.deadline)} abzulegen. Bitte legen Sie diesen Nachweis bei der Prüfung im Schwimmbad vor; dort kann nach Erfüllung aller Teilleistungen das Abzeichen ausgestellt werden.`,
+    `Nach der DPO müssen alle Teilleistungen eines Abzeichens innerhalb von 2 Monaten nach der ersten bestandenen Teilprüfung abgelegt werden. Die fehlenden Teilleistungen sind daher bis spätestens ${deDate(input.deadline)} abzulegen. Bitte legen Sie diesen Nachweis bei der Prüfung im Schwimmbad vor; dort kann nach Erfüllung aller Teilleistungen das Abzeichen ausgestellt werden.`,
   );
 
   // Unterschrift + Stempel
@@ -210,7 +212,7 @@ export async function buildPartialCertificate(participantId: string, issuedOn: s
   const criteria = (p.exam_criteria ?? {}) as ExamCriteriaState;
   if (!isPartial(p.exam_level, criteria)) return null;
   const course = (p as any).courses as { name?: string; location?: string | null; ends_on?: string | null } | null;
-  const base = (p.exam_date as string | null) ?? course?.ends_on ?? issuedOn;
+  const base = firstCriterionDate(criteria) ?? (p.exam_date as string | null) ?? course?.ends_on ?? issuedOn;
   const deadline = addMonths(base, 2);
   const childName = (p.participant_name ?? "") as string;
   const bytes = await renderPartialCertificatePdf({
