@@ -120,6 +120,35 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
     }));
   });
 
+/** Wichtigen Hinweis zum Kind (Gesundheit, Besonderheiten) bearbeiten – Trainer des Kurses + Vorstand. */
+export const updateParticipantHint = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string; hint: string }) => {
+    if (typeof input?.hint !== "string" || input.hint.length > 2000) throw new Error("Hinweis zu lang");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<{ hint: string | null }> => {
+    const { data: roleRows } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
+    const roles = (roleRows || []).map((r: { role: string }) => r.role);
+    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    if (!isStaff && !roles.includes("trainer")) throw new Response("Forbidden", { status: 403 });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p } = await supabaseAdmin.from("course_participants").select("id,course_id").eq("id", data.participantId).maybeSingle();
+    if (!p) throw new Error("Teilnehmende:r nicht gefunden.");
+    if (!isStaff) {
+      const { data: allowed } = await context.supabase.rpc("is_trainer_of_course", { _trainer_id: context.userId, _course_id: p.course_id as string });
+      if (!allowed) throw new Response("Forbidden", { status: 403 });
+    }
+    const value = data.hint.trim() || null;
+    const { error } = await supabaseAdmin.from("course_participants").update({ notes: value }).eq("id", p.id as string);
+    if (error) throw new Error(error.message);
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, context.userId, { action: "participant.hint_updated", entity: "course_participants", entity_id: p.id as string });
+    } catch { /* ignore */ }
+    return { hint: value };
+  });
+
 /**
  * Telefonnummer der Eltern für eine:n Teilnehmende:n nacherfassen/korrigieren.
  * Erlaubt für Admin/Vorstand sowie Trainer:innen des jeweiligen Kurses.
