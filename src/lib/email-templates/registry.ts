@@ -17,6 +17,7 @@ import { template as waitlistSignup } from './waitlist-signup'
 import { template as courseRemovalUnpaid } from './course-removal-unpaid'
 import { template as courseRemovalAgreed } from './course-removal-agreed'
 import { template as courseStartReminder } from './course-start-reminder'
+import { rescheduleTemplate, cancelTemplate } from './course-lifecycle'
 
 
 
@@ -49,4 +50,6 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'course-removal-unpaid': courseRemovalUnpaid,
   'course-removal-agreed': courseRemovalAgreed,
   'course-start-reminder': courseStartReminder,
+  'course-rescheduled': rescheduleTemplate,
+  'course-cancelled': cancelTemplate,
 }

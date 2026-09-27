@@ -23,6 +23,7 @@ import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
+import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleActions";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 
 
@@ -880,6 +881,7 @@ function Page() {
           ><FileDown className="h-4 w-4" /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</Button>
           {canManage && <>
             <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
+            {!c.archived_at && <CourseLifecycleActions course={c} onDone={load} />}
             {c.archived_at
               ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
               : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /></Button>}
