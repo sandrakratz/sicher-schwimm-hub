@@ -7,6 +7,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   'course-start-reminder': 'Erinnerung 3 Tage vor Kursstart',
   'course-rescheduled': 'Kursstart verschoben',
   'course-cancelled': 'Kurs abgesagt',
+  'partial-certificate': 'Teilleistungsnachweis',
   'contact-message': 'Kontaktnachricht (Benachrichtigung an den Verein)',
   'new-registration': 'Neue Registrierung (Benachrichtigung an den Verein)',
   'cancellation-internal': 'Widerruf (Benachrichtigung an den Verein)',
