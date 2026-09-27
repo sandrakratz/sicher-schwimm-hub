@@ -15,6 +15,7 @@ import { AlertTriangle, Copy, FileText, Loader2, Pencil, RefreshCw, Send, Shield
 
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
+import { relatedProgramIds } from "@/lib/waitlist-programs";
 import {
   listWaitlist,
   runWaitlistAllocation,
@@ -683,7 +684,7 @@ export function WaitlistAdmin() {
                         </Badge>
                         {e.status === "offered" && e.offer_expires_at && (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            Frist: {formatDateBerlin(e.offer_expires_at)}
+                            {courseName(e.offer_course_id)} · Frist: {formatDateBerlin(e.offer_expires_at)}
                           </div>
                         )}
                       </td>
@@ -692,7 +693,7 @@ export function WaitlistAdmin() {
                       </td>
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          {e.status === "waiting" && courses.length > 0 && (
+                          {e.status === "waiting" && (courses.length > 0 || true) && courses.length > 0 && (
                             <select
                               className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                               defaultValue=""
@@ -715,7 +716,7 @@ export function WaitlistAdmin() {
                               <option value="">Platz anbieten…</option>
                               {courses.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.name}
+                                  {c.fits ? "" : "(anderes Angebot) "}{c.name}
                                   {c.free != null ? ` (${c.free} frei)` : ""}
                                   {!meetsMinAge(e.child_dob, c.starts_on, minAge) ? " – zu jung" : ""}
                                 </option>
@@ -744,7 +745,7 @@ export function WaitlistAdmin() {
                               <option value="">Direkt buchen…</option>
                               {courses.map((c) => (
                                 <option key={c.id} value={c.id}>
-                                  {c.name}
+                                  {c.fits ? "" : "(anderes Angebot) "}{c.name}
                                   {c.free != null ? ` (${c.free} frei)` : ""}
                                 </option>
                               ))}
