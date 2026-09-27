@@ -299,6 +299,7 @@ function Page() {
   }
 
   const [bulkText, setBulkText] = useState("");
+  const [formSessText, setFormSessText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   async function importSessions() {
     if (!sessCourse) return;
@@ -790,10 +791,15 @@ function Page() {
     });
     setOpen(true);
   }
-  function startEdit(c: Course) { setEditing(c); setOpen(true); }
+  function startEdit(c: Course) { setFormSessText(""); setEditing(c); setOpen(true); }
 
   async function save() {
     if (!editing.name) return toast.error("Name erforderlich");
+    const parsedList = formSessText.trim() ? parseSessionList(formSessText) : [];
+    const realList = parsedList.filter(p => !p.isBreak);
+    if (formSessText.trim() && realList.length === 0) return toast.error("In der Terminliste wurden keine Termine erkannt.");
+    if (realList.length > 30) return toast.error("Maximal 30 Termine");
+    if (realList.length > 0 && editing.id && !window.confirm(`Die bisherigen Termine dieses Zeitraums (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${realList.length} neue ersetzt. Fortfahren?`)) return;
     const payload: any = {
       name: editing.name,
       slug: editing.slug || slugify(`${editing.name}${editing.starts_on ? ` ${editing.starts_on}` : ""}`),
@@ -819,13 +825,34 @@ function Page() {
       start_tentative: !!editing.start_tentative,
       tentative_note: editing.tentative_note || null,
     };
-
+    if (realList.length > 0) {
+      const first = realList[0], last = realList[realList.length - 1];
+      payload.starts_on = first.date;
+      payload.ends_on = last.date;
+      payload.unit_count = realList.length;
+      payload.session_breaks = parsedList.filter(p => p.isBreak).map(p => ({ date: p.date, note: p.note || "kein Termin" }));
+      if (!editing.schedule && first.start) {
+        const wd = new Date(`${first.date}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
+        payload.schedule = `${wd} ${first.start}${first.end ? `–${first.end}` : ""} Uhr`;
+      }
+      if (!editing.slug && !editing.id) payload.slug = slugify(`${editing.name} ${first.date}`);
+    }
 
     const res = editing.id
-      ? await supabase.from("courses").update(payload).eq("id", editing.id)
-      : await supabase.from("courses").insert(payload);
+      ? await supabase.from("courses").update(payload).eq("id", editing.id).select("id").single()
+      : await supabase.from("courses").insert(payload).select("id").single();
     if (res.error) return toast.error(res.error.message);
-    toast.success("Gespeichert");
+    const courseId = res.data?.id as string | undefined;
+    if (courseId && realList.length > 0) {
+      const del = await supabase.from("course_sessions").delete().eq("course_id", courseId);
+      if (del.error) return toast.error(del.error.message);
+      const ins = await supabase.from("course_sessions").insert(realList.map((p, i) => ({
+        course_id: courseId, session_index: i + 1, session_date: p.date, start_time: p.start, end_time: p.end,
+      })));
+      if (ins.error) return toast.error(ins.error.message);
+    }
+    toast.success(realList.length ? `Gespeichert – ${realList.length} Termine übernommen` : "Gespeichert");
+    setFormSessText("");
     setOpen(false);
     await load();
   }
@@ -1218,6 +1245,12 @@ function Page() {
                   <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <Label className="text-sm font-semibold">Terminliste einfügen (z. B. aus der KI kopiert)</Label>
+              <p className="text-xs text-muted-foreground">Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren. Beim Speichern werden Start, Ende, Anzahl der Einheiten und alle Termine übernommen – Eltern sehen sie auf der Kursseite.{editing.id ? " Vorhandene Termine werden ersetzt." : ""} Leer lassen, um nichts zu ändern.</p>
+              <Textarea rows={6} value={formSessText} onChange={e => setFormSessText(e.target.value)} placeholder={"1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027  11:00–11:45 Uhr"} />
+              {formSessText.trim() && (() => { const p = parseSessionList(formSessText); const r = p.filter(x => !x.isBreak); return <p className="text-xs text-muted-foreground">Erkannt: {r.length} Termine, {p.length - r.length} Pausen{r.length ? ` · ${formatDateBerlin(r[0].date)} – ${formatDateBerlin(r[r.length - 1].date)}` : ""}</p>; })()}
             </div>
             <div className="rounded-md border p-3 space-y-2">
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!editing.start_tentative} onCheckedChange={v => setEditing(p => ({ ...p, start_tentative: !!v }))} /> Starttermin unter Vorbehalt (z. B. Wiedereröffnung / Sanierung)</label>
