@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus } from "lucide-react";
+import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus, AlertTriangle, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { buildIcs, googleCalendarUrl, parseTimeRange, type CalendarItem } from "@/lib/ics";
 import { EventShiftSignups } from "@/components/admin/EventShiftSignups";
@@ -46,6 +46,10 @@ export function AvailabilityBoard() {
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [showDeclined, setShowDeclined] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
 
   const trainersFn = useServerFn(listTrainers);
 
@@ -202,6 +206,86 @@ export function AvailabilityBoard() {
       location: c?.location || "",
       description: c?.schedule ? `Zeitplan: ${c.schedule}` : "",
     });
+  }
+
+  const isAssignedToMe = (id: string) => assign.some(a => a.session_id === id && a.trainer_id === me);
+  const isVisible = (s: SessionRow) => showDeclined || isAssignedToMe(s.id) || myState(s.id) !== false;
+  const staffCount = (id: string) => new Set([
+    ...avail.filter(a => a.session_id === id && a.available).map(a => a.trainer_id),
+    ...assign.filter(a => a.session_id === id).map(a => a.trainer_id),
+  ]).size;
+  const understaffed = sessions.filter(s => staffCount(s.id) < 2);
+  const visibleSessions = sessions.filter(isVisible);
+  const byDate = new Map<string, SessionRow[]>();
+  for (const s of visibleSessions) {
+    const l = byDate.get(s.session_date) || [];
+    l.push(s);
+    byDate.set(s.session_date, l);
+  }
+  const monthCells: (string | null)[] = (() => {
+    const first = new Date(month.y, month.m, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const days = new Date(month.y, month.m + 1, 0).getDate();
+    const cells: (string | null)[] = Array(offset).fill(null);
+    for (let d = 1; d <= days; d++) {
+      cells.push(`${month.y}-${String(month.m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+    }
+    return cells;
+  })();
+  function shiftMonth(delta: number) {
+    setSelectedDate(null);
+    setMonth(({ y, m }) => { const d = new Date(y, m + delta, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
+  }
+  function statusDot(s: SessionRow) {
+    if (isAssignedToMe(s.id)) return "bg-primary";
+    const st = myState(s.id);
+    if (st === true) return "bg-green-600";
+    if (st === false) return "bg-muted-foreground/40";
+    return "bg-amber-400";
+  }
+
+  function renderSession(s: SessionRow, opts: { compact?: boolean } = {}) {
+    const c = courses[s.course_id];
+    const state = myState(s.id);
+    const yes = avail.filter(a => a.session_id === s.id && a.available).map(a => trainerName(a.trainer_id));
+    const assignedIds = assign.filter(a => a.session_id === s.id).map(a => a.trainer_id);
+    const assignedToMe = assignedIds.includes(me);
+    const others = assignedIds.filter(id => id !== me).map(trainerName);
+    const count = staffCount(s.id);
+    return (
+      <div key={s.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="text-sm font-medium">
+            {weekday(s.session_date)}, {formatDateBerlin(s.session_date)} · {c?.name || "Kurs"} ({s.session_index}. Termin)
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {c?.schedule && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{c.schedule}</span>}
+            {c?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{c.location}</span>}
+            {assignedToMe && <Badge className="border-transparent bg-primary text-primary-foreground">Du bist eingeteilt</Badge>}
+            {others.length > 0 && <span>Eingeteilt: {others.join(", ")}</span>}
+            {!opts.compact && <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>}
+            {count < 2 && <span className="font-medium text-destructive">{count} von 2 Trainern</span>}
+          </div>
+        </div>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          {!opts.compact && (
+            <a href={googleLink(s)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline hover:text-primary-deep" title="Diesen Termin in Google Kalender eintragen">Google</a>
+          )}
+          <Button size="sm" variant="outline" disabled={busy === s.id}
+            onClick={() => setAvailability(s.id, state === true ? null : true)}
+            className={`min-h-11 flex-1 sm:flex-none ${state === true ? "border-transparent bg-green-600 text-white hover:bg-green-700" : ""}`}>
+            <Check className="h-4 w-4" /> {opts.compact && state !== true ? "Ich springe ein" : "Kann"}
+          </Button>
+          {!opts.compact && (
+            <Button size="sm" variant="outline" disabled={busy === s.id}
+              onClick={() => setAvailability(s.id, state === false ? null : false)}
+              className={`min-h-11 flex-1 sm:flex-none ${state === false ? "border-transparent bg-red-600 text-white hover:bg-red-700" : ""}`}>
+              <X className="h-4 w-4" /> Kann nicht
+            </Button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
