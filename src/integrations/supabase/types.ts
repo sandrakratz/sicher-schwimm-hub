@@ -219,6 +219,7 @@ export type Database = {
           exam_recorded_by: string | null
           goal_reached: boolean | null
           id: string
+          internal_notes: string | null
           is_member: boolean | null
           member_confirmed: boolean
           member_confirmed_at: string | null
@@ -241,6 +242,10 @@ export type Database = {
           price_amount: number | null
           request_id: string | null
           status: Database["public"]["Enums"]["enrollment_status"]
+          transfer_reason: string | null
+          transferred_at: string | null
+          transferred_from_participant_id: string | null
+          transferred_to_course_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -260,6 +265,7 @@ export type Database = {
           exam_recorded_by?: string | null
           goal_reached?: boolean | null
           id?: string
+          internal_notes?: string | null
           is_member?: boolean | null
           member_confirmed?: boolean
           member_confirmed_at?: string | null
@@ -282,6 +288,10 @@ export type Database = {
           price_amount?: number | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
+          transfer_reason?: string | null
+          transferred_at?: string | null
+          transferred_from_participant_id?: string | null
+          transferred_to_course_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -301,6 +311,7 @@ export type Database = {
           exam_recorded_by?: string | null
           goal_reached?: boolean | null
           id?: string
+          internal_notes?: string | null
           is_member?: boolean | null
           member_confirmed?: boolean
           member_confirmed_at?: string | null
@@ -323,6 +334,10 @@ export type Database = {
           price_amount?: number | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
+          transfer_reason?: string | null
+          transferred_at?: string | null
+          transferred_from_participant_id?: string | null
+          transferred_to_course_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -339,6 +354,20 @@ export type Database = {
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "course_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_participants_transferred_from_participant_id_fkey"
+            columns: ["transferred_from_participant_id"]
+            isOneToOne: false
+            referencedRelation: "course_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_participants_transferred_to_course_id_fkey"
+            columns: ["transferred_to_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
         ]
