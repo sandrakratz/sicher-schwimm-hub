@@ -73,6 +73,7 @@ import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/em
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicHooksWaitlistSweepRouteImport } from './routes/api/public/hooks/waitlist-sweep'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
+import { Route as ApiPublicHooksPartialCertificateRouteImport } from './routes/api/public/hooks/partial-certificate'
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
 
 const WiderrufRoute = WiderrufRouteImport.update({
@@ -423,6 +424,12 @@ const ApiPublicHooksPaymentCheckReminderRoute =
     path: '/api/public/hooks/payment-check-reminder',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPartialCertificateRoute =
+  ApiPublicHooksPartialCertificateRouteImport.update({
+    id: '/api/public/hooks/partial-certificate',
+    path: '/api/public/hooks/partial-certificate',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCourseStartReminderRoute =
   ApiPublicHooksCourseStartReminderRouteImport.update({
     id: '/api/public/hooks/course-start-reminder',
@@ -490,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
+  '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -555,6 +563,7 @@ export interface FileRoutesByTo {
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
+  '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -623,6 +632,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
+  '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -691,6 +701,7 @@ export interface FileRouteTypes {
     | '/portal/'
     | '/trainer/'
     | '/api/public/hooks/course-start-reminder'
+    | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
@@ -756,6 +767,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/trainer'
     | '/api/public/hooks/course-start-reminder'
+    | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
@@ -823,6 +835,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/'
     | '/_authenticated/trainer/'
     | '/api/public/hooks/course-start-reminder'
+    | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
     | '/lovable/email/auth/preview'
@@ -861,6 +874,7 @@ export interface RootRouteChildren {
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   ApiPublicHooksCourseStartReminderRoute: typeof ApiPublicHooksCourseStartReminderRoute
+  ApiPublicHooksPartialCertificateRoute: typeof ApiPublicHooksPartialCertificateRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
   ApiPublicHooksWaitlistSweepRoute: typeof ApiPublicHooksWaitlistSweepRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -1318,6 +1332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksPaymentCheckReminderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/partial-certificate': {
+      id: '/api/public/hooks/partial-certificate'
+      path: '/api/public/hooks/partial-certificate'
+      fullPath: '/api/public/hooks/partial-certificate'
+      preLoaderRoute: typeof ApiPublicHooksPartialCertificateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/course-start-reminder': {
       id: '/api/public/hooks/course-start-reminder'
       path: '/api/public/hooks/course-start-reminder'
@@ -1445,6 +1466,7 @@ const rootRouteChildren: RootRouteChildren = {
   LovableEmailEventsRoute: LovableEmailEventsRoute,
   ApiPublicHooksCourseStartReminderRoute:
     ApiPublicHooksCourseStartReminderRoute,
+  ApiPublicHooksPartialCertificateRoute: ApiPublicHooksPartialCertificateRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
   ApiPublicHooksWaitlistSweepRoute: ApiPublicHooksWaitlistSweepRoute,
