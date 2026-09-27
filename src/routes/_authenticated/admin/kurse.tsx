@@ -791,7 +791,7 @@ function Page() {
     });
     setOpen(true);
   }
-  function startEdit(c: Course) { setEditing(c); setOpen(true); }
+  function startEdit(c: Course) { setFormSessText(""); setEditing(c); setOpen(true); }
 
   async function save() {
     if (!editing.name) return toast.error("Name erforderlich");
@@ -1245,6 +1245,12 @@ function Page() {
                   <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <Label className="text-sm font-semibold">Terminliste einfügen (z. B. aus der KI kopiert)</Label>
+              <p className="text-xs text-muted-foreground">Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren. Beim Speichern werden Start, Ende, Anzahl der Einheiten und alle Termine übernommen – Eltern sehen sie auf der Kursseite.{editing.id ? " Vorhandene Termine werden ersetzt." : ""} Leer lassen, um nichts zu ändern.</p>
+              <Textarea rows={6} value={formSessText} onChange={e => setFormSessText(e.target.value)} placeholder={"1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027  11:00–11:45 Uhr"} />
+              {formSessText.trim() && (() => { const p = parseSessionList(formSessText); const r = p.filter(x => !x.isBreak); return <p className="text-xs text-muted-foreground">Erkannt: {r.length} Termine, {p.length - r.length} Pausen{r.length ? ` · ${formatDateBerlin(r[0].date)} – ${formatDateBerlin(r[r.length - 1].date)}` : ""}</p>; })()}
             </div>
             <div className="rounded-md border p-3 space-y-2">
               <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!editing.start_tentative} onCheckedChange={v => setEditing(p => ({ ...p, start_tentative: !!v }))} /> Starttermin unter Vorbehalt (z. B. Wiedereröffnung / Sanierung)</label>
