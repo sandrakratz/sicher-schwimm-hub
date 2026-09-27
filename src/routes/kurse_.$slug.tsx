@@ -595,7 +595,7 @@ function BookingDialog({
           <PaymentSummary
             startsOn={term?.starts_on}
             paymentDueDays={program.payment_due_days}
-            amount={price}
+            amount={totalPrice}
           />
 
           <div className="flex items-start gap-2">
