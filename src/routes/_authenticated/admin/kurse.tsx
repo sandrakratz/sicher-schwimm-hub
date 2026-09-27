@@ -26,6 +26,9 @@ import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleActions";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
+import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
+import { relatedProgramIds } from "@/lib/waitlist-programs";
+import { Megaphone } from "lucide-react";
 
 
 
@@ -211,6 +214,9 @@ function Page() {
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
   const [transferPart, setTransferPart] = useState<Participant | null>(null);
+  const [broadcastCourse, setBroadcastCourse] = useState<Course | null>(null);
+  const [wlEntries, setWlEntries] = useState<any[]>([]);
+  const [wlPick, setWlPick] = useState<string>("");
   const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean; notify: "unpaid" | "agreed" | "none"; note: string } | null>(null);
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
@@ -620,6 +626,20 @@ function Page() {
     setPartCourse(c); setPartOpen(true);
     const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
+    const { data: wl } = await supabase.from("waitlist_entries")
+      .select("id,child_name,child_dob,parent_name,parent_email,parent_phone,notes,is_member,program_id,status,created_at")
+      .in("status", ["waiting", "offered"]).order("created_at", { ascending: true });
+    const rel = relatedProgramIds((c as any).program_id ?? null, programs as any);
+    const list = ((wl as any[]) || []).map(e => ({ ...e, fits: rel.includes(e.program_id) }));
+    list.sort((a, b) => Number(b.fits) - Number(a.fits));
+    setWlEntries(list);
+    setWlPick("");
+  }
+  function pickWaitlist(id: string) {
+    setWlPick(id);
+    const e = wlEntries.find(x => x.id === id);
+    if (!e) return;
+    setNewPart(p => ({ ...p, name: e.child_name || "", email: e.parent_email || "", phone: e.parent_phone || "", date_of_birth: e.child_dob || "", notes: e.notes || "" }));
   }
   const participantPaymentState = (p: Participant) =>
     paymentState({
@@ -666,9 +686,16 @@ function Page() {
       status: newPart.status,
       notes: newPart.notes.trim() || null,
       date_of_birth: newPart.date_of_birth || null,
+      ...(wlPick ? { is_member: wlEntries.find(x => x.id === wlPick)?.is_member ?? null } : {}),
     });
     if (error) return toast.error(error.message);
-    toast.success("Teilnehmer hinzugefügt");
+    if (wlPick) {
+      await supabase.from("waitlist_entries").update({
+        status: "accepted", offer_token: null, offer_course_id: partCourse.id, responded_at: new Date().toISOString(),
+      }).eq("id", wlPick);
+      setWlPick("");
+    }
+    toast.success(wlPick ? "Aus der Warteliste übernommen" : "Teilnehmer hinzugefügt");
     setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
 
     await openParticipants(partCourse);
@@ -907,6 +934,7 @@ function Page() {
         <TableCell className="text-right whitespace-nowrap">
           <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
           <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
+          {canManage && <Button variant="ghost" size="sm" title="Eilnachricht an alle Eltern dieses Kurses" onClick={() => setBroadcastCourse(c)}><Megaphone className="h-4 w-4 text-destructive" /> Eilnachricht</Button>}
           <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel"}</Button>
           <Button
             variant="ghost"
@@ -1454,6 +1482,25 @@ function Page() {
 
           {canManage && <div className="border-t pt-4 mt-4 space-y-3">
             <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
+            {wlEntries.length > 0 && (
+              <div>
+                <Label>Kind aus Warteliste übernehmen</Label>
+                <Select value={wlPick} onValueChange={pickWaitlist}>
+                  <SelectTrigger><SelectValue placeholder={`Aus Warteliste wählen … (${wlEntries.length})`} /></SelectTrigger>
+                  <SelectContent>
+                    {wlEntries.map(e => {
+                      const prog = programs.find(p => p.id === e.program_id);
+                      return (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.child_name || "—"}{e.child_dob ? ` (${fmtDate(e.child_dob)})` : ""} · {prog?.name ?? "ohne Angebot"}{e.status === "offered" ? " · Angebot läuft" : ""}{e.fits ? "" : " (anderes Angebot)"}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <div className="text-xs text-muted-foreground mt-1">Füllt die Felder automatisch aus. Beim Hinzufügen wird der Wartelisten-Eintrag als gebucht markiert.</div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
               <div>
@@ -1527,6 +1574,8 @@ function Page() {
       </Dialog>
 
 
+
+      <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
 
       <TransferParticipantDialog
         participant={transferPart}

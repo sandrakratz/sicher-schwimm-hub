@@ -429,10 +429,14 @@ function BookingDialog({
   });
 
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
+  const [siblings, setSiblings] = useState<Array<{ childName: string; childDob: string; healthInfo: string }>>([]);
+  const setSib = (i: number, k: "childName" | "childDob" | "healthInfo", v: string) =>
+    setSiblings((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
 
   const price = form.isMember
     ? term?.price_member ?? program.price_member ?? null
     : term?.price_non_member ?? program.price_non_member ?? null;
+  const totalPrice = price != null ? price * (1 + siblings.length) : null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -443,35 +447,47 @@ function BookingDialog({
     }
     setSubmitting(true);
     try {
-      const res = await bookCourseTerm({
-        data: {
-          courseId: term.id,
-          parentName: form.parentName,
-          parentEmail: form.parentEmail,
-          parentPhone: form.parentPhone,
-          parentStreet: form.parentStreet,
-          parentZip: form.parentZip,
-          parentCity: form.parentCity,
-          childName: form.childName,
-          childDob: form.childDob,
-          healthInfo: form.healthInfo,
-          message: form.message,
-          isMember: form.isMember,
-          acceptTerms: true,
-          gdprConsent: true,
-          website: form.website,
-        },
-      });
-      if ((res as any)?.blocked) {
-        onBlocked();
-        return;
+      const kids = [
+        { childName: form.childName, childDob: form.childDob, healthInfo: form.healthInfo },
+        ...siblings.filter((k) => k.childName.trim()),
+      ];
+      let res: any = null;
+      const booked: string[] = [];
+      for (const kid of kids) {
+        const r: any = await bookCourseTerm({
+          data: {
+            courseId: term.id,
+            parentName: form.parentName,
+            parentEmail: form.parentEmail,
+            parentPhone: form.parentPhone,
+            parentStreet: form.parentStreet,
+            parentZip: form.parentZip,
+            parentCity: form.parentCity,
+            childName: kid.childName,
+            childDob: kid.childDob,
+            healthInfo: kid.healthInfo,
+            message: form.message,
+            isMember: form.isMember,
+            acceptTerms: true,
+            gdprConsent: true,
+            website: form.website,
+          },
+        });
+        if (r?.blocked) {
+          if (!booked.length) { onBlocked(); return; }
+          toast.error(`${kid.childName} konnte nicht gebucht werden. Bitte kontaktieren Sie uns.`);
+          continue;
+        }
+        booked.push(kid.childName);
+        res = res ?? r;
       }
+      if (!res) return;
       onSuccess({
         status: res.status as "confirmed" | "waiting",
-        courseName: res.courseName ?? term.name,
+        courseName: `${res.courseName ?? term.name}${booked.length > 1 ? ` (${booked.join(", ")})` : ""}`,
         startsOn: term.starts_on,
         paymentDueDays: program.payment_due_days,
-        amount: price,
+        amount: price != null ? price * booked.length : null,
       });
 
     } catch (err) {
@@ -536,6 +552,34 @@ function BookingDialog({
             <Label htmlFor="healthInfo">Gesundheitliche Hinweise</Label>
             <Textarea id="healthInfo" rows={2} value={form.healthInfo} onChange={(e) => set("healthInfo", e.target.value)} />
           </div>
+          {siblings.map((k, i) => (
+            <div key={i} className="rounded-md border p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Geschwisterkind {i + 1}</div>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setSiblings((l) => l.filter((_, j) => j !== i))}>Entfernen</Button>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Name des Kindes *</Label>
+                  <Input required value={k.childName} onChange={(e) => setSib(i, "childName", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Geburtsdatum *</Label>
+                  <Input type="date" required value={k.childDob} onChange={(e) => setSib(i, "childDob", e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Gesundheitliche Hinweise</Label>
+                <Textarea rows={2} value={k.healthInfo} onChange={(e) => setSib(i, "healthInfo", e.target.value)} />
+              </div>
+            </div>
+          ))}
+          {siblings.length < 3 && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setSiblings((l) => [...l, { childName: "", childDob: "", healthInfo: "" }])}>
+              + Weiteres Kind anmelden (Geschwister)
+            </Button>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="message">Nachricht</Label>
             <Textarea id="message" rows={2} value={form.message} onChange={(e) => set("message", e.target.value)} />
@@ -551,7 +595,7 @@ function BookingDialog({
           <PaymentSummary
             startsOn={term?.starts_on}
             paymentDueDays={program.payment_due_days}
-            amount={price}
+            amount={totalPrice}
           />
 
           <div className="flex items-start gap-2">
