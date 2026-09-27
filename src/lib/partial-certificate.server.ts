@@ -51,6 +51,6 @@ export async function sendPartialCertificate(
       deadline: deDate(cert.deadline),
       download_url: signed.signedUrl,
     },
-  } as any);
+  });
   return res.queued ? "sent" : "failed";
 }

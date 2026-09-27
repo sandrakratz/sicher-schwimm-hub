@@ -418,3 +418,56 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
 
     return { filename, base64: Buffer.from(bytes).toString("base64") };
   });
+
+async function assertCourseAccessForParticipant(
+  supabase: any,
+  userId: string,
+  participantId: string,
+): Promise<void> {
+  const { data: roleRows } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const roles = (roleRows || []).map((r: { role: string }) => r.role);
+  if (roles.some((r: string) => ["admin", "board"].includes(r))) return;
+  if (!roles.includes("trainer")) throw new Response("Forbidden", { status: 403 });
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: p } = await supabaseAdmin
+    .from("course_participants")
+    .select("course_id")
+    .eq("id", participantId)
+    .maybeSingle();
+  if (!p) throw new Error("Teilnehmer nicht gefunden.");
+  const { data: allowed } = await supabase.rpc("is_trainer_of_course", {
+    _trainer_id: userId,
+    _course_id: p.course_id,
+  });
+  if (!allowed) throw new Response("Forbidden", { status: 403 });
+}
+
+/** Teilleistungsnachweis (DPO) eines Kindes als PDF herunterladen. */
+export const exportPartialCertificate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string }) => {
+    if (!input?.participantId) throw new Error("Teilnehmer fehlt.");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
+    await assertCourseAccessForParticipant(context.supabase, context.userId, data.participantId);
+    const { buildPartialCertificate } = await import("@/lib/partial-certificate-pdf.server");
+    const { berlinToday } = await import("@/lib/partial-certificate.server");
+    const cert = await buildPartialCertificate(data.participantId, berlinToday());
+    if (!cert) throw new Error("Kein Teilleistungsnachweis möglich: Es sind keine oder bereits alle Prüfungsteile bestanden.");
+    return { filename: cert.filename, base64: Buffer.from(cert.bytes).toString("base64") };
+  });
+
+/** Teilleistungsnachweis sofort per E-Mail an die Eltern schicken (manuell). */
+export const sendPartialCertificateNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string }) => {
+    if (!input?.participantId) throw new Error("Teilnehmer fehlt.");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<{ status: string }> => {
+    await assertCourseAccessForParticipant(context.supabase, context.userId, data.participantId);
+    const { sendPartialCertificate } = await import("@/lib/partial-certificate.server");
+    const status = await sendPartialCertificate(data.participantId, { force: true, senderUserId: context.userId });
+    return { status };
+  });
