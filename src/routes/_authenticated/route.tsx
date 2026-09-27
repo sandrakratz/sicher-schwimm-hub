@@ -89,14 +89,17 @@ function AuthLayout() {
         {adminItems.length > 0 && (
           <>
             <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">Verwaltung</div>
-            {adminItems.map(n => (
-              <Link key={n.to} to={n.to}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
-                activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-                activeOptions={{ exact: n.exact }}>
-                <n.icon className="h-4 w-4" />{n.label}
-              </Link>
-            ))}
+            {adminItems.map(n => {
+              const groupActive = n.group?.some(p => pathname.startsWith(p));
+              return (
+                <Link key={n.to} to={n.to}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition ${groupActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : ""}`}
+                  activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
+                  activeOptions={{ exact: n.exact }}>
+                  <n.icon className="h-4 w-4" />{n.label}
+                </Link>
+              );
+            })}
           </>
         )}
       </nav>
