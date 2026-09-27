@@ -36,25 +36,42 @@ export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
   return trainerNav.filter(n => (n.allow ?? []).some(r => roles.includes(r)));
 }
 
+/** Gebündelte Verwaltungsbereiche: ein Menüpunkt, oben Reiter */
+export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label: string }[] }[] = [
+  { label: "Mitglieder & Anträge", tabs: [
+    { to: "/admin/benutzer", label: "Benutzer" },
+    { to: "/admin/mitgliedschaften", label: "Mitgliedschaften" },
+    { to: "/admin/widerrufe", label: "Widerrufe" },
+    { to: "/admin/sperrliste", label: "Sperrliste" },
+  ] },
+  { label: "Kommunikation & E-Mails", tabs: [
+    { to: "/admin/nachrichten", label: "Posteingang" },
+    { to: "/admin/emails", label: "Gesendete E-Mails" },
+    { to: "/admin/versandstatus", label: "Versandstatus" },
+  ] },
+  { label: "Inhalte & Verein", tabs: [
+    { to: "/admin/news", label: "News" },
+    { to: "/admin/events", label: "Events" },
+    { to: "/admin/dokumente", label: "Dokumente" },
+  ] },
+];
+
+export function findAdminSection(pathname: string) {
+  return adminSections.find(s => s.tabs.some(t => pathname.startsWith(t.to)));
+}
+
 /** Nur mit passender Rolle sichtbar */
-export const adminNav: AppNavItem[] = [
+export const adminNav: (AppNavItem & { group?: string[] })[] = [
   { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
-  { to: "/admin/kalender", icon: CalendarCheck, label: "Kurskalender", allow: ["admin", "board"] },
-  { to: "/admin/benutzer", icon: Users, label: "Benutzer", allow: ["admin", "board"] },
-  { to: "/admin/mitgliedschaften", icon: ListChecks, label: "Mitgliedschaften", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board"] },
-  { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste & Anfragen", allow: ["admin", "board"] },
-  { to: "/admin/sperrliste", icon: ShieldBan, label: "Sperrliste", allow: ["admin", "board"] },
-  { to: "/admin/news", icon: Newspaper, label: "News", allow: ["admin", "board"] },
-  { to: "/admin/dokumente", icon: FileText, label: "Dokumente", allow: ["admin", "board"] },
-  { to: "/admin/events", icon: Calendar, label: "Events", allow: ["admin", "board"] },
-  { to: "/admin/nachrichten", icon: MailOpen, label: "Posteingang", allow: ["admin", "board"] },
-  { to: "/admin/emails", icon: Send, label: "Gesendete E-Mails", allow: ["admin", "board"] },
-  { to: "/admin/versandstatus", icon: Activity, label: "Versandstatus", allow: ["admin", "board"] },
-  { to: "/admin/widerrufe", icon: FileText, label: "Widerrufe", allow: ["admin", "board"] },
+  { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
+  { to: "/admin/kalender", icon: CalendarCheck, label: "Kurskalender", allow: ["admin", "board"] },
+  { to: "/admin/benutzer", icon: Users, label: "Mitglieder & Anträge", allow: ["admin", "board"], group: adminSections[0].tabs.map(t => t.to) },
+  { to: "/admin/nachrichten", icon: MailOpen, label: "Kommunikation & E-Mails", allow: ["admin", "board"], group: adminSections[1].tabs.map(t => t.to) },
+  { to: "/admin/news", icon: Newspaper, label: "Inhalte & Verein", allow: ["admin", "board"], group: adminSections[2].tabs.map(t => t.to) },
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
 ];
 
-export function visibleAdminNav(roles: Role[]): AppNavItem[] {
+export function visibleAdminNav(roles: Role[]) {
   return adminNav.filter(n => (n.allow ?? []).some(r => roles.includes(r)));
 }

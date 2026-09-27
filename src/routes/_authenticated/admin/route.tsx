@@ -1,7 +1,7 @@
-import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
+import { createFileRoute, redirect, Outlet, Link, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
-import { type Role } from "@/lib/nav-items";
+import { type Role, findAdminSection } from "@/lib/nav-items";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   ssr: false,
@@ -26,5 +26,28 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 function AdminLayout() {
-  return <Outlet />;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const section = findAdminSection(pathname);
+  return (
+    <>
+      {section && (
+        <div className="mb-6 max-w-6xl">
+          <div className="text-accent font-semibold text-xs uppercase tracking-wider mb-2">{section.label}</div>
+          <div className="flex gap-1 overflow-x-auto border-b border-border">
+            {section.tabs.map((t) => (
+              <Link
+                key={t.to}
+                to={t.to}
+                className="whitespace-nowrap px-4 py-2 text-sm font-semibold text-muted-foreground border-b-2 border-transparent -mb-px hover:text-primary-deep"
+                activeProps={{ className: "!text-primary-deep !border-accent" }}
+              >
+                {t.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      <Outlet />
+    </>
+  );
 }
