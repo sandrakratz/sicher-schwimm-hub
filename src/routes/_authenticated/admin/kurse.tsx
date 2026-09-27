@@ -111,6 +111,7 @@ function ageAt(dobStr: string | null | undefined, refStr: string | null | undefi
   return age;
 }
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { parseSessionList } from "@/lib/session-list";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
 
 function fmtDate(s: string | null | undefined) {
@@ -297,9 +298,41 @@ function Page() {
     }
   }
 
+  const [bulkText, setBulkText] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
+  async function importSessions() {
+    if (!sessCourse) return;
+    const parsed = parseSessionList(bulkText);
+    const real = parsed.filter(p => !p.isBreak);
+    if (real.length === 0) return toast.error("Keine Termine erkannt. Format z. B.: 07.11.2026 11:00–11:45 Uhr");
+    if (sessions.length > 0 && !window.confirm(`Die ${sessions.length} vorhandenen Termine (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${real.length} neue ersetzt. Fortfahren?`)) return;
+    setBulkBusy(true);
+    try {
+      if (sessions.length > 0) {
+        const { error } = await supabase.from("course_sessions").delete().eq("course_id", sessCourse.id);
+        if (error) throw error;
+      }
+      const { error } = await supabase.from("course_sessions").insert(real.map((p, i) => ({
+        course_id: sessCourse.id, session_index: i + 1, session_date: p.date, start_time: p.start, end_time: p.end,
+      })));
+      if (error) throw error;
+      const breaks = parsed.filter(p => p.isBreak).map(p => ({ date: p.date, note: p.note || "kein Termin" }));
+      const { error: e2 } = await supabase.from("courses").update({
+        session_breaks: breaks as any, starts_on: real[0].date, ends_on: real[real.length - 1].date,
+      } as any).eq("id", sessCourse.id);
+      if (e2) throw e2;
+      toast.success(`${real.length} Termine${breaks.length ? ` und ${breaks.length} Pausen` : ""} übernommen`);
+      setBulkText("");
+      await openSessions(sessCourse);
+    } catch (e: any) {
+      toast.error(e?.message || "Übernahme fehlgeschlagen");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
   async function addSession() {
     if (!sessCourse) return;
-    if (sessions.length >= 10) return toast.error("Maximal 10 Termine");
+    if (sessions.length >= 30) return toast.error("Maximal 30 Termine");
     const nextIndex = (sessions.reduce((m, s) => Math.max(m, s.session_index), 0) || 0) + 1;
     const today = new Date().toISOString().slice(0, 10);
     const last = sessions[sessions.length - 1];
@@ -1552,7 +1585,14 @@ function Page() {
       <Dialog open={sessOpen} onOpenChange={setSessOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle></DialogHeader>
-          <p className="text-xs text-muted-foreground">Bis zu 10 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender, das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre Verfügbarkeit unter „Verfügbarkeit“.</p>
+          <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+            <Label className="text-sm font-semibold">Terminliste einfügen</Label>
+            <p className="text-xs text-muted-foreground">Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren. Kursbeginn und -ende werden automatisch übernommen, Eltern sehen die Liste auf der Kursseite.</p>
+            <Textarea rows={6} value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027"} />
+            {bulkText.trim() && (() => { const p = parseSessionList(bulkText); return <p className="text-xs text-muted-foreground">Erkannt: {p.filter(x => !x.isBreak).length} Termine, {p.filter(x => x.isBreak).length} Pausen</p>; })()}
+            <Button size="sm" onClick={importSessions} disabled={bulkBusy || !bulkText.trim()}>{bulkBusy ? "Übernehme…" : "Termine übernehmen"}</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender, das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre Verfügbarkeit unter „Verfügbarkeit“.</p>
           <div className="space-y-3">
             {sessions.length === 0 && <div className="text-sm text-muted-foreground">Noch keine Termine.</div>}
             {sessions.map(s => {
@@ -1638,7 +1678,7 @@ function Page() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSessOpen(false)}>Schließen</Button>
-            <Button onClick={addSession} disabled={sessions.length >= 10}><Plus className="h-4 w-4" /> Termin hinzufügen</Button>
+            <Button onClick={addSession} disabled={sessions.length >= 30}><Plus className="h-4 w-4" /> Termin hinzufügen</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
