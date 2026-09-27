@@ -22,6 +22,8 @@ export interface CourseTerm {
   lanes: number | null
   start_tentative: boolean
   tentative_note: string | null
+  /** Exakte Kurstermine inkl. Pausen, chronologisch */
+  dates: Array<{ date: string; start: string | null; end: string | null; index: number | null; note: string | null }>
 }
 
 export interface CourseProgram {
@@ -72,7 +74,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
 
   const { data: courses } = await supabaseAdmin
     .from('courses')
-    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info,min_participants,lanes,start_tentative,tentative_note')
+    .select('id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info,min_participants,lanes,start_tentative,tentative_note,session_breaks')
     .in('program_id', programIds)
     .eq('is_public', true)
     .is('archived_at', null)
@@ -91,6 +93,26 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
     for (const p of parts ?? []) {
       if (p.status !== 'confirmed') continue
       counts.set(p.course_id, (counts.get(p.course_id) ?? 0) + 1)
+    }
+  }
+
+  const sessMap = new Map<string, CourseTerm['dates']>()
+  if (relevant.length > 0) {
+    const { data: sess } = await supabaseAdmin
+      .from('course_sessions')
+      .select('course_id,session_index,session_date,start_time,end_time')
+      .in('course_id', relevant.map((c) => c.id))
+    for (const s of sess ?? []) {
+      const arr = sessMap.get(s.course_id) ?? []
+      arr.push({ date: s.session_date, start: s.start_time?.slice(0, 5) ?? null, end: s.end_time?.slice(0, 5) ?? null, index: s.session_index, note: null })
+      sessMap.set(s.course_id, arr)
+    }
+    for (const c of relevant) {
+      const arr = sessMap.get(c.id) ?? []
+      const breaks = Array.isArray((c as any).session_breaks) ? ((c as any).session_breaks as any[]) : []
+      for (const b of breaks) if (b?.date) arr.push({ date: String(b.date), start: null, end: null, index: null, note: b.note ? String(b.note) : 'kein Termin' })
+      arr.sort((a, b) => a.date.localeCompare(b.date))
+      sessMap.set(c.id, arr)
     }
   }
 
@@ -126,6 +148,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
           lanes: c.lanes ?? null,
           start_tentative: !!c.start_tentative,
           tentative_note: c.tentative_note ?? null,
+          dates: sessMap.get(c.id) ?? [],
           location: c.location ?? p.location,
           max_participants: c.max_participants,
           confirmed_count: confirmed,

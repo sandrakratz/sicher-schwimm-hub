@@ -274,6 +274,20 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                       </div>
                       {t.schedule && <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1"><Clock className="h-4 w-4" />{t.schedule}</div>}
                       {t.location && <div className="text-sm text-muted-foreground flex items-start gap-2 mt-1"><MapPin className="h-4 w-4 mt-0.5" />{t.location}</div>}
+                      {t.dates.length > 0 && (
+                        <details className="mt-2 text-sm">
+                          <summary className="cursor-pointer font-medium text-primary">Alle Kurstermine anzeigen ({t.dates.filter(d => d.index != null).length})</summary>
+                          <ol className="mt-2 space-y-0.5">
+                            {t.dates.map((d, i) => (
+                              <li key={i} className={`grid grid-cols-[2rem_6rem_1fr] gap-2 ${d.index == null ? "text-muted-foreground italic" : ""}`}>
+                                <span>{d.index != null ? `${d.index}.` : "—"}</span>
+                                <span>{formatDateBerlin(d.date)}</span>
+                                <span>{d.index == null ? d.note : d.start ? `${d.start}${d.end ? `–${d.end}` : ""} Uhr` : ""}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </details>
+                      )}
                     </div>
                     <div className="shrink-0">
                       {t.is_full ? (
