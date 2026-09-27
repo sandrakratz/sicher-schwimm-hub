@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, ChevronDown, Pencil, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Pencil, } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { updateParticipantHint } from "@/lib/trainer-courses.functions";
 import { cn } from "@/lib/utils";
@@ -249,7 +249,7 @@ export function AttendanceBoard({
                 className="flex min-h-11 w-full items-center text-left text-sm font-semibold"
               >
                 <BeltNo no={p.no} />
-                <span className="truncate">{p.name}</span>
+                <span className={cn("truncate", p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
                 <PaidBadge paid={p.paid} />
                 <ChevronDown
                   className={cn(
@@ -259,7 +259,7 @@ export function AttendanceBoard({
                 />
               </button>
             ) : (
-              <span className="flex items-center text-sm font-semibold"><BeltNo no={p.no} />{p.name}<PaidBadge paid={p.paid} /></span>
+              <span className="flex items-center text-sm font-semibold"><BeltNo no={p.no} /><span className={cn(p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span><PaidBadge paid={p.paid} /></span>
             )}
             {hintEl(p, "mt-2")}
             {renderDetails && openId === p.id && (
@@ -313,7 +313,7 @@ export function AttendanceBoard({
                     className="flex min-h-11 min-w-0 flex-1 items-center text-left text-sm font-semibold"
                   >
                     <BeltNo no={p.no} />
-                    <span className="truncate">{p.name}</span>
+                    <span className={cn("truncate", p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
                     <PaidBadge paid={p.paid} />
                     <ChevronDown
                       className={cn(
@@ -325,7 +325,7 @@ export function AttendanceBoard({
                 ) : (
                   <span className="flex min-w-0 items-center truncate text-sm font-semibold">
                     <BeltNo no={p.no} />
-                    <span className="truncate">{p.name}</span>
+                    <span className={cn("truncate", p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
                     <PaidBadge paid={p.paid} />
                   </span>
                 )}
@@ -389,7 +389,7 @@ export function AttendanceBoard({
                       className="flex items-center text-left hover:underline"
                     >
                       <BeltNo no={p.no} />
-                      {p.name}
+                      <span className={cn(p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
                       <PaidBadge paid={p.paid} />
                       <ChevronDown
                         className={cn(
@@ -399,7 +399,7 @@ export function AttendanceBoard({
                       />
                     </button>
                   ) : (
-                    <span className="flex items-center"><BeltNo no={p.no} />{p.name}<PaidBadge paid={p.paid} /></span>
+                    <span className="flex items-center"><BeltNo no={p.no} /><span className={cn(p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span><PaidBadge paid={p.paid} /></span>
                   )}
                 </TableCell>
                 <TableCell>
