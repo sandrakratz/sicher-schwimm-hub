@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.link_membership_participants() FROM PUBLIC, anon, authenticated;

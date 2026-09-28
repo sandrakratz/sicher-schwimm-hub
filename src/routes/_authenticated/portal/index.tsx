@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, FileText, Newspaper, User as UserIcon } from "lucide-react";
+import { Calendar, FileText, Waves, Newspaper, User as UserIcon } from "lucide-react";
 import { getMyMembership } from "@/lib/membership.functions";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 
@@ -28,6 +28,7 @@ function Dashboard() {
   const [newsCount, setNewsCount] = useState<number | null>(null);
   const [eventsCount, setEventsCount] = useState<number | null>(null);
   const [docsCount, setDocsCount] = useState<number | null>(null);
+  const [coursesCount, setCoursesCount] = useState<number | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
 
@@ -49,6 +50,10 @@ function Dashboard() {
         supabase.from("events").select("id,title,starts_at,location").gte("starts_at", nowIso).order("starts_at", { ascending: true }).limit(3),
         supabase.from("documents").select("id", { count: "exact", head: true }),
       ]);
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: cp } = await supabase.from("course_participants").select("id,courses(ends_on)")
+        .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`).neq("status", "cancelled");
+      setCoursesCount(((cp as any[]) ?? []).filter((r) => !r.courses?.ends_on || r.courses.ends_on >= today).length);
 
       setMembership(mem?.status ? (MEMBERSHIP_STATUS_LABEL[mem.status] || mem.status) : "Keine");
       setNewsCount(newsRecent.count ?? 0);
@@ -73,8 +78,9 @@ function Dashboard() {
 
       <OpenAvailabilityNotice />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {([
+          { icon: Waves, label: "Kurse meiner Kinder", value: coursesCount === null ? "…" : String(coursesCount), to: "/portal/kurse" as const },
           { icon: UserIcon, label: "Mitgliedschaft", value: membership, to: "/portal/profil" as const },
           { icon: Newspaper, label: "Neue Beiträge", value: newsCount === null ? "…" : String(newsCount), to: "/portal/news" as const },
           { icon: Calendar, label: "Kommende Termine", value: eventsCount === null ? "…" : String(eventsCount), to: "/portal/events" as const },
