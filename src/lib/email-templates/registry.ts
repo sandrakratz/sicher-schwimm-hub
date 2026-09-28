@@ -21,6 +21,7 @@ import { rescheduleTemplate, cancelTemplate } from './course-lifecycle'
 import { template as partialCertificate } from './partial-certificate'
 import { template as courseTransfer } from './course-transfer'
 import { template as courseBroadcast } from './course-broadcast'
+import { template as accountActivated } from './account-activated'
 
 
 
@@ -58,4 +59,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'course-cancelled': cancelTemplate,
   'course-transfer': courseTransfer,
   'course-broadcast': courseBroadcast,
+  'account-activated': accountActivated,
 }
