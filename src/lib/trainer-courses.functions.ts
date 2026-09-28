@@ -525,3 +525,26 @@ export const sendPartialCertificateNow = createServerFn({ method: "POST" })
     const status = await sendPartialCertificate(data.participantId, { force: true, senderUserId: context.userId });
     return { status };
   });
+
+/** Eltern: Teilleistungsnachweis des eigenen Kindes herunterladen. */
+export const exportMyPartialCertificate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string }) => {
+    if (!input?.participantId) throw new Error("Teilnehmer fehlt.");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
+    const { data: p } = await context.supabase
+      .from("course_participants")
+      .select("id,parent_user_id,user_id")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (!p || (p.parent_user_id !== context.userId && p.user_id !== context.userId)) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+    const { buildPartialCertificate } = await import("@/lib/partial-certificate-pdf.server");
+    const { berlinToday } = await import("@/lib/partial-certificate.server");
+    const cert = await buildPartialCertificate(data.participantId, berlinToday());
+    if (!cert) throw new Error("Für dieses Kind liegt kein Teilleistungsnachweis vor.");
+    return { filename: cert.filename, base64: Buffer.from(cert.bytes).toString("base64") };
+  });

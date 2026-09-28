@@ -3,7 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, MapPin, Clock, Euro, Award } from "lucide-react";
+import { Calendar, MapPin, Clock, Euro, Award, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { exportMyPartialCertificate } from "@/lib/trainer-courses.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/portal/kurse")({
   component: Page,
@@ -21,6 +25,7 @@ type Row = {
   goal_reached: boolean | null;
   badge: string | null;
   achievement: string | null;
+  exam_criteria: unknown;
   courses: {
     id: string;
     name: string;
@@ -55,6 +60,26 @@ function fmtDuration(d: string | null) {
 function Page() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const exportCert = useServerFn(exportMyPartialCertificate);
+  const [busy, setBusy] = useState<string | null>(null);
+  async function download(id: string) {
+    setBusy(id);
+    try {
+      const r = await exportCert({ data: { participantId: id } });
+      const bin = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bin], { type: "application/pdf" }));
+      const a = document.createElement("a"); a.href = url; a.download = r.filename; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) { toast.error(e?.message || "Download nicht möglich"); }
+    finally { setBusy(null); }
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const groups = new Map<string, Row[]>();
+  for (const r of rows) {
+    const k = r.participant_name?.trim() || "Ohne Namen";
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k)!.push(r);
+  }
 
   useEffect(() => {
     (async () => {
@@ -62,7 +87,7 @@ function Page() {
       if (!u.user) { setLoading(false); return; }
       const { data } = await supabase
         .from("course_participants")
-        .select("id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,courses(id,name,starts_on,ends_on,schedule,location,duration,target_group)")
+        .select("id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,courses(id,name,starts_on,ends_on,schedule,location,duration,target_group)")
         .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`)
         .order("created_at", { ascending: false });
       setRows((data as any) || []);
@@ -87,8 +112,12 @@ function Page() {
           </CardContent>
         </Card>
       ) : (
+        <div className="space-y-8">
+        {[...groups.entries()].map(([child, list]) => (
+        <section key={child} className="space-y-3">
+          <h2 className="font-display text-xl font-bold text-primary-deep">{child}</h2>
         <div className="grid md:grid-cols-2 gap-4">
-          {rows.map(r => {
+          {[...list].sort((a, b) => Number(!!a.courses?.ends_on && a.courses.ends_on < today) - Number(!!b.courses?.ends_on && b.courses.ends_on < today)).map(r => {
             const c = r.courses;
             const st = STATUS_LABEL[r.status] || { label: r.status, variant: "secondary" as const };
             return (
@@ -99,7 +128,10 @@ function Page() {
                       <div className="font-display text-lg font-bold text-primary-deep">{c?.name || "Kurs"}</div>
                       {r.participant_name && <div className="text-sm text-muted-foreground">Teilnehmer: <span className="font-medium text-foreground">{r.participant_name}</span></div>}
                     </div>
-                    <Badge variant={st.variant}>{st.label}</Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={st.variant}>{st.label}</Badge>
+                      {c?.ends_on && c.ends_on < today && <Badge variant="outline">Abgeschlossen</Badge>}
+                    </div>
                   </div>
 
                   <div className="space-y-1 text-sm">
@@ -135,10 +167,18 @@ function Page() {
                       {r.achievement && <div className="text-muted-foreground">{r.achievement}</div>}
                     </div>
                   )}
+                  {r.status === "confirmed" && r.goal_reached !== true && Array.isArray(r.exam_criteria) && r.exam_criteria.length > 0 && (
+                    <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => download(r.id)}>
+                      <Download className="h-4 w-4 mr-1" /> Teilleistungsnachweis (PDF)
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
           })}
+        </div>
+        </section>
+        ))}
         </div>
       )}
     </div>
