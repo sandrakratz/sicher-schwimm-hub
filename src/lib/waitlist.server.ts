@@ -179,6 +179,12 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
     candidates = candidates.filter((c) =>
       meetsMinAge(c.child_dob ?? null, course.starts_on ?? null, program?.min_age_years ?? null),
     )
+    // Zurückgestellte Kinder erst für Kurse ab dem hinterlegten Datum berücksichtigen
+    candidates = candidates.filter((c: any) => {
+      const from = c.available_from as string | null
+      if (!from) return true
+      return !!course.starts_on && course.starts_on >= from
+    })
     if (candidates.length === 0) continue
 
     for (const entry of candidates.slice(0, free)) {
