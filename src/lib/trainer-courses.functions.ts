@@ -548,3 +548,59 @@ export const exportMyPartialCertificate = createServerFn({ method: "POST" })
     if (!cert) throw new Error("Für dieses Kind liegt kein Teilleistungsnachweis vor.");
     return { filename: cert.filename, base64: Buffer.from(cert.bytes).toString("base64") };
   });
+
+/** Eltern: Kursbestätigung (Rechnung) des eigenen Kindes herunterladen. */
+export const exportMyCourseConfirmation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string }) => {
+    if (!input?.participantId) throw new Error("Teilnehmer fehlt.");
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
+    const { data: p } = await context.supabase
+      .from("course_participants")
+      .select("id,parent_user_id,user_id,status,participant_name,payer_street,payer_zip,payer_city,price_amount,document_no,document_issued_at,created_at,request_id,course_id")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (!p || (p.parent_user_id !== context.userId && p.user_id !== context.userId)) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+    if (p.status !== "confirmed") throw new Error("Nur für verbindliche Buchungen verfügbar.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: course } = await supabaseAdmin
+      .from("courses")
+      .select("name,location,starts_on,ends_on,schedule,unit_count,payment_due_days,course_programs(name,location)")
+      .eq("id", p.course_id)
+      .maybeSingle();
+    if (!course) throw new Error("Kurs nicht gefunden");
+    const program = (course as any).course_programs as { name: string; location: string | null } | null;
+    let payerName = p.participant_name;
+    if (p.request_id) {
+      const { data: r } = await supabaseAdmin.from("course_requests").select("parent_name").eq("id", p.request_id).maybeSingle();
+      if (r?.parent_name) payerName = r.parent_name;
+    }
+    const { renderConfirmationPdf } = await import("@/lib/course-confirmation-pdf.server");
+    const bytes = await renderConfirmationPdf({
+      documentNo: p.document_no,
+      issuedAt: p.document_issued_at || p.created_at,
+      payerName,
+      payerStreet: p.payer_street,
+      payerZip: p.payer_zip,
+      payerCity: p.payer_city,
+      childName: p.participant_name,
+      courseName: course.name,
+      programName: program?.name ?? null,
+      startsOn: course.starts_on,
+      endsOn: course.ends_on,
+      schedule: course.schedule,
+      location: course.location ?? program?.location ?? null,
+      unitCount: course.unit_count,
+      priceAmount: p.price_amount != null ? Number(p.price_amount) : null,
+      paymentDueDays: course.payment_due_days ?? 14,
+    } as any);
+    const safe = (s: string) => s.replace(/[^\p{L}\p{N}\-_]+/gu, "_").slice(0, 60);
+    return {
+      filename: `Kursbestaetigung_${safe(p.participant_name || "Kind")}_${safe(course.name)}.pdf`,
+      base64: Buffer.from(bytes).toString("base64"),
+    };
+  });

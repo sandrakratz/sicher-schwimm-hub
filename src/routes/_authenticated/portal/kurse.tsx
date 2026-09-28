@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Calendar, MapPin, Clock, Euro, Award, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
-import { exportMyPartialCertificate } from "@/lib/trainer-courses.functions";
+import { exportMyPartialCertificate, exportMyCourseConfirmation } from "@/lib/trainer-courses.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/portal/kurse")({
@@ -61,11 +61,14 @@ function Page() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const exportCert = useServerFn(exportMyPartialCertificate);
+  const exportConf = useServerFn(exportMyCourseConfirmation);
   const [busy, setBusy] = useState<string | null>(null);
-  async function download(id: string) {
+  async function download(id: string, kind: "cert" | "conf") {
     setBusy(id);
     try {
-      const r = await exportCert({ data: { participantId: id } });
+      const r = kind === "cert"
+        ? await exportCert({ data: { participantId: id } })
+        : await exportConf({ data: { participantId: id } });
       const bin = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bin], { type: "application/pdf" }));
       const a = document.createElement("a"); a.href = url; a.download = r.filename; a.click();
@@ -167,11 +170,18 @@ function Page() {
                       {r.achievement && <div className="text-muted-foreground">{r.achievement}</div>}
                     </div>
                   )}
-                  {r.status === "confirmed" && r.goal_reached !== true && Array.isArray(r.exam_criteria) && r.exam_criteria.length > 0 && (
-                    <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => download(r.id)}>
-                      <Download className="h-4 w-4 mr-1" /> Teilleistungsnachweis (PDF)
-                    </Button>
-                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {r.status === "confirmed" && (
+                      <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => download(r.id, "conf")}>
+                        <Download className="h-4 w-4 mr-1" /> Kursbestätigung (PDF)
+                      </Button>
+                    )}
+                    {r.status === "confirmed" && r.goal_reached !== true && Array.isArray(r.exam_criteria) && r.exam_criteria.length > 0 && (
+                      <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => download(r.id, "cert")}>
+                        <Download className="h-4 w-4 mr-1" /> Teilleistungsnachweis (PDF)
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             );
