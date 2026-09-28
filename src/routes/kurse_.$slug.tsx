@@ -452,42 +452,61 @@ function BookingDialog({
         ...siblings.filter((k) => k.childName.trim()),
       ];
       let res: any = null;
-      const booked: string[] = [];
+      const confirmed: string[] = [];
+      const waiting: string[] = [];
+      const failed: string[] = [];
       for (const kid of kids) {
-        const r: any = await bookCourseTerm({
-          data: {
-            courseId: term.id,
-            parentName: form.parentName,
-            parentEmail: form.parentEmail,
-            parentPhone: form.parentPhone,
-            parentStreet: form.parentStreet,
-            parentZip: form.parentZip,
-            parentCity: form.parentCity,
-            childName: kid.childName,
-            childDob: kid.childDob,
-            healthInfo: kid.healthInfo,
-            message: form.message,
-            isMember: form.isMember,
-            acceptTerms: true,
-            gdprConsent: true,
-            website: form.website,
-          },
-        });
+        let r: any;
+        try {
+          r = await bookCourseTerm({
+            data: {
+              courseId: term.id,
+              parentName: form.parentName,
+              parentEmail: form.parentEmail,
+              parentPhone: form.parentPhone,
+              parentStreet: form.parentStreet,
+              parentZip: form.parentZip,
+              parentCity: form.parentCity,
+              childName: kid.childName,
+              childDob: kid.childDob,
+              healthInfo: kid.healthInfo,
+              message: form.message,
+              isMember: form.isMember,
+              acceptTerms: true,
+              gdprConsent: true,
+              website: form.website,
+            },
+          });
+        } catch (err) {
+          // Erstes Kind ohne Erfolg → normale Fehlermeldung, nichts wurde gebucht.
+          if (!res) throw err;
+          failed.push(kid.childName);
+          toast.error(`${kid.childName}: ${err instanceof Error ? err.message : "konnte nicht gebucht werden."}`);
+          continue;
+        }
         if (r?.blocked) {
-          if (!booked.length) { onBlocked(); return; }
+          if (!res) { onBlocked(); return; }
+          failed.push(kid.childName);
           toast.error(`${kid.childName} konnte nicht gebucht werden. Bitte kontaktieren Sie uns.`);
           continue;
         }
-        booked.push(kid.childName);
         res = res ?? r;
+        (r?.status === "waiting" ? waiting : confirmed).push(kid.childName);
       }
       if (!res) return;
+      const booked = [...confirmed, ...waiting];
+      if (confirmed.length && waiting.length) {
+        toast.info(`Auf der Warteliste: ${waiting.join(", ")}`);
+      }
+      if (failed.length) {
+        toast.warning(`Gebucht wurde: ${booked.join(", ")}. Nicht gebucht: ${failed.join(", ")} – bitte nicht erneut absenden, sondern uns kontaktieren.`, { duration: 12000 });
+      }
       onSuccess({
-        status: res.status as "confirmed" | "waiting",
+        status: confirmed.length ? "confirmed" : "waiting",
         courseName: `${res.courseName ?? term.name}${booked.length > 1 ? ` (${booked.join(", ")})` : ""}`,
         startsOn: term.starts_on,
         paymentDueDays: program.payment_due_days,
-        amount: price != null ? price * booked.length : null,
+        amount: price != null && confirmed.length ? price * confirmed.length : null,
       });
 
     } catch (err) {
