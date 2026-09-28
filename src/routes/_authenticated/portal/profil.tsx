@@ -14,12 +14,16 @@ export const Route = createFileRoute("/_authenticated/portal/profil")({
 function Profile() {
   const [p, setP] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [family, setFamily] = useState<Array<{ name?: string; date_of_birth?: string }>>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
       setP(profile);
+      const { data: ms } = await supabase.from("memberships").select("family_members,status").eq("user_id", data.user.id).order("created_at", { ascending: false });
+      const fm = (ms || []).flatMap((m: any) => (Array.isArray(m.family_members) ? m.family_members : []));
+      setFamily(fm);
     });
   }, []);
 
@@ -62,6 +66,24 @@ function Profile() {
           </form>
         </CardContent>
       </Card>
+      {family.length > 0 && (
+        <Card className="border-0 shadow-soft mt-6">
+          <CardContent className="p-6">
+            <h2 className="font-display text-xl font-semibold text-primary-deep mb-3">Familienmitglieder</h2>
+            <ul className="divide-y">
+              {family.map((f, i) => (
+                <li key={i} className="py-2 flex justify-between text-sm">
+                  <span className="font-medium">{f.name || "Ohne Namen"}</span>
+                  <span className="text-muted-foreground">
+                    {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground mt-3">Änderungen bitte an info@sicher-schwimmen.com melden.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
