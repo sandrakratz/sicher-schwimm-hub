@@ -1,0 +1,1 @@
+ALTER TABLE public.waitlist_entries ADD COLUMN IF NOT EXISTS available_from date;

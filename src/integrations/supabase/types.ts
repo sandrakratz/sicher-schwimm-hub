@@ -1396,6 +1396,7 @@ export type Database = {
       waitlist_entries: {
         Row: {
           admin_notes: string | null
+          available_from: string | null
           child_dob: string | null
           child_name: string | null
           course_id: string | null
@@ -1422,6 +1423,7 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          available_from?: string | null
           child_dob?: string | null
           child_name?: string | null
           course_id?: string | null
@@ -1448,6 +1450,7 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          available_from?: string | null
           child_dob?: string | null
           child_name?: string | null
           course_id?: string | null

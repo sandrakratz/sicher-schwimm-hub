@@ -435,6 +435,7 @@ const updateSchema = z.object({
   isMember: z.boolean().nullable().optional(),
   notes: z.string().max(4000).nullable().optional(),
   blocklist: z.boolean().optional(),
+  availableFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   blocklistReason: z.string().trim().max(500).optional(),
 })
 
@@ -477,6 +478,7 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
     if (data.parentPhone !== undefined) patch['parent_phone'] = data.parentPhone || null
     if (data.isMember !== undefined) patch['is_member'] = data.isMember
     if (data.notes !== undefined) patch['notes'] = data.notes
+    if (data.availableFrom !== undefined) patch['available_from'] = data.availableFrom
 
     const { error } = await supabaseAdmin.from('waitlist_entries').update(patch as never).eq('id', data.entryId)
     if (error) throw new Error(error.message)

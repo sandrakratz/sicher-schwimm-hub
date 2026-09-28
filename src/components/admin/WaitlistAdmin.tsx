@@ -95,6 +95,7 @@ type EditPatch = {
   parentPhone?: string | null;
   isMember?: boolean | null;
   notes?: string | null;
+  availableFrom?: string | null;
   appendNote?: string;
 };
 
@@ -128,6 +129,7 @@ function OriginalRequestDialog({
     parentPhone: "",
     isMember: "" as "" | "yes" | "no",
     notes: "",
+    availableFrom: "",
   });
   const [note, setNote] = useState("");
 
@@ -145,6 +147,7 @@ function OriginalRequestDialog({
       parentPhone: String(entry["parent_phone"] ?? ""),
       isMember: entry["is_member"] === true ? "yes" : entry["is_member"] === false ? "no" : "",
       notes: String(entry["notes"] ?? ""),
+      availableFrom: String(entry["available_from"] ?? ""),
     });
   }, [entry]);
 
@@ -163,6 +166,7 @@ function OriginalRequestDialog({
       parentPhone: form.parentPhone.trim() || null,
       isMember: form.isMember === "yes" ? true : form.isMember === "no" ? false : null,
       notes: form.notes.trim() || null,
+      availableFrom: form.availableFrom || null,
       ...(note.trim() ? { appendNote: note.trim() } : {}),
     });
   }
@@ -227,6 +231,11 @@ function OriginalRequestDialog({
                     <option value="no">Nein</option>
                   </select>
                 </label>
+                <label className="text-sm">
+                  Erst zuteilen ab (Zurückstellung)
+                  <Input type="date" value={form.availableFrom} onChange={(e) => setForm((f) => ({ ...f, availableFrom: e.target.value }))} />
+                  <span className="text-xs text-muted-foreground">Leer = sofort. Nur Kurse ab diesem Datum werden angeboten.</span>
+                </label>
                 <label className="text-sm sm:col-span-2">
                   Angaben der Eltern / Gesundheitshinweise
                   <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -262,6 +271,7 @@ function OriginalRequestDialog({
                   <Row label="Gesundheitliche Hinweise" value={g("health_info")} />
                   <Row label="Angaben der Eltern" value={entry["notes"] ?? g("message")} />
                   <Row label="Mitglied" value={entry["is_member"]} />
+                  <Row label="Erst zuteilen ab" value={entry["available_from"] ? formatDateBerlin(String(entry["available_from"])) : null} />
                   <Row label="Datenschutz zugestimmt" value={entry["gdpr_consent"] ?? g("gdpr_consent")} />
                   <Row label="Kontaktaufnahme erlaubt" value={g("contact_permission")} />
                   <Row label="Interne Notizen" value={entry["admin_notes"]} />
@@ -610,6 +620,11 @@ export function WaitlistAdmin() {
                             <ShieldBan className="h-3 w-3" /> Sperrliste
                           </div>
                         ) : null}
+                        {(e as Record<string, unknown>)["available_from"] ? (
+                          <div className="mt-1 text-xs font-medium text-blue-700">
+                            ⏸ Zurückgestellt – erst Kurse ab {formatDateBerlin(String((e as Record<string, unknown>)["available_from"]))}
+                          </div>
+                        ) : null}
                         {(e as Record<string, unknown>)["duplicate_of"] ? (
                           <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
                             <Copy className="h-3 w-3" /> mögliche Dublette
@@ -708,6 +723,11 @@ export function WaitlistAdmin() {
                                       `${e.child_name} erreicht zum Kursbeginn das Mindestalter noch nicht. Trotzdem anbieten?`,
                                     )
                                   )
+                                    return;
+                                }
+                                const af = (e as Record<string, unknown>)["available_from"] as string | null;
+                                if (c && af && (!c.starts_on || c.starts_on < af)) {
+                                  if (!confirm(`${e.child_name} ist zurückgestellt bis ${formatDateBerlin(af)}. Trotzdem anbieten?`))
                                     return;
                                 }
                                 offer.mutate({ entryId: e.id, courseId });
