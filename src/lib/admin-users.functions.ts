@@ -76,6 +76,15 @@ export const setUserStatus = createServerFn({ method: "POST" })
       entity_id: data.userId,
       metadata: { status: data.status },
     });
+    if (data.status === "active") {
+      try {
+        const { data: prof } = await supabaseAdmin.from("profiles").select("email, first_name").eq("id", data.userId).maybeSingle();
+        if (prof?.email) {
+          const { sendAccountActivatedEmail } = await import("@/lib/account-activation.server");
+          await sendAccountActivatedEmail({ email: prof.email, firstName: prof.first_name, senderUserId: context.userId });
+        }
+      } catch (e) { console.error("[setUserStatus] activation mail failed", e); }
+    }
     return { ok: true };
   });
 

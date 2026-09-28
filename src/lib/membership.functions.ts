@@ -70,6 +70,16 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
       entity: "memberships",
       entity_id: data.id,
     });
+    if (data.status === "active") {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: m } = await supabaseAdmin.from("memberships").select("email, first_name, membership_type").eq("id", data.id).maybeSingle();
+        if (m?.email) {
+          const { sendAccountActivatedEmail } = await import("@/lib/account-activation.server");
+          await sendAccountActivatedEmail({ email: m.email, firstName: m.first_name, membershipType: m.membership_type, senderUserId: context.userId });
+        }
+      } catch (e) { console.error("[setMembershipStatus] activation mail failed", e); }
+    }
     return { ok: true };
   });
 
