@@ -12,3 +12,8 @@
 
 ## Schritt 3
 - [ ] Anwesenheit Teilnehmer/Trainer technisch zusammenführen
+
+## Volljährigkeit
+- [x] Mitgliedsantrag: Minderjährigen-Regelungen, Kontaktdaten Kind, Pflicht-Checkboxen, Familien-/SEPA-Hinweise
+- [x] Automatische E-Mail 6 Wochen vor dem 18. Geburtstag an Mitglied und Eltern
+- [x] Verwaltung: Hinweis „wird bald 18“ / „18 geworden“

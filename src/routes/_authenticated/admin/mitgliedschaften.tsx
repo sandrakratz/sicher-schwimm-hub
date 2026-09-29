@@ -38,7 +38,17 @@ const STATUS_LABEL: Record<string, string> = {
   terminated: "Beendet",
 };
 
-type Member = { name: string; date_of_birth: string | null };
+type Member = { name: string; date_of_birth: string | null; email?: string | null };
+
+function majorityBadge(dob?: string | null): string | null {
+  if (!dob) return null;
+  const d = new Date(dob); if (isNaN(d.getTime())) return null;
+  const b18 = new Date(d.getFullYear() + 18, d.getMonth(), d.getDate());
+  const days = Math.round((b18.getTime() - Date.now()) / 86400000);
+  if (days > 0 && days <= 120) return `wird 18 am ${b18.toLocaleDateString("de-DE")}`;
+  if (days <= 0 && days > -365) return `18 geworden am ${b18.toLocaleDateString("de-DE")} – Beitrag prüfen`;
+  return null;
+}
 type FamilyMembers = { partner?: Member | null; children?: Member[] } | null;
 
 import { formatDateBerlin } from "@/lib/format";
@@ -58,7 +68,7 @@ function Row({ label, value }: { label: string; value?: React.ReactNode }) {
 
 function FamilyEditor({ value, onSave, onCancel }: { value: FamilyMembers; onSave: (v: FamilyMembers) => Promise<void>; onCancel: () => void }) {
   const [partner, setPartner] = useState<Member>({ name: value?.partner?.name || "", date_of_birth: value?.partner?.date_of_birth || "" });
-  const [children, setChildren] = useState<Member[]>(value?.children?.length ? value.children.map(c => ({ name: c.name || "", date_of_birth: c.date_of_birth || "" })) : []);
+  const [children, setChildren] = useState<Member[]>(value?.children?.length ? value.children.map(c => ({ name: c.name || "", date_of_birth: c.date_of_birth || "", email: c.email ?? null })) : []);
   const [saving, setSaving] = useState(false);
 
   const updateChild = (i: number, patch: Partial<Member>) =>
@@ -70,7 +80,7 @@ function FamilyEditor({ value, onSave, onCancel }: { value: FamilyMembers; onSav
     setSaving(true);
     const cleaned: FamilyMembers = {
       partner: partner.name.trim() ? { name: partner.name.trim(), date_of_birth: partner.date_of_birth || null } : null,
-      children: children.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), date_of_birth: c.date_of_birth || null })),
+      children: children.filter(c => c.name.trim()).map(c => ({ name: c.name.trim(), date_of_birth: c.date_of_birth || null, ...(c.email ? { email: c.email } : {}) })),
     };
     await onSave(cleaned);
     setSaving(false);
@@ -171,7 +181,7 @@ function Page() {
                   <TableCell className="text-xs">{fmtDate(r.created_at)}</TableCell>
                   <TableCell>{r.first_name} {r.last_name}</TableCell>
                   <TableCell className="text-xs">{r.email}</TableCell>
-                  <TableCell><Badge variant="outline">{TYPE_LABEL[r.membership_type] || r.membership_type}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{TYPE_LABEL[r.membership_type] || r.membership_type}</Badge>{[r.date_of_birth, ...(((r.family_members as any)?.children ?? []) as Member[]).map(c => c.date_of_birth)].map(majorityBadge).filter(Boolean).map((t, i) => <div key={i} className="mt-1 text-[11px] font-medium text-primary">🎂 {t}</div>)}</TableCell>
                   <TableCell><Badge variant="outline">{STATUS_LABEL[r.status] || r.status}</Badge></TableCell>
                   <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
                     <Button size="sm" variant="outline" onClick={() => { setSelected(r); setEditingFamily(false); }}>Details</Button>
@@ -203,6 +213,10 @@ function Page() {
                 <h3 className="font-display font-bold text-primary-deep mb-2">Person</h3>
                 <Row label="Name" value={`${selected.first_name} ${selected.last_name}`} />
                 <Row label="Geburtsdatum" value={fmtDate(selected.date_of_birth)} />
+                {(selected as any).member_email && <Row label="E-Mail des Mitglieds" value={(selected as any).member_email} />}
+                {(selected as any).member_phone && <Row label="Telefon des Mitglieds" value={(selected as any).member_phone} />}
+                {(selected as any).payer_role && <Row label="Kontoinhaber ist" value={({ member: "Mitglied selbst", guardian: "Erziehungsberechtigte/r", other: "Andere Person" } as Record<string,string>)[(selected as any).payer_role] ?? (selected as any).payer_role} />}
+                {(selected as any).minor_consents && <Row label="Zustimmungen Minderjährige" value={`alle 5 bestätigt${(selected as any).minor_consents.accepted_at ? ` am ${fmtDate((selected as any).minor_consents.accepted_at)}` : ""}`} />}
                 <Row label="E-Mail" value={selected.email} />
                 <Row label="Telefon" value={selected.phone} />
                 <Row label="Adresse" value={[selected.address_street, [selected.address_zip, selected.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ")} />
@@ -238,7 +252,7 @@ function Page() {
                       <Row label="Partner/in" value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${fmtDate(fm.partner.date_of_birth)})` : ""}`} />
                     )}
                     {(fm?.children || []).map((c, i) => (
-                      <Row key={i} label={`Kind ${i + 1}`} value={`${c.name}${c.date_of_birth ? ` (geb. ${fmtDate(c.date_of_birth)})` : ""}`} />
+                      <Row key={i} label={`Kind ${i + 1}`} value={`${c.name}${c.date_of_birth ? ` (geb. ${fmtDate(c.date_of_birth)})` : ""}${c.email ? ` · ${c.email}` : ""}`} />
                     ))}
                   </>
                 ) : (
