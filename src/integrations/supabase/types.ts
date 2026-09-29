@@ -1055,6 +1055,65 @@ export type Database = {
         }
         Relationships: []
       }
+      majority_confirmations: {
+        Row: {
+          child_index: number | null
+          confirmed_at: string | null
+          confirmed_data: Json | null
+          created_at: string
+          date_of_birth: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          membership_id: string
+          status: string
+          token: string
+          user_id: string | null
+          wants_termination: boolean
+        }
+        Insert: {
+          child_index?: number | null
+          confirmed_at?: string | null
+          confirmed_data?: Json | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          membership_id: string
+          status?: string
+          token?: string
+          user_id?: string | null
+          wants_termination?: boolean
+        }
+        Update: {
+          child_index?: number | null
+          confirmed_at?: string | null
+          confirmed_data?: Json | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          membership_id?: string
+          status?: string
+          token?: string
+          user_id?: string | null
+          wants_termination?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "majority_confirmations_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memberships: {
         Row: {
           accepted_privacy: boolean
