@@ -1076,8 +1076,12 @@ export type Database = {
           guardian_phone: string | null
           id: string
           last_name: string
+          member_email: string | null
+          member_phone: string | null
           membership_type: Database["public"]["Enums"]["membership_type"]
+          minor_consents: Json | null
           notes: string | null
+          payer_role: string | null
           phone: string | null
           sepa_account_holder: string | null
           sepa_bank_name: string | null
@@ -1110,8 +1114,12 @@ export type Database = {
           guardian_phone?: string | null
           id?: string
           last_name: string
+          member_email?: string | null
+          member_phone?: string | null
           membership_type: Database["public"]["Enums"]["membership_type"]
+          minor_consents?: Json | null
           notes?: string | null
+          payer_role?: string | null
           phone?: string | null
           sepa_account_holder?: string | null
           sepa_bank_name?: string | null
@@ -1144,8 +1152,12 @@ export type Database = {
           guardian_phone?: string | null
           id?: string
           last_name?: string
+          member_email?: string | null
+          member_phone?: string | null
           membership_type?: Database["public"]["Enums"]["membership_type"]
+          minor_consents?: Json | null
           notes?: string | null
+          payer_role?: string | null
           phone?: string | null
           sepa_account_holder?: string | null
           sepa_bank_name?: string | null
