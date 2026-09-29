@@ -129,6 +129,15 @@ function Page() {
       toast.error("Bitte alle Pflichtfelder & Zustimmungen ausfüllen.");
       return;
     }
+    {
+      const dob = new Date(parsed.data.date_of_birth);
+      const adult = new Date(dob.getFullYear() + 18, dob.getMonth(), dob.getDate());
+      const g = parsed.data;
+      if (adult > new Date() && (!g.guardian_name || g.guardian_name.split(/\s+/).length < 2 || !g.guardian_email || !g.guardian_phone)) {
+        toast.error("Bei Minderjährigen bitte Vor- und Nachname, E-Mail und Telefon der Erziehungsberechtigten angeben.");
+        return;
+      }
+    }
     setLoading(true);
     const family_members = tier === "family" ? {
       partner: partner.name.trim() ? { name: `${partner.name.trim()} ${(partner.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: partner.date_of_birth || null } : null,
