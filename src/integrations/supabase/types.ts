@@ -394,6 +394,7 @@ export type Database = {
           target_group: string | null
           updated_at: string
           waitlist_offer_days: number
+          waitlist_open: boolean
         }
         Insert: {
           age_range?: string | null
@@ -416,6 +417,7 @@ export type Database = {
           target_group?: string | null
           updated_at?: string
           waitlist_offer_days?: number
+          waitlist_open?: boolean
         }
         Update: {
           age_range?: string | null
@@ -438,6 +440,7 @@ export type Database = {
           target_group?: string | null
           updated_at?: string
           waitlist_offer_days?: number
+          waitlist_open?: boolean
         }
         Relationships: []
       }

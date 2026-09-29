@@ -133,7 +133,7 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
                 </div>
               </div>
               <div className="pt-3 border-t space-y-2">
-                <Button asChild variant="accent" className="w-full"><Link to="/warteliste" search={{ programm: up.slug }}>{LABELS.waitlistCta}</Link></Button>
+                {up.waitlist_open ? <Button asChild variant="accent" className="w-full"><Link to="/warteliste" search={{ programm: up.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>}
                 <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns, sobald Termine feststehen.</p>
               </div>
             </CardContent>
@@ -234,7 +234,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 <p className="text-muted-foreground mb-4">
                   Für diesen Kurs stehen aktuell keine Termine zur Buchung bereit. Gerne nehmen wir Sie auf die Warteliste auf.
                 </p>
-                <Button asChild variant="accent"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button>
+                {program.waitlist_open ? <Button asChild variant="accent"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>}
               </CardContent>
             </Card>
           ) : (
@@ -291,7 +291,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                     </div>
                     <div className="shrink-0">
                       {t.is_full ? (
-                        <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button>
+                        program.waitlist_open ? <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Ausgebucht</p>
                       ) : (
                         <Button variant="accent" onClick={() => setBookingTerm(t)}>Verbindlich buchen</Button>
                       )}
@@ -328,7 +328,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                 </div>
               )}
               <div className="pt-3 border-t space-y-2">
-                <Button asChild variant="outline" className="w-full"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button>
+                {program.waitlist_open ? <Button asChild variant="outline" className="w-full"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>}
                 <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.</p>
               </div>
             </CardContent>

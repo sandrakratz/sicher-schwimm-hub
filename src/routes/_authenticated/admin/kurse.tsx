@@ -586,6 +586,7 @@ function Page() {
       payment_due_days: editingProg.payment_due_days ?? 14,
       is_public: editingProg.is_public ?? true,
       bookable: editingProg.bookable ?? true,
+      waitlist_open: (editingProg as any).waitlist_open ?? true,
       sort_order: editingProg.sort_order ?? 0,
     };
     const res = editingProg.id
@@ -1153,6 +1154,11 @@ function Page() {
                   <span className="text-[11px] text-muted-foreground">(Karte in /kurse + eigene Detailseite)</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm">
+                  <Checkbox checked={(editingProg as any).waitlist_open ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, waitlist_open: Boolean(v) } as any))} />
+                  Warteliste aktiv
+                  <span className="text-[11px] text-muted-foreground">(aus: keine neuen Wartelisten-Einträge)</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
                   <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
                   Online buchbar
                   <span className="text-[11px] text-muted-foreground">(aus: Status „Geplant – noch nicht buchbar", keine Buchung)</span>
@@ -1216,6 +1222,11 @@ function Page() {
                 <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
                 Auf der Webseite anzeigen
                 <span className="text-[11px] text-muted-foreground">(Karte in /kurse + Detailseite)</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={(editingProg as any).waitlist_open ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, waitlist_open: Boolean(v) } as any))} />
+                Warteliste aktiv
+                <span className="text-[11px] text-muted-foreground">(aus: keine neuen Wartelisten-Einträge)</span>
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
