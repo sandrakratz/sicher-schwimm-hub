@@ -1,0 +1,1 @@
+- Volljährigkeits-Bestätigung läuft über geheimen Token-Link (majority_confirmations), Schreibzugriff nur serverseitig – kein Login für Jugendliche ohne Konto nötig.
