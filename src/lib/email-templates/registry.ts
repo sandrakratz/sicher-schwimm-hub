@@ -22,6 +22,7 @@ import { template as partialCertificate } from './partial-certificate'
 import { template as courseTransfer } from './course-transfer'
 import { template as courseBroadcast } from './course-broadcast'
 import { template as accountActivated } from './account-activated'
+import { template as majorityNotice } from './majority-notice'
 
 
 
@@ -60,4 +61,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'course-transfer': courseTransfer,
   'course-broadcast': courseBroadcast,
   'account-activated': accountActivated,
+  'majority-notice': majorityNotice,
 }
