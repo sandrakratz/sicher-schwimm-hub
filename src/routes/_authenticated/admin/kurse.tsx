@@ -586,6 +586,7 @@ function Page() {
       payment_due_days: editingProg.payment_due_days ?? 14,
       is_public: editingProg.is_public ?? true,
       bookable: editingProg.bookable ?? true,
+      waitlist_open: (editingProg as any).waitlist_open ?? true,
       sort_order: editingProg.sort_order ?? 0,
     };
     const res = editingProg.id
