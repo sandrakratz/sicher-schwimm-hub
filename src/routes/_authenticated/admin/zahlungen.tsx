@@ -56,7 +56,7 @@ function Page() {
     setLoading(true);
     const { data, error } = await supabase
       .from("course_participants")
-      .select("id,participant_name,participant_email,participant_phone,price_amount,payment_note,payment_method,payment_due_date,created_at,courses(name,starts_on,ends_on,payment_due_days,location)")
+      .select("id,participant_name,participant_email,participant_phone,price_amount,payment_note,payment_method,payment_due_date,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on,payment_due_days,location)")
       .eq("status", "confirmed")
       .eq("paid", false);
     setLoading(false);
