@@ -1,4 +1,4 @@
-import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, BookOpen, Shield, ShieldBan, Users, ListChecks, CalendarCheck, Hourglass, MailOpen, Send, Activity, ScrollText, Euro } from "lucide-react";
+import { LayoutDashboard, User, Calendar, FileText, Newspaper, Mail, BookOpen, Shield, ShieldBan, Users, ListChecks, CalendarCheck, Hourglass, MailOpen, Send, Activity, ScrollText, Euro, Search } from "lucide-react";
 
 export type Role = "admin" | "board" | "trainer" | "member" | "parent";
 
@@ -6,7 +6,7 @@ export type AppNavItem = {
   to:
     | "/portal" | "/portal/profil" | "/portal/kurse" | "/portal/news" | "/portal/events" | "/portal/dokumente" | "/portal/kontakt"
     | "/trainer" | "/trainer/verfuegbarkeit" | "/trainer/kurse" | "/trainer/mitglieder"
-    | "/admin" | "/admin/kalender" | "/admin/benutzer" | "/admin/mitglieder" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/zahlungen" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/warteliste" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/versandstatus" | "/admin/widerrufe" | "/admin/audit";
+    | "/admin" | "/admin/kalender" | "/admin/benutzer" | "/admin/mitglieder" | "/admin/mitgliedschaften" | "/admin/kurse" | "/admin/zahlungen" | "/admin/suche" | "/admin/verfuegbarkeit" | "/admin/anfragen" | "/admin/warteliste" | "/admin/sperrliste" | "/admin/news" | "/admin/dokumente" | "/admin/events" | "/admin/nachrichten" | "/admin/emails" | "/admin/versandstatus" | "/admin/widerrufe" | "/admin/audit";
   icon: typeof Shield;
   label: string;
   exact?: boolean;
@@ -63,6 +63,7 @@ export function findAdminSection(pathname: string) {
 /** Nur mit passender Rolle sichtbar */
 export const adminNav: (AppNavItem & { group?: string[] })[] = [
   { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
+  { to: "/admin/suche", icon: Search, label: "Suche", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board"] },
   { to: "/admin/zahlungen", icon: Euro, label: "Offene Zahlungen", allow: ["admin", "board"] },
   { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
