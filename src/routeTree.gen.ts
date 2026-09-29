@@ -53,6 +53,7 @@ import { Route as AuthenticatedAdminVerfuegbarkeitRouteImport } from './routes/_
 import { Route as AuthenticatedAdminVersandstatusRouteImport } from './routes/_authenticated/admin/versandstatus'
 import { Route as AuthenticatedAdminWartelisteRouteImport } from './routes/_authenticated/admin/warteliste'
 import { Route as AuthenticatedAdminWiderrufeRouteImport } from './routes/_authenticated/admin/widerrufe'
+import { Route as AuthenticatedAdminZahlungenRouteImport } from './routes/_authenticated/admin/zahlungen'
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
 import { Route as AuthenticatedPortalDokumenteRouteImport } from './routes/_authenticated/portal/dokumente'
 import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal/events'
@@ -310,6 +311,12 @@ const AuthenticatedAdminWiderrufeRoute =
     path: '/widerrufe',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminZahlungenRoute =
+  AuthenticatedAdminZahlungenRouteImport.update({
+    id: '/zahlungen',
+    path: '/zahlungen',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedPortalIndexRoute =
   AuthenticatedPortalIndexRouteImport.update({
     id: '/portal/',
@@ -480,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
+  '/admin/zahlungen': typeof AuthenticatedAdminZahlungenRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -546,6 +554,7 @@ export interface FileRoutesByTo {
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
+  '/admin/zahlungen': typeof AuthenticatedAdminZahlungenRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -615,6 +624,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/_authenticated/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/_authenticated/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
+  '/_authenticated/admin/zahlungen': typeof AuthenticatedAdminZahlungenRoute
   '/_authenticated/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
   '/_authenticated/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -684,6 +694,7 @@ export interface FileRouteTypes {
     | '/admin/versandstatus'
     | '/admin/warteliste'
     | '/admin/widerrufe'
+    | '/admin/zahlungen'
     | '/portal/dokumente'
     | '/portal/events'
     | '/portal/kontakt'
@@ -750,6 +761,7 @@ export interface FileRouteTypes {
     | '/admin/versandstatus'
     | '/admin/warteliste'
     | '/admin/widerrufe'
+    | '/admin/zahlungen'
     | '/portal/dokumente'
     | '/portal/events'
     | '/portal/kontakt'
@@ -818,6 +830,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/versandstatus'
     | '/_authenticated/admin/warteliste'
     | '/_authenticated/admin/widerrufe'
+    | '/_authenticated/admin/zahlungen'
     | '/_authenticated/portal/dokumente'
     | '/_authenticated/portal/events'
     | '/_authenticated/portal/kontakt'
@@ -1192,6 +1205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminWiderrufeRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/zahlungen': {
+      id: '/_authenticated/admin/zahlungen'
+      path: '/zahlungen'
+      fullPath: '/admin/zahlungen'
+      preLoaderRoute: typeof AuthenticatedAdminZahlungenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/portal/': {
       id: '/_authenticated/portal/'
       path: '/portal'
@@ -1367,6 +1387,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminVersandstatusRoute: typeof AuthenticatedAdminVersandstatusRoute
   AuthenticatedAdminWartelisteRoute: typeof AuthenticatedAdminWartelisteRoute
   AuthenticatedAdminWiderrufeRoute: typeof AuthenticatedAdminWiderrufeRoute
+  AuthenticatedAdminZahlungenRoute: typeof AuthenticatedAdminZahlungenRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1391,6 +1412,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminVersandstatusRoute: AuthenticatedAdminVersandstatusRoute,
     AuthenticatedAdminWartelisteRoute: AuthenticatedAdminWartelisteRoute,
     AuthenticatedAdminWiderrufeRoute: AuthenticatedAdminWiderrufeRoute,
+    AuthenticatedAdminZahlungenRoute: AuthenticatedAdminZahlungenRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
 
