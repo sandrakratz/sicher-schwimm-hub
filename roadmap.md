@@ -14,6 +14,6 @@
 - [ ] Anwesenheit Teilnehmer/Trainer technisch zusammenführen
 
 ## Volljährigkeit
-- [ ] Mitgliedsantrag: Minderjährigen-Regelungen, Kontaktdaten Kind, Pflicht-Checkboxen, Familien-/SEPA-Hinweise
-- [ ] Automatische E-Mail 6 Wochen vor dem 18. Geburtstag an Mitglied und Eltern
-- [ ] Verwaltung: Hinweis „wird bald 18“ / „18 geworden“
+- [x] Mitgliedsantrag: Minderjährigen-Regelungen, Kontaktdaten Kind, Pflicht-Checkboxen, Familien-/SEPA-Hinweise
+- [x] Automatische E-Mail 6 Wochen vor dem 18. Geburtstag an Mitglied und Eltern
+- [x] Verwaltung: Hinweis „wird bald 18“ / „18 geworden“
