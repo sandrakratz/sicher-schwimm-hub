@@ -34,7 +34,7 @@ function Page() {
   const load = useServerFn(getMajorityConfirmation);
   const submit = useServerFn(submitMajorityConfirmation);
   const [info, setInfo] = useState<Info | null>(null);
-  const [payment, setPayment] = useState<"keep" | "own_sepa" | "transfer">("keep");
+  const [payment, setPayment] = useState<"keep" | "own_sepa">("keep");
   const [terminate, setTerminate] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<null | { account: boolean; terminate: boolean }>(null);
@@ -114,11 +114,10 @@ function Page() {
             <Card><CardContent className="p-6"><Label htmlFor="termination_note">Anmerkung (optional)</Label><Textarea id="termination_note" name="termination_note" maxLength={1000} /></CardContent></Card>
           ) : (
             <Card><CardContent className="p-6 space-y-3">
-              <p className="font-semibold text-primary-deep">Zahlungsart ab Volljährigkeit *</p>
+              <p className="font-semibold text-primary-deep">Beitragseinzug per SEPA-Lastschrift ab Volljährigkeit *</p>
               {[
                 ["keep", `Wie bisher weiter${info.current_account_holder ? ` (Konto von ${info.current_account_holder}${info.current_iban_hint ? `, ${info.current_iban_hint}` : ""})` : ""}`],
                 ["own_sepa", "Ab jetzt von meinem eigenen Konto (neues SEPA-Lastschriftmandat)"],
-                ["transfer", "Ich überweise den Beitrag selbst"],
               ].map(([v, l]) => (
                 <label key={v} className="flex gap-2 items-start text-sm cursor-pointer">
                   <input type="radio" name="payment_opt" checked={payment === v} onChange={() => setPayment(v as any)} className="mt-1" /> {l}

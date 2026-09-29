@@ -43,7 +43,7 @@ const confirmSchema = tokenSchema.extend({
   address_street: z.string().trim().min(3).max(200),
   address_zip: z.string().trim().regex(/^\d{5}$/),
   address_city: z.string().trim().min(2).max(100),
-  payment: z.enum(["keep", "own_sepa", "transfer"]),
+  payment: z.enum(["keep", "own_sepa"]),
   sepa_account_holder: z.string().trim().max(200).optional(),
   sepa_iban: z.string().trim().max(40).optional(),
   sepa_mandate: z.boolean().optional(),
@@ -121,7 +121,7 @@ export const submitMajorityConfirmation = createServerFn({ method: "POST" })
           subject: data.wants_termination ? "Volljährigkeit: Kündigungswunsch" : "Volljährigkeit: Daten bestätigt",
           body: data.wants_termination
             ? `${row.first_name} ${row.last_name} möchte die Mitgliedschaft nach Satzung kündigen.\n${data.termination_note || ""}`
-            : `${row.first_name} ${row.last_name} hat die Daten zur Volljährigkeit bestätigt. Zahlungsart: ${data.payment === "keep" ? "wie bisher" : data.payment === "own_sepa" ? "neues SEPA-Mandat (eigenes Konto)" : "Überweisung"}. Ein Mitgliederzugang wurde angelegt.`,
+            : `${row.first_name} ${row.last_name} hat die Daten zur Volljährigkeit bestätigt. Zahlungsart: ${data.payment === "keep" ? "wie bisher" : "neues SEPA-Mandat (eigenes Konto)"}. Ein Mitgliederzugang wurde angelegt.`,
         },
       });
     } catch (e) { console.error("[majority] notify failed", e); }
