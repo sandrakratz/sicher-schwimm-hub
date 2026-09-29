@@ -1,0 +1,1 @@
+select cron.schedule('majority-notice-daily', '0 6 * * *', replace((select command from cron.job where jobname='course-start-reminder-daily'), '/hooks/course-start-reminder', '/hooks/majority-notice'));
