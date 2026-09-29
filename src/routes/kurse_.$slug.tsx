@@ -291,7 +291,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                     </div>
                     <div className="shrink-0">
                       {t.is_full ? (
-                        {program.waitlist_open ? <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>}
+                        program.waitlist_open ? <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Ausgebucht</p>
                       ) : (
                         <Button variant="accent" onClick={() => setBookingTerm(t)}>Verbindlich buchen</Button>
                       )}
