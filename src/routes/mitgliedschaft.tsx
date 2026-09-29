@@ -68,15 +68,15 @@ const schema = z.object({
   accepted_privacy: z.boolean().refine(v => v),
 });
 
-type FamilyMember = { name: string; date_of_birth: string };
+type FamilyMember = { name: string; last_name: string; date_of_birth: string };
 
 function Page() {
-  const [partner, setPartner] = useState<FamilyMember>({ name: "", date_of_birth: "" });
+  const [partner, setPartner] = useState<FamilyMember>({ name: "", last_name: "", date_of_birth: "" });
   const [children, setChildren] = useState<FamilyMember[]>([
-    { name: "", date_of_birth: "" },
-    { name: "", date_of_birth: "" },
-    { name: "", date_of_birth: "" },
-    { name: "", date_of_birth: "" },
+    { name: "", last_name: "", date_of_birth: "" },
+    { name: "", last_name: "", date_of_birth: "" },
+    { name: "", last_name: "", date_of_birth: "" },
+    { name: "", last_name: "", date_of_birth: "" },
   ]);
   const updateChild = (i: number, patch: Partial<FamilyMember>) =>
     setChildren(prev => prev.map((c, idx) => idx === i ? { ...c, ...patch } : c));
@@ -131,10 +131,10 @@ function Page() {
     }
     setLoading(true);
     const family_members = tier === "family" ? {
-      partner: partner.name.trim() ? { name: partner.name.trim(), date_of_birth: partner.date_of_birth || null } : null,
+      partner: partner.name.trim() ? { name: `${partner.name.trim()} ${(partner.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: partner.date_of_birth || null } : null,
       children: children
         .filter(c => c.name.trim())
-        .map(c => ({ name: c.name.trim(), date_of_birth: c.date_of_birth || null })),
+        .map(c => ({ name: `${c.name.trim()} ${(c.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: c.date_of_birth || null })),
     } : null;
     const idem = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
     const createdAt = new Date().toISOString();
@@ -338,16 +338,18 @@ function Page() {
                     <div className="space-y-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Partner/in</h4>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div><Label>Name</Label><Input value={partner.name} onChange={e => setPartner(p => ({ ...p, name: e.target.value }))} maxLength={200} /></div>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <div><Label>Vorname</Label><Input value={partner.name} onChange={e => setPartner(p => ({ ...p, name: e.target.value }))} maxLength={100} /></div>
+                          <div><Label>Nachname</Label><Input value={partner.last_name} placeholder="wie oben, falls leer" onChange={e => setPartner(p => ({ ...p, last_name: e.target.value }))} maxLength={100} /></div>
                           <div><Label>Geburtsdatum</Label><Input type="date" value={partner.date_of_birth} onChange={e => setPartner(p => ({ ...p, date_of_birth: e.target.value }))} /></div>
                         </div>
                       </div>
                       {children.map((c, i) => (
                         <div key={i}>
                           <h4 className="text-sm font-medium mb-2">Kind {i + 1}</h4>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            <div><Label>Name</Label><Input value={c.name} onChange={e => updateChild(i, { name: e.target.value })} maxLength={200} /></div>
+                          <div className="grid md:grid-cols-3 gap-4">
+                            <div><Label>Vorname</Label><Input value={c.name} onChange={e => updateChild(i, { name: e.target.value })} maxLength={100} /></div>
+                            <div><Label>Nachname</Label><Input value={c.last_name} placeholder="wie oben, falls leer" onChange={e => updateChild(i, { last_name: e.target.value })} maxLength={100} /></div>
                             <div><Label>Geburtsdatum</Label><Input type="date" value={c.date_of_birth} onChange={e => updateChild(i, { date_of_birth: e.target.value })} /></div>
                           </div>
                         </div>
