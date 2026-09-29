@@ -49,6 +49,7 @@ import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes
 import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
 import { Route as AuthenticatedAdminSperrlisteRouteImport } from './routes/_authenticated/admin/sperrliste'
+import { Route as AuthenticatedAdminSucheRouteImport } from './routes/_authenticated/admin/suche'
 import { Route as AuthenticatedAdminVerfuegbarkeitRouteImport } from './routes/_authenticated/admin/verfuegbarkeit'
 import { Route as AuthenticatedAdminVersandstatusRouteImport } from './routes/_authenticated/admin/versandstatus'
 import { Route as AuthenticatedAdminWartelisteRouteImport } from './routes/_authenticated/admin/warteliste'
@@ -287,6 +288,11 @@ const AuthenticatedAdminSperrlisteRoute =
     path: '/sperrliste',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminSucheRoute = AuthenticatedAdminSucheRouteImport.update({
+  id: '/suche',
+  path: '/suche',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminVerfuegbarkeitRoute =
   AuthenticatedAdminVerfuegbarkeitRouteImport.update({
     id: '/verfuegbarkeit',
@@ -483,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
   '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
+  '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
@@ -550,6 +557,7 @@ export interface FileRoutesByTo {
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
   '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
+  '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
@@ -620,6 +628,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
   '/_authenticated/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
+  '/_authenticated/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/_authenticated/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
   '/_authenticated/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/_authenticated/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
@@ -690,6 +699,7 @@ export interface FileRouteTypes {
     | '/admin/nachrichten'
     | '/admin/news'
     | '/admin/sperrliste'
+    | '/admin/suche'
     | '/admin/verfuegbarkeit'
     | '/admin/versandstatus'
     | '/admin/warteliste'
@@ -757,6 +767,7 @@ export interface FileRouteTypes {
     | '/admin/nachrichten'
     | '/admin/news'
     | '/admin/sperrliste'
+    | '/admin/suche'
     | '/admin/verfuegbarkeit'
     | '/admin/versandstatus'
     | '/admin/warteliste'
@@ -826,6 +837,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/nachrichten'
     | '/_authenticated/admin/news'
     | '/_authenticated/admin/sperrliste'
+    | '/_authenticated/admin/suche'
     | '/_authenticated/admin/verfuegbarkeit'
     | '/_authenticated/admin/versandstatus'
     | '/_authenticated/admin/warteliste'
@@ -1177,6 +1189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSperrlisteRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/suche': {
+      id: '/_authenticated/admin/suche'
+      path: '/suche'
+      fullPath: '/admin/suche'
+      preLoaderRoute: typeof AuthenticatedAdminSucheRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/verfuegbarkeit': {
       id: '/_authenticated/admin/verfuegbarkeit'
       path: '/verfuegbarkeit'
@@ -1383,6 +1402,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
   AuthenticatedAdminSperrlisteRoute: typeof AuthenticatedAdminSperrlisteRoute
+  AuthenticatedAdminSucheRoute: typeof AuthenticatedAdminSucheRoute
   AuthenticatedAdminVerfuegbarkeitRoute: typeof AuthenticatedAdminVerfuegbarkeitRoute
   AuthenticatedAdminVersandstatusRoute: typeof AuthenticatedAdminVersandstatusRoute
   AuthenticatedAdminWartelisteRoute: typeof AuthenticatedAdminWartelisteRoute
@@ -1407,6 +1427,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
     AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
     AuthenticatedAdminSperrlisteRoute: AuthenticatedAdminSperrlisteRoute,
+    AuthenticatedAdminSucheRoute: AuthenticatedAdminSucheRoute,
     AuthenticatedAdminVerfuegbarkeitRoute:
       AuthenticatedAdminVerfuegbarkeitRoute,
     AuthenticatedAdminVersandstatusRoute: AuthenticatedAdminVersandstatusRoute,
