@@ -96,7 +96,7 @@ function WaitlistPage() {
           parentName: String(fd.get("parent_name") || ""),
           parentEmail: String(fd.get("parent_email") || ""),
           parentPhone: String(fd.get("parent_phone") || ""),
-          childName: String(fd.get("child_name") || ""),
+          childName: `${String(fd.get("child_first_name") || "").trim()} ${String(fd.get("child_last_name") || "").trim()}`.trim(),
           childDob: String(fd.get("child_dob") || ""),
           swimmingLevel: String(fd.get("swimming_level") || ""),
           isMember: memberValue === "ja",
@@ -186,8 +186,12 @@ function WaitlistPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="child_name">Name des Kindes *</Label>
-                  <Input id="child_name" name="child_name" required maxLength={120} />
+                  <Label htmlFor="child_first_name">Vorname des Kindes *</Label>
+                  <Input id="child_first_name" name="child_first_name" required maxLength={60} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="child_last_name">Nachname des Kindes *</Label>
+                  <Input id="child_last_name" name="child_last_name" required maxLength={60} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="child_dob">Geburtsdatum des Kindes *</Label>

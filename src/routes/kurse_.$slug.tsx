@@ -424,14 +424,16 @@ function BookingDialog({
   const [form, setForm] = useState({
     parentName: "", parentEmail: "", parentPhone: "",
     parentStreet: "", parentZip: "", parentCity: "",
-    childName: "", childDob: "", healthInfo: "", message: "",
+    childName: "", childLastName: "", childDob: "", healthInfo: "", message: "",
     isMember: false, acceptTerms: false, gdprConsent: false, website: "",
   });
 
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
-  const [siblings, setSiblings] = useState<Array<{ childName: string; childDob: string; healthInfo: string }>>([]);
-  const setSib = (i: number, k: "childName" | "childDob" | "healthInfo", v: string) =>
+  const [siblings, setSiblings] = useState<Array<{ childName: string; childLastName: string; childDob: string; healthInfo: string }>>([]);
+  const setSib = (i: number, k: "childName" | "childLastName" | "childDob" | "healthInfo", v: string) =>
     setSiblings((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+  const parentLast = form.parentName.trim().split(/\s+/).slice(1).join(" ");
+  const fullName = (first: string, last: string) => `${first.trim()} ${last.trim()}`.trim();
 
   const price = form.isMember
     ? term?.price_member ?? program.price_member ?? null
@@ -448,9 +450,14 @@ function BookingDialog({
     setSubmitting(true);
     try {
       const kids = [
-        { childName: form.childName, childDob: form.childDob, healthInfo: form.healthInfo },
-        ...siblings.filter((k) => k.childName.trim()),
+        { childName: fullName(form.childName, form.childLastName), childDob: form.childDob, healthInfo: form.healthInfo },
+        ...siblings.filter((k) => k.childName.trim()).map((k) => ({ ...k, childName: fullName(k.childName, k.childLastName) })),
       ];
+      if (kids.some((k) => k.childName.split(/\s+/).length < 2)) {
+        toast.error("Bitte Vor- und Nachnamen jedes Kindes angeben.");
+        setSubmitting(false);
+        return;
+      }
       let res: any = null;
       const confirmed: string[] = [];
       const waiting: string[] = [];
@@ -558,8 +565,14 @@ function BookingDialog({
               <Input id="parentCity" required value={form.parentCity} onChange={(e) => set("parentCity", e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="childName">Name des Kindes *</Label>
+              <Label htmlFor="childName">Vorname des Kindes *</Label>
               <Input id="childName" required value={form.childName} onChange={(e) => set("childName", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="childLastName">Nachname des Kindes *</Label>
+              <Input id="childLastName" required value={form.childLastName} placeholder={parentLast || undefined}
+                onFocus={() => { if (!form.childLastName && parentLast) set("childLastName", parentLast); }}
+                onChange={(e) => set("childLastName", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="childDob">Geburtsdatum des Kindes *</Label>
@@ -579,8 +592,12 @@ function BookingDialog({
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Name des Kindes *</Label>
+                  <Label>Vorname *</Label>
                   <Input required value={k.childName} onChange={(e) => setSib(i, "childName", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Nachname *</Label>
+                  <Input required value={k.childLastName} onChange={(e) => setSib(i, "childLastName", e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Geburtsdatum *</Label>
@@ -594,7 +611,7 @@ function BookingDialog({
             </div>
           ))}
           {siblings.length < 3 && (
-            <Button type="button" variant="outline" size="sm" onClick={() => setSiblings((l) => [...l, { childName: "", childDob: "", healthInfo: "" }])}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setSiblings((l) => [...l, { childName: "", childLastName: form.childLastName || parentLast, childDob: "", healthInfo: "" }])}>
               + Weiteres Kind anmelden (Geschwister)
             </Button>
           )}
