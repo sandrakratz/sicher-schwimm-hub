@@ -68,7 +68,22 @@ const schema = z.object({
   accepted_privacy: z.boolean().refine(v => v),
 });
 
-type FamilyMember = { name: string; last_name: string; date_of_birth: string };
+type FamilyMember = { name: string; last_name: string; date_of_birth: string; email?: string };
+
+function isMinorDob(dob?: string | null) {
+  if (!dob) return false;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return false;
+  return new Date(d.getFullYear() + 18, d.getMonth(), d.getDate()) > new Date();
+}
+
+const MINOR_CONSENTS = [
+  { key: "minor_apply", text: "Ich beantrage die Mitgliedschaft für das oben genannte minderjährige Kind und stimme dessen Aufnahme in Sicher Schwimmen e.V. zu." },
+  { key: "minor_continues", text: "Ich habe zur Kenntnis genommen, dass die Mitgliedschaft meines Kindes mit Eintritt der Volljährigkeit nicht automatisch endet, sondern grundsätzlich als Mitgliedschaft eines erwachsenen Mitglieds fortgeführt wird, sofern keine wirksame Kündigung erfolgt." },
+  { key: "minor_inform_child", text: "Ich verpflichte mich, mein Kind rechtzeitig vor seinem 18. Geburtstag über die bestehende Mitgliedschaft und den bevorstehenden Statuswechsel zu informieren." },
+  { key: "minor_data_duty", text: "Ich habe zur Kenntnis genommen, dass mein Kind nach Eintritt der Volljährigkeit dem Verein seine aktuellen Kontaktdaten und gegebenenfalls die für die weitere Beitragszahlung erforderlichen Zahlungsinformationen mitteilen muss." },
+  { key: "minor_contact", text: "Ich stimme zu, dass Sicher Schwimmen e.V. mein Kind bereits vor bzw. spätestens mit Erreichen der Volljährigkeit unmittelbar über die bestehende Mitgliedschaft, den Statuswechsel, die Änderung der Beitragszuordnung und die erforderlichen nächsten Schritte informiert." },
+] as const;
 
 function Page() {
   const [partner, setPartner] = useState<FamilyMember>({ name: "", last_name: "", date_of_birth: "" });
@@ -82,6 +97,8 @@ function Page() {
     setChildren(prev => prev.map((c, idx) => idx === i ? { ...c, ...patch } : c));
 
   const [tier, setTier] = useState("family");
+  const [dob, setDob] = useState("");
+  const showMinor = tier === "children_youth" || isMinorDob(dob);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [accountResult, setAccountResult] = useState<"none" | "created" | "created_no_password" | "exists" | "failed">("none");
@@ -129,13 +146,26 @@ function Page() {
       toast.error("Bitte alle Pflichtfelder & Zustimmungen ausfüllen.");
       return;
     }
+    const isMinorMember = isMinorDob(parsed.data.date_of_birth) || tier === "children_youth";
+    let minor_consents: Record<string, unknown> | null = null;
     {
-      const dob = new Date(parsed.data.date_of_birth);
-      const adult = new Date(dob.getFullYear() + 18, dob.getMonth(), dob.getDate());
       const g = parsed.data;
-      if (adult > new Date() && (!g.guardian_name || g.guardian_name.split(/\s+/).length < 2 || !g.guardian_email || !g.guardian_phone)) {
+      if (isMinorMember && (!g.guardian_name || g.guardian_name.split(/\s+/).length < 2 || !g.guardian_email || !g.guardian_phone)) {
         toast.error("Bei Minderjährigen bitte Vor- und Nachname, E-Mail und Telefon der Erziehungsberechtigten angeben.");
         return;
+      }
+      if (isMinorMember) {
+        const memberEmail = String(fd.get("member_email") || "").trim();
+        if (!z.string().email().safeParse(memberEmail).success) {
+          toast.error("Bitte die E-Mail-Adresse des minderjährigen Mitglieds angeben.");
+          return;
+        }
+        const keys = MINOR_CONSENTS.map(c => c.key);
+        if (keys.some(k => fd.get(k) !== "on")) {
+          toast.error("Bitte alle Zustimmungen für minderjährige Mitglieder bestätigen.");
+          return;
+        }
+        minor_consents = { ...Object.fromEntries(keys.map(k => [k, true])), accepted_at: new Date().toISOString(), accepted_by: g.guardian_name };
       }
     }
     if (tier === "family" && children.some(c => c.name.trim() && !c.date_of_birth)) {
@@ -147,7 +177,7 @@ function Page() {
       partner: partner.name.trim() ? { name: `${partner.name.trim()} ${(partner.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: partner.date_of_birth || null } : null,
       children: children
         .filter(c => c.name.trim())
-        .map(c => ({ name: `${c.name.trim()} ${(c.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: c.date_of_birth || null })),
+        .map(c => ({ name: `${c.name.trim()} ${(c.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: c.date_of_birth || null, email: c.email?.trim() || null })),
     } : null;
     const idem = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
     const createdAt = new Date().toISOString();
@@ -156,7 +186,11 @@ function Page() {
       date_of_birth: parsed.data.date_of_birth || null,
       family_members,
       consent_at: createdAt,
-    });
+      member_email: isMinorMember ? String(fd.get("member_email") || "").trim() : null,
+      member_phone: isMinorMember ? (String(fd.get("member_phone") || "").trim() || null) : null,
+      minor_consents: minor_consents as any,
+      payer_role: String(fd.get("payer_role") || "member"),
+    } as any);
     if (error) {
       setLoading(false);
       console.warn("[memberships.insert]", error.code, error.message);
