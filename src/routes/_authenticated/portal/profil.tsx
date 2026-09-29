@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/portal/profil")({
 function Profile() {
   const [p, setP] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [family, setFamily] = useState<Array<{ name?: string; date_of_birth?: string }>>([]);
+  const [family, setFamily] = useState<Array<{ name?: string; date_of_birth?: string; role?: string }>>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -22,7 +22,15 @@ function Profile() {
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
       setP(profile);
       const { data: ms } = await supabase.from("memberships").select("family_members,status").eq("user_id", data.user.id).order("created_at", { ascending: false });
-      const fm = (ms || []).flatMap((m: any) => (Array.isArray(m.family_members) ? m.family_members : []));
+      const fm = (ms || []).flatMap((m: any) => {
+        const f = m.family_members;
+        if (!f) return [];
+        if (Array.isArray(f)) return f.map((x: any) => ({ ...x, role: "Familienmitglied" }));
+        const out: any[] = [];
+        if (f.partner?.name) out.push({ ...f.partner, role: "Partner:in" });
+        if (Array.isArray(f.children)) f.children.filter((c: any) => c?.name).forEach((c: any) => out.push({ ...c, role: "Kind" }));
+        return out;
+      });
       setFamily(fm);
     });
   }, []);
@@ -73,7 +81,7 @@ function Profile() {
             <ul className="divide-y">
               {family.map((f, i) => (
                 <li key={i} className="py-2 flex justify-between text-sm">
-                  <span className="font-medium">{f.name || "Ohne Namen"}</span>
+                  <span className="font-medium">{f.name || "Ohne Namen"} <span className="text-xs text-muted-foreground font-normal">({(f as any).role})</span></span>
                   <span className="text-muted-foreground">
                     {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
                   </span>
