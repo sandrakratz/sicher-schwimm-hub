@@ -47,15 +47,18 @@ function Page() {
     const t = setTimeout(async () => {
       setLoading(true);
       const p = `%${term}%`;
-      const [parts, mems, wl, reqs] = await Promise.all([
+      const [parts, mems0, fams, wl, reqs] = await Promise.all([
         supabase.from("course_participants")
           .select("id,participant_name,participant_email,participant_phone,status,paid,paid_at,paid_by,price_amount,document_no,payment_due_date,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,schedule,location)")
           .or(`participant_name.ilike.${p},participant_email.ilike.${p},participant_phone.ilike.${p},document_no.ilike.${p}`)
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("memberships")
           .select("id,first_name,last_name,email,phone,guardian_name,guardian_email,membership_type,status,family_members")
-          .or(`first_name.ilike.${p},last_name.ilike.${p},email.ilike.${p},phone.ilike.${p},guardian_name.ilike.${p},guardian_email.ilike.${p},family_members::text.ilike.${p}`)
+          .or(`first_name.ilike.${p},last_name.ilike.${p},email.ilike.${p},phone.ilike.${p},guardian_name.ilike.${p},guardian_email.ilike.${p}`)
           .limit(30),
+        supabase.from("memberships")
+          .select("id,first_name,last_name,email,phone,guardian_name,guardian_email,membership_type,status,family_members")
+          .not("family_members", "is", null).limit(1000),
         supabase.from("waitlist_entries")
           .select("id,child_name,child_dob,parent_name,parent_email,parent_phone,status,available_from,created_at,course_programs(name)")
           .or(`child_name.ilike.${p},parent_name.ilike.${p},parent_email.ilike.${p},parent_phone.ilike.${p}`)
@@ -65,6 +68,11 @@ function Page() {
           .or(`child_name.ilike.${p},parent_name.ilike.${p},parent_email.ilike.${p},parent_phone.ilike.${p}`)
           .order("created_at", { ascending: false }).limit(30),
       ]);
+      const low = term.toLowerCase();
+      const famHits = (fams.data || []).filter((m: any) => JSON.stringify(m.family_members || {}).toLowerCase().includes(low));
+      const memMap = new Map<string, any>();
+      [...(mems0.data || []), ...famHits].forEach((m: any) => memMap.set(m.id, m));
+      const mems = { data: [...memMap.values()] };
       const ids = [...new Set((parts.data || []).map((r: any) => r.paid_by).filter(Boolean))];
       const names: Record<string, string> = {};
       if (ids.length) {
