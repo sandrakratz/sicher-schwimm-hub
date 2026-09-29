@@ -41,7 +41,8 @@ const Email = ({ audience = 'member', member_first_name, family_name, birthday, 
             <Text style={h}>3. Beitragszahlung</Text>
             <Text style={p}>Die Beiträge können weiterhin über Ihr Konto laufen. Soll künftig ein eigenes Konto von {name} genutzt werden, kann dafür ein neues SEPA-Lastschriftmandat erforderlich sein – teilen Sie uns das einfach mit.</Text>
             <Text style={h}>4. Information Ihres Kindes</Text>
-            <Text style={p}>Wir haben {name} ebenfalls informiert und um eine kurze Datenbestätigung gebeten. Bitte erinnern Sie Ihr Kind bei Gelegenheit daran.</Text>
+            <Text style={p}>Wir haben {name} ebenfalls informiert und um eine kurze Datenbestätigung gebeten. Danach erhält {name} automatisch einen eigenen Mitgliederzugang. Falls {name} keine eigene E-Mail-Adresse bei uns hinterlegt hat, geben Sie den folgenden Link bitte weiter:</Text>
+            <Button href={url} style={{ backgroundColor: '#0c4a6e', color: '#ffffff', padding: '12px 20px', borderRadius: '8px', textDecoration: 'none' }}>Zur Datenbestätigung</Button>
             <Hr />
             <Text style={{ fontSize: '13px', color: '#475569' }}>
               Fragen? Antworten Sie einfach an info@sicher-schwimmen.com.<br />Mit freundlichen Grüßen<br />Der Vorstand von Sicher Schwimmen e.V.
@@ -75,7 +76,7 @@ const Email = ({ audience = 'member', member_first_name, family_name, birthday, 
           <Button href={url} style={{ backgroundColor: '#0c4a6e', color: '#ffffff', padding: '12px 20px', borderRadius: '8px', textDecoration: 'none' }}>
             Daten bestätigen
           </Button>
-          <Text style={p}>Alternativ antworte einfach auf diese E-Mail mit Deinen aktuellen Daten.</Text>
+          <Text style={p}>Danach bekommst Du automatisch einen eigenen Zugang zu unserem Mitgliederbereich.</Text>
           <Text style={h}>Du möchtest nicht weitermachen?</Text>
           <Text style={p}>Wir würden uns freuen, wenn Du dabei bleibst! Du kannst die Mitgliedschaft aber jederzeit nach den Regeln unserer Satzung kündigen.</Text>
           <Hr />
