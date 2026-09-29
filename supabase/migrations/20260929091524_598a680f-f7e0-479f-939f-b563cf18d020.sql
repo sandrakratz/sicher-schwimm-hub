@@ -1,0 +1,2 @@
+UPDATE public.waitlist_entries SET child_name = trim(child_name)||' '||trim(parent_name) WHERE trim(child_name) IN ('Finn','Fabius') AND trim(parent_name) IN ('Trimpler','Schade');
+UPDATE public.course_requests SET child_name = trim(child_name)||' '||trim(parent_name) WHERE trim(child_name) IN ('Finn','Fabius') AND trim(parent_name) IN ('Trimpler','Schade');
