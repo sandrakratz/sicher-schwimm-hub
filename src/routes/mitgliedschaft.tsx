@@ -363,7 +363,7 @@ function Page() {
                           <div className="grid md:grid-cols-3 gap-4">
                             <div><Label>Vorname</Label><Input value={c.name} onChange={e => updateChild(i, { name: e.target.value })} maxLength={100} /></div>
                             <div><Label>Nachname</Label><Input value={c.last_name} placeholder="wie oben, falls leer" onChange={e => updateChild(i, { last_name: e.target.value })} maxLength={100} /></div>
-                            <div><Label>Geburtsdatum</Label><Input type="date" value={c.date_of_birth} onChange={e => updateChild(i, { date_of_birth: e.target.value })} /></div>
+                            <div><Label>Geburtsdatum{c.name.trim() ? " *" : ""}</Label><Input type="date" required={!!c.name.trim()} value={c.date_of_birth} onChange={e => updateChild(i, { date_of_birth: e.target.value })} /></div>
                           </div>
                         </div>
                       ))}
