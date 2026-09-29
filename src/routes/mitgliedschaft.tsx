@@ -362,7 +362,7 @@ function Page() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} defaultValue={defaults.firstName} /></div>
                   <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} defaultValue={defaults.lastName} /></div>
-                  <div><Label htmlFor="date_of_birth">Geburtsdatum *</Label><Input id="date_of_birth" type="date" name="date_of_birth" required defaultValue={defaults.dateOfBirth} /></div>
+                  <div><Label htmlFor="date_of_birth">Geburtsdatum *</Label><Input id="date_of_birth" type="date" name="date_of_birth" required defaultValue={defaults.dateOfBirth} onChange={e => setDob(e.target.value)} /></div>
                   <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} defaultValue={defaults.email} /></div>
                   <div><Label htmlFor="phone">Telefon *</Label><Input id="phone" type="tel" name="phone" required minLength={5} maxLength={40} defaultValue={defaults.phone} /></div>
                   <div><Label htmlFor="address_street">Straße & Nr. *</Label><Input id="address_street" name="address_street" required maxLength={200} defaultValue={defaults.street} /></div>
@@ -370,17 +370,49 @@ function Page() {
                   <div><Label htmlFor="address_city">Ort *</Label><Input id="address_city" name="address_city" required maxLength={100} defaultValue={defaults.city} /></div>
                 </div>
                 <div className="border-t pt-5">
-                  <h3 className="font-semibold text-primary-deep mb-3">Erziehungsberechtigte/r (bei Minderjährigen)</h3>
+                  <h3 className="font-semibold text-primary-deep mb-3">Erziehungsberechtigte/r (bei Minderjährigen){showMinor ? " *" : ""}</h3>
+                  {showMinor && <p className="text-xs text-muted-foreground -mt-2 mb-3">Die oben eingetragenen Personendaten sind die des Mitglieds (Kind). Hier bitte die gesetzlichen Vertreter eintragen.</p>}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div><Label htmlFor="guardian_name">Name</Label><Input id="guardian_name" name="guardian_name" maxLength={200} /></div>
                     <div><Label htmlFor="guardian_email">E-Mail</Label><Input id="guardian_email" type="email" name="guardian_email" maxLength={255} /></div>
                     <div><Label htmlFor="guardian_phone">Telefon</Label><Input id="guardian_phone" name="guardian_phone" maxLength={40} /></div>
+                  </div>
+                  {showMinor && (
+                    <div className="mt-5 space-y-4">
+                      <div className="rounded-lg border-2 border-accent/40 bg-accent/5 p-4 text-sm space-y-2">
+                        <p className="font-semibold text-primary-deep">Mitgliedschaft bei Minderjährigen</p>
+                        <p>Die Mitgliedschaft wird für das minderjährige Mitglied selbst beantragt. Die gesetzlichen Vertreter stimmen der Aufnahme in Sicher Schwimmen e.V. zu und handeln bis zum Eintritt der Volljährigkeit als gesetzliche Vertreter des minderjährigen Mitglieds.</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-primary-deep mb-1">Kontaktdaten des Mitglieds (Kind/Jugendliche/r)</h4>
+                        <p className="text-xs text-muted-foreground mb-3">Wir benötigen die Kontaktdaten des Mitglieds, damit wir es rechtzeitig vor Erreichen der Volljährigkeit direkt über seine bestehende Mitgliedschaft und die weiteren Schritte informieren können.</p>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div><Label htmlFor="member_email">E-Mail des Mitglieds *</Label><Input id="member_email" type="email" name="member_email" required maxLength={255} /></div>
+                          <div><Label htmlFor="member_phone">Telefon des Mitglieds (optional)</Label><Input id="member_phone" type="tel" name="member_phone" maxLength={40} /></div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {MINOR_CONSENTS.map(c => (
+                          <label key={c.key} className="flex gap-3 items-start text-sm cursor-pointer">
+                            <Checkbox name={c.key} required /> <span>{c.text} *</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="hidden">
                   </div>
                 </div>
 
                 {tier === "family" && (
                   <div className="border-t pt-5">
                     <h3 className="font-semibold text-primary-deep mb-1">Familienangaben</h3>
+                    <div className="my-4 rounded-lg border-2 border-accent/40 bg-accent/5 p-4 text-sm space-y-2">
+                      <p className="font-semibold text-primary-deep">Wichtig bei minderjährigen Familienmitgliedern</p>
+                      <p>Bei einer Familienmitgliedschaft sind die einzelnen Familienangehörigen jeweils eigenständige Vereinsmitglieder.</p>
+                      <p>Der Familienbeitrag gilt gemäß der Beitragsordnung für maximal zwei Erwachsene und die im selben Haushalt lebenden Kinder und Jugendlichen bis zur Vollendung des 18. Lebensjahres.</p>
+                      <p>Wird ein minderjähriges Familienmitglied volljährig, endet dadurch nicht automatisch dessen Vereinsmitgliedschaft. Das Mitglied wird ab diesem Zeitpunkt als erwachsenes Mitglied geführt und fällt aus der Familienbeitragsregelung heraus. Für das erwachsene Mitglied gilt der jeweils gültige Beitrag für erwachsene Mitglieder.</p>
+                    </div>
                     <p className="text-xs text-muted-foreground mb-4">Bitte tragen Sie Partner/in und Kinder (bis zu 4) ein. Nicht ausgefüllte Felder werden ignoriert.</p>
                     <div className="space-y-4">
                       <div>
@@ -398,6 +430,7 @@ function Page() {
                             <div><Label>Vorname</Label><Input value={c.name} onChange={e => updateChild(i, { name: e.target.value })} maxLength={100} /></div>
                             <div><Label>Nachname</Label><Input value={c.last_name} placeholder="wie oben, falls leer" onChange={e => updateChild(i, { last_name: e.target.value })} maxLength={100} /></div>
                             <div><Label>Geburtsdatum{c.name.trim() ? " *" : ""}</Label><Input type="date" required={!!c.name.trim()} value={c.date_of_birth} onChange={e => updateChild(i, { date_of_birth: e.target.value })} /></div>
+                            <div className="md:col-span-3"><Label>E-Mail des Kindes (optional, v. a. für Jugendliche)</Label><Input type="email" value={c.email ?? ""} onChange={e => updateChild(i, { email: e.target.value })} maxLength={255} /></div>
                           </div>
                         </div>
                       ))}
@@ -417,7 +450,15 @@ function Page() {
                     gezogenen Lastschriften einzulösen.
                   </p>
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2"><Label htmlFor="sepa_account_holder">Kontoinhaber/in *</Label><Input id="sepa_account_holder" name="sepa_account_holder" required maxLength={200} /></div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="payer_role">Wer ist Kontoinhaber/in bzw. zahlt den Beitrag? *</Label>
+                      <select id="payer_role" name="payer_role" defaultValue={showMinor ? "guardian" : "member"} key={showMinor ? "m" : "a"} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <option value="member">Das Mitglied selbst</option>
+                        <option value="guardian">Erziehungsberechtigte/r</option>
+                        <option value="other">Andere Person</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2"><Label htmlFor="sepa_account_holder">Name Kontoinhaber/in *</Label><Input id="sepa_account_holder" name="sepa_account_holder" required maxLength={200} /></div>
                     <div className="md:col-span-2"><Label htmlFor="sepa_iban">IBAN *</Label><Input id="sepa_iban" name="sepa_iban" required maxLength={42} placeholder="DE00 0000 0000 0000 0000 00" /></div>
                     <div><Label htmlFor="sepa_bic">BIC</Label><Input id="sepa_bic" name="sepa_bic" maxLength={11} /></div>
                     <div><Label htmlFor="sepa_bank_name">Kreditinstitut *</Label><Input id="sepa_bank_name" name="sepa_bank_name" required maxLength={200} /></div>
@@ -427,6 +468,14 @@ function Page() {
                   <label className="flex gap-3 items-start text-sm cursor-pointer mt-4">
                     <Checkbox name="sepa_mandate_accepted" required />
                     <span>Ich erteile das SEPA-Lastschriftmandat. Bei Minderjährigen erfolgt die Unterschrift durch die gesetzlichen Vertreter. *</span>
+                  </label>
+                  {(showMinor || tier === "family") && (
+                    <p className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep">
+                      Wenn ein minderjähriges Mitglied volljährig wird und die Mitgliedschaft fortgeführt wird, kann für die weitere Beitragszahlung ein neues bzw. gesondertes SEPA-Lastschriftmandat erforderlich sein. Der Verein wird das Mitglied rechtzeitig darüber informieren.
+                    </p>
+                  )}
+                  <label className="hidden">
+                    <span />
                   </label>
                 </div>
 
