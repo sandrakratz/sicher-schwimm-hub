@@ -47,12 +47,12 @@ const schema = z.object({
   membership_type: z.enum(["children_youth","adult","family","supporting"]),
   first_name: z.string().trim().min(1).max(100),
   last_name: z.string().trim().min(1).max(100),
-  date_of_birth: z.string().optional(),
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   email: z.string().trim().email().max(255),
-  phone: z.string().trim().max(40).optional(),
-  address_street: z.string().trim().max(200).optional(),
-  address_zip: z.string().trim().max(20).optional(),
-  address_city: z.string().trim().max(100).optional(),
+  phone: z.string().trim().min(5).max(40),
+  address_street: z.string().trim().min(3).max(200),
+  address_zip: z.string().trim().min(4).max(20),
+  address_city: z.string().trim().min(2).max(100),
   guardian_name: z.string().trim().max(200).optional(),
   guardian_email: z.string().trim().max(255).optional(),
   guardian_phone: z.string().trim().max(40).optional(),
@@ -128,6 +128,15 @@ function Page() {
     if (!parsed.success) {
       toast.error("Bitte alle Pflichtfelder & Zustimmungen ausfüllen.");
       return;
+    }
+    {
+      const dob = new Date(parsed.data.date_of_birth);
+      const adult = new Date(dob.getFullYear() + 18, dob.getMonth(), dob.getDate());
+      const g = parsed.data;
+      if (adult > new Date() && (!g.guardian_name || g.guardian_name.split(/\s+/).length < 2 || !g.guardian_email || !g.guardian_phone)) {
+        toast.error("Bei Minderjährigen bitte Vor- und Nachname, E-Mail und Telefon der Erziehungsberechtigten angeben.");
+        return;
+      }
     }
     setLoading(true);
     const family_members = tier === "family" ? {
@@ -315,12 +324,12 @@ function Page() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div><Label htmlFor="first_name">Vorname *</Label><Input id="first_name" name="first_name" required maxLength={100} defaultValue={defaults.firstName} /></div>
                   <div><Label htmlFor="last_name">Nachname *</Label><Input id="last_name" name="last_name" required maxLength={100} defaultValue={defaults.lastName} /></div>
-                  <div><Label htmlFor="date_of_birth">Geburtsdatum</Label><Input id="date_of_birth" type="date" name="date_of_birth" defaultValue={defaults.dateOfBirth} /></div>
+                  <div><Label htmlFor="date_of_birth">Geburtsdatum *</Label><Input id="date_of_birth" type="date" name="date_of_birth" required defaultValue={defaults.dateOfBirth} /></div>
                   <div><Label htmlFor="email">E-Mail *</Label><Input id="email" type="email" name="email" required maxLength={255} defaultValue={defaults.email} /></div>
-                  <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" maxLength={40} defaultValue={defaults.phone} /></div>
-                  <div><Label htmlFor="address_street">Straße & Nr.</Label><Input id="address_street" name="address_street" maxLength={200} defaultValue={defaults.street} /></div>
-                  <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" maxLength={20} defaultValue={defaults.zip} /></div>
-                  <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" maxLength={100} defaultValue={defaults.city} /></div>
+                  <div><Label htmlFor="phone">Telefon *</Label><Input id="phone" type="tel" name="phone" required minLength={5} maxLength={40} defaultValue={defaults.phone} /></div>
+                  <div><Label htmlFor="address_street">Straße & Nr. *</Label><Input id="address_street" name="address_street" required maxLength={200} defaultValue={defaults.street} /></div>
+                  <div><Label htmlFor="address_zip">PLZ *</Label><Input id="address_zip" name="address_zip" required maxLength={20} defaultValue={defaults.zip} /></div>
+                  <div><Label htmlFor="address_city">Ort *</Label><Input id="address_city" name="address_city" required maxLength={100} defaultValue={defaults.city} /></div>
                 </div>
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-3">Erziehungsberechtigte/r (bei Minderjährigen)</h3>

@@ -93,7 +93,7 @@ function WaitlistPage() {
       const res = await joinWaitlist({
         data: {
           programId: (String(fd.get("program_id") || "") || null) as string | null,
-          parentName: String(fd.get("parent_name") || ""),
+          parentName: `${String(fd.get("parent_first_name") || "").trim()} ${String(fd.get("parent_last_name") || "").trim()}`.trim(),
           parentEmail: String(fd.get("parent_email") || ""),
           parentPhone: String(fd.get("parent_phone") || ""),
           childName: `${String(fd.get("child_first_name") || "").trim()} ${String(fd.get("child_last_name") || "").trim()}`.trim(),
@@ -198,8 +198,12 @@ function WaitlistPage() {
                   <Input id="child_dob" name="child_dob" type="date" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="parent_name">Name Elternteil *</Label>
-                  <Input id="parent_name" name="parent_name" required maxLength={120} defaultValue={defaults.fullName} />
+                  <Label htmlFor="parent_first_name">Vorname Elternteil *</Label>
+                  <Input id="parent_first_name" name="parent_first_name" required maxLength={60} defaultValue={defaults.firstName} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="parent_last_name">Nachname Elternteil *</Label>
+                  <Input id="parent_last_name" name="parent_last_name" required maxLength={60} defaultValue={defaults.lastName} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parent_email">E-Mail *</Label>

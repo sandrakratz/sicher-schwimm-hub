@@ -7,7 +7,7 @@ const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 const joinSchema = z.object({
   programId: z.string().uuid().optional().nullable(),
   courseId: z.string().uuid().optional().nullable(),
-  parentName: z.string().trim().min(2).max(120),
+  parentName: z.string().trim().min(3).max(120).refine((v) => v.split(/\s+/).length >= 2, 'Vor- und Nachname erforderlich'),
   parentEmail: z.string().trim().email().max(200),
   parentPhone: z.string().trim().min(5).max(60),
   childName: z.string().trim().min(2).max(120),

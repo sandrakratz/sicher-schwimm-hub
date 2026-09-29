@@ -422,7 +422,7 @@ function BookingDialog({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    parentName: "", parentEmail: "", parentPhone: "",
+    parentFirstName: "", parentLastName: "", parentEmail: "", parentPhone: "",
     parentStreet: "", parentZip: "", parentCity: "",
     childName: "", childLastName: "", childDob: "", healthInfo: "", message: "",
     isMember: false, acceptTerms: false, gdprConsent: false, website: "",
@@ -432,7 +432,7 @@ function BookingDialog({
   const [siblings, setSiblings] = useState<Array<{ childName: string; childLastName: string; childDob: string; healthInfo: string }>>([]);
   const setSib = (i: number, k: "childName" | "childLastName" | "childDob" | "healthInfo", v: string) =>
     setSiblings((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
-  const parentLast = form.parentName.trim().split(/\s+/).slice(1).join(" ");
+  const parentLast = form.parentLastName.trim();
   const fullName = (first: string, last: string) => `${first.trim()} ${last.trim()}`.trim();
 
   const price = form.isMember
@@ -468,7 +468,7 @@ function BookingDialog({
           r = await bookCourseTerm({
             data: {
               courseId: term.id,
-              parentName: form.parentName,
+              parentName: fullName(form.parentFirstName, form.parentLastName),
               parentEmail: form.parentEmail,
               parentPhone: form.parentPhone,
               parentStreet: form.parentStreet,
@@ -541,16 +541,20 @@ function BookingDialog({
           />
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="parentName">Name Erziehungsberechtigte:r *</Label>
-              <Input id="parentName" required value={form.parentName} onChange={(e) => set("parentName", e.target.value)} />
+              <Label htmlFor="parentFirstName">Vorname Erziehungsberechtigte:r *</Label>
+              <Input id="parentFirstName" required maxLength={60} value={form.parentFirstName} onChange={(e) => set("parentFirstName", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="parentLastName">Nachname Erziehungsberechtigte:r *</Label>
+              <Input id="parentLastName" required maxLength={60} value={form.parentLastName} onChange={(e) => set("parentLastName", e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="parentEmail">E-Mail *</Label>
               <Input id="parentEmail" type="email" required value={form.parentEmail} onChange={(e) => set("parentEmail", e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="parentPhone">Telefon</Label>
-              <Input id="parentPhone" value={form.parentPhone} onChange={(e) => set("parentPhone", e.target.value)} />
+              <Label htmlFor="parentPhone">Telefon (für Notfälle) *</Label>
+              <Input id="parentPhone" type="tel" required minLength={5} maxLength={60} value={form.parentPhone} onChange={(e) => set("parentPhone", e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="parentStreet">Straße und Hausnummer *</Label>
