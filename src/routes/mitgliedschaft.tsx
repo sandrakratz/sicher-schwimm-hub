@@ -138,6 +138,10 @@ function Page() {
         return;
       }
     }
+    if (tier === "family" && children.some(c => c.name.trim() && !c.date_of_birth)) {
+      toast.error("Bitte bei jedem Kind das Geburtsdatum angeben.");
+      return;
+    }
     setLoading(true);
     const family_members = tier === "family" ? {
       partner: partner.name.trim() ? { name: `${partner.name.trim()} ${(partner.last_name.trim() || String(fd.get("last_name") || "").trim())}`.trim(), date_of_birth: partner.date_of_birth || null } : null,
