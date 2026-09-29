@@ -71,6 +71,7 @@ import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
 import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
+import { Route as ApiPublicHooksMajorityNoticeRouteImport } from './routes/api/public/hooks/majority-notice'
 import { Route as ApiPublicHooksPartialCertificateRouteImport } from './routes/api/public/hooks/partial-certificate'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
 import { Route as ApiPublicHooksWaitlistSweepRouteImport } from './routes/api/public/hooks/waitlist-sweep'
@@ -415,6 +416,12 @@ const ApiPublicHooksCourseStartReminderRoute =
     path: '/api/public/hooks/course-start-reminder',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksMajorityNoticeRoute =
+  ApiPublicHooksMajorityNoticeRouteImport.update({
+    id: '/api/public/hooks/majority-notice',
+    path: '/api/public/hooks/majority-notice',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPartialCertificateRoute =
   ApiPublicHooksPartialCertificateRouteImport.update({
     id: '/api/public/hooks/partial-certificate',
@@ -512,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
+  '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
@@ -580,6 +588,7 @@ export interface FileRoutesByTo {
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
+  '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
@@ -651,6 +660,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
+  '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
@@ -722,6 +732,7 @@ export interface FileRouteTypes {
     | '/portal/'
     | '/trainer/'
     | '/api/public/hooks/course-start-reminder'
+    | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
@@ -790,6 +801,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/trainer'
     | '/api/public/hooks/course-start-reminder'
+    | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
@@ -860,6 +872,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/'
     | '/_authenticated/trainer/'
     | '/api/public/hooks/course-start-reminder'
+    | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
@@ -899,6 +912,7 @@ export interface RootRouteChildren {
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   ApiPublicHooksCourseStartReminderRoute: typeof ApiPublicHooksCourseStartReminderRoute
+  ApiPublicHooksMajorityNoticeRoute: typeof ApiPublicHooksMajorityNoticeRoute
   ApiPublicHooksPartialCertificateRoute: typeof ApiPublicHooksPartialCertificateRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
   ApiPublicHooksWaitlistSweepRoute: typeof ApiPublicHooksWaitlistSweepRoute
@@ -1343,6 +1357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCourseStartReminderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/majority-notice': {
+      id: '/api/public/hooks/majority-notice'
+      path: '/api/public/hooks/majority-notice'
+      fullPath: '/api/public/hooks/majority-notice'
+      preLoaderRoute: typeof ApiPublicHooksMajorityNoticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/partial-certificate': {
       id: '/api/public/hooks/partial-certificate'
       path: '/api/public/hooks/partial-certificate'
@@ -1509,6 +1530,7 @@ const rootRouteChildren: RootRouteChildren = {
   LovableEmailEventsRoute: LovableEmailEventsRoute,
   ApiPublicHooksCourseStartReminderRoute:
     ApiPublicHooksCourseStartReminderRoute,
+  ApiPublicHooksMajorityNoticeRoute: ApiPublicHooksMajorityNoticeRoute,
   ApiPublicHooksPartialCertificateRoute: ApiPublicHooksPartialCertificateRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
