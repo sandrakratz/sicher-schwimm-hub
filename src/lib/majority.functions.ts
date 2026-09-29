@@ -100,6 +100,7 @@ export const submitMajorityConfirmation = createServerFn({ method: "POST" })
     let userId: string | null = null;
     if (!data.wants_termination) {
       userId = await ensureMemberAccount(sb, data.email, row.first_name, row.last_name);
+      if (userId) await sb.from("profiles").update({ phone: data.phone, address_street: data.address_street, address_zip: data.address_zip, address_city: data.address_city, date_of_birth: row.date_of_birth }).eq("id", userId);
     }
 
     await sb.from("majority_confirmations").update({
@@ -114,10 +115,11 @@ export const submitMajorityConfirmation = createServerFn({ method: "POST" })
         templateName: "contact-message",
         idempotencyKey: `majority-confirmed-${row.id}`,
         templateData: {
-          name: `${row.first_name} ${row.last_name}`,
-          email: data.email,
+          from_name: `${row.first_name} ${row.last_name}`,
+          from_email: data.email,
+          category: "Mitgliedschaft",
           subject: data.wants_termination ? "Volljährigkeit: Kündigungswunsch" : "Volljährigkeit: Daten bestätigt",
-          message: data.wants_termination
+          body: data.wants_termination
             ? `${row.first_name} ${row.last_name} möchte die Mitgliedschaft nach Satzung kündigen.\n${data.termination_note || ""}`
             : `${row.first_name} ${row.last_name} hat die Daten zur Volljährigkeit bestätigt. Zahlungsart: ${data.payment === "keep" ? "wie bisher" : data.payment === "own_sepa" ? "neues SEPA-Mandat (eigenes Konto)" : "Überweisung"}. Ein Mitgliederzugang wurde angelegt.`,
         },
