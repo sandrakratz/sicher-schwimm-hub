@@ -52,6 +52,7 @@ function WaitlistPage() {
         .from("course_programs")
         .select("id,name,slug")
         .eq("is_public", true)
+        .eq("waitlist_open", true)
         .order("sort_order");
       return data ?? [];
     },

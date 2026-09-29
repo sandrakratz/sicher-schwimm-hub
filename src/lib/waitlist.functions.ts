@@ -78,9 +78,12 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
     if (programId) {
       const { data: prog } = await supabaseAdmin
         .from('course_programs')
-        .select('name')
+        .select('name, waitlist_open')
         .eq('id', programId)
         .maybeSingle()
+      if (prog && (prog as any).waitlist_open === false) {
+        throw new Error('Für dieses Kursangebot ist die Warteliste derzeit geschlossen. Bitte wählen Sie ein anderes Angebot.')
+      }
       programName = prog?.name ?? null
     }
 

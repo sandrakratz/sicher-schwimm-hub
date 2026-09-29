@@ -41,6 +41,7 @@ export interface CourseProgram {
   price_non_member: number | null
   payment_due_days: number
   bookable: boolean
+  waitlist_open: boolean
   sort_order: number
   course_info: string | null
   terms: Array<CourseTerm>
@@ -186,6 +187,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
       price_non_member: p.price_non_member,
       payment_due_days: p.payment_due_days,
       bookable: (p as any).bookable !== false,
+      waitlist_open: (p as any).waitlist_open !== false,
       sort_order: p.sort_order,
       course_info: (p as any).course_info ?? null,
       terms,
