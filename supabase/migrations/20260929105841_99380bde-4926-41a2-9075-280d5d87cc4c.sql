@@ -1,0 +1,1 @@
+ALTER TABLE public.course_programs ADD COLUMN IF NOT EXISTS waitlist_open boolean NOT NULL DEFAULT true;
