@@ -211,9 +211,9 @@ export const getCourseProgram = createServerFn({ method: 'GET' })
 
 const bookingSchema = z.object({
   courseId: z.string().uuid(),
-  parentName: z.string().trim().min(2).max(120),
+  parentName: z.string().trim().min(3).max(120).refine((v) => v.split(/\s+/).length >= 2, 'Vor- und Nachname erforderlich'),
   parentEmail: z.string().trim().email().max(200),
-  parentPhone: z.string().trim().max(60).optional().or(z.literal('')),
+  parentPhone: z.string().trim().min(5).max(60),
   parentStreet: z.string().trim().min(3).max(160),
   parentZip: z.string().trim().min(4).max(12),
   parentCity: z.string().trim().min(2).max(120),
