@@ -20,6 +20,8 @@ import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 import { MultiWatch } from "@/components/trainer/MultiWatch";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
+import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
+import { listTransferTargets } from "@/lib/participant-transfer.functions";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -66,6 +68,14 @@ function Page() {
   const exportProtocol = useServerFn(exportExamProtocol);
   const [exporting, setExporting] = useState<string | null>(null);
   const [broadcast, setBroadcast] = useState<{ id: string; name: string } | null>(null);
+  const [transferPart, setTransferPart] = useState<{ id: string; participant_name: string | null; participant_email: string | null; course_id: string } | null>(null);
+  const [targets, setTargets] = useState<Array<{ id: string; name: string; schedule: string | null; location: string | null; free: number | null }>>([]);
+  const loadTargets = useServerFn(listTransferTargets);
+  useEffect(() => {
+    if (transferPart && targets.length === 0) {
+      loadTargets().then(setTargets).catch(e => toast.error((e as Error)?.message || "Kurse konnten nicht geladen werden"));
+    }
+  }, [transferPart]);
 
   // Prüfungsprotokoll nach DPO als PDF für die Vereinsakte herunterladen.
   async function downloadProtocol(courseId: string) {
@@ -120,6 +130,13 @@ function Page() {
       )}
 
       <CourseBroadcastDialog course={broadcast} onClose={() => setBroadcast(null)} />
+
+      <TransferParticipantDialog
+        participant={transferPart}
+        courses={targets.filter(t => t.id !== transferPart?.course_id)}
+        onClose={() => setTransferPart(null)}
+        onDone={async () => { setTransferPart(null); setCourses(await load()); }}
+      />
 
       {courses.map((c, i) => {
         const beltNo = buildBeltNumbers(c.participants);
@@ -176,6 +193,15 @@ function Page() {
                       const p = c.participants.find(x => x.id === id);
                       if (!p) return null;
                       return (
+                        <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mb-2 min-h-11"
+                          onClick={() => setTransferPart({ id: p.id, participant_name: p.name, participant_email: p.email, course_id: c.id })}
+                        >
+                          ↔ Kind umbuchen
+                        </Button>
                         <ParticipantDetails
                           p={p}
                           editablePhone
@@ -183,6 +209,7 @@ function Page() {
                           editableResult
                           onResultSaved={applyResult}
                         />
+                        </>
                       );
                     }}
                   />

@@ -144,3 +144,21 @@ export const transferParticipant = createServerFn({ method: 'POST' })
     })
     return { ok: true, emailed, due }
   })
+
+/** Mögliche Zielkurse für eine Umbuchung (auch für Trainer:innen). */
+export const listTransferTargets = createServerFn({ method: 'GET' })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context.supabase, context.userId)
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { data: courses } = await supabaseAdmin.from('courses')
+      .select('id,name,schedule,location,max_participants').is('archived_at', null).order('name')
+    const { data: parts } = await supabaseAdmin.from('course_participants')
+      .select('course_id').eq('status', 'confirmed')
+    const cnt = new Map<string, number>()
+    for (const p of parts ?? []) cnt.set(p.course_id, (cnt.get(p.course_id) ?? 0) + 1)
+    return (courses ?? []).map(c => ({
+      id: c.id, name: c.name, schedule: c.schedule, location: c.location,
+      free: c.max_participants != null ? c.max_participants - (cnt.get(c.id) ?? 0) : null,
+    }))
+  })
