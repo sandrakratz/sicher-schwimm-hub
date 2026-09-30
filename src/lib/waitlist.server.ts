@@ -17,16 +17,35 @@ function nowIso() {
 
 
 
-/** Schließt abgelaufene Platzangebote und setzt die Einträge zurück auf „abgelaufen“. */
+/**
+ * Schließt abgelaufene Platzangebote. Zählt wie eine Absage: beim 3. Mal wird der
+ * Platz deaktiviert, sonst erhalten die Eltern die Rückfrage „Warteliste behalten?“.
+ */
 export async function expireOffers(): Promise<number> {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { data, error } = await supabaseAdmin
     .from('waitlist_entries')
-    .update({ status: 'expired', offer_token: null, responded_at: nowIso() })
+    .select('*')
     .eq('status', 'offered')
     .lt('offer_expires_at', nowIso())
-    .select('id')
   if (error) throw new Error(error.message)
+  for (const e of data ?? []) {
+    // Sofort freigeben, damit der Platz nicht hängen bleibt
+    const { data: claimed } = await supabaseAdmin
+      .from('waitlist_entries')
+      .update({ status: 'expired', offer_token: null })
+      .eq('id', e.id)
+      .eq('status', 'offered')
+      .select('id')
+    if (!claimed?.length) continue
+    const count = (e.decline_count ?? 0) + 1
+    try {
+      if (count >= MAX_DECLINES) await deactivateEntry(e, count, 'Angebotsfrist ohne Antwort abgelaufen')
+      else await sendFollowup(e, 'expired', count, 'Angebotsfrist ohne Antwort abgelaufen')
+    } catch (err) {
+      console.error('expire follow-up failed', err)
+    }
+  }
   return (data ?? []).length
 }
 
@@ -203,4 +222,181 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
 /** Manuelles Platzangebot aus der Verwaltung heraus. */
 export async function offerPlaceManually(entry: any, course: any, program: any) {
   return createOffer(entry, course, program)
+}
+
+/* ------------------------- Absagen & Rückfragen ------------------------- */
+
+/** Nach so vielen Absagen/abgelaufenen Angeboten wird der Wartelistenplatz deaktiviert. */
+export const MAX_DECLINES = 3
+/** Frist in Tagen für die Rückfrage „Weiter auf der Warteliste bleiben?“. */
+export const FOLLOWUP_DAYS = 7
+
+function stampNote(prev: string | null | undefined, text: string) {
+  const stamp = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
+  return `${prev ? `${prev}\n` : ''}[${stamp}] ${text}`
+}
+
+function newToken() {
+  return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
+}
+
+/** Deaktiviert einen Wartelistenplatz nach zu vielen Absagen und informiert die Eltern. */
+async function deactivateEntry(entry: any, count: number, note: string) {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { queueTemplateEmail } = await import('@/lib/email-send.server')
+  await supabaseAdmin
+    .from('waitlist_entries')
+    .update({
+      status: 'removed',
+      decline_count: count,
+      offer_token: null,
+      followup_token: null,
+      followup_expires_at: null,
+      responded_at: nowIso(),
+      admin_notes: stampNote(entry.admin_notes, `${note} → ${count}. Absage: Wartelistenplatz automatisch deaktiviert (nur über Vorstand).`),
+    })
+    .eq('id', entry.id)
+  await queueTemplateEmail({
+    templateName: 'waitlist-deactivated',
+    recipientEmail: entry.parent_email,
+    idempotencyKey: `waitlist-deactivated-${entry.id}-${count}`,
+    templateData: { parent_name: entry.parent_name, child_name: entry.child_name, count },
+    metadata: { waitlist_entry_id: entry.id },
+  })
+}
+
+/** Verschickt die Rückfrage, ob das Kind auf der Warteliste bleiben soll (7 Tage Frist). */
+export async function sendFollowup(entry: any, reason: 'declined' | 'expired', count: number, note: string) {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { queueTemplateEmail } = await import('@/lib/email-send.server')
+  const token = newToken()
+  const expiresAt = new Date(Date.now() + FOLLOWUP_DAYS * 86400000).toISOString()
+  await supabaseAdmin
+    .from('waitlist_entries')
+    .update({
+      status: reason,
+      decline_count: count,
+      offer_token: null,
+      followup_token: token,
+      followup_expires_at: expiresAt,
+      responded_at: nowIso(),
+      admin_notes: stampNote(entry.admin_notes, `${note} (${count}. Absage) – Rückfrage „Warteliste behalten?“ verschickt, Frist ${formatDateBerlin(expiresAt)}.`),
+    })
+    .eq('id', entry.id)
+  await queueTemplateEmail({
+    templateName: 'waitlist-followup',
+    recipientEmail: entry.parent_email,
+    idempotencyKey: `waitlist-followup-${entry.id}-${count}`,
+    templateData: {
+      parent_name: entry.parent_name,
+      child_name: entry.child_name,
+      reason,
+      count,
+      max: MAX_DECLINES,
+      expires_label: formatDateBerlin(expiresAt),
+      answer_url: `${SITE_BASE_URL}/warteliste/rueckfrage?token=${token}`,
+    },
+    metadata: { waitlist_entry_id: entry.id },
+  })
+}
+
+/** Absage direkt über die Antwortseite – inkl. Entscheidung zum Verbleib. */
+export async function registerDecline(
+  entry: any,
+  opts: { stay: boolean; availableFrom: string | null; reason: string | null; courseName: string | null },
+): Promise<{ deactivated: boolean; count: number }> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const count = (entry.decline_count ?? 0) + 1
+  const base = `Angebot${opts.courseName ? ` „${opts.courseName}“` : ''} abgesagt${opts.reason ? ` (Grund: ${opts.reason})` : ''}`
+  if (count >= MAX_DECLINES) {
+    await deactivateEntry(entry, count, base)
+    return { deactivated: true, count }
+  }
+  const stayNote = opts.stay
+    ? `bleibt auf der Warteliste${opts.availableFrom ? ` ab ${formatDateBerlin(opts.availableFrom)}` : ' (sofort)'}`
+    : 'möchte nicht auf der Warteliste bleiben'
+  await supabaseAdmin
+    .from('waitlist_entries')
+    .update({
+      status: opts.stay ? 'waiting' : 'removed',
+      decline_count: count,
+      offer_token: null,
+      offer_course_id: null,
+      offer_expires_at: null,
+      followup_token: null,
+      followup_expires_at: null,
+      responded_at: nowIso(),
+      last_decline_reason: opts.reason,
+      ...(opts.stay ? { available_from: opts.availableFrom } : {}),
+      admin_notes: stampNote(entry.admin_notes, `${base} → ${count}. Absage, ${stayNote}.`),
+    })
+    .eq('id', entry.id)
+  return { deactivated: false, count }
+}
+
+/** Antwort auf die Rückfrage-Mail. */
+export async function answerFollowup(entry: any, stay: boolean, availableFrom: string | null) {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  await supabaseAdmin
+    .from('waitlist_entries')
+    .update({
+      status: stay ? 'waiting' : 'removed',
+      followup_token: null,
+      followup_expires_at: null,
+      offer_course_id: null,
+      offer_expires_at: null,
+      responded_at: nowIso(),
+      ...(stay ? { available_from: availableFrom } : {}),
+      admin_notes: stampNote(
+        entry.admin_notes,
+        stay
+          ? `Rückfrage beantwortet: bleibt auf der Warteliste${availableFrom ? ` ab ${formatDateBerlin(availableFrom)}` : ' (sofort)'}.`
+          : 'Rückfrage beantwortet: möchte nicht mehr auf der Warteliste stehen.',
+      ),
+    })
+    .eq('id', entry.id)
+}
+
+/** Rückfragen ohne Antwort nach Fristablauf: Wartelistenplatz streichen (keine Sperrliste). */
+export async function expireFollowups(): Promise<number> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data } = await supabaseAdmin
+    .from('waitlist_entries')
+    .select('id,admin_notes')
+    .in('status', ['declined', 'expired'])
+    .not('followup_token', 'is', null)
+    .lt('followup_expires_at', nowIso())
+  for (const e of data ?? []) {
+    await supabaseAdmin
+      .from('waitlist_entries')
+      .update({
+        status: 'removed',
+        followup_token: null,
+        admin_notes: stampNote(e.admin_notes, 'Keine Antwort auf die Rückfrage – Wartelistenplatz gestrichen.'),
+      })
+      .eq('id', e.id)
+  }
+  return (data ?? []).length
+}
+
+/** Einmalig/laufend: Absagen ohne Rückfrage (Altbestand) nachfassen. */
+export async function sendMissingFollowups(): Promise<number> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data } = await supabaseAdmin
+    .from('waitlist_entries')
+    .select('*')
+    .in('status', ['declined', 'expired'])
+    .is('followup_token', null)
+    .is('followup_expires_at', null)
+  let n = 0
+  for (const e of data ?? []) {
+    const count = Math.max(1, e.decline_count ?? 0)
+    try {
+      await sendFollowup(e, e.status as 'declined' | 'expired', count, e.status === 'declined' ? 'Angebot abgesagt (vor Einführung der Rückfrage)' : 'Frist abgelaufen')
+      n++
+    } catch (err) {
+      console.error('followup failed', err)
+    }
+  }
+  return n
 }

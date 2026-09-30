@@ -190,6 +190,9 @@ export const getWaitlistOffer = createServerFn({ method: 'GET' })
 const respondSchema = z.object({
   token: z.string().min(10).max(200),
   action: z.enum(['accept', 'decline']),
+  stay: z.boolean().optional(),
+  availableFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  reason: z.string().trim().max(500).nullable().optional(),
   street: z.string().trim().max(160).optional().or(z.literal('')),
   zip: z.string().trim().max(12).optional().or(z.literal('')),
   city: z.string().trim().max(120).optional().or(z.literal('')),
@@ -211,13 +214,18 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
     }
 
     if (data.action === 'decline') {
-      await supabaseAdmin
-        .from('waitlist_entries')
-        .update({ status: 'declined', offer_token: null, responded_at: new Date().toISOString() })
-        .eq('id', entry.id)
-      const { allocateWaitlist } = await import('@/lib/waitlist.server')
+      const { data: c } = entry.offer_course_id
+        ? await supabaseAdmin.from('courses').select('name').eq('id', entry.offer_course_id).maybeSingle()
+        : { data: null }
+      const { registerDecline, allocateWaitlist } = await import('@/lib/waitlist.server')
+      const res = await registerDecline(entry, {
+        stay: data.stay !== false,
+        availableFrom: data.availableFrom ?? null,
+        reason: data.reason || null,
+        courseName: c?.name ?? null,
+      })
       await allocateWaitlist(entry.offer_course_id)
-      return { ok: true as const, action: 'decline' as const }
+      return { ok: true as const, action: 'decline' as const, deactivated: res.deactivated, count: res.count }
     }
 
     if (!data.street || !data.zip || !data.city) return { ok: false as const, reason: 'address_required' as const }
@@ -229,6 +237,7 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
       { street: data.street, zip: data.zip, city: data.city },
       'parent',
     )
+    await supabaseAdmin.from('waitlist_entries').update({ decline_count: 0 }).eq('id', entry.id)
 
     return {
       ok: true as const,
@@ -439,6 +448,7 @@ const updateSchema = z.object({
   notes: z.string().max(4000).nullable().optional(),
   blocklist: z.boolean().optional(),
   availableFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  declineCount: z.number().int().min(0).max(10).optional(),
   blocklistReason: z.string().trim().max(500).optional(),
 })
 
@@ -463,6 +473,11 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       patch['offer_course_id'] = null
       patch['offer_expires_at'] = null
     }
+    if (data.status) {
+      patch['followup_token'] = null
+      patch['followup_expires_at'] = null
+    }
+    if (data.declineCount !== undefined) patch['decline_count'] = data.declineCount
     if (data.adminNotes !== undefined) patch['admin_notes'] = data.adminNotes
     if (data.appendNote) {
       const { formatDateTimeBerlin } = await import('@/lib/format')
@@ -647,4 +662,45 @@ export const bookWaitlistPlaceDirect = createServerFn({ method: 'POST' })
       'admin',
     )
     return { ok: true as const, ...booking }
+  })
+
+/* ------------------------- Rückfrage „Warteliste behalten?“ ------------------------- */
+
+export const getWaitlistFollowup = createServerFn({ method: 'GET' })
+  .inputValidator((input: { token: string }) => z.object({ token: z.string().min(10).max(200) }).parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { data: e } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('child_name,status,followup_expires_at,decline_count')
+      .eq('followup_token', data.token)
+      .maybeSingle()
+    if (!e) return { found: false as const }
+    const expired = !e.followup_expires_at || new Date(e.followup_expires_at).getTime() < Date.now()
+    return { found: true as const, childName: e.child_name, expired, expiresAt: e.followup_expires_at, count: e.decline_count }
+  })
+
+export const answerWaitlistFollowup = createServerFn({ method: 'POST' })
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        token: z.string().min(10).max(200),
+        stay: z.boolean(),
+        availableFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { data: e } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('*')
+      .eq('followup_token', data.token)
+      .maybeSingle()
+    if (!e) return { ok: false as const, reason: 'not_found' as const }
+    if (!e.followup_expires_at || new Date(e.followup_expires_at).getTime() < Date.now())
+      return { ok: false as const, reason: 'expired' as const }
+    const { answerFollowup } = await import('@/lib/waitlist.server')
+    await answerFollowup(e, data.stay, data.availableFrom ?? null)
+    return { ok: true as const }
   })
