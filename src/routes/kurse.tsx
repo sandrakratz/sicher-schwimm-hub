@@ -158,7 +158,7 @@ function KursePage() {
                             {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
                           </Link>
                         </Button>
-                        {openTerms === 0 && (
+                        {openTerms === 0 && (c as any).waitlist_open !== false && (
                           <Button asChild variant="accent" className="w-full">
                             <Link to="/warteliste" search={{ programm: c.slug }}>Auf die Warteliste</Link>
                           </Button>
