@@ -34,7 +34,10 @@ Nicht mehr nötig: LOVABLE_API_KEY, LOVABLE_SEND_URL, GOOGLE_SEARCH_CONSOLE_API_
 
 ## 3. Resend
 
-1. Domain `notify.sicher-schwimmen.com` hinzufügen (Region EU wählen) und die angezeigten DNS-Einträge setzen. Die Hauptdomain und die Postfächer bei One.com bleiben unberührt.
+1. Domain `versand.sicher-schwimmen.com` hinzufügen (Region EU, „Enable Receiving“ aus) und die angezeigten DNS-Einträge bei One.com setzen
+   (aktuell ein TXT für DKIM und zwei CNAME, Namen enden auf `.versand`). **Nicht** `notify…` verwenden: Diese Unteradresse ist per NS-Eintrag
+   (`ns3/ns4.lovable.cloud`) an Lovable delegiert; Einträge darunter würden von Lovable beantwortet, nicht von One.com. Den NS-Eintrag erst nach
+   dem Umschalttag entfernen. Die Hauptdomain und die Postfächer bei One.com bleiben unberührt.
 2. Webhook anlegen: `https://sicher-schwimmen.com/email/events`, Ereignisse `email.bounced` und `email.complained`.
 3. Der kostenlose Tarif erlaubt 100 Mails/Tag. Ab 80 Mails in 24 Stunden geht automatisch eine Warnung an info@sicher-schwimmen.com.
 
