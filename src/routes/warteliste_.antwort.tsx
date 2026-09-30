@@ -112,6 +112,19 @@ function OfferResponsePage() {
             <p className="mt-3 text-muted-foreground">
               Danke für Ihre Rückmeldung – wir geben den Platz an die nächste Familie weiter.
             </p>
+            {result.deactivated ? (
+              <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                Sie haben ein Platzangebot nun zum 3. Mal abgesagt. Um allen wartenden Familien eine faire Chance zu
+                geben, wurde Ihr Wartelistenplatz deaktiviert. Eine erneute Kursbuchung ist nur nach Rücksprache mit
+                unserem Vorstand möglich (info@sicher-schwimmen.com).
+              </p>
+            ) : (
+              <p className="mt-3 text-muted-foreground">
+                {result.stay
+                  ? "Ihr Kind bleibt auf der Warteliste – wir melden uns, sobald wieder ein passender Platz frei ist."
+                  : "Ihr Kind wurde von der Warteliste genommen."}
+              </p>
+            )}
           </>
         )}
         <p className="mt-6 text-sm">
