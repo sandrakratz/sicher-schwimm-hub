@@ -46,7 +46,7 @@ export function AvailabilityBoard() {
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [view, setView] = useState<"course" | "date" | "calendar">("course");
   const [showDeclined, setShowDeclined] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
@@ -330,11 +330,14 @@ export function AvailabilityBoard() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-md border p-0.5">
+          <Button size="sm" variant={view === "course" ? "default" : "ghost"} onClick={() => setView("course")}>
+            <List className="h-4 w-4" /> Nach Kursen
+          </Button>
+          <Button size="sm" variant={view === "date" ? "default" : "ghost"} onClick={() => setView("date")}>
+            <CalendarDays className="h-4 w-4" /> Nach Terminen
+          </Button>
           <Button size="sm" variant={view === "calendar" ? "default" : "ghost"} onClick={() => setView("calendar")}>
             <CalendarDays className="h-4 w-4" /> Kalender
-          </Button>
-          <Button size="sm" variant={view === "list" ? "default" : "ghost"} onClick={() => setView("list")}>
-            <List className="h-4 w-4" /> Liste
           </Button>
         </div>
         <label className="ml-auto inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -347,6 +350,86 @@ export function AvailabilityBoard() {
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Wird geladen …</CardContent></Card>
       ) : visibleSessions.length === 0 ? (
         <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Keine offenen oder zugesagten Kurstermine.</CardContent></Card>
+      ) : view === "course" ? (
+        <div className="space-y-6">
+          {groups.map(g => {
+            const list = g.sessions.filter(isVisible);
+            if (list.length === 0) return null;
+            const yesCount = list.filter(s => myState(s.id) === true || isAssignedToMe(s.id)).length;
+            return (
+              <CollapsibleCard
+                key={g.courseId}
+                className="border-0 shadow-soft"
+                storageKey={`trainer-avail-${g.courseId}`}
+                title={g.course?.name || "Kurs"}
+                subtitle={
+                  <span className="flex flex-wrap gap-3">
+                    {g.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{g.course.location}</span>}
+                    {g.course?.schedule && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{g.course.schedule}</span>}
+                    <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{yesCount}/{list.length} zugesagt</span>
+                  </span>
+                }
+                actions={
+                  <>
+                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
+                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
+                  </>
+                }
+              >
+                <div className="overflow-x-auto">
+                  <table className="text-xs">
+                    <thead>
+                      <tr>
+                        <th className="sticky left-0 bg-background p-1 text-left">Termin</th>
+                        {list.map(s => (
+                          <th key={s.id} className="p-1 text-center font-normal whitespace-nowrap">
+                            <div>{weekday(s.session_date)} {formatDateBerlin(s.session_date).slice(0, 6)}</div>
+                            <div className="text-muted-foreground">{s.session_index}.</div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t">
+                        <td className="sticky left-0 bg-background p-1 font-medium whitespace-nowrap">Ich</td>
+                        {list.map(s => {
+                          const st = myState(s.id);
+                          const mine = isAssignedToMe(s.id);
+                          const next = st === null ? true : st === true ? false : null;
+                          return (
+                            <td key={s.id} className="p-1 text-center">
+                              <button
+                                type="button"
+                                disabled={busy === s.id}
+                                title={mine ? "Du bist eingeteilt" : st === true ? "Kann – klicken für „Kann nicht“" : st === false ? "Kann nicht – klicken zum Zurücksetzen" : "Offen – klicken für „Kann“"}
+                                onClick={() => setAvailability(s.id, next)}
+                                className={`h-9 w-9 rounded border text-sm font-semibold ${mine ? "bg-primary text-primary-foreground" : st === true ? "bg-success text-success-foreground" : st === false ? "bg-destructive/15 text-destructive" : ""}`}
+                              >
+                                {mine ? "★" : st === true ? "✓" : st === false ? "✕" : "·"}
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      <tr className="border-t">
+                        <td className="sticky left-0 bg-background p-1 text-muted-foreground whitespace-nowrap">Besetzung</td>
+                        {list.map(s => {
+                          const n = staffCount(s.id);
+                          return (
+                            <td key={s.id} className="p-1 text-center">
+                              <Badge variant={n >= 2 ? "secondary" : "outline"} className={n >= 2 ? "" : "border-destructive text-destructive"}>{n}/2</Badge>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">Klick wechselt: · offen → ✓ kann → ✕ kann nicht → offen. ★ = du bist eingeteilt.</p>
+              </CollapsibleCard>
+            );
+          })}
+        </div>
       ) : view === "calendar" ? (
         <Card className="border-0 shadow-soft">
           <CardContent className="py-4">
@@ -395,36 +478,17 @@ export function AvailabilityBoard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {groups.map(g => {
-            const list = g.sessions.filter(isVisible);
-            if (list.length === 0) return null;
-            return (
-              <CollapsibleCard
-                key={g.courseId}
-                className="border-0 shadow-soft"
-                storageKey={`trainer-avail-${g.courseId}`}
-                title={g.course?.name || "Kurs"}
-                subtitle={
-                  <span className="flex flex-wrap gap-3">
-                    {g.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{g.course.location}</span>}
-                    {g.course?.schedule && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{g.course.schedule}</span>}
-                    <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{list.length} Termine</span>
-                  </span>
-                }
-                actions={
-                  <>
-                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
-                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
-                  </>
-                }
-              >
+        <div className="space-y-4">
+          {[...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([day, list]) => (
+            <Card key={day} className="border-0 shadow-soft">
+              <CardContent className="py-3">
+                <div className="mb-2 text-sm font-semibold">{weekday(day)}, {formatDateBerlin(day)}</div>
                 <div className="divide-y rounded-md border">
                   {list.map(s => renderSession(s))}
                 </div>
-              </CollapsibleCard>
-            );
-          })}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
