@@ -89,32 +89,33 @@ if ($ext -ne '2') {
 }
 
 # --- 3. Auswahl aus der Sicherung ------------------------------------------------------------
+# Wichtig: PowerShell unterscheidet bei -match/-eq standardmäßig NICHT zwischen Groß- und Kleinschreibung. Hier wird exakt verglichen (-cmatch/-ceq).
 $toc = & $pgRestore -l $backupPath
 if ($LASTEXITCODE -ne 0) { Stop-Hier 'Die Sicherung konnte nicht gelesen werden.' }
 
 $pattern = '^(?<id>\d+); \d+ \d+ (?<type>(?:[A-Z]+ )+)(?<schema>[a-z_][a-z0-9_]*|-) (?<rest>.*)$'
 $keep = New-Object System.Collections.Generic.List[string]
 foreach ($line in $toc) {
-    if ($line -notmatch $pattern) { continue }
+    if ($line -cnotmatch $pattern) { continue }
     $type = $Matches['type'].Trim()
     $schema = $Matches['schema']
     $rest = $Matches['rest']
     $take = $false
-    if ($schema -eq 'public') {
+    if ($schema -ceq 'public') {
         # alles aus dem eigenen Bereich, außer den ungenutzten Mail-Warteschlangen-Funktionen (brauchen pgmq)
-        if ($rest -notmatch '^(enqueue_email|read_email_batch|delete_email|move_to_dlq)\(') { $take = $true }
+        if ($rest -cnotmatch '^(enqueue_email|read_email_batch|delete_email|move_to_dlq)\(') { $take = $true }
     }
-    elseif ($schema -eq 'auth' -and $type -eq 'TABLE DATA' -and $rest -match '^(users|identities) ') { $take = $true }
-    elseif ($schema -eq 'auth' -and $type -eq 'TRIGGER' -and $rest -match '^users ') { $take = $true }
-    elseif ($schema -eq 'storage' -and $type -eq 'POLICY' -and $rest -match '^objects ') { $take = $true }
+    elseif ($schema -ceq 'auth' -and $type -ceq 'TABLE DATA' -and $rest -cmatch '^(users|identities) ') { $take = $true }
+    elseif ($schema -ceq 'auth' -and $type -ceq 'TRIGGER' -and $rest -cmatch '^users ') { $take = $true }
+    elseif ($schema -ceq 'storage' -and $type -ceq 'POLICY' -and $rest -cmatch '^objects ') { $take = $true }
     if ($take) { $keep.Add($line) }
 }
 # Reihenfolge erzwingen: Nutzerkonten (users) müssen VOR ihren Verknüpfungen (identities) eingespielt werden,
 # sonst verletzt das die Fremdschlüssel der Anmeldung.
 $iUsers = -1; $iIdent = -1
 for ($i = 0; $i -lt $keep.Count; $i++) {
-    if ($keep[$i] -match ' TABLE DATA auth users ') { $iUsers = $i }
-    elseif ($keep[$i] -match ' TABLE DATA auth identities ') { $iIdent = $i }
+    if ($keep[$i] -cmatch ' TABLE DATA auth users ') { $iUsers = $i }
+    elseif ($keep[$i] -cmatch ' TABLE DATA auth identities ') { $iIdent = $i }
 }
 if ($iUsers -ge 0 -and $iIdent -ge 0 -and $iIdent -lt $iUsers) {
     $tmp = $keep[$iUsers]; $keep[$iUsers] = $keep[$iIdent]; $keep[$iIdent] = $tmp
@@ -122,8 +123,8 @@ if ($iUsers -ge 0 -and $iIdent -ge 0 -and $iIdent -lt $iUsers) {
 $listFile = Join-Path $work 'auswahl.txt'
 [System.IO.File]::WriteAllLines($listFile, $keep, (New-Object System.Text.UTF8Encoding $false))
 
-$dataPublic = ($keep | Where-Object { $_ -match ' TABLE DATA public ' }).Count
-$dataAuth = ($keep | Where-Object { $_ -match ' TABLE DATA auth ' }).Count
+$dataPublic = ($keep | Where-Object { $_ -cmatch ' TABLE DATA public ' }).Count
+$dataAuth = ($keep | Where-Object { $_ -cmatch ' TABLE DATA auth ' }).Count
 Write-Host ''
 Write-Host "Ausgewählt: $($keep.Count) von $($toc.Count) Einträgen"
 Write-Host "  Tabellen mit Daten in public: $dataPublic   Nutzerkonten-Tabellen: $dataAuth (erwartet: 2)"
