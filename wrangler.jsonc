@@ -1,0 +1,7 @@
+{
+  "name": "sicher-schwimm-hub",
+  "vars": {
+    "SUPABASE_URL": "https://kqaajxvwdwpgrxwgqcvi.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_B4ExEcgq0oxPuc4_nI639g__7zW3Ef2"
+  }
+}

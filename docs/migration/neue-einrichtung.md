@@ -7,14 +7,18 @@ für die Schritte in der Reihenfolge unten. Keine geheimen Werte in diese Datei 
 
 | Name | Art | Woher |
 |---|---|---|
-| SUPABASE_URL | Variable | Supabase → Project Settings → API |
-| SUPABASE_PUBLISHABLE_KEY | Variable | dito („anon“/„publishable“ Key) |
+| SUPABASE_URL | Variable, **steht in `wrangler.jsonc`** | Supabase → Project Settings → API. Nicht im Dashboard pflegen: `wrangler deploy` entfernt dort angelegte Text-Variablen, die nicht in der Konfiguration stehen |
+| SUPABASE_PUBLISHABLE_KEY | Variable, **steht in `wrangler.jsonc`** | dito („anon“/„publishable“ Key), öffentlich |
 | SUPABASE_SERVICE_ROLE_KEY | **Secret** | dito („service_role“ Key, niemals öffentlich) |
 | VITE_SUPABASE_URL, VITE_SUPABASE_PROJECT_ID, VITE_SUPABASE_PUBLISHABLE_KEY | schon in `.env` im Repository | öffentliche Werte des neuen Projekts (`kqaajxvwdwpgrxwgqcvi`); werden beim Bauen in die Seite eingebaut, bei Cloudflare nichts nötig |
 | RESEND_API_KEY | **Secret** | Resend → API Keys (Berechtigung „Sending access“) |
 | RESEND_WEBHOOK_SECRET | **Secret** | Resend → Webhooks → Signing secret |
 | SEND_EMAIL_HOOK_SECRET | **Secret** | Supabase → Authentication → Hooks → Send Email (beim Anlegen erzeugt, beginnt mit `v1,whsec_`) |
 | VAPID_SEED | **Secret** | beliebiger langer Zufallstext. Der alte Wert lässt sich in Lovable nicht auslesen; Handy-Mitteilungen müssen deshalb einmal neu erlaubt werden |
+
+**Wichtig:** Alle Geheimnisse in Cloudflare als Typ **Secret** anlegen, nicht als „Text“. Secrets bleiben bei jedem Deploy erhalten, Text-Variablen
+werden vom Deploy gelöscht. Die zwei öffentlichen Werte stehen deshalb in `wrangler.jsonc` im Projekt (Nitro mischt die Datei beim Bau in die erzeugte
+`.output/server/wrangler.json`). Beim Wechsel auf ein anderes Supabase-Projekt die Werte in `wrangler.jsonc` **und** in `.env` ändern.
 
 Nicht mehr nötig: LOVABLE_API_KEY, LOVABLE_SEND_URL, GOOGLE_SEARCH_CONSOLE_API_KEY, STRIPE_SECRET_KEY, DATABASE_URL.
 
