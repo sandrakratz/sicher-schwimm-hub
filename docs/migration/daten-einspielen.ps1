@@ -1,4 +1,4 @@
-# Datenumzug: Lovable-Cloud-Sicherung (.backup) -> neues Supabase-Projekt
+﻿# Datenumzug: Lovable-Cloud-Sicherung (.backup) -> neues Supabase-Projekt
 # Für Windows PowerShell. Aufruf siehe docs/migration/daten-einspielen.md.
 #
 # Was das Skript macht:
@@ -75,6 +75,12 @@ Write-Host "Verbindung OK (Datenbank: $db)" -ForegroundColor Green
 $tables = Sql "select count(*) from information_schema.tables where table_schema = 'public'"
 $users = Sql 'select count(*) from auth.users'
 if ($tables -ne '0' -or $users -ne '0') {
+    if ($tables -ne '0') {
+        Write-Host ''
+        Write-Host 'Vorhandene Tabellen in public (nur Namen und Zeilenzahlen):' -ForegroundColor Yellow
+        $vorhanden = Sql "select table_name || ': ' || (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name), false, true, '')))[1]::text from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name"
+        Write-Host $vorhanden
+    }
     Stop-Hier "Das Ziel ist nicht leer (Tabellen in public: $tables, Nutzerkonten: $users). Aus Sicherheitsgründen spielt das Skript nur in eine leere Datenbank ein."
 }
 $ext = Sql "select count(*) from pg_extension where extname in ('pg_cron','pg_net')"
