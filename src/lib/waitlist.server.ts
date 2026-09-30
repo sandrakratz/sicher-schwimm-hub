@@ -198,6 +198,8 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
     candidates = candidates.filter((c) =>
       meetsMinAge(c.child_dob ?? null, course.starts_on ?? null, program?.min_age_years ?? null),
     )
+    // Wer genau diesen Kurs bereits abgelehnt hat bzw. verfallen ließ, bekommt ihn nicht erneut automatisch
+    candidates = candidates.filter((c: any) => c.offer_course_id !== course.id)
     // Zurückgestellte Kinder erst für Kurse ab dem hinterlegten Datum berücksichtigen
     candidates = candidates.filter((c: any) => {
       const from = c.available_from as string | null
@@ -321,7 +323,8 @@ export async function registerDecline(
       status: opts.stay ? 'waiting' : 'removed',
       decline_count: count,
       offer_token: null,
-      offer_course_id: null,
+      // offer_course_id bleibt als „zuletzt abgelehnter Kurs“ stehen, damit
+      // allocateWaitlist denselben Kurs nicht sofort erneut anbietet.
       offer_expires_at: null,
       followup_token: null,
       followup_expires_at: null,
@@ -343,7 +346,7 @@ export async function answerFollowup(entry: any, stay: boolean, availableFrom: s
       status: stay ? 'waiting' : 'removed',
       followup_token: null,
       followup_expires_at: null,
-      offer_course_id: null,
+      // offer_course_id bleibt stehen (abgelehnter/abgelaufener Kurs wird nicht erneut angeboten)
       offer_expires_at: null,
       responded_at: nowIso(),
       ...(stay ? { available_from: availableFrom } : {}),
