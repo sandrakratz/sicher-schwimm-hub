@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@lovable.dev/email-js": "0.1.0",
-    "@lovable.dev/webhooks-js": "^0.0.1",
     "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0",
     "@radix-ui/react-accordion": "^1.2.12",

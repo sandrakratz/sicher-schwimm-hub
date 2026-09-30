@@ -2,8 +2,7 @@ import { Outlet, Link, createFileRoute, redirect, useNavigate, useRouterState } 
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { LogOut, Waves, Menu } from "lucide-react";
-import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
-const logo = logoAsset.url;
+import logo from "@/assets/sicher-schwimmen-rund.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { toast } from "sonner";

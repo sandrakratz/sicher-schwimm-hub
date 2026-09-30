@@ -1,13 +1,13 @@
-// Server-only Helfer zum Rendern und Versenden von Transaktions-E-Mails
-// über die verwaltete Lovable-E-Mail-Zustellung.
+// Server-only Helfer zum Rendern und Versenden von Transaktions-E-Mails über Resend.
 import * as React from 'react'
 import { render } from '@react-email/components'
-import { EmailAPIError, sendLovableEmail } from '@lovable.dev/email-js'
 import { TEMPLATES } from '@/lib/email-templates/registry'
+import { EmailSendError, sendWithResend } from '@/lib/email-provider.server'
 
-const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SENDER_DOMAIN = 'notify.sicher-schwimmen.com'
-const FROM_DOMAIN = 'notify.sicher-schwimmen.com'
+const ADMIN_EMAIL = 'info@sicher-schwimmen.com'
+/** Der kostenlose Resend-Tarif erlaubt 100 Mails pro Tag; ab hier warnen wir den Vorstand. */
+const DAILY_WARN_AT = 80
+const WARNING_TEMPLATE = 'daily-limit-warning'
 
 export interface SendRawEmailOptions {
   /** Label/Vorlagenname für das Sendeprotokoll. */
@@ -22,16 +22,53 @@ export interface SendRawEmailOptions {
   metadata?: Record<string, unknown> | null
 }
 
+type AdminClient = Awaited<typeof import('@/integrations/supabase/client.server')>['supabaseAdmin']
+
+/** Schickt einmal pro 24 Stunden eine Warnung, wenn das Tageslimit des Mail-Anbieters näher rückt. */
+async function warnIfNearDailyLimit(admin: AdminClient) {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { count } = await admin
+      .from('email_send_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'sent')
+      .gte('created_at', since)
+    if ((count ?? 0) < DAILY_WARN_AT) return
+
+    const { count: already } = await admin
+      .from('email_send_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('template_name', WARNING_TEMPLATE)
+      .gte('created_at', since)
+    if ((already ?? 0) > 0) return
+
+    await sendRawEmail({
+      templateName: WARNING_TEMPLATE,
+      recipientEmail: ADMIN_EMAIL,
+      subject: 'Hinweis: E-Mail-Tageslimit fast erreicht',
+      text:
+        `In den letzten 24 Stunden wurden bereits ${count} E-Mails versendet. ` +
+        'Der kostenlose Tarif des Mail-Anbieters erlaubt 100 pro Tag. Weitere Mails werden danach abgelehnt, ' +
+        'bis das Limit wieder frei ist. Falls nötig, kann im Konto des Anbieters ein größerer Tarif gewählt werden.',
+      html:
+        `<p>In den letzten 24 Stunden wurden bereits <strong>${count}</strong> E-Mails versendet.</p>` +
+        '<p>Der kostenlose Tarif des Mail-Anbieters erlaubt 100 pro Tag. Weitere Mails werden danach abgelehnt, ' +
+        'bis das Limit wieder frei ist. Falls nötig, kann im Konto des Anbieters ein größerer Tarif gewählt werden.</p>',
+      idempotencyKey: `${WARNING_TEMPLATE}-${since.slice(0, 13)}`,
+    })
+  } catch (err) {
+    console.error('daily limit warning failed', err)
+  }
+}
+
 /**
  * Versendet eine bereits gerenderte E-Mail und protokolliert das Ergebnis in
  * `email_send_log` (inkl. Betreff und Inhalt für die Gesprächsverläufe).
+ * Adressen, die in `suppressed_emails` stehen (Rückläufer, Beschwerde, Abmeldung), werden übersprungen.
  */
 export async function sendRawEmail(
   opts: SendRawEmailOptions,
 ): Promise<{ sent: boolean; reason?: string }> {
-  const apiKey = process.env['LOVABLE_API_KEY']
-  if (!apiKey) throw new Error('LOVABLE_API_KEY is not configured')
-
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const messageId = crypto.randomUUID()
   const logMetadata = { idempotency_key: opts.idempotencyKey, ...(opts.metadata ?? {}) }
@@ -47,31 +84,31 @@ export async function sendRawEmail(
     metadata: logMetadata,
   }
 
+  const { data: suppressedRow } = await supabaseAdmin
+    .from('suppressed_emails')
+    .select('id')
+    .eq('email', opts.recipientEmail.trim().toLowerCase())
+    .maybeSingle()
+  if (suppressedRow) {
+    const { error: logErr } = await supabaseAdmin
+      .from('email_send_log')
+      .insert({ ...logRow, status: 'suppressed' })
+    if (logErr) console.error('email_send_log insert failed', logErr)
+    return { sent: false, reason: 'suppressed' }
+  }
+
   try {
-    await sendLovableEmail(
-      {
-        to: opts.recipientEmail,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-        sender_domain: SENDER_DOMAIN,
-        subject: opts.subject,
-        html: opts.html,
-        text: opts.text,
-        purpose: 'transactional',
-        label: opts.templateName,
-        idempotency_key: opts.idempotencyKey,
-        reply_to: opts.replyTo,
-      },
-      { apiKey, sendUrl: process.env['LOVABLE_SEND_URL'] },
-    )
+    await sendWithResend({
+      to: opts.recipientEmail,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+      replyTo: opts.replyTo,
+      idempotencyKey: opts.idempotencyKey,
+    })
   } catch (error) {
-    if (error instanceof EmailAPIError && error.code === 'recipient_suppressed') {
-      const { error: logErr } = await supabaseAdmin
-        .from('email_send_log')
-        .insert({ ...logRow, status: 'suppressed' })
-      if (logErr) console.error('email_send_log insert failed', logErr)
-      return { sent: false, reason: 'suppressed' }
-    }
     const message = error instanceof Error ? error.message : String(error)
+    if (error instanceof EmailSendError && error.code === 'not_configured') throw error
     const { error: logErr } = await supabaseAdmin
       .from('email_send_log')
       .insert({ ...logRow, status: 'failed', error_message: message.slice(0, 1000) })
@@ -83,6 +120,8 @@ export async function sendRawEmail(
     .from('email_send_log')
     .insert({ ...logRow, status: 'sent' })
   if (logErr) console.error('email_send_log insert failed', logErr)
+
+  if (opts.templateName !== WARNING_TEMPLATE) await warnIfNearDailyLimit(supabaseAdmin)
 
   return { sent: true }
 }

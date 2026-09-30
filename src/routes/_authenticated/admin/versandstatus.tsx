@@ -43,7 +43,7 @@ function sinceFor(range: RangeKey): string | undefined {
 }
 
 const EVENT_LABEL: Record<string, string> = {
-  sent: "Zugestellt",
+  sent: "Versendet",
   rejected: "Fehlgeschlagen",
   bounced: "Rückläufer",
   complained: "Beschwerde",
@@ -136,7 +136,7 @@ function Page() {
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Card className="border-0 shadow-soft"><CardContent className="py-4">
-          <div className="text-xs text-muted-foreground">Zugestellt</div>
+          <div className="text-xs text-muted-foreground">Versendet</div>
           <div className="text-2xl font-bold text-green-700">{counts.sent}</div>
         </CardContent></Card>
         <Card className="border-0 shadow-soft"><CardContent className="py-4">
@@ -179,7 +179,7 @@ function Page() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Ereignisse</SelectItem>
-                <SelectItem value="sent">Zugestellt</SelectItem>
+                <SelectItem value="sent">Versendet</SelectItem>
                 <SelectItem value="failed">Fehlgeschlagen / blockiert</SelectItem>
                 <SelectItem value="bounced">Rückläufer / Beschwerden</SelectItem>
               </SelectContent>

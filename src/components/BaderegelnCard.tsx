@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Download, Maximize2 } from "lucide-react";
-import poster from "@/assets/baderegeln-seepferdchen.png.asset.json";
+import posterUrl from "@/assets/baderegeln-seepferdchen.png";
 
 const ALT =
   "Poster „Baderegeln für dein Seepferdchen“ von Sicher Schwimmen e.V. mit 10 Baderegeln für Kinder und der Rettungskette";
@@ -18,7 +18,7 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
       aria-label="Baderegeln-Poster in großer Ansicht öffnen"
     >
       <img
-        src={poster.url}
+        src={posterUrl}
         alt={ALT}
         loading="lazy"
         className={`w-full transition-transform duration-300 group-hover:scale-[1.02] ${variant === "compact" ? "h-40 object-contain" : "h-auto"}`}
@@ -31,7 +31,7 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
 
   const download = (
     <Button asChild variant="accent" className={variant === "full" ? "" : "w-full"}>
-      <a href={poster.url} download="Baderegeln-Sicher-Schwimmen.png">
+      <a href={posterUrl} download="Baderegeln-Sicher-Schwimmen.png">
         <Download className="h-4 w-4" /> Poster herunterladen
       </a>
     </Button>
@@ -43,10 +43,10 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
         <DialogHeader>
           <DialogTitle>Baderegeln für dein Seepferdchen</DialogTitle>
         </DialogHeader>
-        <img src={poster.url} alt={ALT} className="w-full h-auto rounded-lg" />
+        <img src={posterUrl} alt={ALT} className="w-full h-auto rounded-lg" />
         <div className="flex justify-end">
           <Button asChild variant="accent">
-            <a href={poster.url} download="Baderegeln-Sicher-Schwimmen.png">
+            <a href={posterUrl} download="Baderegeln-Sicher-Schwimmen.png">
               <Download className="h-4 w-4" /> Poster herunterladen
             </a>
           </Button>
