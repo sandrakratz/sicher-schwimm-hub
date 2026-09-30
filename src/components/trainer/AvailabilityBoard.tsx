@@ -478,36 +478,17 @@ export function AvailabilityBoard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {groups.map(g => {
-            const list = g.sessions.filter(isVisible);
-            if (list.length === 0) return null;
-            return (
-              <CollapsibleCard
-                key={g.courseId}
-                className="border-0 shadow-soft"
-                storageKey={`trainer-avail-${g.courseId}`}
-                title={g.course?.name || "Kurs"}
-                subtitle={
-                  <span className="flex flex-wrap gap-3">
-                    {g.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{g.course.location}</span>}
-                    {g.course?.schedule && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{g.course.schedule}</span>}
-                    <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{list.length} Termine</span>
-                  </span>
-                }
-                actions={
-                  <>
-                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
-                    <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
-                  </>
-                }
-              >
+        <div className="space-y-4">
+          {[...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([day, list]) => (
+            <Card key={day} className="border-0 shadow-soft">
+              <CardContent className="py-3">
+                <div className="mb-2 text-sm font-semibold">{weekday(day)}, {formatDateBerlin(day)}</div>
                 <div className="divide-y rounded-md border">
                   {list.map(s => renderSession(s))}
                 </div>
-              </CollapsibleCard>
-            );
-          })}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
