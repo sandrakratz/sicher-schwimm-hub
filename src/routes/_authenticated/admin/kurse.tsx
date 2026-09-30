@@ -1102,7 +1102,6 @@ function Page() {
                     ? <Badge className="bg-success text-success-foreground hover:bg-success" title="Tatsächlich frei für neue Anmeldungen">{free} frei</Badge>
                     : <Badge variant="destructive">Ausgebucht</Badge>)}
                 </div>
-                </div>
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setEditingProg(p); setDetailId(p.id); }}>Öffnen</Button>
                   {canManage && <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); startNewTerm(p); }}><Plus className="h-4 w-4" /> Neuer Zeitraum</Button>}
