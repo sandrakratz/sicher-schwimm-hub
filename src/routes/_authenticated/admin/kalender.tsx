@@ -250,7 +250,6 @@ function Page() {
             storageKey={`cal-course-${cid}`}
             title={list[0].title}
             subtitle={`${list.length} Termin(e) · ${shortDate(list[0].date)} – ${shortDate(list[list.length - 1].date)}${list[0].location ? ` · ${list[0].location}` : ""}${incomplete ? ` · ⚠️ ${incomplete} unvollständig` : " · ✓ besetzt"}`}
-            defaultOpen={focusCourse === cid}
           >
             <CourseRosterMatrix sessions={list} trainers={trainers} onChanged={applyChange} />
           </CollapsibleCard>
