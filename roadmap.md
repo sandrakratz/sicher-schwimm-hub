@@ -22,4 +22,4 @@
 ## Kursverwaltung & Dienstplan
 - [x] Kurskalender als Dienstplan: Ampel, direkte Trainer-Zuteilung mit Verfügbarkeit, Filter „unvollständig“
 - [x] Eilnachricht an alle Eltern auch im Trainerbereich (nur eigene Kurse)
-- [ ] Kursübersicht als Kurskarten mit Belegungs-, Zahlungs- und Dienstplanstatus + Menü „Aktionen & Downloads“
+- [x] Kursübersicht als Kurskarten mit Belegungs-, Zahlungs- und Dienstplanstatus + Menü „Aktionen & Downloads“
