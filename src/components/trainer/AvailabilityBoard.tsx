@@ -151,6 +151,7 @@ export function AvailabilityBoard() {
     if (!me) return;
     const ids = sessions.filter(s => s.course_id === courseId).map(s => s.id);
     if (ids.length === 0) return;
+    setTouched(t => { const n = new Set(t); ids.forEach(i => n.add(i)); return n; });
     setBusy(courseId);
     if (value === null) {
       const { error } = await supabase
