@@ -1,7 +1,6 @@
 {
   "name": "Sicher Schwimmen e.V.",
   "short_name": "Sicher Schwimmen",
-  "start_url": "/mitteilungen",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
