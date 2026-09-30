@@ -28,7 +28,11 @@ import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
-import { Megaphone } from "lucide-react";
+import { Megaphone, ChevronDown, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+type CourseCounts = { confirmed: number; waiting: number; unpaid: number; overdue: number; sessions: number; staffed: number };
+
 
 
 
@@ -205,7 +209,7 @@ function Page() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
-  const [counts, setCounts] = useState<Record<string, { confirmed: number; waiting: number }>>({});
+  const [counts, setCounts] = useState<Record<string, CourseCounts>>({});
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -544,13 +548,35 @@ function Page() {
     }
     setRows(list);
 
-    const { data: parts } = await supabase.from("course_participants").select("course_id,status");
-    const map: Record<string, { confirmed: number; waiting: number }> = {};
+    const { data: parts } = await supabase.from("course_participants").select("course_id,status,paid,payment_due_date");
+    const today = new Date().toISOString().slice(0, 10);
+    const map: Record<string, CourseCounts> = {};
     (parts || []).forEach((p: any) => {
-      map[p.course_id] = map[p.course_id] || { confirmed: 0, waiting: 0 };
-      if (p.status === "confirmed") map[p.course_id].confirmed++;
-      else if (p.status === "waiting") map[p.course_id].waiting++;
+      map[p.course_id] = map[p.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+      if (p.status === "confirmed") {
+        map[p.course_id].confirmed++;
+        if (!p.paid) {
+          map[p.course_id].unpaid++;
+          if (p.payment_due_date && p.payment_due_date < today) map[p.course_id].overdue++;
+        }
+      } else if (p.status === "waiting") map[p.course_id].waiting++;
     });
+    const courseIds = list.map(c => c.id);
+    if (courseIds.length) {
+      const { data: sess } = await supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").in("course_id", courseIds);
+      const sessList = (sess as any[]) || [];
+      const sessIds = sessList.map(s => s.id);
+      const assigned = new Set<string>();
+      for (let i = 0; i < sessIds.length; i += 200) {
+        const { data: asg } = await supabase.from("course_session_assignments").select("session_id").in("session_id", sessIds.slice(i, i + 200));
+        ((asg as any[]) || []).forEach(a => assigned.add(a.session_id));
+      }
+      sessList.forEach(s => {
+        const m = map[s.course_id] = map[s.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+        m.sessions++;
+        if (s.assigned_trainer_id || assigned.has(s.id)) m.staffed++;
+      });
+    }
     setCounts(map);
     const { data: progs } = await supabase.from("course_programs").select("*").order("sort_order", { ascending: true });
     let progList = (progs as ProgramRow[]) || [];
