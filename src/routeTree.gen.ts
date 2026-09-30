@@ -35,6 +35,7 @@ import { Route as WiderrufRouteImport } from './routes/widerruf'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as EmailAuthHookRouteImport } from './routes/email/auth-hook'
 import { Route as EmailEventsRouteImport } from './routes/email/events'
+import { Route as EmailStatusRouteImport } from './routes/email/status'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as RatgeberSeepferdchenAnforderungenRouteImport } from './routes/ratgeber.seepferdchen-anforderungen'
@@ -207,6 +208,11 @@ const EmailAuthHookRoute = EmailAuthHookRouteImport.update({
 const EmailEventsRoute = EmailEventsRouteImport.update({
   id: '/email/events',
   path: '/email/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailStatusRoute = EmailStatusRouteImport.update({
+  id: '/email/status',
+  path: '/email/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -488,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/auth-hook': typeof EmailAuthHookRoute
   '/email/events': typeof EmailEventsRoute
+  '/email/status': typeof EmailStatusRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
@@ -558,6 +565,7 @@ export interface FileRoutesByTo {
   '/widerruf': typeof WiderrufRoute
   '/email/auth-hook': typeof EmailAuthHookRoute
   '/email/events': typeof EmailEventsRoute
+  '/email/status': typeof EmailStatusRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
@@ -631,6 +639,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/email/auth-hook': typeof EmailAuthHookRoute
   '/email/events': typeof EmailEventsRoute
+  '/email/status': typeof EmailStatusRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse_/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
@@ -704,6 +713,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/email/auth-hook'
     | '/email/events'
+    | '/email/status'
     | '/email/unsubscribe'
     | '/kurse/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
@@ -774,6 +784,7 @@ export interface FileRouteTypes {
     | '/widerruf'
     | '/email/auth-hook'
     | '/email/events'
+    | '/email/status'
     | '/email/unsubscribe'
     | '/kurse/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
@@ -846,6 +857,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/email/auth-hook'
     | '/email/events'
+    | '/email/status'
     | '/email/unsubscribe'
     | '/kurse_/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
@@ -918,6 +930,7 @@ export interface RootRouteChildren {
   WiderrufRoute: typeof WiderrufRoute
   EmailAuthHookRoute: typeof EmailAuthHookRoute
   EmailEventsRoute: typeof EmailEventsRoute
+  EmailStatusRoute: typeof EmailStatusRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
   RatgeberSeepferdchenAnforderungenRoute: typeof RatgeberSeepferdchenAnforderungenRoute
@@ -1115,6 +1128,13 @@ declare module '@tanstack/react-router' {
       path: '/email/events'
       fullPath: '/email/events'
       preLoaderRoute: typeof EmailEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email/status': {
+      id: '/email/status'
+      path: '/email/status'
+      fullPath: '/email/status'
+      preLoaderRoute: typeof EmailStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -1542,6 +1562,7 @@ const rootRouteChildren: RootRouteChildren = {
   WiderrufRoute: WiderrufRoute,
   EmailAuthHookRoute: EmailAuthHookRoute,
   EmailEventsRoute: EmailEventsRoute,
+  EmailStatusRoute: EmailStatusRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
   RatgeberSeepferdchenAnforderungenRoute:
