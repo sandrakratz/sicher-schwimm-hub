@@ -206,6 +206,7 @@ function Page() {
           <Button size="sm" variant={view === "course" ? "default" : "ghost"} onClick={() => setView("course")}>Nach Kursen</Button>
           <Button size="sm" variant={view === "date" ? "default" : "ghost"} onClick={() => setView("date")}>Nach Terminen</Button>
         </div>
+        {focusCourse && <Button size="sm" variant="outline" onClick={() => { setFocusCourse(null); window.history.replaceState(null, "", "/admin/kalender"); }}>Nur ein Kurs – alle zeigen</Button>}
         <Select value={scope} onValueChange={(v: "upcoming" | "all") => setScope(v)}>
           <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
           <SelectContent>
