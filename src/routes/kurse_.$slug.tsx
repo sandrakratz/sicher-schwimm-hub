@@ -15,7 +15,27 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Clock, MapPin, Users, Tag, CalendarDays } from "lucide-react";
+import { Clock, MapPin, Users, Tag, CalendarDays, ChevronRight, CheckCircle2, HelpCircle, ClipboardList, Waves, Star, Baby, ArrowDown } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+function InfoItem({ value, icon: Icon, title, subtitle, children }: {
+  value: string; icon: typeof Users; title: string; subtitle: string; children: React.ReactNode;
+}) {
+  return (
+    <AccordionItem value={value} className="rounded-xl bg-card shadow-soft border-0 px-5">
+      <AccordionTrigger className="hover:no-underline py-4">
+        <div className="flex items-center gap-4 text-left">
+          <span className="rounded-full bg-secondary p-2.5"><Icon className="h-5 w-5 text-primary" /></span>
+          <span>
+            <span className="block font-display text-lg font-bold text-primary-deep">{title}</span>
+            <span className="block text-sm font-normal text-muted-foreground">{subtitle}</span>
+          </span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="text-sm text-muted-foreground pl-14">{children}</AccordionContent>
+    </AccordionItem>
+  );
+}
 import { toast } from "sonner";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
