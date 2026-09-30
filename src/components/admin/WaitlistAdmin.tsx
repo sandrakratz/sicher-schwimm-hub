@@ -466,6 +466,7 @@ export function WaitlistAdmin() {
       notes?: string | null;
       blocklist?: boolean;
       blocklistReason?: string;
+      declineCount?: number;
     }) => updateWaitlistEntry({ data: v }),
 
     onSuccess: () => {
