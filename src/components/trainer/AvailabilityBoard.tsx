@@ -48,6 +48,7 @@ export function AvailabilityBoard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [view, setView] = useState<"course" | "date" | "calendar">("course");
   const [showDeclined, setShowDeclined] = useState(false);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
 
@@ -121,6 +122,8 @@ export function AvailabilityBoard() {
 
   async function setAvailability(sessionId: string, value: boolean | null) {
     if (!me) return;
+    // Angeklickte Termine bleiben bis zum Neuladen sichtbar, damit man Fehlklicks korrigieren kann.
+    setTouched(t => new Set(t).add(sessionId));
     setBusy(sessionId);
     if (value === null) {
       const { error } = await supabase
@@ -221,7 +224,7 @@ export function AvailabilityBoard() {
   }
 
   const isAssignedToMe = (id: string) => assign.some(a => a.session_id === id && a.trainer_id === me);
-  const isVisible = (s: SessionRow) => showDeclined || isAssignedToMe(s.id) || myState(s.id) !== false;
+  const isVisible = (s: SessionRow) => showDeclined || touched.has(s.id) || isAssignedToMe(s.id) || myState(s.id) !== false;
   const staffCount = (id: string) => new Set([
     ...avail.filter(a => a.session_id === id && a.available).map(a => a.trainer_id),
     ...assign.filter(a => a.session_id === id).map(a => a.trainer_id),
@@ -392,6 +395,7 @@ export function AvailabilityBoard() {
                   <>
                     <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
                     <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
+                    <Button size="sm" variant="ghost" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, null)}>Alle: Zurücksetzen</Button>
                   </>
                 }
               >
