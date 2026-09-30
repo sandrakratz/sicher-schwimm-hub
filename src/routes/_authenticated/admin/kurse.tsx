@@ -942,73 +942,70 @@ function Page() {
   }
 
   function renderTermRow(c: Course) {
-    const cnt = counts[c.id] || { confirmed: 0, waiting: 0 };
+    const cnt = counts[c.id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
     const max = c.max_participants;
     const full = max != null && cnt.confirmed >= max;
+    const pct = max ? Math.min(100, Math.round((cnt.confirmed / max) * 100)) : 0;
+    const payLabel = cnt.confirmed === 0 ? "Keine Buchungen" : cnt.overdue > 0 ? `${cnt.overdue} überfällig · ${cnt.unpaid} offen` : cnt.unpaid > 0 ? `${cnt.unpaid} offen` : "Alle bezahlt";
+    const payVariant: "destructive" | "secondary" | "outline" = cnt.overdue > 0 ? "destructive" : cnt.unpaid > 0 ? "secondary" : "outline";
+    const openSess = cnt.sessions - cnt.staffed;
+    const rosterLabel = cnt.sessions === 0 ? "Keine Termine" : openSess === 0 ? `Vollständig besetzt (${cnt.staffed}/${cnt.sessions})` : `${openSess} Termine ohne Trainer`;
+    const rosterVariant: "destructive" | "outline" = cnt.sessions > 0 && openSess > 0 ? "destructive" : "outline";
     return (
-      <TableRow key={c.id} className={c.archived_at ? "opacity-70" : ""}>
-        <TableCell className="text-xs whitespace-nowrap">
-          <div className="font-medium text-sm">{fmtDate(c.starts_on) || "—"} – {fmtDate(c.ends_on) || "—"}</div>
-          <div className="text-muted-foreground">{c.name}{!c.is_public && " · intern"}{c.archived_at && " · archiviert"}</div>
-        </TableCell>
-        <TableCell className="text-xs">{c.schedule || "—"}</TableCell>
-        <TableCell><Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge></TableCell>
-        <TableCell className="text-xs whitespace-nowrap">
-          <span className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}</span>
-          {max != null ? <> / {max}</> : null}
-          {cnt.waiting > 0 && <span className="ml-2 text-muted-foreground">(+{cnt.waiting} WL)</span>}
-        </TableCell>
-        <TableCell className="text-right whitespace-nowrap">
-          <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
-          <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
-          <Button variant="ghost" size="sm" asChild title="Trainerteam für alle Termine dieses Kurses einteilen"><a href={`/admin/kalender?kurs=${c.id}`}><Users className="h-4 w-4" /> Dienstplan</a></Button>
-          {canManage && <Button variant="ghost" size="sm" title="Eilnachricht an alle Eltern dieses Kurses" onClick={() => setBroadcastCourse(c)}><Megaphone className="h-4 w-4 text-destructive" /> Eilnachricht</Button>}
-          <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel"}</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={exportingTax === c.id || !hasStarted(c)}
-            title={hasStarted(c) ? "Teilnehmerliste mit allen Daten für die Steuer" : "ab Kursbeginn verfügbar"}
-            onClick={() => exportTaxList(c)}
-          ><Receipt className="h-4 w-4" /> {exportingTax === c.id ? "Erstelle…" : "Steuerliste"}</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={exportingConf === `${c.id}-pdf`}
-            title="Alle Kursbestätigungen als ein PDF"
-            onClick={() => exportConfirmations(c, "pdf")}
-          ><FileText className="h-4 w-4" /> {exportingConf === `${c.id}-pdf` ? "Erstelle…" : "Bestätigungen (PDF)"}</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={exportingConf === `${c.id}-zip`}
-            title="Kursbestätigungen einzeln als ZIP"
-            onClick={() => exportConfirmations(c, "zip")}
-          ><FileArchive className="h-4 w-4" /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "ZIP"}</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={exportingProtocol === c.id}
-            title="Prüfungsprotokoll nach DPO für die Vereinsakte"
-            onClick={() => exportProtocol(c)}
-          ><FileText className="h-4 w-4" /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll"}</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={exportingCsv === c.id}
-            title="Rechnungsposten als CSV für WISO MeinVerein Web"
-            onClick={() => exportMeinVerein(c)}
-          ><FileDown className="h-4 w-4" /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</Button>
-          {canManage && <>
-            <Button variant="ghost" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>
-            {!c.archived_at && <CourseLifecycleActions course={c} onDone={load} />}
-            {c.archived_at
-              ? <Button variant="ghost" size="sm" onClick={() => unarchive(c)}><ArchiveRestore className="h-4 w-4" /></Button>
-              : <Button variant="ghost" size="sm" onClick={() => archive(c)}><Archive className="h-4 w-4" /></Button>}
-            <Button variant="ghost" size="sm" onClick={() => remove(c)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-          </>}
-        </TableCell>
-      </TableRow>
+      <div key={c.id} className={`rounded-lg border bg-card p-4 space-y-3 ${c.archived_at ? "opacity-70" : ""}`}>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <div className="font-semibold">{fmtDate(c.starts_on) || "—"} – {fmtDate(c.ends_on) || "—"}</div>
+            <div className="text-xs text-muted-foreground">{c.name} · {c.schedule || "Zeitplan offen"}{!c.is_public && " · intern"}{c.archived_at && " · archiviert"}</div>
+          </div>
+          <Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3 text-xs">
+          <div>
+            <div className="text-muted-foreground mb-1">Belegung</div>
+            <div className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}{max != null ? ` / ${max}` : ""} Plätze{cnt.waiting > 0 && <span className="font-normal text-muted-foreground"> · +{cnt.waiting} Warteliste</span>}</div>
+            {max ? <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden"><div className={`h-full ${full ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} /></div> : null}
+          </div>
+          <div>
+            <div className="text-muted-foreground mb-1">Zahlungen</div>
+            <Badge variant={payVariant}>{payLabel}</Badge>
+          </div>
+          <div>
+            <div className="text-muted-foreground mb-1">Dienstplan</div>
+            <a href={`/admin/kalender?kurs=${c.id}`}><Badge variant={rosterVariant}>{rosterLabel}</Badge></a>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1 border-t pt-3">
+          <Button variant="outline" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
+          <Button variant="outline" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
+          <Button variant="outline" size="sm" asChild title="Trainerteam für alle Termine dieses Kurses einteilen"><a href={`/admin/kalender?kurs=${c.id}`}><Users className="h-4 w-4" /> Dienstplan</a></Button>
+          {canManage && <Button variant="outline" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>}
+          {canManage && !c.archived_at && <CourseLifecycleActions course={c} onDone={load} />}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="sm" className="ml-auto"><MoreHorizontal className="h-4 w-4" /> Aktionen & Downloads <ChevronDown className="h-3 w-3" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Downloads</DropdownMenuLabel>
+              <DropdownMenuItem disabled={exporting === c.id} onSelect={() => exportCourseList(c)}><FileSpreadsheet /> {exporting === c.id ? "Erstelle…" : "Teilnehmerliste (Excel)"}</DropdownMenuItem>
+              <DropdownMenuItem disabled={exportingTax === c.id || !hasStarted(c)} onSelect={() => exportTaxList(c)}><Receipt /> {exportingTax === c.id ? "Erstelle…" : hasStarted(c) ? "Steuerliste" : "Steuerliste (ab Kursbeginn)"}</DropdownMenuItem>
+              <DropdownMenuItem disabled={exportingConf === `${c.id}-pdf`} onSelect={() => exportConfirmations(c, "pdf")}><FileText /> {exportingConf === `${c.id}-pdf` ? "Erstelle…" : "Kursbestätigungen (PDF)"}</DropdownMenuItem>
+              <DropdownMenuItem disabled={exportingConf === `${c.id}-zip`} onSelect={() => exportConfirmations(c, "zip")}><FileArchive /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "Kursbestätigungen einzeln (ZIP)"}</DropdownMenuItem>
+              <DropdownMenuItem disabled={exportingProtocol === c.id} onSelect={() => exportProtocol(c)}><FileText /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll (DPO)"}</DropdownMenuItem>
+              <DropdownMenuItem disabled={exportingCsv === c.id} onSelect={() => exportMeinVerein(c)}><FileDown /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</DropdownMenuItem>
+              {canManage && <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+                <DropdownMenuItem onSelect={() => setBroadcastCourse(c)}><Megaphone className="text-destructive" /> Eilnachricht an alle Eltern</DropdownMenuItem>
+                {c.archived_at
+                  ? <DropdownMenuItem onSelect={() => unarchive(c)}><ArchiveRestore /> Wiederherstellen</DropdownMenuItem>
+                  : <DropdownMenuItem onSelect={() => archive(c)}><Archive /> Archivieren</DropdownMenuItem>}
+                <DropdownMenuItem className="text-destructive" onSelect={() => remove(c)}><Trash2 /> Löschen</DropdownMenuItem>
+              </>}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     );
   }
 
@@ -1018,29 +1015,14 @@ function Page() {
     const archived = all.filter(t => !!t.archived_at);
     const visible = showArchived ? [...active, ...archived] : active;
     return (
-      <div className="border rounded-md overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Zeitraum</TableHead>
-              <TableHead>Zeitplan</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Plätze</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visible.length === 0
-              ? <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">Noch keine Kurszeiträume.</TableCell></TableRow>
-              : visible.map(renderTermRow)}
-          </TableBody>
-        </Table>
+      <div className="space-y-3">
+        {visible.length === 0
+          ? <div className="rounded-lg border py-6 text-center text-muted-foreground text-xs">Noch keine Kurszeiträume.</div>
+          : visible.map(renderTermRow)}
         {archived.length > 0 && (
-          <div className="border-t p-2 text-xs">
-            <Button variant="ghost" size="sm" onClick={() => setShowArchived(v => !v)}>
-              <Archive className="h-4 w-4" /> {showArchived ? "Archivierte ausblenden" : `Archivierte anzeigen (${archived.length})`}
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowArchived(v => !v)}>
+            <Archive className="h-4 w-4" /> {showArchived ? "Archivierte ausblenden" : `Archivierte anzeigen (${archived.length})`}
+          </Button>
         )}
       </div>
     );
