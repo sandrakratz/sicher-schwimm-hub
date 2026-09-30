@@ -70,6 +70,19 @@ end $$;
 Hinweis zum Pausieren (kostenloser Supabase-Tarif): Die stündliche Wartelisten-Aufgabe ruft die App auf, die dabei die Datenbank abfragt.
 Das hält das Projekt voraussichtlich wach, ist von Supabase aber nicht zugesichert. Eine eigene Sicherung ist zusätzlich nötig (offen).
 
-## 5. Cloudflare
+## 5. Cloudflare (Worker mit Git-Anbindung)
 
-Noch offen, siehe Pull-Request-Beschreibung: Die Sperre der Paketquelle (bun.lock) muss zuerst geklärt werden.
+Der Bau (`bun run build`) erzeugt fertig eine Cloudflare-Konfiguration (`.output/server/wrangler.json`, Name
+`sandrakratz-sicher-schwimm-hub`, Node-Kompatibilität an). Lokal getestet: Bau klappt, Seite startet in der Cloudflare-Laufzeit,
+die neuen Schnittstellen lehnen Anfragen ohne gültige Signatur ab. **Noch nicht getestet:** der echte Deploy bei Cloudflare.
+
+1. Cloudflare → Workers & Pages → Create → Import a repository → dieses GitHub-Repository, Branch `main`.
+2. Build command: `bun run build` · Deploy command: `bunx wrangler deploy` (folgt der beim Bau erzeugten Konfiguration).
+3. Variablen aus Abschnitt 1 eintragen, die `VITE_…`-Werte zusätzlich als **Build**-Variablen.
+4. Zuerst mit der vorläufigen `*.workers.dev`-Adresse testen (Anmeldung, Mail, Datei, Zeitplan von Hand auslösen).
+5. Erst danach die Domain umstellen: DNS-Einträge (vor allem die für E-Mail/Postfächer bei One.com) vollständig nach Cloudflare übernehmen,
+   dann Nameserver wechseln, dann im Worker unter Domains & Routes `sicher-schwimmen.com` und `www.sicher-schwimmen.com` hinzufügen.
+6. Hinweis zur Rechenzeit: Der kostenlose Cloudflare-Tarif begrenzt die Rechenzeit pro Anfrage (10 ms). Falls PDF- oder Excel-Erzeugung
+   mit „Worker exceeded CPU time limit“ scheitert, hilft der Tarif „Workers Paid“ (ca. 5 $/Monat).
+
+Die Bilder (Logo, Baderegeln-Poster, Vorstandsfotos) liegen jetzt als normale Dateien in `src/assets/` und werden mit der Seite ausgeliefert.

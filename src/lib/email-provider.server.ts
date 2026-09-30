@@ -60,9 +60,9 @@ export async function sendWithResend(mail: ProviderEmail): Promise<{ id: string 
   return { id: body.id ?? null }
 }
 
-function base64ToBytes(b64: string): Uint8Array {
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const bin = atob(b64)
-  const out = new Uint8Array(bin.length)
+  const out = new Uint8Array(new ArrayBuffer(bin.length))
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
   return out
 }
@@ -93,7 +93,7 @@ export async function verifyWebhookSignature(
   const ts = Number(timestamp)
   if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > toleranceSeconds) return false
 
-  let keyBytes: Uint8Array
+  let keyBytes: Uint8Array<ArrayBuffer>
   try {
     keyBytes = base64ToBytes(secret.replace(/^v1,/, '').replace(/^whsec_/, ''))
   } catch {

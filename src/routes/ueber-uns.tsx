@@ -6,9 +6,9 @@ import { SOCIAL, ASSOCIATION } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
-import sandraKratzAsset from "@/assets/sandra-kratz.png.asset.json";
-import michaelKratzAsset from "@/assets/michael-kratz.jpg.asset.json";
-import manuelaScholzOrnowskiAsset from "@/assets/manuela-scholz-ornowski.jpg.asset.json";
+import sandraKratzPhoto from "@/assets/sandra-kratz.png";
+import michaelKratzPhoto from "@/assets/michael-kratz.jpg";
+import manuelaScholzOrnowskiPhoto from "@/assets/manuela-scholz-ornowski.jpg";
 
 
 export const Route = createFileRoute("/ueber-uns")({
@@ -151,21 +151,21 @@ function Page() {
             {
               role: "1. Vorsitzender · Fachkraft für Bäderbetriebe",
               name: "Michael Kratz",
-              photo: michaelKratzAsset.url,
+              photo: michaelKratzPhoto,
               objectPosition: "center 20%",
               bio: "Ausgebildete Fachkraft für Bäderbetriebe mit langjähriger Erfahrung im Bäderwesen, in der Arbeit mit Kindern sowie in Schwimmausbildung und Wassergewöhnung.",
             },
             {
               role: "2. Vorsitzende · Kindertagespflegeperson & Fachkraft für Kleinkindpädagogik",
               name: "Sandra Kratz",
-              photo: sandraKratzAsset.url,
+              photo: sandraKratzPhoto,
               objectPosition: "center",
               bio: "Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung.",
             },
             {
               role: "Kassenwartin",
               name: "Manuela Scholz-Ornowski",
-              photo: manuelaScholzOrnowskiAsset.url,
+              photo: manuelaScholzOrnowskiPhoto,
               objectPosition: "center",
               bio: "Engagiert sich im Vorstand für die Förderung von Schwimmkompetenz und Wassersicherheit und dafür, möglichst vielen Kindern und Familien den Zugang zu qualifizierter Schwimmausbildung zu ermöglichen.",
             },

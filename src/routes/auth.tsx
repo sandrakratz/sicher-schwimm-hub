@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Waves, ArrowLeft, Info } from "lucide-react";
-import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
-const logo = logoAsset.url;
+import logo from "@/assets/sicher-schwimmen-rund.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Login – Sicher Schwimmen e.V." }] }),

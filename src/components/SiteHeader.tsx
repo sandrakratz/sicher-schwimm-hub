@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Menu, X, LogIn } from "lucide-react";
-import logoAsset from "@/assets/sicher-schwimmen-rund.png.asset.json";
-const logo = logoAsset.url;
+import logo from "@/assets/sicher-schwimmen-rund.png";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 

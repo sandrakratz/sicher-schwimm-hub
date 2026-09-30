@@ -33,6 +33,8 @@ import { Route as VolljaehrigkeitRouteImport } from './routes/volljaehrigkeit'
 import { Route as WartelisteRouteImport } from './routes/warteliste'
 import { Route as WiderrufRouteImport } from './routes/widerruf'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as EmailAuthHookRouteImport } from './routes/email/auth-hook'
+import { Route as EmailEventsRouteImport } from './routes/email/events'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as RatgeberSeepferdchenAnforderungenRouteImport } from './routes/ratgeber.seepferdchen-anforderungen'
@@ -72,15 +74,11 @@ import { Route as AuthenticatedTrainerVerfuegbarkeitRouteImport } from './routes
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
-import { Route as LovableEmailEventsRouteImport } from './routes/lovable/email/events'
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
 import { Route as ApiPublicHooksMajorityNoticeRouteImport } from './routes/api/public/hooks/majority-notice'
 import { Route as ApiPublicHooksPartialCertificateRouteImport } from './routes/api/public/hooks/partial-certificate'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
 import { Route as ApiPublicHooksWaitlistSweepRouteImport } from './routes/api/public/hooks/waitlist-sweep'
-import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
-import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
-import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -200,6 +198,16 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const EmailAuthHookRoute = EmailAuthHookRouteImport.update({
+  id: '/email/auth-hook',
+  path: '/email/auth-hook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailEventsRoute = EmailEventsRouteImport.update({
+  id: '/email/events',
+  path: '/email/events',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
@@ -423,11 +431,6 @@ const ApiPublicSubmitCancellationRoute =
     path: '/api/public/submit-cancellation',
     getParentRoute: () => rootRouteImport,
   } as any)
-const LovableEmailEventsRoute = LovableEmailEventsRouteImport.update({
-  id: '/lovable/email/events',
-  path: '/lovable/email/events',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicHooksCourseStartReminderRoute =
   ApiPublicHooksCourseStartReminderRouteImport.update({
     id: '/api/public/hooks/course-start-reminder',
@@ -458,22 +461,6 @@ const ApiPublicHooksWaitlistSweepRoute =
     path: '/api/public/hooks/waitlist-sweep',
     getParentRoute: () => rootRouteImport,
   } as any)
-const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
-  id: '/lovable/email/auth/preview',
-  path: '/lovable/email/auth/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
-  id: '/lovable/email/auth/webhook',
-  path: '/lovable/email/auth/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LovableEmailTransactionalPreviewRoute =
-  LovableEmailTransactionalPreviewRouteImport.update({
-    id: '/lovable/email/transactional/preview',
-    path: '/lovable/email/transactional/preview',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -499,6 +486,8 @@ export interface FileRoutesByFullPath {
   '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/email/auth-hook': typeof EmailAuthHookRoute
+  '/email/events': typeof EmailEventsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
@@ -535,7 +524,6 @@ export interface FileRoutesByFullPath {
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
-  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
@@ -544,9 +532,6 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
-  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
-  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -571,6 +556,8 @@ export interface FileRoutesByTo {
   '/volljaehrigkeit': typeof VolljaehrigkeitRoute
   '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
+  '/email/auth-hook': typeof EmailAuthHookRoute
+  '/email/events': typeof EmailEventsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
@@ -607,7 +594,6 @@ export interface FileRoutesByTo {
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
-  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
@@ -616,9 +602,6 @@ export interface FileRoutesByTo {
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
-  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
-  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -646,6 +629,8 @@ export interface FileRoutesById {
   '/warteliste': typeof WartelisteRoute
   '/widerruf': typeof WiderrufRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
+  '/email/auth-hook': typeof EmailAuthHookRoute
+  '/email/events': typeof EmailEventsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/kurse_/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
@@ -682,7 +667,6 @@ export interface FileRoutesById {
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
-  '/lovable/email/events': typeof LovableEmailEventsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
@@ -691,9 +675,6 @@ export interface FileRoutesById {
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
-  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
-  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
-  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -721,6 +702,8 @@ export interface FileRouteTypes {
     | '/warteliste'
     | '/widerruf'
     | '/admin'
+    | '/email/auth-hook'
+    | '/email/events'
     | '/email/unsubscribe'
     | '/kurse/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
@@ -757,7 +740,6 @@ export interface FileRouteTypes {
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
-    | '/lovable/email/events'
     | '/admin/'
     | '/portal/'
     | '/trainer/'
@@ -766,9 +748,6 @@ export interface FileRouteTypes {
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
-    | '/lovable/email/auth/preview'
-    | '/lovable/email/auth/webhook'
-    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -793,6 +772,8 @@ export interface FileRouteTypes {
     | '/volljaehrigkeit'
     | '/warteliste'
     | '/widerruf'
+    | '/email/auth-hook'
+    | '/email/events'
     | '/email/unsubscribe'
     | '/kurse/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
@@ -829,7 +810,6 @@ export interface FileRouteTypes {
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
-    | '/lovable/email/events'
     | '/admin'
     | '/portal'
     | '/trainer'
@@ -838,9 +818,6 @@ export interface FileRouteTypes {
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
-    | '/lovable/email/auth/preview'
-    | '/lovable/email/auth/webhook'
-    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/'
@@ -867,6 +844,8 @@ export interface FileRouteTypes {
     | '/warteliste'
     | '/widerruf'
     | '/_authenticated/admin'
+    | '/email/auth-hook'
+    | '/email/events'
     | '/email/unsubscribe'
     | '/kurse_/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
@@ -903,7 +882,6 @@ export interface FileRouteTypes {
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
-    | '/lovable/email/events'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/trainer/'
@@ -912,9 +890,6 @@ export interface FileRouteTypes {
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/waitlist-sweep'
-    | '/lovable/email/auth/preview'
-    | '/lovable/email/auth/webhook'
-    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -941,6 +916,8 @@ export interface RootRouteChildren {
   VolljaehrigkeitRoute: typeof VolljaehrigkeitRoute
   WartelisteRoute: typeof WartelisteRoute
   WiderrufRoute: typeof WiderrufRoute
+  EmailAuthHookRoute: typeof EmailAuthHookRoute
+  EmailEventsRoute: typeof EmailEventsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   KurseSlugRoute: typeof KurseSlugRoute
   RatgeberSeepferdchenAnforderungenRoute: typeof RatgeberSeepferdchenAnforderungenRoute
@@ -949,15 +926,11 @@ export interface RootRouteChildren {
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
-  LovableEmailEventsRoute: typeof LovableEmailEventsRoute
   ApiPublicHooksCourseStartReminderRoute: typeof ApiPublicHooksCourseStartReminderRoute
   ApiPublicHooksMajorityNoticeRoute: typeof ApiPublicHooksMajorityNoticeRoute
   ApiPublicHooksPartialCertificateRoute: typeof ApiPublicHooksPartialCertificateRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
   ApiPublicHooksWaitlistSweepRoute: typeof ApiPublicHooksWaitlistSweepRoute
-  LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
-  LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
-  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1129,6 +1102,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/email/auth-hook': {
+      id: '/email/auth-hook'
+      path: '/email/auth-hook'
+      fullPath: '/email/auth-hook'
+      preLoaderRoute: typeof EmailAuthHookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email/events': {
+      id: '/email/events'
+      path: '/email/events'
+      fullPath: '/email/events'
+      preLoaderRoute: typeof EmailEventsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
       id: '/email/unsubscribe'
@@ -1403,13 +1390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSubmitCancellationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lovable/email/events': {
-      id: '/lovable/email/events'
-      path: '/lovable/email/events'
-      fullPath: '/lovable/email/events'
-      preLoaderRoute: typeof LovableEmailEventsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/course-start-reminder': {
       id: '/api/public/hooks/course-start-reminder'
       path: '/api/public/hooks/course-start-reminder'
@@ -1443,27 +1423,6 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/waitlist-sweep'
       fullPath: '/api/public/hooks/waitlist-sweep'
       preLoaderRoute: typeof ApiPublicHooksWaitlistSweepRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lovable/email/auth/preview': {
-      id: '/lovable/email/auth/preview'
-      path: '/lovable/email/auth/preview'
-      fullPath: '/lovable/email/auth/preview'
-      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lovable/email/auth/webhook': {
-      id: '/lovable/email/auth/webhook'
-      path: '/lovable/email/auth/webhook'
-      fullPath: '/lovable/email/auth/webhook'
-      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lovable/email/transactional/preview': {
-      id: '/lovable/email/transactional/preview'
-      path: '/lovable/email/transactional/preview'
-      fullPath: '/lovable/email/transactional/preview'
-      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -1581,6 +1540,8 @@ const rootRouteChildren: RootRouteChildren = {
   VolljaehrigkeitRoute: VolljaehrigkeitRoute,
   WartelisteRoute: WartelisteRoute,
   WiderrufRoute: WiderrufRoute,
+  EmailAuthHookRoute: EmailAuthHookRoute,
+  EmailEventsRoute: EmailEventsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   KurseSlugRoute: KurseSlugRoute,
   RatgeberSeepferdchenAnforderungenRoute:
@@ -1590,7 +1551,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
-  LovableEmailEventsRoute: LovableEmailEventsRoute,
   ApiPublicHooksCourseStartReminderRoute:
     ApiPublicHooksCourseStartReminderRoute,
   ApiPublicHooksMajorityNoticeRoute: ApiPublicHooksMajorityNoticeRoute,
@@ -1598,9 +1558,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
   ApiPublicHooksWaitlistSweepRoute: ApiPublicHooksWaitlistSweepRoute,
-  LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
-  LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
-  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
