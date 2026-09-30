@@ -240,6 +240,7 @@ export type Database = {
           payment_method: string | null
           payment_note: string | null
           price_amount: number | null
+          push_token: string | null
           request_id: string | null
           status: Database["public"]["Enums"]["enrollment_status"]
           transfer_reason: string | null
@@ -286,6 +287,7 @@ export type Database = {
           payment_method?: string | null
           payment_note?: string | null
           price_amount?: number | null
+          push_token?: string | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           transfer_reason?: string | null
@@ -332,6 +334,7 @@ export type Database = {
           payment_method?: string | null
           payment_note?: string | null
           price_amount?: number | null
+          push_token?: string | null
           request_id?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
           transfer_reason?: string | null
@@ -1371,6 +1374,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          participant_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          participant_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          participant_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "course_participants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppressed_emails: {
         Row: {
