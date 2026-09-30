@@ -405,7 +405,11 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     const paymentMethod = isFull ? null : terms.immediate ? 'immediate' : 'transfer'
     const paymentDueDate = isFull ? null : terms.dueDate.toISOString().slice(0, 10)
 
+    const { newPushToken } = await import('@/lib/push.server')
+    const pushToken = newPushToken()
+
     const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
+      push_token: pushToken,
       course_id: course.id,
       request_id: request?.id ?? null,
       payment_method: paymentMethod,
@@ -458,6 +462,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         document_no: documentNo ?? undefined,
         issued_at: issuedAt,
         site_base_url: SITE_BASE_URL,
+        push_url: isFull ? undefined : `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
       },
     })
 

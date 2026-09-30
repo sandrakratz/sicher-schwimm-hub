@@ -79,7 +79,11 @@ export async function bookWaitlistEntry(
       .eq('id', requestId)
   }
 
+  const { newPushToken } = await import('@/lib/push.server')
+  const pushToken = newPushToken()
+
   const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
+    push_token: pushToken,
     course_id: course.id,
     request_id: requestId,
     participant_name: entry.child_name,
@@ -142,6 +146,7 @@ export async function bookWaitlistEntry(
       document_no: documentNo ?? undefined,
       issued_at: issuedAt,
       site_base_url: SITE_BASE_URL,
+      push_url: `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
     },
     metadata: { waitlist_entry_id: entry.id, course_id: course.id },
   })
