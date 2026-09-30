@@ -12,6 +12,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   'new-registration': 'Neue Registrierung (Benachrichtigung an den Verein)',
   'cancellation-internal': 'Widerruf (Benachrichtigung an den Verein)',
   'cancellation-confirmation': 'Widerruf – Eingangsbestätigung an Eltern',
+  'push-invite': 'Einladung zu Handy-Mitteilungen (Eltern)',
   'course-booking-confirmation': 'Kursbuchung – Bestätigung & Zahlungsaufforderung',
   'course-waitlist-confirmation': 'Kursbuchung – Wartelisten-Bestätigung',
   'payment-check-reminder': 'Zahlungsprüfung 3 Tage vor Ablauf der Zahlungsfrist (Verein)',

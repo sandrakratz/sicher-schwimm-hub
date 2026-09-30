@@ -84,6 +84,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Sicher Schwimmen e.V. – Schwimmkurse in Hennef" },
       { name: "description", content: "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
       { name: "author", content: "Sicher Schwimmen e.V." },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Sicher Schwimmen" },
       { property: "og:site_name", content: "Sicher Schwimmen e.V." },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "de_DE" },
@@ -91,6 +94,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icon-180.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Nunito:wght@400;500;600;700;800&display=swap" },

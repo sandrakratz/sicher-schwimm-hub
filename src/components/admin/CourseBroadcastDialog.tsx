@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { broadcastCourseMessage } from "@/lib/course-lifecycle.functions";
+import { countCoursePush } from "@/lib/push.functions";
 
 const PRESETS = [
   { label: "Termin fällt aus", subject: "Kurstermin heute fällt aus", message: "leider muss der heutige Kurstermin kurzfristig ausfallen. Einen Ersatztermin teilen wir Ihnen so bald wie möglich mit.\n\nWir bitten um Ihr Verständnis." },
@@ -18,14 +19,17 @@ const PRESETS = [
 
 export function CourseBroadcastDialog({ course, onClose }: { course: { id: string; name: string } | null; onClose: () => void }) {
   const send = useServerFn(broadcastCourseMessage);
+  const countPush = useServerFn(countCoursePush);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [count, setCount] = useState<number | null>(null);
+  const [pushCount, setPushCount] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!course) return;
-    setSubject(""); setMessage(""); setCount(null);
+    setSubject(""); setMessage(""); setCount(null); setPushCount(null);
+    countPush({ data: { courseId: course.id } }).then((r) => setPushCount(r.families)).catch(() => setPushCount(null));
     supabase.from("course_participants").select("participant_email").eq("course_id", course.id).eq("status", "confirmed")
       .then(({ data }) => {
         const set = new Set((data || []).map((d: any) => d.participant_email?.trim().toLowerCase()).filter(Boolean));
@@ -40,7 +44,7 @@ export function CourseBroadcastDialog({ course, onClose }: { course: { id: strin
     setBusy(true);
     try {
       const r = await send({ data: { courseId: course.id, subject, message } });
-      toast.success(`Nachricht an ${r.sent} von ${r.total} Eltern gesendet`);
+      toast.success(`Nachricht an ${r.sent} von ${r.total} Eltern per E-Mail gesendet, ${r.pushSent} Handys per Mitteilung erreicht`);
       onClose();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Senden fehlgeschlagen");
@@ -54,6 +58,7 @@ export function CourseBroadcastDialog({ course, onClose }: { course: { id: strin
           <DialogTitle>Eilnachricht an Kurs</DialogTitle>
           <DialogDescription>
             {course?.name} · {count == null ? "…" : `${count} Eltern per E-Mail erreichbar`}
+            {count != null && pushCount != null && ` · ${pushCount} von ${count} Familien zusätzlich per Handy-Mitteilung erreichbar`}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">

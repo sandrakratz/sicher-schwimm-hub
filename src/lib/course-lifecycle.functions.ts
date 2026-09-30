@@ -200,7 +200,15 @@ export const broadcastCourseMessage = createServerFn({ method: 'POST' })
       })
       if (r.queued) sent++
     }
+    // Zusätzlich als Mitteilung aufs Handy (nur an Familien, die das aktiviert haben)
+    const { sendPushToCourse } = await import('@/lib/push.server')
+    const push = await sendPushToCourse(course.id, {
+      title: data.subject,
+      body: data.message.replace(/\s+/g, ' ').slice(0, 160),
+      url: '/',
+      tag: `course-broadcast-${course.id}`,
+    }).catch((e) => { console.error('push broadcast failed', e); return { sent: 0, devices: 0 } })
     const { logAudit } = await import('@/lib/audit.server')
-    await logAudit(null, context.userId, { action: 'course.broadcast', entity: 'courses', entity_id: course.id, metadata: { subject: data.subject, sent } })
-    return { sent, total: seen.size }
+    await logAudit(null, context.userId, { action: 'course.broadcast', entity: 'courses', entity_id: course.id, metadata: { subject: data.subject, sent, push_sent: push.sent } })
+    return { sent, total: seen.size, pushSent: push.sent, pushDevices: push.devices }
   })

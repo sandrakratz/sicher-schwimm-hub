@@ -28,7 +28,8 @@ import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
-import { Megaphone, ChevronDown, MoreHorizontal } from "lucide-react";
+import { Megaphone, ChevronDown, MoreHorizontal, Smartphone } from "lucide-react";
+import { sendPushInvites } from "@/lib/push.functions";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type CourseCounts = { confirmed: number; waiting: number; unpaid: number; overdue: number; sessions: number; staffed: number; offered?: number };
@@ -251,6 +252,19 @@ function Page() {
   const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
   const remindFn = useServerFn(sendPaymentReminders);
   const [reminding, setReminding] = useState(false);
+  const pushInvitesFn = useServerFn(sendPushInvites);
+  const [inviting, setInviting] = useState(false);
+
+  async function handleSendPushInvites() {
+    if (!confirm("Info-Mail zu den Handy-Mitteilungen jetzt an alle Familien mit laufenden Kursen senden? Jede Familie bekommt diese Mail nur ein einziges Mal.")) return;
+    setInviting(true);
+    try {
+      const r = await pushInvitesFn();
+      toast.success(r.sent > 0 ? `Info-Mail an ${r.sent} Familien gesendet` : "Keine neuen Familien – alle haben die Info-Mail bereits erhalten");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Senden fehlgeschlagen");
+    } finally { setInviting(false); }
+  }
 
   async function handleSendReminders(courseId?: string | null) {
     if (!confirm("Zahlungserinnerung an alle offenen Fälle (Sofortzahlung erwartet oder überfällig) senden?")) return;
@@ -1055,6 +1069,9 @@ function Page() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" disabled={proofBusy} onClick={downloadTrainerProof}>
               <FileSpreadsheet className="h-4 w-4" /> {proofBusy ? "Erstelle…" : `Trainer-Nachweis ${new Date().getFullYear()}`}
+            </Button>
+            <Button variant="outline" disabled={inviting} onClick={handleSendPushInvites} title="Einmalige Info-Mail mit Link zum Aktivieren der Handy-Mitteilungen">
+              <Smartphone className="h-4 w-4" /> {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
             </Button>
             <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
           </div>
