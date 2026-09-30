@@ -973,7 +973,8 @@ function Page() {
         <div className="grid gap-3 sm:grid-cols-3 text-xs">
           <div>
             <div className="text-muted-foreground mb-1">Belegung</div>
-            <div className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}{max != null ? ` / ${max}` : ""} Plätze{cnt.waiting > 0 && <span className="font-normal text-muted-foreground"> · +{cnt.waiting} Warteliste</span>}</div>
+            <div className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}{max != null ? ` / ${max}` : ""} belegt{cnt.waiting > 0 && <span className="font-normal text-muted-foreground"> · +{cnt.waiting} Warteliste</span>}</div>
+            {max != null && <div className="text-muted-foreground">{(cnt.offered ?? 0) > 0 && <>{cnt.offered} reserviert · </>}<span className={max - cnt.confirmed - (cnt.offered ?? 0) > 0 ? "text-success font-semibold" : ""}>{Math.max(0, max - cnt.confirmed - (cnt.offered ?? 0))} frei</span></div>}
             {max ? <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden"><div className={`h-full ${full ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} /></div> : null}
           </div>
           <div>
