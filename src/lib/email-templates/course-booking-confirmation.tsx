@@ -25,6 +25,7 @@ interface Props {
   payer_zip?: string
   payer_city?: string
   site_base_url?: string
+  push_url?: string
 }
 
 const row = { margin: '3px 0' as const }
@@ -195,6 +196,8 @@ const Email = (p: Props) => {
               <Text style={{ whiteSpace: 'pre-line' }}>{p.course_info}</Text>
             </>
           )}
+
+          {!waitlist && p.push_url && <PushHint url={p.push_url} />}
 
           <Text style={{ marginTop: '16px' }}>
             Vielen Dank für Ihre Anmeldung. Wir freuen uns auf die Teilnahme am Schwimmkurs.
