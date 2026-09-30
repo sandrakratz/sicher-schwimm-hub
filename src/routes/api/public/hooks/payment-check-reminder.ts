@@ -36,7 +36,7 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
         const { data: participants, error } = await supabaseAdmin
           .from('course_participants')
           .select(
-            'id,participant_name,participant_email,price_amount,document_no,document_issued_at,created_at,payment_due_date,payer_street,payer_zip,payer_city,course_id,courses(name,starts_on,ends_on,schedule,location,unit_count,payment_due_days,course_programs(name))',
+            'id,participant_name,participant_email,price_amount,document_no,document_issued_at,created_at,payment_due_date,payer_street,payer_zip,payer_city,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,schedule,location,unit_count,payment_due_days,course_programs(name))',
           )
           .eq('online_booking', true)
           .eq('status', 'confirmed')

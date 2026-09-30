@@ -8,7 +8,7 @@ const tokenSchema = z.string().regex(/^[a-f0-9]{20,80}$/)
 async function participantByToken(token: string) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { data } = await supabaseAdmin.from('course_participants')
-    .select('id,participant_name,participant_email,courses(name)').eq('push_token', token).maybeSingle()
+    .select('id,participant_name,participant_email,courses!course_participants_course_id_fkey(name)').eq('push_token', token).maybeSingle()
   return data
 }
 
