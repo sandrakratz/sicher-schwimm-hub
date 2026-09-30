@@ -12,6 +12,8 @@ import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { getWaitlistOffer, respondWaitlistOffer } from "@/lib/waitlist.functions";
 import { useContactDefaults } from "@/hooks/use-contact-defaults";
+import { Textarea } from "@/components/ui/textarea";
+import { StayChoice } from "./warteliste_.rueckfrage";
 
 export const Route = createFileRoute("/warteliste_/antwort")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -42,7 +44,12 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 function OfferResponsePage() {
   const { token, aktion } = useSearch({ from: "/warteliste_/antwort" });
-  const [result, setResult] = useState<null | { accepted: boolean; immediate?: boolean; dueDate?: string }>(null);
+  const [result, setResult] = useState<null | { accepted: boolean; immediate?: boolean; dueDate?: string; deactivated?: boolean; stay?: boolean }>(null);
+  const [stay, setStay] = useState<boolean | null>(null);
+  const [when, setWhen] = useState<"now" | "date">("now");
+  const [fromDate, setFromDate] = useState("");
+  const [reason, setReason] = useState("");
+  const [askDecline, setAskDecline] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -105,6 +112,19 @@ function OfferResponsePage() {
             <p className="mt-3 text-muted-foreground">
               Danke für Ihre Rückmeldung – wir geben den Platz an die nächste Familie weiter.
             </p>
+            {result.deactivated ? (
+              <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                Sie haben ein Platzangebot nun zum 3. Mal abgesagt. Um allen wartenden Familien eine faire Chance zu
+                geben, wurde Ihr Wartelistenplatz deaktiviert. Eine erneute Kursbuchung ist nur nach Rücksprache mit
+                unserem Vorstand möglich (info@sicher-schwimmen.com).
+              </p>
+            ) : (
+              <p className="mt-3 text-muted-foreground">
+                {result.stay
+                  ? "Ihr Kind bleibt auf der Warteliste – wir melden uns, sobald wieder ein passender Platz frei ist."
+                  : "Ihr Kind wurde von der Warteliste genommen."}
+              </p>
+            )}
           </>
         )}
         <p className="mt-6 text-sm">
@@ -132,6 +152,10 @@ function OfferResponsePage() {
   }
 
   async function submit(action: "accept" | "decline", form?: HTMLFormElement) {
+    if (action === "decline") {
+      if (stay === null) return toast.error("Bitte angeben, ob Ihr Kind auf der Warteliste bleiben soll.");
+      if (stay && when === "date" && !fromDate) return toast.error("Bitte ein Datum wählen.");
+    }
     setLoading(true);
     try {
       const fd = form ? new FormData(form) : null;
@@ -139,6 +163,9 @@ function OfferResponsePage() {
         data: {
           token,
           action,
+          ...(action === "decline"
+            ? { stay: stay === true, availableFrom: stay && when === "date" ? fromDate : null, reason: reason.trim() || null }
+            : {}),
           street: String(fd?.get("street") || ""),
           zip: String(fd?.get("zip") || ""),
           city: String(fd?.get("city") || ""),
@@ -158,6 +185,8 @@ function OfferResponsePage() {
         accepted: res.action === "accept",
         immediate: "immediatePayment" in res ? res.immediatePayment : undefined,
         dueDate: "paymentDueDate" in res ? res.paymentDueDate : undefined,
+        deactivated: "deactivated" in res ? res.deactivated : undefined,
+        stay: stay === true,
       });
     } catch (err) {
       console.error(err);
@@ -209,9 +238,17 @@ function OfferResponsePage() {
         </Card>
       )}
 
-      {aktion === "absage" ? (
-        <div className="mt-8 space-y-4">
-          <p className="text-muted-foreground">Möchten Sie den Platz wirklich absagen?</p>
+      {aktion === "absage" || askDecline ? (
+        <div className="mt-8 space-y-5">
+          <p className="text-muted-foreground">Schade! Bevor Sie absagen, beantworten Sie uns bitte kurz:</p>
+          <StayChoice stay={stay} setStay={setStay} when={when} setWhen={setWhen} date={fromDate} setDate={setFromDate} />
+          <div className="space-y-2">
+            <Label htmlFor="reason">Grund / Anmerkung (optional)</Label>
+            <Textarea id="reason" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Hinweis: Nach 3 abgesagten oder unbeantworteten Platzangeboten wird der Wartelistenplatz automatisch deaktiviert.
+          </p>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" disabled={loading} onClick={() => submit("decline")}>
               Platz absagen
@@ -251,7 +288,7 @@ function OfferResponsePage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <SubmitButton loading={loading}>Platz verbindlich annehmen</SubmitButton>
-            <Button type="button" variant="outline" disabled={loading} onClick={() => submit("decline")}>
+            <Button type="button" variant="outline" disabled={loading} onClick={() => setAskDecline(true)}>
               Platz absagen
             </Button>
           </div>

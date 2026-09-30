@@ -36,6 +36,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as KurseSlugRouteImport } from './routes/kurse_.$slug'
 import { Route as RatgeberSeepferdchenAnforderungenRouteImport } from './routes/ratgeber.seepferdchen-anforderungen'
 import { Route as WartelisteAntwortRouteImport } from './routes/warteliste_.antwort'
+import { Route as WartelisteRueckfrageRouteImport } from './routes/warteliste_.rueckfrage'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAnfragenRouteImport } from './routes/_authenticated/admin/anfragen'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
@@ -213,6 +214,11 @@ const RatgeberSeepferdchenAnforderungenRoute =
 const WartelisteAntwortRoute = WartelisteAntwortRouteImport.update({
   id: '/warteliste_/antwort',
   path: '/warteliste/antwort',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WartelisteRueckfrageRoute = WartelisteRueckfrageRouteImport.update({
+  id: '/warteliste_/rueckfrage',
+  path: '/warteliste/rueckfrage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
@@ -490,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/kurse/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
   '/warteliste/antwort': typeof WartelisteAntwortRoute
+  '/warteliste/rueckfrage': typeof WartelisteRueckfrageRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -560,6 +567,7 @@ export interface FileRoutesByTo {
   '/kurse/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
   '/warteliste/antwort': typeof WartelisteAntwortRoute
+  '/warteliste/rueckfrage': typeof WartelisteRueckfrageRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -633,6 +641,7 @@ export interface FileRoutesById {
   '/kurse_/$slug': typeof KurseSlugRoute
   '/ratgeber/seepferdchen-anforderungen': typeof RatgeberSeepferdchenAnforderungenRoute
   '/warteliste_/antwort': typeof WartelisteAntwortRoute
+  '/warteliste_/rueckfrage': typeof WartelisteRueckfrageRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
@@ -706,6 +715,7 @@ export interface FileRouteTypes {
     | '/kurse/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
     | '/warteliste/antwort'
+    | '/warteliste/rueckfrage'
     | '/admin/anfragen'
     | '/admin/audit'
     | '/admin/benutzer'
@@ -776,6 +786,7 @@ export interface FileRouteTypes {
     | '/kurse/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
     | '/warteliste/antwort'
+    | '/warteliste/rueckfrage'
     | '/admin/anfragen'
     | '/admin/audit'
     | '/admin/benutzer'
@@ -848,6 +859,7 @@ export interface FileRouteTypes {
     | '/kurse_/$slug'
     | '/ratgeber/seepferdchen-anforderungen'
     | '/warteliste_/antwort'
+    | '/warteliste_/rueckfrage'
     | '/_authenticated/admin/anfragen'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
@@ -920,6 +932,7 @@ export interface RootRouteChildren {
   KurseSlugRoute: typeof KurseSlugRoute
   RatgeberSeepferdchenAnforderungenRoute: typeof RatgeberSeepferdchenAnforderungenRoute
   WartelisteAntwortRoute: typeof WartelisteAntwortRoute
+  WartelisteRueckfrageRoute: typeof WartelisteRueckfrageRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
@@ -1123,6 +1136,13 @@ declare module '@tanstack/react-router' {
       path: '/warteliste/antwort'
       fullPath: '/warteliste/antwort'
       preLoaderRoute: typeof WartelisteAntwortRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/warteliste_/rueckfrage': {
+      id: '/warteliste_/rueckfrage'
+      path: '/warteliste/rueckfrage'
+      fullPath: '/warteliste/rueckfrage'
+      preLoaderRoute: typeof WartelisteRueckfrageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -1545,6 +1565,7 @@ const rootRouteChildren: RootRouteChildren = {
   RatgeberSeepferdchenAnforderungenRoute:
     RatgeberSeepferdchenAnforderungenRoute,
   WartelisteAntwortRoute: WartelisteAntwortRoute,
+  WartelisteRueckfrageRoute: WartelisteRueckfrageRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,

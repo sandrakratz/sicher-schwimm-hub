@@ -1475,9 +1475,13 @@ export type Database = {
           child_name: string | null
           course_id: string | null
           created_at: string
+          decline_count: number
+          followup_expires_at: string | null
+          followup_token: string | null
           gdpr_consent: boolean
           id: string
           is_member: boolean | null
+          last_decline_reason: string | null
           membership_id: string | null
           notes: string | null
           offer_course_id: string | null
@@ -1502,9 +1506,13 @@ export type Database = {
           child_name?: string | null
           course_id?: string | null
           created_at?: string
+          decline_count?: number
+          followup_expires_at?: string | null
+          followup_token?: string | null
           gdpr_consent?: boolean
           id?: string
           is_member?: boolean | null
+          last_decline_reason?: string | null
           membership_id?: string | null
           notes?: string | null
           offer_course_id?: string | null
@@ -1529,9 +1537,13 @@ export type Database = {
           child_name?: string | null
           course_id?: string | null
           created_at?: string
+          decline_count?: number
+          followup_expires_at?: string | null
+          followup_token?: string | null
           gdpr_consent?: boolean
           id?: string
           is_member?: boolean | null
+          last_decline_reason?: string | null
           membership_id?: string | null
           notes?: string | null
           offer_course_id?: string | null

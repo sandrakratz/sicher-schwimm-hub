@@ -466,6 +466,7 @@ export function WaitlistAdmin() {
       notes?: string | null;
       blocklist?: boolean;
       blocklistReason?: string;
+      declineCount?: number;
     }) => updateWaitlistEntry({ data: v }),
 
     onSuccess: () => {
@@ -533,6 +534,65 @@ export function WaitlistAdmin() {
           </Button>
         </div>
       </div>
+
+      <CollapsibleCard
+        storageKey="waitlist-rules-info"
+        defaultOpen={false}
+        title="ℹ️ Leitfaden: Fristen, Regeln & Folgen der Warteliste"
+        subtitle="Für den Vorstand – so arbeitet die Warteliste automatisch"
+      >
+        <div className="space-y-3 text-sm">
+          <div>
+            <p className="font-semibold">1. Reihenfolge der Platzvergabe</p>
+            <ul className="ml-5 list-disc text-muted-foreground">
+              <li>Aktive Vereinsmitglieder zuerst, danach nach Eingangsdatum.</li>
+              <li>Nur Kinder, die zum Kursbeginn das Mindestalter erreichen.</li>
+              <li>Kinder mit „Erst zuteilen ab“ erst für Kurse ab diesem Datum.</li>
+              <li>Programme mit ausgeschalteter Warteliste nehmen keine neuen Einträge an.</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">2. Platzangebot</p>
+            <ul className="ml-5 list-disc text-muted-foreground">
+              <li>Eltern erhalten eine E-Mail mit Zusage-/Absage-Link. Frist: laut Programm (Standard 3 Tage).</li>
+              <li>Offene Angebote zählen als reservierte Plätze.</li>
+              <li>Zusage = verbindliche Buchung mit Zahlungsfrist; der Absage-Zähler wird auf 0 gesetzt.</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">3. Absage durch die Eltern</p>
+            <ul className="ml-5 list-disc text-muted-foreground">
+              <li>Der Platz geht sofort an das nächste passende Kind.</li>
+              <li>Eltern entscheiden direkt: auf der Warteliste bleiben (sofort oder ab Wunschdatum) oder abmelden.</li>
+              <li>Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">4. Frist ohne Antwort abgelaufen</p>
+            <ul className="ml-5 list-disc text-muted-foreground">
+              <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
+              <li>Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist.</li>
+              <li>Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Status „Entfernt“). Keine automatische Sperrliste.</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">5. Die 3-Absagen-Regel</p>
+            <ul className="ml-5 list-disc text-muted-foreground">
+              <li>Beim 3. abgesagten oder unbeantworteten Angebot wird der Wartelistenplatz automatisch deaktiviert.</li>
+              <li>Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.</li>
+              <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold">6. Was der Vorstand jederzeit tun kann</p>
+            <ul className="ml-5 list-disc text-muted-foreground">
+              <li>Zähler zurücksetzen (z. B. bei Krankheit) über den Button „Zähler zurücksetzen“.</li>
+              <li>Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.</li>
+              <li>Familien, die Angebote wiederholt ablaufen lassen, bewusst manuell auf die Sperrliste setzen.</li>
+            </ul>
+          </div>
+        </div>
+      </CollapsibleCard>
 
       <div className="flex flex-wrap gap-2 border-b pb-2">
         {([
@@ -697,6 +757,32 @@ export function WaitlistAdmin() {
                         <Badge className={st.className} variant="secondary">
                           {st.label}
                         </Badge>
+                        {Number((e as Record<string, unknown>)["decline_count"] ?? 0) > 0 && (() => {
+                          const n = Number((e as Record<string, unknown>)["decline_count"]);
+                          const cls = n >= 3 ? "bg-red-100 text-red-900" : n === 2 ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-700";
+                          return (
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              <Badge variant="secondary" className={cls}>
+                                {n}× abgesagt{n >= 3 ? " – deaktiviert" : ""}
+                              </Badge>
+                              <button
+                                type="button"
+                                className="text-xs text-primary underline"
+                                onClick={() => {
+                                  if (!confirm(`Absage-Zähler für ${e.child_name} auf 0 zurücksetzen?`)) return;
+                                  update.mutate({ entryId: e.id, declineCount: 0, appendNote: "Absage-Zähler vom Vorstand zurückgesetzt." });
+                                }}
+                              >
+                                Zähler zurücksetzen
+                              </button>
+                            </div>
+                          );
+                        })()}
+                        {!!(e as Record<string, unknown>)["followup_expires_at"] && ["declined", "expired"].includes(e.status) && (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            Rückfrage läuft bis {formatDateBerlin(String((e as Record<string, unknown>)["followup_expires_at"]))}
+                          </div>
+                        )}
                         {e.status === "offered" && e.offer_expires_at && (
                           <div className="mt-1 text-xs text-muted-foreground">
                             {courseName(e.offer_course_id)} · Frist: {formatDateBerlin(e.offer_expires_at)}
