@@ -13,6 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, RefreshCw, Users, HandHelping, X, Plus } from "lucide-react";
+import { CourseRosterMatrix } from "@/components/admin/CourseRosterMatrix";
+
+function shortDate(d: string) {
+  return new Date(d + "T12:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
 
 export const Route = createFileRoute("/_authenticated/admin/kalender")({
   beforeLoad: async () => {
@@ -61,6 +66,12 @@ function Page() {
   const [q, setQ] = useState("");
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [picker, setPicker] = useState<string | null>(null);
+  const [view, setView] = useState<"course" | "date">("course");
+  const [focusCourse, setFocusCourse] = useState<string | null>(null);
+  useEffect(() => {
+    const k = new URLSearchParams(window.location.search).get("kurs");
+    if (k) { setFocusCourse(k); setView("course"); }
+  }, []);
   const trainersFn = useServerFn(listTrainers);
   const [trainers, setTrainers] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => { trainersFn().then((t: any) => setTrainers(t || [])).catch(() => {}); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -119,6 +130,29 @@ function Page() {
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtered]);
 
+  const byCourse = useMemo(() => {
+    const map = new Map<string, CalendarEntry[]>();
+    filtered.forEach((e) => {
+      if (e.kind !== "session" || !e.courseId) return;
+      if (focusCourse && e.courseId !== focusCourse) return;
+      map.set(e.courseId, [...(map.get(e.courseId) ?? []), e]);
+    });
+    return [...map.entries()]
+      .map(([k, l]) => [k, l.sort((a, b) => a.date.localeCompare(b.date))] as const)
+      .sort((a, b) => a[1][0].date.localeCompare(b[1][0].date));
+  }, [filtered, focusCourse]);
+
+  function applyChange(sessionId: string, trainerId: string, on: boolean) {
+    const name = trainers.find((t) => t.id === trainerId)?.name ?? "Unbekannt";
+    setEntries((prev) => prev.map((x) => {
+      if (x.kind !== "session" || x.id !== sessionId) return x;
+      const assigned = new Set(x.assignedIds ?? []);
+      const tr = x.trainers.filter((t) => t.id !== trainerId);
+      if (on) { assigned.add(trainerId); tr.push({ id: trainerId, name }); } else assigned.delete(trainerId);
+      return { ...x, assignedIds: [...assigned], trainers: tr };
+    }));
+  }
+
   const openHelperSlots = filtered.reduce(
     (sum, e) => sum + e.helperNeed.reduce((s, g) => s + Math.max(0, g.needed - g.filled), 0),
     0,
@@ -168,6 +202,10 @@ function Page() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-md border p-0.5">
+          <Button size="sm" variant={view === "course" ? "default" : "ghost"} onClick={() => setView("course")}>Nach Kursen</Button>
+          <Button size="sm" variant={view === "date" ? "default" : "ghost"} onClick={() => setView("date")}>Nach Terminen</Button>
+        </div>
         <Select value={scope} onValueChange={(v: "upcoming" | "all") => setScope(v)}>
           <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -200,11 +238,26 @@ function Page() {
       </div>
 
       {loading && <div className="text-sm text-muted-foreground">Kalender wird geladen…</div>}
-      {!loading && byMonth.length === 0 && (
+      {!loading && (view === "date" ? byMonth.length === 0 : byCourse.length === 0) && (
         <div className="text-sm text-muted-foreground">Keine Termine gefunden.</div>
       )}
 
-      {byMonth.map(([mk, days]) => (
+      {view === "course" && byCourse.map(([cid, list]) => {
+        const incomplete = list.filter((s) => (s.assignedIds ?? []).length < 2).length;
+        return (
+          <CollapsibleCard
+            key={cid}
+            storageKey={`cal-course-${cid}`}
+            title={list[0].title}
+            subtitle={`${list.length} Termin(e) · ${shortDate(list[0].date)} – ${shortDate(list[list.length - 1].date)}${list[0].location ? ` · ${list[0].location}` : ""}${incomplete ? ` · ⚠️ ${incomplete} unvollständig` : " · ✓ besetzt"}`}
+            defaultOpen={focusCourse === cid}
+          >
+            <CourseRosterMatrix sessions={list} trainers={trainers} onChanged={applyChange} />
+          </CollapsibleCard>
+        );
+      })}
+
+      {view === "date" && byMonth.map(([mk, days]) => (
         <CollapsibleCard
           key={mk}
           storageKey={`cal-${mk}`}
