@@ -25,6 +25,7 @@ import { template as courseTransfer } from './course-transfer'
 import { template as courseBroadcast } from './course-broadcast'
 import { template as accountActivated } from './account-activated'
 import { template as majorityNotice } from './majority-notice'
+import { template as pushInvite } from './push-invite'
 
 
 
@@ -39,6 +40,7 @@ export interface TemplateEntry {
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'membership-application': membershipApplication,
+  'push-invite': pushInvite,
   'course-request': courseRequest,
   'course-assignment': courseAssignment,
   'contact-message': contactMessage,
