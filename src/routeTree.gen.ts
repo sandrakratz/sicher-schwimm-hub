@@ -21,6 +21,7 @@ import { Route as KursbedingungenRouteImport } from './routes/kursbedingungen'
 import { Route as KurseRouteImport } from './routes/kurse'
 import { Route as MitgliedschaftRouteImport } from './routes/mitgliedschaft'
 import { Route as MitgliedsordnungRouteImport } from './routes/mitgliedsordnung'
+import { Route as MitteilungenRouteImport } from './routes/mitteilungen'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SatzungRouteImport } from './routes/satzung'
@@ -138,6 +139,11 @@ const MitgliedschaftRoute = MitgliedschaftRouteImport.update({
 const MitgliedsordnungRoute = MitgliedsordnungRouteImport.update({
   id: '/mitgliedsordnung',
   path: '/mitgliedsordnung',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MitteilungenRoute = MitteilungenRouteImport.update({
+  id: '/mitteilungen',
+  path: '/mitteilungen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsRoute = NewsRouteImport.update({
@@ -481,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/mitteilungen': typeof MitteilungenRoute
   '/news': typeof NewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
@@ -553,6 +560,7 @@ export interface FileRoutesByTo {
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/mitteilungen': typeof MitteilungenRoute
   '/news': typeof NewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
@@ -626,6 +634,7 @@ export interface FileRoutesById {
   '/kurse': typeof KurseRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
+  '/mitteilungen': typeof MitteilungenRoute
   '/news': typeof NewsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/satzung': typeof SatzungRoute
@@ -700,6 +709,7 @@ export interface FileRouteTypes {
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
+    | '/mitteilungen'
     | '/news'
     | '/reset-password'
     | '/satzung'
@@ -772,6 +782,7 @@ export interface FileRouteTypes {
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
+    | '/mitteilungen'
     | '/news'
     | '/reset-password'
     | '/satzung'
@@ -844,6 +855,7 @@ export interface FileRouteTypes {
     | '/kurse'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
+    | '/mitteilungen'
     | '/news'
     | '/reset-password'
     | '/satzung'
@@ -918,6 +930,7 @@ export interface RootRouteChildren {
   KurseRoute: typeof KurseRoute
   MitgliedschaftRoute: typeof MitgliedschaftRoute
   MitgliedsordnungRoute: typeof MitgliedsordnungRoute
+  MitteilungenRoute: typeof MitteilungenRoute
   NewsRoute: typeof NewsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SatzungRoute: typeof SatzungRoute
@@ -1031,6 +1044,13 @@ declare module '@tanstack/react-router' {
       path: '/mitgliedsordnung'
       fullPath: '/mitgliedsordnung'
       preLoaderRoute: typeof MitgliedsordnungRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mitteilungen': {
+      id: '/mitteilungen'
+      path: '/mitteilungen'
+      fullPath: '/mitteilungen'
+      preLoaderRoute: typeof MitteilungenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/news': {
@@ -1550,6 +1570,7 @@ const rootRouteChildren: RootRouteChildren = {
   KurseRoute: KurseRoute,
   MitgliedschaftRoute: MitgliedschaftRoute,
   MitgliedsordnungRoute: MitgliedsordnungRoute,
+  MitteilungenRoute: MitteilungenRoute,
   NewsRoute: NewsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SatzungRoute: SatzungRoute,
