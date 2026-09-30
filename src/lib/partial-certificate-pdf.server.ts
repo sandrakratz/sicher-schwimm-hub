@@ -204,7 +204,7 @@ export async function buildPartialCertificate(participantId: string, issuedOn: s
   const { data: p } = await supabaseAdmin
     .from("course_participants")
     .select(
-      "id,course_id,participant_name,participant_email,date_of_birth,exam_level,exam_criteria,exam_date,course_requests(parent_name),courses(name,location,ends_on)",
+      "id,course_id,participant_name,participant_email,date_of_birth,exam_level,exam_criteria,exam_date,course_requests(parent_name),courses!course_participants_course_id_fkey(name,location,ends_on)",
     )
     .eq("id", participantId)
     .maybeSingle();

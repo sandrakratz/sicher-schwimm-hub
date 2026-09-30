@@ -51,7 +51,7 @@ function Dashboard() {
         supabase.from("documents").select("id", { count: "exact", head: true }),
       ]);
       const today = new Date().toISOString().slice(0, 10);
-      const { data: cp } = await supabase.from("course_participants").select("id,courses(ends_on)")
+      const { data: cp } = await supabase.from("course_participants").select("id,courses!course_participants_course_id_fkey(ends_on)")
         .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`).neq("status", "cancelled");
       setCoursesCount(((cp as any[]) ?? []).filter((r) => !r.courses?.ends_on || r.courses.ends_on >= today).length);
 

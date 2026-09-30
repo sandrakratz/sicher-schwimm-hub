@@ -28,7 +28,7 @@ export const removeCourseParticipant = createServerFn({ method: 'POST' })
     const { data: part } = await supabaseAdmin
       .from('course_participants')
       .select(
-        'id,course_id,participant_name,participant_email,date_of_birth,paid,courses(name,starts_on)',
+        'id,course_id,participant_name,participant_email,date_of_birth,paid,courses!course_participants_course_id_fkey(name,starts_on)',
       )
       .eq('id', data.participantId)
       .maybeSingle()

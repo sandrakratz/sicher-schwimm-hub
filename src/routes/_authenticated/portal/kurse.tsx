@@ -90,7 +90,7 @@ function Page() {
       if (!u.user) { setLoading(false); return; }
       const { data } = await supabase
         .from("course_participants")
-        .select("id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,courses(id,name,starts_on,ends_on,schedule,location,duration,target_group)")
+        .select("id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,courses!course_participants_course_id_fkey(id,name,starts_on,ends_on,schedule,location,duration,target_group)")
         .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`)
         .order("created_at", { ascending: false });
       setRows((data as any) || []);
