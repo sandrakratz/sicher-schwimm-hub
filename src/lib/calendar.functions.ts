@@ -17,6 +17,10 @@ export type CalendarEntry = {
   helperNeed: { name: string; needed: number; filled: number }[];
   courseId?: string;
   eventId?: string;
+  /** Trainer:innen aus dem Dienstplan (entfernbar). */
+  assignedIds?: string[];
+  /** Verfügbarkeitsmeldungen zu diesem Termin. */
+  availability?: { id: string; available: boolean }[];
 };
 
 function hhmm(v: string | null | undefined): string | null {
@@ -55,7 +59,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: sessions }, { data: courses }, { data: profiles }, { data: assigns }, { data: events }, { data: groups }, { data: signups }] =
+    const [{ data: sessions }, { data: courses }, { data: profiles }, { data: assigns }, { data: events }, { data: groups }, { data: signups }, { data: avail }] =
       await Promise.all([
         supabaseAdmin
           .from("course_sessions")
@@ -69,7 +73,14 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
         supabaseAdmin
           .from("event_shift_signups")
           .select("event_id,group_id,trainer_id,helper_name,available,starts_at,ends_at"),
+        supabaseAdmin.from("course_session_availability").select("session_id,trainer_id,available"),
       ]);
+    const availBySession = new Map<string, { id: string; available: boolean }[]>();
+    (avail || []).forEach((a) => {
+      const l = availBySession.get(a.session_id as string) ?? [];
+      l.push({ id: a.trainer_id as string, available: !!a.available });
+      availBySession.set(a.session_id as string, l);
+    });
 
     const nameOf = new Map<string, string>();
     (profiles || []).forEach((p) => {
@@ -112,6 +123,8 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
         helpers: [],
         helperNeed: [],
         courseId: s.course_id as string,
+        assignedIds: [...(perSession.get(s.id as string) ?? [])],
+        availability: availBySession.get(s.id as string) ?? [],
       });
     });
 

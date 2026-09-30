@@ -170,7 +170,13 @@ export const broadcastCourseMessage = createServerFn({ method: 'POST' })
     message: z.string().trim().min(5).max(4000),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId)
+    // Vorstand/Admin immer; Trainer:innen nur für Kurse, in denen sie eingeteilt sind.
+    const { data: staff } = await context.supabase.rpc('is_staff', { _user_id: context.userId })
+    if (!staff) {
+      const { data: isTrainer } = await context.supabase.rpc('has_role', { _user_id: context.userId, _role: 'trainer' })
+      const { data: ofCourse } = await context.supabase.rpc('is_trainer_of_course', { _trainer_id: context.userId, _course_id: data.courseId })
+      if (!isTrainer || !ofCourse) throw new Error('Forbidden')
+    }
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { data: course } = await supabaseAdmin.from('courses').select('id,name').eq('id', data.courseId).maybeSingle()
     if (!course) throw new Error('Kurs nicht gefunden')
