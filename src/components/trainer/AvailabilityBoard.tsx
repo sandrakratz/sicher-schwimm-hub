@@ -144,11 +144,23 @@ export function AvailabilityBoard() {
     });
   }
 
-  async function setAll(courseId: string, value: boolean) {
+  async function setAll(courseId: string, value: boolean | null) {
     if (!me) return;
     const ids = sessions.filter(s => s.course_id === courseId).map(s => s.id);
     if (ids.length === 0) return;
     setBusy(courseId);
+    if (value === null) {
+      const { error } = await supabase
+        .from("course_session_availability")
+        .delete()
+        .eq("trainer_id", me)
+        .in("session_id", ids);
+      setBusy(null);
+      if (error) { toast.error(error.message); return; }
+      setAvail(a => a.filter(x => !(x.trainer_id === me && ids.includes(x.session_id))));
+      toast.success("Alle Angaben für diesen Kurs zurückgesetzt");
+      return;
+    }
     const { error } = await supabase
       .from("course_session_availability")
       .upsert(ids.map(id => ({ session_id: id, trainer_id: me, available: value })), { onConflict: "session_id,trainer_id" });
@@ -281,6 +293,13 @@ export function AvailabilityBoard() {
               onClick={() => setAvailability(s.id, state === false ? null : false)}
               className={`min-h-11 flex-1 sm:flex-none ${state === false ? "border-transparent bg-red-600 text-white hover:bg-red-700" : ""}`}>
               <X className="h-4 w-4" /> Kann nicht
+            </Button>
+          )}
+          {!opts.compact && state !== null && (
+            <Button size="sm" variant="ghost" disabled={busy === s.id}
+              onClick={() => setAvailability(s.id, null)}
+              className="min-h-11 flex-1 sm:flex-none" title="Angabe löschen – wieder offen">
+              Zurücksetzen
             </Button>
           )}
         </div>
