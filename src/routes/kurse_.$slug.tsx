@@ -15,7 +15,27 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Clock, MapPin, Users, Tag, CalendarDays } from "lucide-react";
+import { Clock, MapPin, Users, Tag, CalendarDays, ChevronRight, CheckCircle2, HelpCircle, ClipboardList, Waves, Star, Baby, ArrowDown } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+function InfoItem({ value, icon: Icon, title, subtitle, children }: {
+  value: string; icon: typeof Users; title: string; subtitle: string; children: React.ReactNode;
+}) {
+  return (
+    <AccordionItem value={value} className="rounded-xl bg-card shadow-soft border-0 px-5">
+      <AccordionTrigger className="hover:no-underline py-4">
+        <div className="flex items-center gap-4 text-left">
+          <span className="rounded-full bg-secondary p-2.5"><Icon className="h-5 w-5 text-primary" /></span>
+          <span>
+            <span className="block font-display text-lg font-bold text-primary-deep">{title}</span>
+            <span className="block text-sm font-normal text-muted-foreground">{subtitle}</span>
+          </span>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="text-sm text-muted-foreground pl-14">{children}</AccordionContent>
+    </AccordionItem>
+  );
+}
 import { toast } from "sonner";
 import { BILLING } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
@@ -165,117 +185,126 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
     waitlistCount: program.waitlist_count ?? 0,
   });
 
+  const freeTotal = program.free_slots_total ?? program.terms.reduce((s, t) => s + (t.is_full ? 0 : (t.free_slots ?? 0)), 0);
+  const hasFree = openTerms > 0;
+  const scrollToTerms = () => document.getElementById("termine")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const waitlistLink = (variant: "outline" | "accent" = "outline", full = false) =>
+    program.waitlist_open
+      ? <Button asChild variant={variant} className={full ? "w-full" : ""}><Link to="/warteliste" search={{ programm: program.slug }}>Auf die Warteliste <ChevronRight className="h-4 w-4" /></Link></Button>
+      : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>;
+
+  const facts: { icon: typeof Tag; label: string; value: React.ReactNode }[] = [];
+  if (program.price_member != null || program.price_non_member != null) {
+    facts.push({ icon: Tag, label: "Preis", value: (
+      <>
+        {program.price_non_member != null && <span className="font-semibold text-foreground">{formatPrice(program.price_non_member)}</span>}
+        {program.price_member != null && <span className="block text-xs text-primary">{formatPrice(program.price_member)} für Mitglieder</span>}
+      </>
+    ) });
+  }
+  if (program.location) facts.push({ icon: MapPin, label: "Ort", value: program.location });
+  if (program.age_range) facts.push({ icon: Baby, label: "Alter", value: program.age_range });
+  if (program.duration) facts.push({ icon: CalendarDays, label: "Kursdauer", value: program.duration });
+  const maxP = program.terms.find((t) => t.max_participants != null)?.max_participants;
+  if (maxP) facts.push({ icon: Users, label: "Gruppengröße", value: `max. ${maxP} Kinder` });
+
   return (
     <PublicLayout>
-      <section className="bg-hero text-white py-16">
+      <section className="bg-hero text-white py-12 md:py-16">
         <div className="container mx-auto px-4">
-          <Link to="/kurse" className="text-white/80 text-sm underline">← Alle Kurse</Link>
+          <nav aria-label="Brotkrumen" className="text-white/80 text-sm flex items-center gap-1 flex-wrap">
+            <Link to="/" className="hover:underline">Start</Link>
+            <ChevronRight className="h-3 w-3" />
+            <Link to="/kurse" className="hover:underline">Kurse</Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-white">{program.name}</span>
+          </nav>
           <h1 className="font-display text-4xl md:text-5xl font-bold mt-3 mb-3">{program.name}</h1>
-          {paragraphs[0] && <p className="text-white/85 max-w-2xl">{paragraphs[0]}</p>}
+          {paragraphs[0] && <p className="text-white/85 max-w-2xl text-lg">{paragraphs[0]}</p>}
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-12 grid lg:grid-cols-3 gap-8">
+      <section className="container mx-auto px-4 py-10 grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm text-primary-deep">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <Badge variant="outline" className={availability.className}>{availability.label}</Badge>
-              <span className="text-xs text-primary-deep/80">{availability.detail}</span>
-            </div>
-            {openTerms > 0 ? (
-              <><strong>Freie Plätze verfügbar.</strong> Sie können unten einen Zeitraum auswählen und verbindlich buchen.</>
-            ) : program.terms.length > 0 ? (
-              <><strong>Aktuell ausgebucht.</strong> Gerne nehmen wir Sie auf die Warteliste auf – sobald ein Platz frei wird, erhalten Sie automatisch ein Angebot per E-Mail. Vereinsmitglieder werden bevorzugt berücksichtigt.</>
-            ) : (
-              <><strong>Termine in Planung.</strong> Sobald die Wasserzeiten feststehen, veröffentlichen wir hier die buchbaren Zeiträume.</>
-            )}
-          </div>
-
-          {paragraphs.length > 1 && (
-            <div className="space-y-3 text-muted-foreground">
-              {paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}
-            </div>
-          )}
-
-          {requirements.length > 0 && (
-            <Card className="border-0 shadow-soft">
-              <CardContent className="p-6">
-                <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Voraussetzungen</h2>
-                {requirements.length > 1 ? (
-                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                    {requirements.map((r, i) => <li key={i}>{r}</li>)}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{requirements[0]}</p>
-                )}
-                {program.min_age_years != null && (
-                  <p className="text-xs text-muted-foreground mt-3">
-                    Mindestalter zu Kursbeginn: {program.min_age_years} Jahre.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {program.course_info && (
-            <Card className="border-0 shadow-soft">
-              <CardContent className="p-6">
-                <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Ablauf &amp; Wichtiges für den Kurstag</h2>
-                <p className="whitespace-pre-line text-sm text-muted-foreground">{program.course_info}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          <h2 className="font-display text-2xl font-bold text-primary-deep">Buchbare Zeiträume</h2>
-
-          {program.terms.length === 0 ? (
-            <Card className="border-0 shadow-soft">
-              <CardContent className="p-6">
-                <p className="text-muted-foreground mb-4">
-                  Für diesen Kurs stehen aktuell keine Termine zur Buchung bereit. Gerne nehmen wir Sie auf die Warteliste auf.
+          {/* Verfügbarkeits-Banner */}
+          {hasFree ? (
+            <div className="rounded-xl border border-success/30 bg-success/10 p-5 flex items-center gap-4">
+              <CheckCircle2 className="h-10 w-10 text-success shrink-0" />
+              <div>
+                <p className="font-display text-xl md:text-2xl font-bold text-success">
+                  {freeTotal > 0 ? `${freeTotal} ${freeTotal === 1 ? "freier Platz" : "freie Plätze"} verfügbar!` : "Freie Plätze verfügbar!"}
                 </p>
-                {program.waitlist_open ? <Button asChild variant="accent"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>}
-              </CardContent>
-            </Card>
+                <p className="text-sm text-muted-foreground">Buchen Sie jetzt einen passenden Termin – oder setzen Sie Ihr Kind auf die Warteliste.</p>
+              </div>
+            </div>
           ) : (
-            <div className="space-y-4">
-              {program.terms.map((t) => (
-                <Card key={t.id} className="border-0 shadow-soft">
-                  <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-semibold text-primary-deep">{t.name}</span>
-                        {(() => {
-                          const st = termStatus(Boolean(t.is_full), t.free_slots);
-                          return <Badge variant="outline" className={st.className}>{st.label}</Badge>;
-                        })()}
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 text-sm text-primary-deep">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <Badge variant="outline" className={availability.className}>{availability.label}</Badge>
+              </div>
+              {program.terms.length > 0 ? (
+                <><strong>Aktuell ausgebucht.</strong> Gerne nehmen wir Sie auf die Warteliste auf – sobald ein Platz frei wird, erhalten Sie automatisch ein Angebot per E-Mail. Vereinsmitglieder werden bevorzugt berücksichtigt.</>
+              ) : (
+                <><strong>Termine in Planung.</strong> Sobald die Wasserzeiten feststehen, veröffentlichen wir hier die buchbaren Zeiträume.</>
+              )}
+            </div>
+          )}
+
+          {/* Buchbare Termine */}
+          <Card id="termine" className="border-0 shadow-soft scroll-mt-24">
+            <CardContent className="p-5 md:p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <CalendarDays className="h-9 w-9 text-primary shrink-0" />
+                <div>
+                  <h2 className="font-display text-2xl font-bold text-primary-deep">Buchbare Termine</h2>
+                  <p className="text-sm text-muted-foreground">Wählen Sie einfach einen passenden Zeitraum aus und buchen Sie verbindlich einen Platz.</p>
+                </div>
+              </div>
+
+              {program.terms.length === 0 ? (
+                <p className="text-muted-foreground">Für diesen Kurs stehen aktuell keine Termine zur Buchung bereit.</p>
+              ) : (
+                program.terms.map((t) => (
+                  <div key={t.id} className="rounded-xl border bg-card p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-start gap-2">
+                        <CalendarDays className="h-5 w-5 text-primary mt-1 shrink-0" />
+                        <div>
+                          <div className="font-display text-lg font-bold text-primary-deep">
+                            {t.starts_on ? formatDateBerlin(t.starts_on) : "Termin folgt"}
+                            {t.ends_on ? ` – ${formatDateBerlin(t.ends_on)}` : ""}
+                          </div>
+                          {t.name && <div className="text-xs text-muted-foreground">{t.name}</div>}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        {t.starts_on ? formatDateBerlin(t.starts_on) : "Termin folgt"}
-                        {t.ends_on ? ` – ${formatDateBerlin(t.ends_on)}` : ""}
+                      {t.schedule && <div className="text-sm text-muted-foreground flex items-center gap-2 pl-7"><Clock className="h-4 w-4" />{t.schedule}</div>}
+                      {t.location && <div className="text-sm text-muted-foreground flex items-start gap-2 pl-7"><MapPin className="h-4 w-4 mt-0.5" />{t.location}</div>}
+                      <div className="text-sm text-muted-foreground flex items-center gap-2 pl-7">
+                        <Users className="h-4 w-4" />
+                        {t.max_participants != null ? `Max. ${t.max_participants} Kinder pro Kurs` : "Plätze auf Anfrage"}
                       </div>
                       {t.start_tentative && (
-                        <div className="text-sm mt-1 rounded bg-accent/15 px-2 py-1 text-foreground">
+                        <div className="text-sm ml-7 rounded bg-accent/15 px-2 py-1 text-foreground">
                           Voraussichtlicher Kursstart – {t.tentative_note || "Termin unter Vorbehalt, kann sich noch verschieben"}. Bei Verschiebung informieren wir alle Eltern; der Kursumfang bleibt erhalten.
                         </div>
                       )}
                       {(t.min_participants || t.lanes) && (
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="text-xs text-muted-foreground pl-7">
                           {t.lanes ? `${t.lanes} ${t.lanes === 1 ? "Bahn" : "Bahnen"}` : ""}{t.lanes && t.min_participants ? " · " : ""}
                           {t.min_participants ? `Mindestens ${t.min_participants} Teilnehmende – sonst kann der Kurs vor Beginn abgesagt werden` : ""}
                         </div>
                       )}
-                      <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                        <Users className="h-4 w-4" />
-                        {t.max_participants != null
-                          ? `${t.confirmed_count} von ${t.max_participants} Plätzen belegt${t.is_full ? "" : ` – noch ${t.free_slots} frei`}`
-                          : "Plätze auf Anfrage"}
+                      <div className="pl-7 pt-1">
+                        {(() => {
+                          const st = termStatus(Boolean(t.is_full), t.free_slots);
+                          const label = !t.is_full && t.free_slots != null
+                            ? `Noch ${t.free_slots} ${t.free_slots === 1 ? "freier Platz" : "freie Plätze"}`
+                            : st.label;
+                          return <Badge variant="outline" className={st.className}>{label}</Badge>;
+                        })()}
                       </div>
-                      {t.schedule && <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1"><Clock className="h-4 w-4" />{t.schedule}</div>}
-                      {t.location && <div className="text-sm text-muted-foreground flex items-start gap-2 mt-1"><MapPin className="h-4 w-4 mt-0.5" />{t.location}</div>}
                       {t.dates.length > 0 && (
-                        <details className="mt-2 text-sm">
+                        <details className="pl-7 mt-2 text-sm">
                           <summary className="cursor-pointer font-medium text-primary">Alle Kurstermine anzeigen ({t.dates.filter(d => d.index != null).length})</summary>
                           <ol className="mt-2 space-y-0.5">
                             {t.dates.map((d, i) => (
@@ -293,44 +322,100 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                       {t.is_full ? (
                         program.waitlist_open ? <Button asChild variant="outline"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Ausgebucht</p>
                       ) : (
-                        <Button variant="accent" onClick={() => setBookingTerm(t)}>Verbindlich buchen</Button>
+                        <Button variant="accent" size="lg" onClick={() => setBookingTerm(t)}>Verbindlich buchen <ChevronRight className="h-4 w-4" /></Button>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                  </div>
+                ))
+              )}
 
-          <p className="text-sm text-muted-foreground">
-            Mit der Buchung gelten unsere{" "}
-            <Link to="/kursbedingungen" className="text-primary underline font-semibold">Kursteilnahmebedingungen</Link>.
-            Die Buchung ist verbindlich; ein 14-tägiges{" "}
-            <Link to="/widerruf" className="text-primary underline font-semibold">Widerrufsrecht</Link> besteht.
-          </p>
+              {/* Auffangnetz Warteliste */}
+              <div className="rounded-xl bg-secondary p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                <HelpCircle className="h-8 w-8 text-primary shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-primary-deep">Kein passender Termin dabei?</p>
+                  <p className="text-sm text-muted-foreground">Sie möchten lieber einen anderen Zeitraum oder es sind gerade alle Plätze belegt? Wir melden uns, sobald ein Platz frei wird.</p>
+                </div>
+                <div className="shrink-0">{waitlistLink("outline")}</div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Mit der Buchung gelten unsere{" "}
+                <Link to="/kursbedingungen" className="text-primary underline font-semibold">Kursteilnahmebedingungen</Link>.
+                Die Buchung ist verbindlich; ein 14-tägiges{" "}
+                <Link to="/widerruf" className="text-primary underline font-semibold">Widerrufsrecht</Link> besteht.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Infos als Akkordeon */}
+          <Accordion type="multiple" className="space-y-3">
+            {(requirements.length > 0 || program.min_age_years != null) && (
+              <InfoItem value="req" icon={Users} title="Voraussetzungen & Mindestalter" subtitle="Was sollte Ihr Kind mitbringen?">
+                {requirements.length > 1 ? (
+                  <ul className="list-disc pl-5 space-y-1">{requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                ) : requirements[0] ? <p>{requirements[0]}</p> : null}
+                {program.min_age_years != null && <p className="mt-2 text-xs">Mindestalter zu Kursbeginn: {program.min_age_years} Jahre.</p>}
+              </InfoItem>
+            )}
+            {program.course_info && (
+              <InfoItem value="info" icon={ClipboardList} title="Ablauf & Wichtiges am Kurstag" subtitle="Von der Ankunft bis zum Ende.">
+                <p className="whitespace-pre-line">{program.course_info}</p>
+              </InfoItem>
+            )}
+            {paragraphs.length > 1 && (
+              <InfoItem value="desc" icon={Waves} title="Kursbeschreibung" subtitle={`Was lernt Ihr Kind bei „${program.name}“?`}>
+                <div className="space-y-3">{paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}</div>
+              </InfoItem>
+            )}
+            <InfoItem value="faq" icon={HelpCircle} title="Häufige Fragen" subtitle="Die wichtigsten Fragen kurz beantwortet.">
+              <p>Antworten zu Buchung, Bezahlung, Absage und Warteliste finden Sie in unseren{" "}
+                <Link to="/faq" className="text-primary underline font-semibold">häufigen Fragen</Link>.</p>
+            </InfoItem>
+          </Accordion>
+
+          <div className="rounded-xl bg-card shadow-soft p-5 flex items-start gap-3">
+            <Star className="h-6 w-6 text-accent shrink-0" />
+            <div>
+              <p className="font-display font-bold text-primary-deep">Unser Ziel</p>
+              <p className="text-sm text-muted-foreground">Mit Freude und Sicherheit schwimmen lernen – und stolz den Kurs „{program.name}“ abschließen.</p>
+            </div>
+          </div>
         </div>
 
         <aside className="space-y-4">
           <Card className="border-0 shadow-soft">
-            <CardContent className="p-6 space-y-2 text-sm text-muted-foreground">
+            <CardContent className="p-6 space-y-4 text-sm">
+              <h2 className="font-display text-lg font-bold text-primary-deep">Kurs auf einen Blick</h2>
               {program.target_group && <Badge variant="outline" className="bg-secondary text-primary-deep border-0">{program.target_group}</Badge>}
-              {program.age_range && <div className="flex items-center gap-2 pt-2"><Users className="h-4 w-4" />{program.age_range}</div>}
-              {program.location && <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" />{program.location}</div>}
-              {program.duration && <div className="flex items-center gap-2"><Clock className="h-4 w-4" />{program.duration}</div>}
-              {(program.price_member != null || program.price_non_member != null) && (
-                <div className="flex items-start gap-2">
-                  <Tag className="h-4 w-4 mt-0.5" />
-                  <div>
-                    {program.price_non_member != null && <><span className="font-semibold text-foreground">{formatPrice(program.price_non_member)}</span> Normalpreis</>}
-                    {program.price_non_member != null && program.price_member != null && " · "}
-                    {program.price_member != null && <><span className="font-semibold text-primary">{formatPrice(program.price_member)}</span> für Mitglieder</>}
+              <dl className="divide-y">
+                {facts.map((f) => (
+                  <div key={f.label} className="flex items-start gap-3 py-2">
+                    <f.icon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <dt className="font-semibold text-foreground w-28 shrink-0">{f.label}</dt>
+                    <dd className="text-muted-foreground">{f.value}</dd>
                   </div>
+                ))}
+              </dl>
+              {hasFree ? (
+                <div className="rounded-xl bg-success/10 border border-success/30 p-4 space-y-3 text-center">
+                  <p className="font-semibold text-success flex items-center justify-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" />
+                    {freeTotal > 0 ? `${freeTotal} ${freeTotal === 1 ? "freier Platz" : "freie Plätze"} verfügbar!` : "Freie Plätze verfügbar!"}
+                  </p>
+                  <Button variant="accent" className="w-full" onClick={scrollToTerms}>Zu den freien Terminen <ArrowDown className="h-4 w-4" /></Button>
+                  {program.waitlist_open && (
+                    <Link to="/warteliste" search={{ programm: program.slug }} className="block text-xs text-primary underline">
+                      Oder unverbindlich auf die Warteliste
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {waitlistLink("accent", true)}
+                  <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.</p>
                 </div>
               )}
-              <div className="pt-3 border-t space-y-2">
-                {program.waitlist_open ? <Button asChild variant="outline" className="w-full"><Link to="/warteliste" search={{ programm: program.slug }}>{LABELS.waitlistCta}</Link></Button> : <p className="text-sm font-medium text-muted-foreground">Warteliste derzeit geschlossen</p>}
-                <p className="text-[11px] text-center text-muted-foreground">Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.</p>
-              </div>
             </CardContent>
           </Card>
 
@@ -347,9 +432,9 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
               <BaderegelnCard variant="compact" />
             </CardContent>
           </Card>
-
         </aside>
       </section>
+
 
 
       <BookingDialog
