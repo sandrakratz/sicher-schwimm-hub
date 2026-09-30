@@ -935,6 +935,7 @@ function Page() {
         <TableCell className="text-right whitespace-nowrap">
           <Button variant="ghost" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
           <Button variant="ghost" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
+          <Button variant="ghost" size="sm" asChild title="Trainerteam für alle Termine dieses Kurses einteilen"><a href={`/admin/kalender?kurs=${c.id}`}><Users className="h-4 w-4" /> Dienstplan</a></Button>
           {canManage && <Button variant="ghost" size="sm" title="Eilnachricht an alle Eltern dieses Kurses" onClick={() => setBroadcastCourse(c)}><Megaphone className="h-4 w-4 text-destructive" /> Eilnachricht</Button>}
           <Button variant="ghost" size="sm" disabled={exporting === c.id} onClick={() => exportCourseList(c)}><FileSpreadsheet className="h-4 w-4" /> {exporting === c.id ? "Erstelle…" : "Excel"}</Button>
           <Button
