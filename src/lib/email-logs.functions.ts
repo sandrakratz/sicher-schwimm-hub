@@ -22,8 +22,8 @@ export type DeliveryEvent = {
 };
 
 /**
- * Versandstatus (zugestellt / fehlgeschlagen / Rückläufer) aus der verwalteten
- * E-Mail-Zustellung. Nur für Admin und Vorstand.
+ * Versandstatus (versendet / fehlgeschlagen / Rückläufer) aus dem eigenen Sendeprotokoll.
+ * Nur für Admin und Vorstand.
  */
 export const listDeliveryEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -48,36 +48,52 @@ export const listDeliveryEvents = createServerFn({ method: "POST" })
       throw new Response("Forbidden", { status: 403 });
     }
 
-    const apiKey = process.env["LOVABLE_API_KEY"];
-    if (!apiKey) {
-      return {
-        events: [] as DeliveryEvent[],
-        historyStartsAt: null as string | null,
-        error: "E-Mail-Protokoll ist derzeit nicht verfügbar.",
-      };
+    // Quelle ist unser eigenes Sendeprotokoll (Tabelle email_send_log).
+    const STATUS_OF_EVENT: Record<string, string> = {
+      sent: "sent",
+      rejected: "failed",
+      suppressed: "suppressed",
+      bounced: "bounced",
+      complained: "complained",
+    };
+    const EVENT_OF_STATUS: Record<string, string> = {
+      sent: "sent",
+      failed: "rejected",
+      suppressed: "suppressed",
+      bounced: "bounced",
+      complained: "complained",
+    };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let query = supabaseAdmin
+      .from("email_send_log")
+      .select("id, created_at, recipient_email, status, message_id")
+      .order("created_at", { ascending: false })
+      .limit(data.limit ?? 100);
+    if (data.since) query = query.gte("created_at", data.since);
+    if (data.recipient) query = query.ilike("recipient_email", `%${data.recipient}%`);
+    if (data.eventType) {
+      const status = STATUS_OF_EVENT[data.eventType];
+      if (!status) return { events: [] as DeliveryEvent[], historyStartsAt: null as string | null, error: null as string | null };
+      query = query.eq("status", status);
     }
 
-    const { listEmailLogs } = await import("@lovable.dev/email-js");
-    try {
-      const res = await listEmailLogs(
-        {
-          ...(data.since ? { since: data.since } : {}),
-          ...(data.recipient ? { recipient: data.recipient } : {}),
-          ...(data.eventType ? { event_type: data.eventType } : {}),
-          limit: data.limit ?? 100,
-        },
-        { apiKey },
-      );
-      return {
-        events: (res.data || []) as DeliveryEvent[],
-        historyStartsAt: res.history_starts_at ?? null,
-        error: null as string | null,
-      };
-    } catch (e: any) {
+    const { data: rows, error } = await query;
+    if (error) {
       return {
         events: [] as DeliveryEvent[],
         historyStartsAt: null as string | null,
-        error: e?.message ? String(e.message) : "Unbekannter Fehler beim Laden der Zustellereignisse.",
+        error: "Das Sendeprotokoll konnte nicht geladen werden.",
       };
     }
+    return {
+      events: (rows || []).map((r) => ({
+        timestamp: r.created_at,
+        recipient: r.recipient_email,
+        event_type: EVENT_OF_STATUS[r.status] ?? r.status,
+        message_id: r.message_id ?? undefined,
+      })) as DeliveryEvent[],
+      historyStartsAt: null as string | null,
+      error: null as string | null,
+    };
   });
