@@ -18,3 +18,8 @@
 - [x] Automatische E-Mail 6 Wochen vor dem 18. Geburtstag an Mitglied und Eltern
 - [x] Verwaltung: Hinweis „wird bald 18“ / „18 geworden“
 - [x] Eigene Seite „Datenbestätigung zur Volljährigkeit“ mit automatischem Mitgliederzugang
+
+## Kursverwaltung & Dienstplan
+- [x] Kurskalender als Dienstplan: Ampel, direkte Trainer-Zuteilung mit Verfügbarkeit, Filter „unvollständig“
+- [x] Eilnachricht an alle Eltern auch im Trainerbereich (nur eigene Kurse)
+- [ ] Kursübersicht als Kurskarten mit Belegungs-, Zahlungs- und Dienstplanstatus + Menü „Aktionen & Downloads“

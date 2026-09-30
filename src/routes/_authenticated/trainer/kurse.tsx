@@ -19,6 +19,7 @@ import { ParticipantCard, ParticipantDetails } from "@/components/trainer/Partic
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
 import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 import { MultiWatch } from "@/components/trainer/MultiWatch";
+import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
@@ -64,6 +65,7 @@ function Page() {
 
   const exportProtocol = useServerFn(exportExamProtocol);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [broadcast, setBroadcast] = useState<{ id: string; name: string } | null>(null);
 
   // Prüfungsprotokoll nach DPO als PDF für die Vereinsakte herunterladen.
   async function downloadProtocol(courseId: string) {
@@ -117,6 +119,8 @@ function Page() {
         </CardContent></Card>
       )}
 
+      <CourseBroadcastDialog course={broadcast} onClose={() => setBroadcast(null)} />
+
       {courses.map((c, i) => {
         const beltNo = buildBeltNumbers(c.participants);
         return (
@@ -137,6 +141,14 @@ function Page() {
                 disabled={exporting === c.id}
               >
                 {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="ml-2"
+                onClick={() => setBroadcast({ id: c.id, name: c.name })}
+              >
+                📢 Eilnachricht an alle Eltern
               </Button>
             </div>
 

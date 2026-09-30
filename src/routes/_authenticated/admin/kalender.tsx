@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminCalendar, type CalendarEntry } from "@/lib/calendar.functions";
-import { CalendarDays, RefreshCw, Users, HandHelping } from "lucide-react";
+import { listTrainers } from "@/lib/trainers.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
+import { CalendarDays, RefreshCw, Users, HandHelping, X, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/kalender")({
   beforeLoad: async () => {
@@ -17,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin/kalender")({
     try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
     catch { throw redirect({ to: "/admin/benutzer" }); }
   },
-  head: () => ({ meta: [{ title: "Kurskalender – Verwaltung" }] }),
+  head: () => ({ meta: [{ title: "Kurskalender & Dienstplan – Verwaltung" }, { name: "robots", content: "noindex, nofollow" }] }),
   component: Page,
 });
 
@@ -55,6 +59,28 @@ function Page() {
   const [kind, setKind] = useState<"all" | "session" | "event">("all");
   const [scope, setScope] = useState<"upcoming" | "all">("upcoming");
   const [q, setQ] = useState("");
+  const [onlyOpen, setOnlyOpen] = useState(false);
+  const [picker, setPicker] = useState<string | null>(null);
+  const trainersFn = useServerFn(listTrainers);
+  const [trainers, setTrainers] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => { trainersFn().then((t: any) => setTrainers(t || [])).catch(() => {}); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  // Trainer:in direkt am Termin ein- oder austeilen (ohne Neuladen).
+  async function toggle(e: CalendarEntry, trainerId: string, on: boolean) {
+    const res = on
+      ? await supabase.from("course_session_assignments").insert({ session_id: e.id, trainer_id: trainerId })
+      : await supabase.from("course_session_assignments").delete().eq("session_id", e.id).eq("trainer_id", trainerId);
+    if (res.error) return toast.error(res.error.message);
+    const name = trainers.find((t) => t.id === trainerId)?.name ?? "Unbekannt";
+    setEntries((prev) => prev.map((x) => {
+      if (x.kind !== "session" || x.id !== e.id) return x;
+      const assigned = new Set(x.assignedIds ?? []);
+      const tr = x.trainers.filter((t) => t.id !== trainerId);
+      if (on) { assigned.add(trainerId); tr.push({ id: trainerId, name }); } else assigned.delete(trainerId);
+      return { ...x, assignedIds: [...assigned], trainers: tr };
+    }));
+    toast.success(on ? `${name} eingeteilt` : `${name} ausgeteilt`);
+  }
 
   async function refresh() {
     setLoading(true);
@@ -72,6 +98,7 @@ function Page() {
     return entries.filter((e) => {
       if (kind !== "all" && e.kind !== kind) return false;
       if (scope === "upcoming" && e.date < today) return false;
+      if (onlyOpen && !(e.kind === "session" && e.trainers.length < 2)) return false;
       if (!needle) return true;
       const hay = [
         e.title, e.subtitle ?? "", e.location ?? "",
@@ -79,7 +106,7 @@ function Page() {
       ].join(" ").toLowerCase();
       return hay.includes(needle);
     });
-  }, [entries, kind, scope, q, today]);
+  }, [entries, kind, scope, q, today, onlyOpen]);
 
   const byMonth = useMemo(() => {
     const map = new Map<string, Map<string, CalendarEntry[]>>();
@@ -97,6 +124,7 @@ function Page() {
     0,
   );
   const withoutTrainer = filtered.filter((e) => e.kind === "session" && e.trainers.length === 0).length;
+  const oneTrainer = filtered.filter((e) => e.kind === "session" && e.trainers.length === 1).length;
   const withoutTime = filtered.filter((e) => !e.startTime).length;
 
   return (
@@ -104,16 +132,25 @@ function Page() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CalendarDays className="h-6 w-6" /> Kurskalender
+            <CalendarDays className="h-6 w-6" /> Kurskalender &amp; Dienstplan
           </h1>
           <p className="text-sm text-muted-foreground">
-            Alle Kurstermine und Vereinstermine mit Datum, Uhrzeit, eingeteilten Trainer:innen und Helfer:innen (Zeiten in Europe/Berlin).
+            Dienstplan: Trainer:innen direkt am Termin einteilen. Nur Eingeteilte sehen den Kurs im Trainerbereich.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Aktualisieren
         </Button>
       </div>
+
+      {(withoutTrainer > 0 || oneTrainer > 0) && (
+        <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 p-3 text-sm">
+          ⚠️ {withoutTrainer > 0 && <><b>{withoutTrainer}</b> Termin(e) ohne Trainer:in</>}
+          {withoutTrainer > 0 && oneTrainer > 0 && " · "}
+          {oneTrainer > 0 && <><b>{oneTrainer}</b> Termin(e) mit nur einer Person</>}
+          {!onlyOpen && <Button size="sm" variant="outline" className="ml-3" onClick={() => setOnlyOpen(true)}>Nur diese anzeigen</Button>}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card><CardContent className="pt-4">
@@ -146,6 +183,9 @@ function Page() {
             <SelectItem value="event">Nur Vereinstermine</SelectItem>
           </SelectContent>
         </Select>
+        <Button size="sm" variant={onlyOpen ? "default" : "outline"} onClick={() => setOnlyOpen((v) => !v)}>
+          Nur unvollständig besetzte
+        </Button>
         <Input
           className="w-64"
           placeholder="Suche (Kurs, Ort, Person)…"
@@ -191,14 +231,7 @@ function Page() {
                       </div>
                       {e.subtitle && <div className="mt-1 text-xs text-muted-foreground">{e.subtitle}</div>}
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                        {e.kind === "session" && (
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3.5 w-3.5" />
-                            {e.trainers.length > 0
-                              ? e.trainers.map((t) => t.name).join(", ")
-                              : <span className="text-destructive">keine Trainer:in eingeteilt</span>}
-                          </span>
-                        )}
+                        {e.kind === "session" && <SessionRoster e={e} trainers={trainers} open={picker === e.id} setOpen={(v) => setPicker(v ? e.id : null)} onToggle={toggle} />}
                         {(e.helpers.length > 0 || e.helperNeed.length > 0) && (
                           <span className="flex items-center gap-1">
                             <HandHelping className="h-3.5 w-3.5" />
@@ -223,6 +256,62 @@ function Page() {
           </div>
         </CollapsibleCard>
       ))}
+    </div>
+  );
+}
+
+function SessionRoster({ e, trainers, open, setOpen, onToggle }: {
+  e: CalendarEntry;
+  trainers: { id: string; name: string }[];
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  onToggle: (e: CalendarEntry, id: string, on: boolean) => void;
+}) {
+  const n = e.trainers.length;
+  const light = n === 0 ? "🔴" : n === 1 ? "🟡" : "🟢";
+  const assigned = new Set(e.assignedIds ?? []);
+  const av = new Map((e.availability ?? []).map((a) => [a.id, a.available]));
+  const rank = (id: string) => (av.get(id) === true ? 0 : av.get(id) === false ? 2 : 1);
+  return (
+    <div className="w-full space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span title="Besetzung">{light}</span>
+        <Users className="h-3.5 w-3.5" />
+        {n === 0 && <span className="text-destructive">keine Trainer:in eingeteilt</span>}
+        {e.trainers.map((t) => (
+          <Badge key={t.id} variant="secondary" className="gap-1">
+            {t.name}
+            {assigned.has(t.id) && (
+              <button type="button" aria-label={`${t.name} austeilen`} onClick={() => onToggle(e, t.id, false)}>
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </Badge>
+        ))}
+        <Button size="sm" variant="outline" className="h-7" onClick={() => setOpen(!open)}>
+          <Plus className="h-3.5 w-3.5" /> Trainer einteilen
+        </Button>
+        {e.courseId && (
+          <Link to="/admin/kurse" className="text-primary underline-offset-2 hover:underline">Zur Kursakte</Link>
+        )}
+      </div>
+      {open && (
+        <div className="rounded-md border bg-muted/30 p-2">
+          <div className="mb-1 text-muted-foreground">🟢 kann · ⚪ keine Rückmeldung · 🔴 kann nicht – Klick teilt ein bzw. aus</div>
+          <div className="flex flex-wrap gap-1.5">
+            {trainers.slice().sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de")).map((t) => {
+              const on = assigned.has(t.id);
+              const dot = av.get(t.id) === true ? "🟢" : av.get(t.id) === false ? "🔴" : "⚪";
+              return (
+                <Button key={t.id} size="sm" variant={on ? "default" : "outline"} className="h-7" onClick={() => onToggle(e, t.id, !on)}>
+                  {dot} {t.name}
+                </Button>
+              );
+            })}
+            {trainers.length === 0 && <span className="text-muted-foreground">Keine Trainer gefunden</span>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
