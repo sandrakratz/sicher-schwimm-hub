@@ -169,6 +169,7 @@ function OfferResponsePage() {
           street: String(fd?.get("street") || ""),
           zip: String(fd?.get("zip") || ""),
           city: String(fd?.get("city") || ""),
+          childDob: String(fd?.get("child_dob") || ""),
         },
       });
       if (!res.ok) {
@@ -177,7 +178,9 @@ function OfferResponsePage() {
             ? "Die Frist für dieses Angebot ist leider abgelaufen."
             : res.reason === "address_required"
               ? "Bitte geben Sie die vollständige Rechnungsanschrift an."
-              : "Das Angebot konnte nicht verarbeitet werden.",
+              : res.reason === "dob_required"
+                ? "Bitte geben Sie das Geburtsdatum Ihres Kindes an."
+                : "Das Angebot konnte nicht verarbeitet werden.",
         );
         return;
       }
@@ -273,6 +276,12 @@ function OfferResponsePage() {
             Für die verbindliche Buchung und den Zahlungsbeleg benötigen wir Ihre Rechnungsanschrift.
           </p>
           <div className="grid gap-4 md:grid-cols-3">
+            {data.needsDob && (
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="child_dob">Geburtsdatum des Kindes *</Label>
+                <Input id="child_dob" name="child_dob" type="date" required max={new Date().toISOString().slice(0, 10)} />
+              </div>
+            )}
             <div className="space-y-2 md:col-span-3">
               <Label htmlFor="street">Straße und Hausnummer *</Label>
               <Input id="street" name="street" required maxLength={160} defaultValue={defaults.street} />

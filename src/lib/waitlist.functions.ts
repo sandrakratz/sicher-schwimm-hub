@@ -172,6 +172,7 @@ export const getWaitlistOffer = createServerFn({ method: 'GET' })
       status: entry.status as string,
       expired,
       childName: entry.child_name,
+      needsDob: !entry.child_dob,
       parentName: entry.parent_name,
       expiresAt: entry.offer_expires_at,
       course: course
@@ -196,6 +197,7 @@ const respondSchema = z.object({
   street: z.string().trim().max(160).optional().or(z.literal('')),
   zip: z.string().trim().max(12).optional().or(z.literal('')),
   city: z.string().trim().max(120).optional().or(z.literal('')),
+  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
 })
 
 /** Zusage oder Absage zu einem Platzangebot. */
@@ -230,9 +232,20 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
 
     if (!data.street || !data.zip || !data.city) return { ok: false as const, reason: 'address_required' as const }
 
+    // Ältere Wartelisteneinträge ohne Geburtsdatum: vor der Buchung nachfordern.
+    let bookingEntry = entry
+    if (!entry.child_dob) {
+      const dob = data.childDob
+      if (!dob || dob > new Date().toISOString().slice(0, 10)) {
+        return { ok: false as const, reason: 'dob_required' as const }
+      }
+      await supabaseAdmin.from('waitlist_entries').update({ child_dob: dob }).eq('id', entry.id)
+      bookingEntry = { ...entry, child_dob: dob }
+    }
+
     const { bookWaitlistEntry } = await import('@/lib/waitlist-booking.server')
     const booking = await bookWaitlistEntry(
-      entry,
+      bookingEntry,
       entry.offer_course_id!,
       { street: data.street, zip: data.zip, city: data.city },
       'parent',
