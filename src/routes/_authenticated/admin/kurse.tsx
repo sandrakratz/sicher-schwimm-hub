@@ -715,6 +715,7 @@ function Page() {
   async function addParticipant() {
     if (!partCourse) return;
     if (!newPart.name.trim()) return toast.error("Name erforderlich");
+    if (!newPart.date_of_birth) return toast.error("Geburtsdatum erforderlich");
     const { error } = await supabase.from("course_participants").insert({
       course_id: partCourse.id,
       participant_name: newPart.name.trim(),
@@ -1542,7 +1543,7 @@ function Page() {
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
               <div>
-                <Label>Geburtsdatum</Label>
+                <Label>Geburtsdatum *</Label>
                 <Input type="date" value={newPart.date_of_birth} onChange={e => setNewPart(p => ({ ...p, date_of_birth: e.target.value }))} />
                 {newPart.date_of_birth && (() => {
                   const a = ageAt(newPart.date_of_birth, partCourse?.starts_on);
