@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Body, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 import { buildConfirmationDoc } from '@/lib/course-confirmation'
+import { PushHint } from './push-hint'
 
 interface Props {
   parent_name?: string
