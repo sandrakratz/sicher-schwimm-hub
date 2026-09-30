@@ -10,7 +10,7 @@ für die Schritte in der Reihenfolge unten. Keine geheimen Werte in diese Datei 
 | SUPABASE_URL | Variable | Supabase → Project Settings → API |
 | SUPABASE_PUBLISHABLE_KEY | Variable | dito („anon“/„publishable“ Key) |
 | SUPABASE_SERVICE_ROLE_KEY | **Secret** | dito („service_role“ Key, niemals öffentlich) |
-| VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_SUPABASE_PROJECT_ID | Build-Variable | gleiche Werte; werden beim Bauen in die Seite eingebaut |
+| VITE_SUPABASE_URL, VITE_SUPABASE_PROJECT_ID, VITE_SUPABASE_PUBLISHABLE_KEY | schon in `.env` im Repository | öffentliche Werte des neuen Projekts (`kqaajxvwdwpgrxwgqcvi`); werden beim Bauen in die Seite eingebaut, bei Cloudflare nichts nötig |
 | RESEND_API_KEY | **Secret** | Resend → API Keys (Berechtigung „Sending access“) |
 | RESEND_WEBHOOK_SECRET | **Secret** | Resend → Webhooks → Signing secret |
 | SEND_EMAIL_HOOK_SECRET | **Secret** | Supabase → Authentication → Hooks → Send Email (beim Anlegen erzeugt, beginnt mit `v1,whsec_`) |
@@ -78,7 +78,8 @@ die neuen Schnittstellen lehnen Anfragen ohne gültige Signatur ab. **Noch nicht
 
 1. Cloudflare → Workers & Pages → Create → Import a repository → dieses GitHub-Repository, Branch `main`.
 2. Build command: `bun run build` · Deploy command: `bunx wrangler deploy` (folgt der beim Bau erzeugten Konfiguration).
-3. Variablen aus Abschnitt 1 eintragen, die `VITE_…`-Werte zusätzlich als **Build**-Variablen.
+3. Variablen aus Abschnitt 1 eintragen (Laufzeit-Variablen unter Settings → Variables and Secrets). Die `VITE_…`-Werte stehen schon in `.env` und werden beim Bauen eingebaut.
+   Den Worker-Namen in Cloudflare exakt `sandrakratz-sicher-schwimm-hub` nennen (so heißt er in der beim Bau erzeugten Konfiguration).
 4. Zuerst mit der vorläufigen `*.workers.dev`-Adresse testen (Anmeldung, Mail, Datei, Zeitplan von Hand auslösen).
 5. Erst danach die Domain umstellen: DNS-Einträge (vor allem die für E-Mail/Postfächer bei One.com) vollständig nach Cloudflare übernehmen,
    dann Nameserver wechseln, dann im Worker unter Domains & Routes `sicher-schwimmen.com` und `www.sicher-schwimmen.com` hinzufügen.
