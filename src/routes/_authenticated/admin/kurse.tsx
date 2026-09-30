@@ -31,7 +31,7 @@ import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { Megaphone, ChevronDown, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-type CourseCounts = { confirmed: number; waiting: number; unpaid: number; overdue: number; sessions: number; staffed: number };
+type CourseCounts = { confirmed: number; waiting: number; unpaid: number; overdue: number; sessions: number; staffed: number; offered?: number };
 
 
 
@@ -563,6 +563,16 @@ function Page() {
     });
     const courseIds = list.map(c => c.id);
     if (courseIds.length) {
+      const { data: offers } = await supabase.from("waitlist_entries").select("offer_course_id,offer_expires_at")
+        .eq("status", "offered").in("offer_course_id", courseIds);
+      const nowIso = new Date().toISOString();
+      ((offers as any[]) || []).forEach(o => {
+        if (!o.offer_course_id || (o.offer_expires_at && o.offer_expires_at < nowIso)) return;
+        const m = map[o.offer_course_id] = map[o.offer_course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+        m.offered = (m.offered ?? 0) + 1;
+      });
+    }
+    if (courseIds.length) {
       const { data: sess } = await supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").in("course_id", courseIds);
       const sessList = (sess as any[]) || [];
       const sessIds = sessList.map(s => s.id);
@@ -1059,8 +1069,11 @@ function Page() {
         {programs.map(p => {
           const terms = termsOf(p.id).filter(t => !t.archived_at);
           const confirmed = terms.reduce((s, t) => s + (counts[t.id]?.confirmed ?? 0), 0);
+          const reserved = terms.reduce((s, t) => s + (counts[t.id]?.offered ?? 0), 0);
           const capacity = terms.reduce((s, t) => s + (t.max_participants ?? 0), 0);
-          const bookable = terms.filter(t => t.max_participants == null || (counts[t.id]?.confirmed ?? 0) < t.max_participants).length;
+          const hasCap = terms.length > 0 && terms.every(t => t.max_participants != null);
+          const free = terms.reduce((s, t) => t.max_participants == null ? s : s + Math.max(0, t.max_participants - (counts[t.id]?.confirmed ?? 0) - (counts[t.id]?.offered ?? 0)), 0);
+          const bookable = terms.filter(t => t.max_participants == null || (counts[t.id]?.confirmed ?? 0) + (counts[t.id]?.offered ?? 0) < t.max_participants).length;
           return (
             <Card
               key={p.id}
@@ -1082,7 +1095,12 @@ function Page() {
                 <div className="flex flex-wrap gap-2 text-xs">
                   <Badge variant="outline">{terms.length} Zeiträume</Badge>
                   <Badge variant="outline">{bookable} buchbar</Badge>
-                  <Badge variant="outline">{confirmed}{capacity > 0 ? ` / ${capacity}` : ""} Plätze belegt</Badge>
+                  <Badge variant="outline">{confirmed}{capacity > 0 ? ` / ${capacity}` : ""} belegt</Badge>
+                  {reserved > 0 && <Badge variant="secondary" title="Plätze, die gerade einem Kind von der Warteliste angeboten sind">{reserved} reserviert</Badge>}
+                  {hasCap && (free > 0
+                    ? <Badge className="bg-success text-success-foreground hover:bg-success" title="Tatsächlich frei für neue Anmeldungen">{free} frei</Badge>
+                    : <Badge variant="destructive">Ausgebucht</Badge>)}
+                </div>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setEditingProg(p); setDetailId(p.id); }}>Öffnen</Button>
