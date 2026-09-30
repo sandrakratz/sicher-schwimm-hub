@@ -48,6 +48,7 @@ export function AvailabilityBoard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [view, setView] = useState<"course" | "date" | "calendar">("course");
   const [showDeclined, setShowDeclined] = useState(false);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
 
@@ -121,6 +122,8 @@ export function AvailabilityBoard() {
 
   async function setAvailability(sessionId: string, value: boolean | null) {
     if (!me) return;
+    // Angeklickte Termine bleiben bis zum Neuladen sichtbar, damit man Fehlklicks korrigieren kann.
+    setTouched(t => new Set(t).add(sessionId));
     setBusy(sessionId);
     if (value === null) {
       const { error } = await supabase
@@ -144,11 +147,24 @@ export function AvailabilityBoard() {
     });
   }
 
-  async function setAll(courseId: string, value: boolean) {
+  async function setAll(courseId: string, value: boolean | null) {
     if (!me) return;
     const ids = sessions.filter(s => s.course_id === courseId).map(s => s.id);
     if (ids.length === 0) return;
+    setTouched(t => { const n = new Set(t); ids.forEach(i => n.add(i)); return n; });
     setBusy(courseId);
+    if (value === null) {
+      const { error } = await supabase
+        .from("course_session_availability")
+        .delete()
+        .eq("trainer_id", me)
+        .in("session_id", ids);
+      setBusy(null);
+      if (error) { toast.error(error.message); return; }
+      setAvail(a => a.filter(x => !(x.trainer_id === me && ids.includes(x.session_id))));
+      toast.success("Alle Angaben für diesen Kurs zurückgesetzt");
+      return;
+    }
     const { error } = await supabase
       .from("course_session_availability")
       .upsert(ids.map(id => ({ session_id: id, trainer_id: me, available: value })), { onConflict: "session_id,trainer_id" });
@@ -209,7 +225,7 @@ export function AvailabilityBoard() {
   }
 
   const isAssignedToMe = (id: string) => assign.some(a => a.session_id === id && a.trainer_id === me);
-  const isVisible = (s: SessionRow) => showDeclined || isAssignedToMe(s.id) || myState(s.id) !== false;
+  const isVisible = (s: SessionRow) => showDeclined || touched.has(s.id) || isAssignedToMe(s.id) || myState(s.id) !== false;
   const staffCount = (id: string) => new Set([
     ...avail.filter(a => a.session_id === id && a.available).map(a => a.trainer_id),
     ...assign.filter(a => a.session_id === id).map(a => a.trainer_id),
@@ -281,6 +297,13 @@ export function AvailabilityBoard() {
               onClick={() => setAvailability(s.id, state === false ? null : false)}
               className={`min-h-11 flex-1 sm:flex-none ${state === false ? "border-transparent bg-red-600 text-white hover:bg-red-700" : ""}`}>
               <X className="h-4 w-4" /> Kann nicht
+            </Button>
+          )}
+          {!opts.compact && state !== null && (
+            <Button size="sm" variant="ghost" disabled={busy === s.id}
+              onClick={() => setAvailability(s.id, null)}
+              className="min-h-11 flex-1 sm:flex-none" title="Angabe löschen – wieder offen">
+              Zurücksetzen
             </Button>
           )}
         </div>
@@ -373,6 +396,7 @@ export function AvailabilityBoard() {
                   <>
                     <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, true)}>Alle: Kann</Button>
                     <Button size="sm" variant="outline" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, false)}>Alle: Kann nicht</Button>
+                    <Button size="sm" variant="ghost" disabled={busy === g.courseId} onClick={() => setAll(g.courseId, null)}>Alle: Zurücksetzen</Button>
                   </>
                 }
               >
