@@ -16,7 +16,7 @@ import { TestSendDialog } from "@/components/admin/TestSendDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/versandstatus")({
   beforeLoad: async () => {
-    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
     try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
     catch { throw redirect({ to: "/admin/benutzer" }); }

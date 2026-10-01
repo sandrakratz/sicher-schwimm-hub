@@ -19,7 +19,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
 import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv, generateTrainerProofXlsx } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
-import { getMyAdminRoles } from "@/lib/admin-guard.functions";
+import { getMyAdminRoles } from "@/lib/role-guard";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
@@ -39,7 +39,7 @@ type CourseCounts = { confirmed: number; waiting: number; unpaid: number; overdu
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
-    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
     try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
     catch { throw redirect({ to: "/portal" }); }
