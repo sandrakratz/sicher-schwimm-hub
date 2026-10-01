@@ -222,12 +222,24 @@ const bookingSchema = z.object({
   childName: z.string().trim().min(2).max(120),
   childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   healthInfo: z.string().trim().max(2000).optional().or(z.literal('')),
+  /** Ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO – Pflicht, sobald Gesundheitsangaben gemacht werden. */
+  healthConsent: z.boolean().optional(),
   message: z.string().trim().max(2000).optional().or(z.literal('')),
   isMember: z.boolean().default(false),
   acceptTerms: z.literal(true),
   gdprConsent: z.literal(true),
   website: z.string().max(0).optional(), // Honeypot
+}).refine((d) => !d.healthInfo || d.healthConsent === true, {
+  message: 'Für Gesundheitsangaben ist Ihre ausdrückliche Einwilligung erforderlich.',
+  path: ['healthConsent'],
 })
+
+/** Nachweis der Einwilligung (Art. 7 Abs. 1 DSGVO), wird in den internen Notizen der Anfrage vermerkt. */
+function healthConsentNote(healthInfo: string | undefined): string {
+  return healthInfo
+    ? ` · Einwilligung zu Gesundheitsangaben (Art. 9 Abs. 2 lit. a DSGVO) erteilt am ${new Date().toISOString()}`
+    : ''
+}
 
 function ageOn(dob: string, reference: string | null): number {
   const ref = reference ? new Date(reference) : new Date()
@@ -284,7 +296,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
           gdpr_consent: true,
           contact_permission: true,
           status: 'new',
-          admin_notes: 'Sperrliste – Einzelfallprüfung durch den Vorstand erforderlich',
+          admin_notes: `Sperrliste – Einzelfallprüfung durch den Vorstand erforderlich${healthConsentNote(data.healthInfo)}`,
         })
         .select('id')
         .maybeSingle()
@@ -396,7 +408,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         contact_permission: true,
         status: isFull ? 'waiting_list' : 'accepted',
         assigned_course_id: course.id,
-        admin_notes: 'Online-Buchung über die Webseite',
+        admin_notes: `Online-Buchung über die Webseite${healthConsentNote(data.healthInfo)}`,
       })
       .select('id')
       .maybeSingle()

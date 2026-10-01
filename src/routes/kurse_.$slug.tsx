@@ -510,7 +510,7 @@ function BookingDialog({
     parentFirstName: "", parentLastName: "", parentEmail: "", parentPhone: "",
     parentStreet: "", parentZip: "", parentCity: "",
     childName: "", childLastName: "", childDob: "", healthInfo: "", message: "",
-    isMember: false, acceptTerms: false, gdprConsent: false, website: "",
+    isMember: false, acceptTerms: false, gdprConsent: false, healthConsent: false, website: "",
   });
 
   const set = (k: keyof typeof form, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
@@ -518,6 +518,7 @@ function BookingDialog({
   const setSib = (i: number, k: "childName" | "childLastName" | "childDob" | "healthInfo", v: string) =>
     setSiblings((l) => l.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
   const parentLast = form.parentLastName.trim();
+  const hasHealthInfo = Boolean(form.healthInfo.trim()) || siblings.some((k) => k.healthInfo.trim());
   const fullName = (first: string, last: string) => `${first.trim()} ${last.trim()}`.trim();
 
   const price = form.isMember
@@ -530,6 +531,10 @@ function BookingDialog({
     if (!term) return;
     if (!form.acceptTerms || !form.gdprConsent) {
       toast.error("Bitte bestätigen Sie die Kursbedingungen und die Datenschutzhinweise.");
+      return;
+    }
+    if (hasHealthInfo && !form.healthConsent) {
+      toast.error("Bitte willigen Sie in die Verarbeitung der Gesundheitsangaben ein oder löschen Sie diese Angaben.");
       return;
     }
     setSubmitting(true);
@@ -562,6 +567,7 @@ function BookingDialog({
               childName: kid.childName,
               childDob: kid.childDob,
               healthInfo: kid.healthInfo,
+              healthConsent: kid.healthInfo.trim() ? true : undefined,
               message: form.message,
               isMember: form.isMember,
               acceptTerms: true,
@@ -670,7 +676,7 @@ function BookingDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="healthInfo">Gesundheitliche Hinweise</Label>
+            <Label htmlFor="healthInfo">Gesundheitliche Hinweise (freiwillig)</Label>
             <Textarea id="healthInfo" rows={2} value={form.healthInfo} onChange={(e) => set("healthInfo", e.target.value)} />
           </div>
           {siblings.map((k, i) => (
@@ -694,7 +700,7 @@ function BookingDialog({
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Gesundheitliche Hinweise</Label>
+                <Label>Gesundheitliche Hinweise (freiwillig)</Label>
                 <Textarea rows={2} value={k.healthInfo} onChange={(e) => setSib(i, "healthInfo", e.target.value)} />
               </div>
             </div>
@@ -709,6 +715,18 @@ function BookingDialog({
             <Label htmlFor="message">Nachricht</Label>
             <Textarea id="message" rows={2} value={form.message} onChange={(e) => set("message", e.target.value)} />
           </div>
+
+          {hasHealthInfo && (
+            <div className="flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+              <Checkbox id="healthConsent" checked={form.healthConsent} onCheckedChange={(v) => set("healthConsent", Boolean(v))} />
+              <Label htmlFor="healthConsent" className="text-sm font-normal leading-snug">
+                Ich willige ausdrücklich ein, dass der Verein die oben gemachten Gesundheitsangaben zur
+                sicheren Durchführung des Kurses verarbeitet (Art. 9 Abs. 2 lit. a DSGVO). Die Angabe ist
+                freiwillig; ich kann die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen
+                (info@sicher-schwimmen.com). *
+              </Label>
+            </div>
+          )}
 
           <div className="flex items-start gap-2">
             <Checkbox id="isMember" checked={form.isMember} onCheckedChange={(v) => set("isMember", Boolean(v))} />
