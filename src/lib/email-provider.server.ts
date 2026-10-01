@@ -3,7 +3,7 @@
 
 export const SITE_NAME = 'Sicher Schwimmen e.V.'
 export const SITE_URL = 'https://sicher-schwimmen.com'
-// Nicht `notify`: Diese Unteradresse ist per NS-Eintrag bei One.com an Lovables Namensserver delegiert (alte Seite, bis zum Umschalttag).
+// Absenderdomain ist die Unteradresse `versand` (Resend-Einträge in der Cloudflare-DNS-Zone).
 export const FROM_DOMAIN = 'versand.sicher-schwimmen.com'
 export const FROM_ADDRESS = `${SITE_NAME} <noreply@${FROM_DOMAIN}>`
 
