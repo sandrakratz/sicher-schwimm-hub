@@ -282,7 +282,12 @@ export const listWaitlist = createServerFn({ method: 'GET' })
       console.error('expireOffers failed', err)
     }
 
-    const [{ data: entries }, { data: programs }, { data: courses }, { data: blocklist }] = await Promise.all([
+    const [
+      { data: entries, error: entriesError },
+      { data: programs, error: programsError },
+      { data: courses },
+      { data: blocklist },
+    ] = await Promise.all([
       supabaseAdmin.from('waitlist_entries').select('*').order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug,min_age_years').order('sort_order'),
       supabaseAdmin
@@ -295,7 +300,11 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         .select('email_norm,child_name_norm,child_dob,reason')
         .eq('active', true),
     ])
-
+    if (entriesError || programsError) {
+      const reason = (entriesError ?? programsError)?.message ?? 'unbekannt'
+      console.error('listWaitlist failed', entriesError ?? programsError)
+      throw new Error(`Wartelisten-Abfrage fehlgeschlagen: ${reason}`)
+    }
 
     // Originalanfrage (komplett) nachziehen
     const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
