@@ -4,7 +4,7 @@ import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, ListChecks, MailOpen, ArrowRight, CheckCircle2 } from "lucide-react";
-import { assertHasAnyRole } from "@/lib/admin-guard.functions";
+import { assertHasAnyRole } from "@/lib/role-guard";
 import { getAdminTasks, type AdminTask } from "@/lib/admin-dashboard.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/")({

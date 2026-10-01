@@ -10,7 +10,7 @@ import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 
 export const Route = createFileRoute("/_authenticated/trainer/")({
   beforeLoad: async () => {
-    const { assertHasAnyRole } = await import("@/lib/admin-guard.functions");
+    const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
     try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
     catch { throw redirect({ to: "/portal" }); }
