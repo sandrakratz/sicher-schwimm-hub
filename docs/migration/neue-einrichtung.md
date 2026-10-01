@@ -22,6 +22,10 @@ werden vom Deploy gelöscht. Die zwei öffentlichen Werte stehen deshalb in `wra
 
 Nicht mehr nötig: LOVABLE_API_KEY, LOVABLE_SEND_URL, GOOGLE_SEARCH_CONSOLE_API_KEY, STRIPE_SECRET_KEY, DATABASE_URL.
 
+**Lokal entwickeln:** Geheime Werte (z. B. `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `VAPID_SEED`, Datenbank-Passwort) gehören in die Datei
+**`.env.local`** im Projektordner, nicht in `.env`. `.env.local` wird beim lokalen Start gelesen und ist über `*.local` in `.gitignore` ausgeschlossen.
+Die `.env` ist im öffentlichen Repository versioniert und darf **nur öffentliche Werte** enthalten (URL, Projekt-ID, Publishable Key).
+
 ## 2. Supabase
 
 1. Projekt in Region **Frankfurt (EU)** anlegen.
