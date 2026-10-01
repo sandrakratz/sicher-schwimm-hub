@@ -248,8 +248,12 @@ function WaitlistPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Anmerkungen (z. B. Wunschzeiten, Besonderheiten)</Label>
+                <Label htmlFor="notes">Anmerkungen (z. B. Wunschzeiten)</Label>
                 <Textarea id="notes" name="notes" rows={4} maxLength={2000} />
+                <p className="text-xs text-muted-foreground">
+                  Bitte machen Sie hier keine Gesundheitsangaben. Diese erfragen wir erst bei der
+                  Buchung, mit Ihrer gesonderten Einwilligung.
+                </p>
               </div>
 
 

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/kursbedingungen")({
 function KursbedingungenPage() {
   return (
     <LegalPage title="Kursteilnahmebedingungen">
-      <p className="text-sm text-muted-foreground">Stand: Juni 2026</p>
+      <p className="text-sm text-muted-foreground">Stand: Oktober 2026</p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">1. Anmeldung &amp; Bestätigung</h2>
       <p>
@@ -109,12 +109,13 @@ function KursbedingungenPage() {
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">10. Gesundheit</h2>
       <p>
         Teilnehmer:innen müssen <strong>gesundheitlich für den Schwimmunterricht
-        geeignet</strong> sein. Eltern bzw. Erziehungsberechtigte sind verpflichtet,
-        dem Verein vor Kursbeginn alle <strong>relevanten Erkrankungen oder
-        Einschränkungen</strong> – etwa Autismus, ADHS, Epilepsie, Allergien,
-        körperliche oder sonstige Einschränkungen – mitzuteilen, damit die
-        Übungsleiter:innen angemessen darauf eingehen können. Diese Informationen
-        werden vertraulich behandelt.
+        geeignet</strong> sein. Wir bitten Eltern bzw. Erziehungsberechtigte, dem Verein
+        vor Kursbeginn <strong>relevante Erkrankungen oder Einschränkungen</strong> – etwa
+        Autismus, ADHS, Epilepsie, Allergien, körperliche oder sonstige Einschränkungen –
+        mitzuteilen, damit die Übungsleiter:innen angemessen darauf eingehen können. Die
+        Angabe ist freiwillig und erfolgt nur mit Ihrer ausdrücklichen Einwilligung; ohne
+        diese Angaben können wir im Kurs jedoch nicht gezielt auf Besonderheiten eingehen.
+        Diese Informationen werden vertraulich behandelt.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">Kontakt</h2>
