@@ -5,7 +5,6 @@ export const Route = createFileRoute("/impressum")({
   head: () => ({
     meta: [
       { title: "Impressum – Sicher Schwimmen e.V." },
-      { name: "robots", content: "noindex" },
     ],
     links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/impressum" }],
   }),
