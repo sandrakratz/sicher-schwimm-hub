@@ -22,6 +22,7 @@ import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/admin-guard.functions";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
+import { syncMemberPrices } from "@/lib/membership.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleActions";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
@@ -225,6 +226,7 @@ function Page() {
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
   const moveToWaitlistFn = useServerFn(moveParticipantToWaitlist);
+  const syncMemberPricesFn = useServerFn(syncMemberPrices);
 
   const [reqOpen, setReqOpen] = useState(false);
   const [reqLoading, setReqLoading] = useState(false);
@@ -793,6 +795,23 @@ function Page() {
       toast.error(e instanceof Error ? e.message : "Entfernen fehlgeschlagen");
     } finally {
       setRemoving(false);
+    }
+  }
+
+  async function syncPrices() {
+    if (!partCourse) return;
+    try {
+      const res = await syncMemberPricesFn({ data: { courseId: partCourse.id } });
+      const parts: string[] = [];
+      if (res.updated.length) parts.push(`${res.updated.length} Kursgebühr(en) angepasst: ${res.updated.map(u => `${u.participant} ${u.from ?? "–"} → ${u.to} €`).join(", ")}`);
+      if (res.keptPrice.length) parts.push(`Mitglied erkannt, aber individueller Preis bleibt: ${res.keptPrice.join(", ")}`);
+      if (res.alreadyPaid.length) parts.push(`Mitglied, aber bereits bezahlt (bitte prüfen): ${res.alreadyPaid.join(", ")}`);
+      if (parts.length) toast.success(parts.join(" · "), { duration: 10000 });
+      else toast.success("Alles aktuell – keine Anpassung nötig");
+      await openParticipants(partCourse);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Abgleich fehlgeschlagen");
     }
   }
 
@@ -1415,6 +1434,15 @@ function Page() {
               >
                 {reminding ? "Sende…" : "Zahlungserinnerung senden"}
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                title="Erkennt bestehende Mitgliedschaften und setzt bei offenen Buchungen den Mitgliedspreis"
+                onClick={syncPrices}
+              >
+                Mitgliedspreise abgleichen
+              </Button>
             </div>
           )}
           <div className="border rounded-md overflow-x-auto">
@@ -1658,7 +1686,19 @@ function Page() {
                     <Label>Mitglied?</Label>
                     <Select
                       value={editPart.is_member == null ? "unset" : editPart.is_member ? "yes" : "no"}
-                      onValueChange={(v) => setEditPart(p => p && { ...p, is_member: v === "unset" ? null : v === "yes" })}
+                      onValueChange={(v) => setEditPart(p => {
+                        if (!p) return p;
+                        const next = v === "unset" ? null : v === "yes";
+                        // Preis mitziehen, solange er noch dem Standardpreis der bisherigen Stufe entspricht (oder leer ist)
+                        const memberPrice = partCourse?.price_member ?? null;
+                        const nonMemberPrice = partCourse?.price_non_member ?? null;
+                        const cur = p.price_amount == null ? null : Number(p.price_amount);
+                        const isStandard = cur == null || cur === memberPrice || cur === nonMemberPrice;
+                        let price = p.price_amount;
+                        if (isStandard && next === true && memberPrice != null) price = memberPrice;
+                        if (isStandard && next === false && nonMemberPrice != null) price = nonMemberPrice;
+                        return { ...p, is_member: next, price_amount: price };
+                      })}
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>

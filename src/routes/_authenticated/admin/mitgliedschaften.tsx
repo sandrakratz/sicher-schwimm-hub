@@ -137,8 +137,13 @@ function Page() {
 
   async function setStatus(id: string, status: "pending" | "active" | "suspended" | "terminated") {
     try {
-      await setStatusFn({ data: { id, status } });
-      toast.success("Aktualisiert"); load(); setSelected(null);
+      const res: any = await setStatusFn({ data: { id, status } });
+      toast.success(
+        res?.repriced > 0
+          ? `Aktualisiert – ${res.repriced} offene Kursbuchung(en) auf den Mitgliedspreis umgestellt`
+          : "Aktualisiert",
+      );
+      load(); setSelected(null);
     } catch (e: any) {
       toast.error(e?.message || "Fehler");
     }

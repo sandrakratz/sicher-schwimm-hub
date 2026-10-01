@@ -80,7 +80,44 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
         }
       } catch (e) { console.error("[setMembershipStatus] activation mail failed", e); }
     }
-    return { ok: true };
+    let repriced = 0;
+    if (data.status === "active") {
+      try {
+        // Offene Buchungen dieser Familie auf den Mitgliedspreis umstellen
+        const { repriceMemberParticipants } = await import("@/lib/membership-lookup.server");
+        const res = await repriceMemberParticipants();
+        repriced = res.updated.length;
+        if (repriced > 0 || res.alreadyPaid.length > 0) {
+          await logAudit(context.supabase, context.userId, {
+            action: "membership.repriced",
+            entity: "memberships",
+            entity_id: data.id,
+            metadata: { updated: res.updated, alreadyPaid: res.alreadyPaid, keptPrice: res.keptPrice },
+          });
+        }
+      } catch (e) { console.error("[setMembershipStatus] reprice failed", e); }
+    }
+    return { ok: true, repriced };
+  });
+
+/** Gleicht bei offenen Buchungen von Mitgliedern die Kursgebühr auf den Mitgliedspreis an. */
+export const syncMemberPrices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ courseId: z.string().uuid().nullable().optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const { repriceMemberParticipants } = await import("@/lib/membership-lookup.server");
+    const res = await repriceMemberParticipants({ courseId: data.courseId ?? null });
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(context.supabase, context.userId, {
+      action: "membership.prices_synced",
+      entity: "course_participants",
+      entity_id: data.courseId ?? undefined,
+      metadata: { updated: res.updated, alreadyPaid: res.alreadyPaid, keptPrice: res.keptPrice },
+    });
+    return res;
   });
 
 export const deleteMembership = createServerFn({ method: "POST" })

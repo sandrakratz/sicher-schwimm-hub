@@ -31,12 +31,16 @@ export async function expireOffers(): Promise<number> {
   if (error) throw new Error(error.message)
   for (const e of data ?? []) {
     // Sofort freigeben, damit der Platz nicht hängen bleibt
-    const { data: claimed } = await supabaseAdmin
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from('waitlist_entries')
       .update({ status: 'expired', offer_token: null })
       .eq('id', e.id)
       .eq('status', 'offered')
       .select('id')
+    if (claimError) {
+      console.error('expire offer failed', e.id, claimError.message)
+      continue
+    }
     if (!claimed?.length) continue
     const count = (e.decline_count ?? 0) + 1
     try {
@@ -76,17 +80,24 @@ function sortCandidates<T extends { is_member: boolean | null; created_at: strin
   })
 }
 
-/** Gleicht den Mitgliedsstatus über die E-Mail mit den Mitgliedschaften ab. */
-async function resolveMember(email: string): Promise<boolean | null> {
+/** Gleicht den Mitgliedsstatus mit den Mitgliedschaften ab (E-Mail, Erziehungsberechtigte, Familie, Name). */
+async function resolveMember(entry: any, rows?: import('@/lib/membership-lookup.server').MemberRow[]): Promise<boolean | null> {
+  const { resolveMembership } = await import('@/lib/membership-lookup.server')
+  const m = await resolveMembership({ email: entry.parent_email, childName: entry.child_name }, rows)
+  return m.isMember
+}
+
+/**
+ * Zieht den Mitgliedsstatus eines Wartelisteneintrags nach (nur Aufwertung auf „Mitglied“
+ * bzw. Klärung von „unbekannt“), damit der richtige Preis berechnet wird.
+ */
+export async function refreshWaitlistMember(entry: any, rows?: import('@/lib/membership-lookup.server').MemberRow[]) {
+  if (entry.is_member === true) return
+  const isMember = await resolveMember(entry, rows)
+  if (isMember == null || (isMember === false && entry.is_member === false)) return
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-  const { data } = await supabaseAdmin
-    .from('memberships')
-    .select('status')
-    .ilike('email', email.trim())
-    .limit(1)
-    .maybeSingle()
-  if (!data) return null
-  return data.status === 'active'
+  await supabaseAdmin.from('waitlist_entries').update({ is_member: isMember }).eq('id', entry.id)
+  entry.is_member = isMember
 }
 
 /** Erzeugt ein Platzangebot inklusive E-Mail an die Eltern. */
@@ -94,6 +105,7 @@ async function createOffer(entry: any, course: any, program: any) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { queueTemplateEmail } = await import('@/lib/email-send.server')
 
+  await refreshWaitlistMember(entry)
   const days = program?.waitlist_offer_days ?? 3
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
   const token = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
@@ -164,6 +176,7 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
   const relevant = (courses ?? []).filter((c) => !c.ends_on || c.ends_on >= today)
 
   const offers: AllocationResult['offers'] = []
+  let memberRows: import('@/lib/membership-lookup.server').MemberRow[] | undefined
   const { data: allPrograms } = await supabaseAdmin.from('course_programs').select('id,slug')
   const { relatedProgramIds } = await import('@/lib/waitlist-programs')
 
@@ -182,16 +195,9 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
     let candidates = sortCandidates(entries ?? [])
     if (candidates.length === 0) continue
 
-    // Mitgliedsstatus nachziehen, falls noch unbekannt
-    for (const c of candidates) {
-      if (c.is_member == null) {
-        const isMember = await resolveMember(c.parent_email)
-        if (isMember != null) {
-          await supabaseAdmin.from('waitlist_entries').update({ is_member: isMember }).eq('id', c.id)
-          c.is_member = isMember
-        }
-      }
-    }
+    // Mitgliedsstatus nachziehen (auch „Nein“ kann inzwischen überholt sein)
+    memberRows ??= await (await import('@/lib/membership-lookup.server')).loadMemberships()
+    for (const c of candidates) await refreshWaitlistMember(c, memberRows)
     candidates = sortCandidates(candidates)
 
     // Mindestalter zum Kursstart prüfen – zu junge Kinder bleiben auf der Warteliste
@@ -246,7 +252,7 @@ function newToken() {
 async function deactivateEntry(entry: any, count: number, note: string) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { queueTemplateEmail } = await import('@/lib/email-send.server')
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('waitlist_entries')
     .update({
       status: 'removed',
@@ -258,6 +264,7 @@ async function deactivateEntry(entry: any, count: number, note: string) {
       admin_notes: stampNote(entry.admin_notes, `${note} → ${count}. Absage: Wartelistenplatz automatisch deaktiviert (nur über Vorstand).`),
     })
     .eq('id', entry.id)
+  if (error) throw new Error(`Wartelistenplatz konnte nicht deaktiviert werden: ${error.message}`)
   await queueTemplateEmail({
     templateName: 'waitlist-deactivated',
     recipientEmail: entry.parent_email,
@@ -273,7 +280,7 @@ export async function sendFollowup(entry: any, reason: 'declined' | 'expired', c
   const { queueTemplateEmail } = await import('@/lib/email-send.server')
   const token = newToken()
   const expiresAt = new Date(Date.now() + FOLLOWUP_DAYS * 86400000).toISOString()
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('waitlist_entries')
     .update({
       status: reason,
@@ -285,6 +292,7 @@ export async function sendFollowup(entry: any, reason: 'declined' | 'expired', c
       admin_notes: stampNote(entry.admin_notes, `${note} (${count}. Absage) – Rückfrage „Warteliste behalten?“ verschickt, Frist ${formatDateBerlin(expiresAt)}.`),
     })
     .eq('id', entry.id)
+  if (error) throw new Error(`Rückfrage konnte nicht gespeichert werden: ${error.message}`)
   await queueTemplateEmail({
     templateName: 'waitlist-followup',
     recipientEmail: entry.parent_email,
@@ -317,7 +325,7 @@ export async function registerDecline(
   const stayNote = opts.stay
     ? `bleibt auf der Warteliste${opts.availableFrom ? ` ab ${formatDateBerlin(opts.availableFrom)}` : ' (sofort)'}`
     : 'möchte nicht auf der Warteliste bleiben'
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('waitlist_entries')
     .update({
       status: opts.stay ? 'waiting' : 'removed',
@@ -334,13 +342,14 @@ export async function registerDecline(
       admin_notes: stampNote(entry.admin_notes, `${base} → ${count}. Absage, ${stayNote}.`),
     })
     .eq('id', entry.id)
+  if (error) throw new Error(`Absage konnte nicht gespeichert werden: ${error.message}`)
   return { deactivated: false, count }
 }
 
 /** Antwort auf die Rückfrage-Mail. */
 export async function answerFollowup(entry: any, stay: boolean, availableFrom: string | null) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-  await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('waitlist_entries')
     .update({
       status: stay ? 'waiting' : 'removed',
@@ -358,6 +367,7 @@ export async function answerFollowup(entry: any, stay: boolean, availableFrom: s
       ),
     })
     .eq('id', entry.id)
+  if (error) throw new Error(`Antwort konnte nicht gespeichert werden: ${error.message}`)
 }
 
 /** Rückfragen ohne Antwort nach Fristablauf: Wartelistenplatz streichen (keine Sperrliste). */

@@ -34,6 +34,10 @@ export async function bookWaitlistEntry(
   if (!course) throw new Error('Kurs nicht gefunden')
   const program = (course as any).course_programs ?? null
 
+  // Mitgliedschaft kann seit dem Eintrag/Angebot hinzugekommen sein
+  const { refreshWaitlistMember } = await import('@/lib/waitlist.server')
+  await refreshWaitlistMember(entry)
+
   const price =
     entry.is_member === true
       ? course.price_member ?? program?.price_member ?? null

@@ -366,7 +366,17 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     const isFull = free != null && free <= 0
     const status: 'confirmed' | 'waiting' = isFull ? 'waiting' : 'confirmed'
 
-    const price = data.isMember
+    // Bestehende aktive Mitgliedschaft hat Vorrang vor der Angabe im Formular
+    let isMember = data.isMember
+    try {
+      const { resolveMembership } = await import('@/lib/membership-lookup.server')
+      const found = await resolveMembership({ email: data.parentEmail, childName: data.childName })
+      if (found.isMember === true) isMember = true
+    } catch (err) {
+      console.error('membership lookup failed', err)
+    }
+
+    const price = isMember
       ? course.price_member ?? program?.price_member ?? null
       : course.price_non_member ?? program?.price_non_member ?? null
 
@@ -419,7 +429,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       date_of_birth: data.childDob,
       status,
       notes: data.healthInfo || null,
-      is_member: data.isMember,
+      is_member: isMember,
       price_amount: price,
       online_booking: true,
       paid: false,
@@ -450,7 +460,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
         unit_count: course.unit_count ?? null,
         waitlist: isFull,
-        is_member: data.isMember,
+        is_member: isMember,
         price_amount: price,
         payment_due_days: dueDays,
         payment_method: paymentMethod,

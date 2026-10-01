@@ -226,7 +226,11 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
         reason: data.reason || null,
         courseName: c?.name ?? null,
       })
-      await allocateWaitlist(entry.offer_course_id)
+      try {
+        await allocateWaitlist(entry.offer_course_id)
+      } catch (err) {
+        console.error('allocate after decline failed', err)
+      }
       return { ok: true as const, action: 'decline' as const, deactivated: res.deactivated, count: res.count }
     }
 
@@ -444,6 +448,62 @@ export const offerWaitlistPlace = createServerFn({ method: 'POST' })
     if (free != null && free <= 0) throw new Error('In diesem Kurs ist kein Platz mehr frei')
     await offerPlaceManually(entry, course, (course as any).course_programs ?? null)
     return { ok: true }
+  })
+
+/**
+ * Absage zu einem laufenden Platzangebot, die nicht über den Link kam (Telefon, E-Mail …).
+ * Gibt den Platz frei, zählt als Absage und vergibt ihn an den nächsten Wartenden.
+ */
+export const recordWaitlistDecline = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        entryId: z.string().uuid(),
+        stay: z.boolean(),
+        availableFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        reason: z.string().trim().max(500).nullable().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertStaff(context)
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { data: entry } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('*')
+      .eq('id', data.entryId)
+      .maybeSingle()
+    if (!entry) throw new Error('Eintrag nicht gefunden')
+    if (entry.status !== 'offered') throw new Error('Für diesen Eintrag läuft kein Platzangebot')
+
+    const { data: c } = entry.offer_course_id
+      ? await supabaseAdmin.from('courses').select('name').eq('id', entry.offer_course_id).maybeSingle()
+      : { data: null }
+    const { registerDecline, allocateWaitlist } = await import('@/lib/waitlist.server')
+    const res = await registerDecline(entry, {
+      stay: data.stay,
+      availableFrom: data.availableFrom ?? null,
+      reason: data.reason || null,
+      courseName: c?.name ?? null,
+    })
+
+    let newOffers = 0
+    try {
+      newOffers = (await allocateWaitlist(entry.offer_course_id)).offers.length
+    } catch (err) {
+      console.error('allocate after manual decline failed', err)
+    }
+
+    const { logAudit } = await import('@/lib/audit.server')
+    await logAudit(context.supabase, context.userId, {
+      action: 'waitlist.decline_recorded',
+      entity: 'waitlist_entries',
+      entity_id: data.entryId,
+      metadata: { stay: data.stay, deactivated: res.deactivated, count: res.count },
+    })
+
+    return { ok: true as const, deactivated: res.deactivated, count: res.count, newOffers }
   })
 
 const updateSchema = z.object({
