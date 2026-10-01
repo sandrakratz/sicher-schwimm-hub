@@ -6,7 +6,6 @@ Disallow: /auth
 Disallow: /reset-password
 Disallow: /unsubscribe
 Disallow: /email/
-Disallow: /lovable/
 Disallow: /api/
 
 Sitemap: https://sicher-schwimmen.com/sitemap.xml
