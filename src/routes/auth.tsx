@@ -11,7 +11,7 @@ import { Waves, ArrowLeft, Info } from "lucide-react";
 import logo from "@/assets/sicher-schwimmen-rund.png";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Login – Sicher Schwimmen e.V." }] }),
+  head: () => ({ meta: [{ title: "Login – Sicher Schwimmen e.V." }, { name: "robots", content: "noindex, nofollow" }] }),
   component: AuthPage,
 });
 

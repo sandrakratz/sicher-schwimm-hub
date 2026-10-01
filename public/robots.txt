@@ -1,10 +1,10 @@
 User-agent: *
 Allow: /
-Disallow: /portal/
-Disallow: /admin/
-Disallow: /auth
-Disallow: /reset-password
-Disallow: /unsubscribe
+
+# Mitglieder-, Trainer-, Verwaltungs- und Login-Seiten werden bewusst NICHT hier gesperrt, sondern tragen
+# <meta name="robots" content="noindex, nofollow">. Eine Sperre in dieser Datei würde verhindern, dass
+# Suchmaschinen den noindex-Hinweis lesen, und die Adresse könnte trotzdem (ohne Inhalt) in den Ergebnissen erscheinen.
+# Technische Schnittstellen sind keine Seiten und bleiben gesperrt.
 Disallow: /email/
 Disallow: /api/
 
