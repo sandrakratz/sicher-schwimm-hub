@@ -11,7 +11,13 @@ interface Props {
   child_dob?: string
   swimming_level?: string
   desired_course?: string
+  /** Nur zur Erkennung, ob Gesundheitsangaben vorliegen – der Text selbst wird nie in die E-Mail geschrieben. */
   health_info?: string
+  has_health_info?: boolean
+  /** Zustimmungen aus dem Formular (nur anzeigen, wenn bekannt). */
+  terms_accepted?: boolean
+  privacy_accepted?: boolean
+  health_consent?: boolean
   message?: string
   created_at?: string
   program_name?: string
@@ -30,8 +36,21 @@ function periodLabel(p: Props) {
   return `${from} – ${to}`
 }
 
+const REQUIRED_FIELDS: Array<[keyof Props, string]> = [
+  ['parent_name', 'Name der Eltern'],
+  ['parent_email', 'E-Mail'],
+  ['parent_phone', 'Telefon'],
+  ['child_name', 'Name des Kindes'],
+  ['child_dob', 'Geburtsdatum des Kindes'],
+]
+
+const okStyle = { margin: '2px 0', color: '#166534' }
+const warnStyle = { margin: '2px 0', color: '#b45309', fontWeight: 'bold' as const }
+
 const Email = (p: Props) => {
   const hasCourse = Boolean(p.course_name || p.course_starts_on)
+  const hasHealth = p.has_health_info ?? Boolean(p.health_info?.trim())
+  const missing = REQUIRED_FIELDS.filter(([key]) => !String(p[key] ?? '').trim()).map(([, label]) => label)
   return (
     <Html lang="de">
       <Head />
@@ -53,9 +72,35 @@ const Email = (p: Props) => {
             <Text><strong>Geburtsdatum:</strong> {p.child_dob || '—'}</Text>
             <Text><strong>Schwimmlevel:</strong> {p.swimming_level || '—'}</Text>
             <Text><strong>Gewünschter Kurs:</strong> {p.desired_course || '—'}</Text>
-            <Text><strong>Gesundheit:</strong> {p.health_info || '—'}</Text>
             <Text><strong>Nachricht:</strong> {p.message || '—'}</Text>
             <Text><strong>Eingegangen am:</strong> {formatDateTimeBerlin(p.created_at)}</Text>
+          </Section>
+          <Hr />
+          <Section style={{ backgroundColor: hasHealth ? '#fffbeb' : '#f8fafc', padding: '12px 16px', borderRadius: '8px' }}>
+            <Text style={{ margin: 0 }}>
+              <strong>Gesundheitsangaben:</strong>{' '}
+              {hasHealth
+                ? 'JA – es wurden Gesundheitsangaben vermerkt. Aus Datenschutzgründen stehen sie nicht in dieser E-Mail, sondern nur im Admin-Bereich unter „Kursanfragen".'
+                : 'keine Angaben gemacht'}
+            </Text>
+          </Section>
+          <Section style={{ marginTop: '12px', backgroundColor: missing.length ? '#fffbeb' : '#f0fdf4', padding: '12px 16px', borderRadius: '8px' }}>
+            <Text style={{ margin: '0 0 4px' }}><strong>Prüfung der Pflichtangaben</strong></Text>
+            {missing.length === 0 ? (
+              <Text style={okStyle}>✓ Alle Pflichtfelder sind ausgefüllt (Eltern, E-Mail, Telefon, Kind, Geburtsdatum).</Text>
+            ) : (
+              <Text style={warnStyle}>⚠ Es fehlen Pflichtangaben: {missing.join(', ')}</Text>
+            )}
+            {p.terms_accepted === true && <Text style={okStyle}>✓ Kursteilnahmebedingungen akzeptiert.</Text>}
+            {p.terms_accepted === false && <Text style={warnStyle}>⚠ Kursteilnahmebedingungen nicht bestätigt.</Text>}
+            {p.privacy_accepted === true && <Text style={okStyle}>✓ Datenschutzhinweise bestätigt.</Text>}
+            {p.privacy_accepted === false && <Text style={warnStyle}>⚠ Datenschutzhinweise nicht bestätigt.</Text>}
+            {hasHealth && p.health_consent === true && (
+              <Text style={okStyle}>✓ Einwilligung zur Verarbeitung der Gesundheitsangaben (Art. 9 DSGVO) erteilt.</Text>
+            )}
+            {hasHealth && p.health_consent === false && (
+              <Text style={warnStyle}>⚠ Gesundheitsangaben ohne dokumentierte Einwilligung.</Text>
+            )}
           </Section>
           {hasCourse && (
             <>
