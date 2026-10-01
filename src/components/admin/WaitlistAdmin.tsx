@@ -394,7 +394,7 @@ export function WaitlistAdmin() {
   const migratedOnce = useRef(false);
 
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: loadError } = useQuery({
     queryKey: ["admin-waitlist"],
     queryFn: () => listWaitlist(),
   });
@@ -513,6 +513,17 @@ export function WaitlistAdmin() {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Warteliste wird geladen…
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
+        <p className="font-semibold">Die Warteliste konnte nicht geladen werden.</p>
+        <p className="text-muted-foreground">
+          Das ist ein technischer Fehler, die Einträge sind nicht gelöscht. Meldung: {loadError.message}
+        </p>
       </div>
     );
   }
