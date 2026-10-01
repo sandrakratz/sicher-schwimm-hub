@@ -34,6 +34,9 @@ Die `.env` ist im öffentlichen Repository versioniert und darf **nur öffentlic
 4. Speicherbereiche `documents` und `media` (beide privat) – werden von der Migration `20260930120000_create_storage_buckets.sql` angelegt. Die 9 Dateien
    (Liste in `storage.md`) mit **exakt gleichem Dateinamen** hochladen, weil die Datenbank die Namen speichert
    (`documents/…`, `media/events/…`, `media/news/…`).
+   Zusätzlich der private Bereich `branding` (Migration `20261001130000_branding_bucket.sql`) mit den zwei Dateien **`signature.png`** (Unterschrift) und
+   **`stamp.png`** (Vereinsstempel), exakt so benannt. Sie stehen **nicht** im Code (öffentliches Repository) und werden nur beim Erstellen der
+   Teilleistungsnachweise vom Server geladen. Fehlt eine Datei, wird kein Nachweis erstellt (Fehlermeldung im Verwaltungsbereich bzw. im Protokoll).
 5. Authentication:
    - Sign-in: nur E-Mail + Passwort. „Confirm email“ **an**, Registrierung offen lassen wie bisher.
    - URL Configuration: Site URL `https://sicher-schwimmen.com`; Redirect URLs `https://sicher-schwimmen.com/**`, `https://www.sicher-schwimmen.com/**`.

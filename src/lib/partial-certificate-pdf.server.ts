@@ -1,6 +1,6 @@
 // Server-only: Teilleistungsnachweis (DPO-Zwischenbescheinigung) als PDF.
 // Aussteller ist immer Michael Kratz mit Registrierungsnummer, inkl.
-// hinterlegter Unterschrift, Vereinsstempel und Logo.
+// Unterschrift und Vereinsstempel (aus dem privaten Speicher "branding") und Logo.
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { PDFFont } from "pdf-lib";
 import { ORG, ASSOCIATION } from "@/lib/billing-config";
@@ -11,7 +11,7 @@ import {
   firstCriterionDate,
   type ExamCriteriaState,
 } from "@/lib/swim-exams";
-import { LOGO_JPG_B64, SIGNATURE_PNG_B64, STAMP_PNG_B64 } from "@/lib/pdf-branding.server";
+import { LOGO_JPG_B64, loadBrandingImages } from "@/lib/pdf-branding.server";
 
 export const EXAMINER_NAME = "Michael Kratz";
 export const EXAMINER_TITLE =
@@ -84,8 +84,9 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const logo = await pdf.embedJpg(Buffer.from(LOGO_JPG_B64, "base64"));
-  const signature = await pdf.embedPng(Buffer.from(SIGNATURE_PNG_B64, "base64"));
-  const stamp = await pdf.embedPng(Buffer.from(STAMP_PNG_B64, "base64"));
+  const images = await loadBrandingImages();
+  const signature = await pdf.embedPng(images.signature);
+  const stamp = await pdf.embedPng(images.stamp);
   const page = pdf.addPage(A4);
   let y = A4[1] - 56;
 
