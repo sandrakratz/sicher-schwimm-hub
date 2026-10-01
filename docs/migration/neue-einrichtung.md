@@ -33,7 +33,10 @@ Nicht mehr nötig: LOVABLE_API_KEY, LOVABLE_SEND_URL, GOOGLE_SEARCH_CONSOLE_API_
 5. Authentication:
    - Sign-in: nur E-Mail + Passwort. „Confirm email“ **an**, Registrierung offen lassen wie bisher.
    - URL Configuration: Site URL `https://sicher-schwimmen.com`; Redirect URLs `https://sicher-schwimmen.com/**`, `https://www.sicher-schwimmen.com/**`.
-   - Hooks → **Send Email** → HTTPS → `https://sicher-schwimmen.com/email/auth-hook`. Erzeugtes Secret siehe Tabelle oben.
+   - Hooks → **Send Email** → HTTPS → `https://sicher-schwimm-hub.tiny-lab-6d41.workers.dev/email/auth-hook` (Adresse des Workers, unabhängig vom DNS;
+     die Adresse der Domain geht erst nach dem Umschalten). Erzeugtes Secret **zuerst** bei Cloudflare als `SEND_EMAIL_HOOK_SECRET` eintragen, **dann** den Hook bei Supabase speichern.
+   - Zusätzlich in URL Configuration die Redirect-URL `https://sicher-schwimm-hub.tiny-lab-6d41.workers.dev/**` eintragen, wenn auf der Worker-Adresse getestet werden soll.
+   - „Allow new users to sign up“ **an** lassen: Konten entstehen am Ende des Mitgliedsantrags. Die Freischaltung durch den Vorstand läuft in der App (Profilstatus `pending`), nicht über diesen Schalter.
 6. Admin-Schlüssel (service_role) neu kopieren – der alte war in Lovable nicht einsehbar.
 
 ## 3. Resend
@@ -42,10 +45,15 @@ Nicht mehr nötig: LOVABLE_API_KEY, LOVABLE_SEND_URL, GOOGLE_SEARCH_CONSOLE_API_
    (aktuell ein TXT für DKIM und zwei CNAME, Namen enden auf `.versand`). **Nicht** `notify…` verwenden: Diese Unteradresse ist per NS-Eintrag
    (`ns3/ns4.lovable.cloud`) an Lovable delegiert; Einträge darunter würden von Lovable beantwortet, nicht von One.com. Den NS-Eintrag erst nach
    dem Umschalttag entfernen. Die Hauptdomain und die Postfächer bei One.com bleiben unberührt.
-2. Webhook anlegen: `https://sicher-schwimmen.com/email/events`, Ereignisse `email.bounced` und `email.complained`.
+2. Webhook anlegen: `https://…/email/events` (aktuell auf der Worker-Adresse eingetragen, bleibt auch nach dem Umschalten gültig), Ereignisse `email.bounced` und `email.complained`.
 3. Der kostenlose Tarif erlaubt 100 Mails/Tag. Ab 80 Mails in 24 Stunden geht automatisch eine Warnung an info@sicher-schwimmen.com.
 
 ## 4. Tägliche Aufgaben neu anlegen
+
+**Reihenfolge:** Erst die alten Aufgaben im alten Projekt (Lovable Cloud) pausieren, dann die neuen anlegen – sonst gehen Erinnerungen doppelt raus.
+Voraussetzung: Erweiterungen `pg_cron` und `pg_net` sind eingeschaltet. Am 01.10.2026 so eingerichtet; Kontrolle:
+`select jobname, schedule, active from cron.job order by jobname;` (5 Zeilen, alle `true`) und
+`select id, status_code, created from net._http_response order by created desc limit 10;` (nach dem ersten Lauf `200`; `401` = falscher Schlüssel in der Aufgabe).
 
 Im Supabase SQL-Editor ausführen. `<PUBLISHABLE_KEY>` durch den öffentlichen Schlüssel des **neuen** Projekts ersetzen.
 Falls die Zeitpläne aus dem Lovable-Export mit der alten Adresse mitkamen, werden sie dabei ersetzt.
@@ -80,17 +88,50 @@ Das hält das Projekt voraussichtlich wach, ist von Supabase aber nicht zugesich
 ## 5. Cloudflare (Worker mit Git-Anbindung)
 
 Der Bau (`bun run build`) erzeugt fertig eine Cloudflare-Konfiguration (`.output/server/wrangler.json`, Name
-`sandrakratz-sicher-schwimm-hub`, Node-Kompatibilität an). Lokal getestet: Bau klappt, Seite startet in der Cloudflare-Laufzeit,
-die neuen Schnittstellen lehnen Anfragen ohne gültige Signatur ab. **Noch nicht getestet:** der echte Deploy bei Cloudflare.
+`sicher-schwimm-hub` aus `wrangler.jsonc`, Node-Kompatibilität an). Stand 01.10.2026: Der Worker läuft produktiv unter
+`sicher-schwimmen.com` und `www.sicher-schwimmen.com` (Ablauf siehe Abschnitt 6).
 
 1. Cloudflare → Workers & Pages → Create → Import a repository → dieses GitHub-Repository, Branch `main`.
 2. Build command: `bun run build` · Deploy command: `bunx wrangler deploy` (folgt der beim Bau erzeugten Konfiguration).
 3. Variablen aus Abschnitt 1 eintragen (Laufzeit-Variablen unter Settings → Variables and Secrets). Die `VITE_…`-Werte stehen schon in `.env` und werden beim Bauen eingebaut.
-   Den Worker-Namen in Cloudflare exakt `sandrakratz-sicher-schwimm-hub` nennen (so heißt er in der beim Bau erzeugten Konfiguration).
+   Den Worker-Namen in Cloudflare exakt `sicher-schwimm-hub` nennen (so steht er in `wrangler.jsonc`).
 4. Zuerst mit der vorläufigen `*.workers.dev`-Adresse testen (Anmeldung, Mail, Datei, Zeitplan von Hand auslösen).
-5. Erst danach die Domain umstellen: DNS-Einträge (vor allem die für E-Mail/Postfächer bei One.com) vollständig nach Cloudflare übernehmen,
-   dann Nameserver wechseln, dann im Worker unter Domains & Routes `sicher-schwimmen.com` und `www.sicher-schwimmen.com` hinzufügen.
+5. Erst danach die Domain umstellen (Ablauf mit allen Stolpersteinen in Abschnitt 6).
 6. Hinweis zur Rechenzeit: Der kostenlose Cloudflare-Tarif begrenzt die Rechenzeit pro Anfrage (10 ms). Falls PDF- oder Excel-Erzeugung
    mit „Worker exceeded CPU time limit“ scheitert, hilft der Tarif „Workers Paid“ (ca. 5 $/Monat).
 
 Die Bilder (Logo, Baderegeln-Poster, Vorstandsfotos) liegen jetzt als normale Dateien in `src/assets/` und werden mit der Seite ausgeliefert.
+
+## 6. Umschalttag (01.10.2026): Ablauf und Stolpersteine
+
+### Ablauf, der funktioniert hat
+1. **DNS vorbereiten:** In Cloudflare → Domains → Add a domain `sicher-schwimmen.com` (Tarif Free, Einträge automatisch einlesen lassen). Der Scan findet MX, SPF, DMARC und die Google-Bestätigung,
+   **nicht** die Einträge der Unteradressen. Von Hand nachtragen (jeweils **DNS only**, kein Proxy): die beiden CNAME `rsend.versand` und `send.versand` sowie den TXT `resend._domainkey.versand`
+   (Werte 1:1 aus One.com bzw. Resend kopieren). Die A-Einträge der alten Seite (Lovable-Adresse), `_lovable…` und `notify`-NS **nicht** übernehmen bzw. löschen.
+2. **DNSSEC bei One.com deaktivieren** (DNS → Nameserver → DNSSEC), bevor die Nameserver gewechselt werden. Sonst können Besucher die Domain zeitweise nicht auflösen.
+3. **Nameserver bei One.com** auf die beiden von Cloudflare genannten ändern, danach in Cloudflare „I updated my nameservers“. Die Domain war nach wenigen Minuten aktiv.
+4. **Domains mit dem Worker verbinden:** Worker → Settings → Domains & Routes → Add Domain → Custom domain. Das geht erst, wenn die Domain bei Cloudflare **aktiv** ist. Die Domain wird dabei
+   **getrennt** eingegeben: Feld „Subdomain“ leer lassen für `sicher-schwimmen.com`, `www` für `www.sicher-schwimmen.com`. Eingabe des vollen Namens in einem Feld führt zu „No zones match“.
+   **Nicht** „Find similar“ oder „Onboard domain“ wählen (das ist der Weg zum Domain-Kauf).
+5. **Danach:** Aufgaben anlegen (Abschnitt 4), Test-Mail an und von einem Postfach bei One.com. Lokale DNS-Zwischenspeicher (PC, Router, Anbieter) brauchen teils Stunden; zum Prüfen das Handy im Mobilfunknetz
+   oder `dnschecker.org` nutzen.
+
+### Stolperstein: Lovable schreibt in das Repository
+Lovable war mit dem GitHub-Repository verbunden. Beim Pausieren der Aufgaben hat es am 01.10.2026 vier Änderungen in `main` geschrieben und dabei `.env` auf das **alte** Projekt zurückgestellt
+sowie `bun.lock`/`package.json` verändert (Verweise auf Lovables privates Paketlager). Cloudflare hat daraus sofort gebaut und live geschaltet: Browser sprach mit der alten, der Server mit der neuen Datenbank,
+Buchungen funktionierten nicht mehr. Behoben durch Rollback bei Cloudflare (Worker → Deployments → Version History → Rollback auf den letzten guten Stand) und anschließend Zurücksetzen der drei Dateien per Pull Request.
+- **Verbindung zwischen Lovable und GitHub getrennt** (in den GitHub-Einstellungen des Lovable-Projekts). Nicht wieder verbinden.
+- Vor jedem Übernehmen eines Pull Requests prüfen, dass `.env` weiter auf das neue Projekt (`kqaajxvwdwpgrxwgqcvi`) zeigt.
+- Jede Änderung in `main` löst bei Cloudflare einen Bau und eine Live-Schaltung aus. Rollback ist jederzeit möglich.
+
+### Stolperstein: Vorschau-Adressen
+Die `*-sicher-schwimm-hub.tiny-lab-6d41.workers.dev`-Vorschauen einzelner Zweige haben nicht die Einstellungen der Hauptadresse und zeigen deshalb die Fehlerseite. Zum Testen die Hauptadresse
+`sicher-schwimm-hub.tiny-lab-6d41.workers.dev` verwenden.
+
+## 7. Nach dem Umzug (Stand 01.10.2026)
+
+- Das Lovable-Projekt ist stillgelegt (alle fünf Aufgaben pausiert, Seite nicht mehr veröffentlicht), aber **nicht gelöscht**. Die alte Datenbank bleibt vier bis sechs Wochen als Sicherung; vor dem Löschen ein letzter Export.
+- Daten, die zwischen dem Export vom 30.09. und dem Umschalten in der alten Datenbank angekommen sind, prüfen und bei Bedarf in der neuen nachtragen.
+- Der NS-Eintrag `notify` (→ `ns3/ns4.lovable.cloud`) liegt nicht mehr in der DNS-Zone und braucht keine Aktion; Lovable-Postfach-Verifizierungen (`_lovable…`) sind entfallen.
+- Resend (kostenloser Tarif): 100 Mails/Tag, Warnung ab 80 Mails in 24 Stunden an `info@sicher-schwimmen.com`.
+- Kontrolle am Folgetag: erster Lauf der täglichen Aufgaben (Zeitpläne in UTC: 06:00 UTC = 08:00 Uhr Sommerzeit, ab Ende Oktober 07:00 Uhr Winterzeit) mit der Abfrage aus Abschnitt 4 prüfen.
