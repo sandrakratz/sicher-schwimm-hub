@@ -165,7 +165,7 @@ export async function bookWaitlistEntry(
       child_name: entry.child_name,
       child_dob: entry.child_dob || '',
       desired_course: `${program?.name ?? course.name} – ${course.name}`,
-      health_info: entry.notes || '',
+      has_health_info: Boolean(entry.notes?.trim()),
       message: `${label} – Platz verbindlich gebucht`,
       submitted_at: issuedAt,
       created_at: issuedAt,

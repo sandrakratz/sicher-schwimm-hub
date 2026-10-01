@@ -130,10 +130,11 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
         child_name: data.childName,
         child_dob: data.childDob || '',
         desired_course: [programName, courseName].filter(Boolean).join(' – ') || 'Ohne Angabe',
-        health_info: [`Schwimmlevel: ${data.swimmingLevel}`, `Mitglied: ${data.isMember ? 'ja' : 'nein'}`, data.notes || null]
-          .filter(Boolean)
-          .join('\n'),
-        message: 'Neue Eintragung auf der Warteliste über die Webseite',
+        swimming_level: data.swimmingLevel,
+        // Anmerkungen können Gesundheitsangaben enthalten: nur Hinweis, Text steht im Admin-Bereich
+        has_health_info: Boolean(data.notes),
+        privacy_accepted: true,
+        message: `Neue Eintragung auf der Warteliste über die Webseite (Mitglied: ${data.isMember ? 'ja' : 'nein'})`,
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         program_name: programName,

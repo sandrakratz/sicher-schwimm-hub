@@ -210,7 +210,18 @@ function Page() {
           phone: parsed.data.phone,
           city: parsed.data.address_city,
           membership_type: parsed.data.membership_type,
-          iban: parsed.data.sepa_iban,
+          // Keine Bankdaten per E-Mail: nur das Ergebnis der Pflichtfeld-Prüfung (alles wurde oben validiert).
+          checks: {
+            personal: Boolean(parsed.data.first_name && parsed.data.last_name && parsed.data.date_of_birth && parsed.data.email && parsed.data.phone),
+            address: Boolean(parsed.data.address_street && parsed.data.address_zip && parsed.data.address_city),
+            sepa: Boolean(
+              parsed.data.sepa_account_holder && parsed.data.sepa_iban && parsed.data.sepa_bank_name &&
+              parsed.data.sepa_signature_place && parsed.data.sepa_signature_date && parsed.data.sepa_mandate_accepted,
+            ),
+            consents: parsed.data.accepted_statutes && parsed.data.accepted_rules && parsed.data.accepted_privacy,
+            minor: isMinorMember,
+            minor_ok: isMinorMember ? Boolean(minor_consents) : undefined,
+          },
           created_at: createdAt,
         },
       }),
