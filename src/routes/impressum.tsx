@@ -30,9 +30,6 @@ export const Route = createFileRoute("/impressum")({
         Der Verein wird gerichtlich und außergerichtlich durch zwei Vorstandsmitglieder gemeinsam vertreten.
       </p>
 
-      <h2 className="font-display text-2xl font-bold text-primary-deep">Kassenprüfung</h2>
-      <p>Anja Brauer-Walbe</p>
-
       <h2 className="font-display text-2xl font-bold text-primary-deep">Kontakt</h2>
       <p>
         E-Mail: <a href="mailto:info@sicher-schwimmen.com" className="text-primary underline">info@sicher-schwimmen.com</a><br />
@@ -88,8 +85,7 @@ export const Route = createFileRoute("/impressum")({
         <Link to="/widerruf" className="text-primary underline">Widerruf</Link>.
       </p>
 
-
-      <p className="text-sm text-muted-foreground">Stand: Juli 2026</p>
+      <p className="text-sm text-muted-foreground">Stand: Oktober 2026</p>
     </LegalPage>
   ),
 });
