@@ -21,26 +21,33 @@ export const suggestMatchForRequest = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const email = (data.email || '').trim().toLowerCase()
 
+    const { resolveMembership } = await import('@/lib/membership-lookup.server')
+    let childName: string | null = null
+
     // Feste Verknüpfung der Anfrage bevorzugen
     if (data.requestId) {
       const { data: req } = await supabaseAdmin
         .from('course_requests')
-        .select('profile_id,membership_id')
+        .select('profile_id,membership_id,child_name')
         .eq('id', data.requestId)
         .maybeSingle()
+      childName = ((req as any)?.child_name as string | null | undefined) ?? null
       const linkedProfile = (req as any)?.profile_id as string | null | undefined
       const linkedMembership = (req as any)?.membership_id as string | null | undefined
       if (linkedProfile || linkedMembership) {
-        const [{ data: prof }, { data: mem }] = await Promise.all([
+        const [{ data: prof }, { data: mem }, found] = await Promise.all([
           linkedProfile
             ? supabaseAdmin.from('profiles').select('id,email,first_name,last_name').eq('id', linkedProfile).maybeSingle()
             : Promise.resolve({ data: null }),
           linkedMembership
             ? supabaseAdmin.from('memberships').select('status').eq('id', linkedMembership).maybeSingle()
             : Promise.resolve({ data: null }),
+          resolveMembership({ email, childName }),
         ])
+        const linkedActive = !!mem && (mem as { status: string }).status === 'active'
         return {
-          isMember: mem ? (mem as { status: string }).status === 'active' : null,
+          // Verknüpfte Mitgliedschaft nur dann „Nein“, wenn auch sonst keine aktive gefunden wird
+          isMember: linkedActive ? true : found.isMember ?? (mem ? false : null),
           parentUserId: (prof as any)?.id ?? null,
           parentLabel: prof
             ? [(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(' ') || (prof as any).email
@@ -52,12 +59,12 @@ export const suggestMatchForRequest = createServerFn({ method: 'POST' })
     if (!email) return { isMember: null, parentUserId: null, parentLabel: null }
 
 
-    const [memRes, profRes] = await Promise.all([
-      supabaseAdmin.from('memberships').select('id,status').ilike('email', email).limit(1).maybeSingle(),
+    const [found, profRes] = await Promise.all([
+      resolveMembership({ email, childName }),
       supabaseAdmin.from('profiles').select('id,email,first_name,last_name').ilike('email', email).limit(1).maybeSingle(),
     ])
 
-    const isMember = memRes.data ? memRes.data.status === 'active' : null
+    const isMember = found.isMember
     const parentUserId = profRes.data?.id ?? null
     const parentLabel = profRes.data
       ? [profRes.data.first_name, profRes.data.last_name].filter(Boolean).join(' ') || profRes.data.email
@@ -168,10 +175,11 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
           .from('memberships').select('status').eq('id', membershipId).maybeSingle()
         if (mem) isMember = mem.status === 'active'
       }
-      if (isMember == null && req.parent_email) {
-        const { data: mem } = await supabaseAdmin
-          .from('memberships').select('status').ilike('email', req.parent_email).limit(1).maybeSingle()
-        if (mem) isMember = mem.status === 'active'
+      // Nicht nur die verknüpfte Mitgliedschaft: auch E-Mail, Erziehungsberechtigte, Familie, Kindname
+      if (isMember !== true) {
+        const { resolveMembership } = await import('@/lib/membership-lookup.server')
+        const found = await resolveMembership({ email: req.parent_email, childName: req.child_name })
+        if (found.isMember != null) isMember = found.isMember
       }
     }
 

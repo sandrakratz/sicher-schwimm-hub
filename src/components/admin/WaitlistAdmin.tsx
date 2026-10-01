@@ -24,6 +24,7 @@ import {
   deleteWaitlistEntry,
   migrateWaitingRequests,
   bookWaitlistPlaceDirect,
+  recordWaitlistDecline,
 } from "@/lib/waitlist.functions";
 
 const PAYMENT_LABEL: Record<string, { label: string; className: string }> = {
@@ -391,6 +392,10 @@ export function WaitlistAdmin() {
   const qc = useQueryClient();
   const [view, setView] = useState<"waiting" | "offered" | "done">("waiting");
   const [detail, setDetail] = useState<WaitlistEntry | null>(null);
+  const [declineFor, setDeclineFor] = useState<WaitlistEntry | null>(null);
+  const [declineStay, setDeclineStay] = useState(true);
+  const [declineFrom, setDeclineFrom] = useState("");
+  const [declineReason, setDeclineReason] = useState("");
   const migratedOnce = useRef(false);
 
 
@@ -448,6 +453,21 @@ export function WaitlistAdmin() {
       invalidate();
     },
     onError: (e: Error) => toast.error(e.message || "Buchung fehlgeschlagen"),
+  });
+
+  const recordDecline = useMutation({
+    mutationFn: (v: { entryId: string; stay: boolean; availableFrom: string | null; reason: string | null }) =>
+      recordWaitlistDecline({ data: v }),
+    onSuccess: (res) => {
+      toast.success(
+        res.deactivated
+          ? "Absage erfasst – 3. Absage, Wartelistenplatz wurde deaktiviert."
+          : `Absage erfasst (${res.count}. Absage). Platz ist frei${res.newOffers > 0 ? `, ${res.newOffers} neues Angebot verschickt` : ""}.`,
+      );
+      setDeclineFor(null);
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message || "Absage konnte nicht erfasst werden"),
   });
 
   const update = useMutation({
@@ -576,6 +596,7 @@ export function WaitlistAdmin() {
               <li>Der Platz geht sofort an das nächste passende Kind.</li>
               <li>Eltern entscheiden direkt: auf der Warteliste bleiben (sofort oder ab Wunschdatum) oder abmelden.</li>
               <li>Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.</li>
+              <li>Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage erfassen“ klicken – der Platz wird dann freigegeben.</li>
             </ul>
           </div>
           <div>
@@ -868,6 +889,21 @@ export function WaitlistAdmin() {
                               ))}
                             </select>
                           )}
+                          {e.status === "offered" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title="Eltern haben das Angebot telefonisch oder per E-Mail abgelehnt"
+                              onClick={() => {
+                                setDeclineStay(true);
+                                setDeclineFrom("");
+                                setDeclineReason("");
+                                setDeclineFor(e as unknown as WaitlistEntry);
+                              }}
+                            >
+                              Absage erfassen
+                            </Button>
+                          )}
                           {e.status === "waiting" && (
                             <Button
                               size="sm"
@@ -937,7 +973,57 @@ export function WaitlistAdmin() {
         }}
       />
 
-
+      <Dialog open={!!declineFor} onOpenChange={(v) => !v && setDeclineFor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Absage erfassen – {String(declineFor?.child_name ?? "")}</DialogTitle>
+            <DialogDescription>
+              Der reservierte Platz wird freigegeben, die Absage zählt mit und der Platz geht an das nächste Kind.
+              Es wird keine Rückfrage-Mail verschickt.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <label className="flex items-start gap-2">
+              <input type="radio" checked={declineStay} onChange={() => setDeclineStay(true)} className="mt-1" />
+              <span>Bleibt auf der Warteliste</span>
+            </label>
+            {declineStay && (
+              <div className="ml-6 space-y-1">
+                <label className="text-xs text-muted-foreground">Frühestens verfügbar ab (optional)</label>
+                <Input type="date" value={declineFrom} onChange={(ev) => setDeclineFrom(ev.target.value)} />
+              </div>
+            )}
+            <label className="flex items-start gap-2">
+              <input type="radio" checked={!declineStay} onChange={() => setDeclineStay(false)} className="mt-1" />
+              <span>Möchte nicht mehr auf der Warteliste stehen</span>
+            </label>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Grund (optional)</label>
+              <Input value={declineReason} onChange={(ev) => setDeclineReason(ev.target.value)} maxLength={500} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setDeclineFor(null)}>
+              Abbrechen
+            </Button>
+            <Button
+              disabled={recordDecline.isPending}
+              onClick={() =>
+                declineFor &&
+                recordDecline.mutate({
+                  entryId: declineFor.id,
+                  stay: declineStay,
+                  availableFrom: declineStay && declineFrom ? declineFrom : null,
+                  reason: declineReason.trim() || null,
+                })
+              }
+            >
+              {recordDecline.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Absage speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
