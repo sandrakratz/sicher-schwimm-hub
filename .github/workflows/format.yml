@@ -1,0 +1,17 @@
+name: Format-Check
+
+# Prüft bei jedem Pull Request und bei Änderungen an main, dass der Code mit Prettier formatiert ist.
+# Lokal beheben: `bun run format` (schreibt die Formatierung), prüfen: `bun run format:check`.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run format:check
