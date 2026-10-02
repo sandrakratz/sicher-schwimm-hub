@@ -28,6 +28,7 @@ import { Route as SatzungRouteImport } from './routes/satzung'
 import { Route as SicherheitRouteImport } from './routes/sicherheit'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as UeberUnsRouteImport } from './routes/ueber-uns'
+import { Route as UmbuchungRouteImport } from './routes/umbuchung'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as VolljaehrigkeitRouteImport } from './routes/volljaehrigkeit'
 import { Route as WartelisteRouteImport } from './routes/warteliste'
@@ -173,6 +174,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const UeberUnsRoute = UeberUnsRouteImport.update({
   id: '/ueber-uns',
   path: '/ueber-uns',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UmbuchungRoute = UmbuchungRouteImport.update({
+  id: '/umbuchung',
+  path: '/umbuchung',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/sicherheit': typeof SicherheitRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
+  '/umbuchung': typeof UmbuchungRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/volljaehrigkeit': typeof VolljaehrigkeitRoute
   '/warteliste': typeof WartelisteRoute
@@ -559,6 +566,7 @@ export interface FileRoutesByTo {
   '/sicherheit': typeof SicherheitRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
+  '/umbuchung': typeof UmbuchungRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/volljaehrigkeit': typeof VolljaehrigkeitRoute
   '/warteliste': typeof WartelisteRoute
@@ -632,6 +640,7 @@ export interface FileRoutesById {
   '/sicherheit': typeof SicherheitRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ueber-uns': typeof UeberUnsRoute
+  '/umbuchung': typeof UmbuchungRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/volljaehrigkeit': typeof VolljaehrigkeitRoute
   '/warteliste': typeof WartelisteRoute
@@ -706,6 +715,7 @@ export interface FileRouteTypes {
     | '/sicherheit'
     | '/sitemap.xml'
     | '/ueber-uns'
+    | '/umbuchung'
     | '/unsubscribe'
     | '/volljaehrigkeit'
     | '/warteliste'
@@ -778,6 +788,7 @@ export interface FileRouteTypes {
     | '/sicherheit'
     | '/sitemap.xml'
     | '/ueber-uns'
+    | '/umbuchung'
     | '/unsubscribe'
     | '/volljaehrigkeit'
     | '/warteliste'
@@ -850,6 +861,7 @@ export interface FileRouteTypes {
     | '/sicherheit'
     | '/sitemap.xml'
     | '/ueber-uns'
+    | '/umbuchung'
     | '/unsubscribe'
     | '/volljaehrigkeit'
     | '/warteliste'
@@ -924,6 +936,7 @@ export interface RootRouteChildren {
   SicherheitRoute: typeof SicherheitRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UeberUnsRoute: typeof UeberUnsRoute
+  UmbuchungRoute: typeof UmbuchungRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   VolljaehrigkeitRoute: typeof VolljaehrigkeitRoute
   WartelisteRoute: typeof WartelisteRoute
@@ -1079,6 +1092,13 @@ declare module '@tanstack/react-router' {
       path: '/ueber-uns'
       fullPath: '/ueber-uns'
       preLoaderRoute: typeof UeberUnsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/umbuchung': {
+      id: '/umbuchung'
+      path: '/umbuchung'
+      fullPath: '/umbuchung'
+      preLoaderRoute: typeof UmbuchungRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unsubscribe': {
@@ -1556,6 +1576,7 @@ const rootRouteChildren: RootRouteChildren = {
   SicherheitRoute: SicherheitRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UeberUnsRoute: UeberUnsRoute,
+  UmbuchungRoute: UmbuchungRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   VolljaehrigkeitRoute: VolljaehrigkeitRoute,
   WartelisteRoute: WartelisteRoute,

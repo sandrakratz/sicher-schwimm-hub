@@ -27,6 +27,7 @@ import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleActions";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
+import { listTransferConsents } from "@/lib/course-transfer-consent.functions";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { Megaphone, ChevronDown, MoreHorizontal, Smartphone } from "lucide-react";
@@ -215,6 +216,8 @@ function Page() {
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const listConsentsFn = useServerFn(listTransferConsents);
+  const [transferConsents, setTransferConsents] = useState<Record<string, { participant_id: string; status: string; confirmed_at: string | null } | undefined>>({});
   const [payFilter, setPayFilter] = useState<string>("all");
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
@@ -679,6 +682,10 @@ function Page() {
     setPartCourse(c); setPartOpen(true);
     const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
+    try {
+      const rows = await listConsentsFn({ data: { participantIds: ((data as Participant[]) || []).map(x => x.id) } });
+      setTransferConsents(Object.fromEntries(rows.map(r => [r.participant_id, r])));
+    } catch { setTransferConsents({}); }
     const { data: wl } = await supabase.from("waitlist_entries")
       .select("id,child_name,child_dob,parent_name,parent_email,parent_phone,notes,is_member,program_id,status,created_at")
       .in("status", ["waiting", "offered"]).order("created_at", { ascending: true });
@@ -1496,6 +1503,13 @@ function Page() {
                         </button>
                       ) : (
                         <span title="Manuell angelegt (keine Kursanfrage)">{p.participant_name || "—"}</span>
+                      )}
+                      {transferConsents[p.id] && (
+                        <div className="mt-1">
+                          {transferConsents[p.id]!.status === "confirmed"
+                            ? <Badge className="bg-green-600 hover:bg-green-700" title="Eltern haben der Umbuchung per E-Mail-Link zugestimmt">Umbuchung zugestimmt {fmtDate(transferConsents[p.id]!.confirmed_at)}</Badge>
+                            : <Badge variant="outline" className="border-amber-500 text-amber-700" title="Die Eltern haben den Link in der Umbuchungs-Mail noch nicht bestätigt">Zustimmung Eltern offen</Badge>}
+                        </div>
                       )}
                     </TableCell>
 

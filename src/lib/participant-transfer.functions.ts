@@ -121,18 +121,28 @@ export const transferParticipant = createServerFn({ method: 'POST' })
       const eur = (n: number) => `${n.toFixed(2).replace('.', ',')} €`
       const sessions = newI.sessions.filter(s => s.session_date >= today).map(s =>
         `${formatDateBerlin(s.session_date)}${s.start_time ? ` · ${s.start_time.slice(0, 5)}${s.end_time ? `–${s.end_time.slice(0, 5)}` : ''} Uhr` : ''}`)
+      const snapshot = {
+        child_name: p.participant_name, old_course: oldI.course.name, new_course: newI.course.name,
+        new_schedule: newI.course.schedule, new_location: newI.course.location,
+        sessions, reason: data.reason,
+        amount_due: due > 0 ? eur(due) : null, refund: due < 0 ? eur(-due) : null,
+        due_date: dueDate ? formatDateBerlin(dueDate) : null,
+      }
+      // Zustimmungs-Link der Eltern: geheimer Token, Schreibzugriff nur serverseitig.
+      const { data: consent, error: consentErr } = await (supabaseAdmin as any).from('course_transfer_consents').insert({
+        participant_id: (inserted as { id: string }).id, from_participant_id: p.id,
+        recipient_email: p.participant_email, snapshot,
+      }).select('token').single()
+      if (consentErr || !consent?.token) throw new Error(`Die Umbuchung wurde durchgeführt, aber der Zustimmungs-Link für die Eltern konnte nicht angelegt werden (${consentErr?.message ?? 'unbekannt'}). Es wurde keine E-Mail versendet.`)
       const r = await queueTemplateEmail({
         templateName: 'course-transfer',
         recipientEmail: p.participant_email,
         senderUserId: context.userId,
         idempotencyKey: `course-transfer-${p.id}-${newI.course.id}`,
         templateData: {
-          child_name: p.participant_name, old_course: oldI.course.name, new_course: newI.course.name,
-          new_schedule: newI.course.schedule, new_location: newI.course.location,
-          sessions, reason: data.reason,
-          amount_due: due > 0 ? eur(due) : null, refund: due < 0 ? eur(-due) : null,
-          due_date: dueDate ? formatDateBerlin(dueDate) : null,
+          ...snapshot,
           reference: `${newI.course.name} ${p.participant_name ?? ''} Umbuchung`,
+          consent_url: `https://sicher-schwimmen.com/umbuchung?token=${consent.token}`,
         },
       })
       emailed = !!r.queued
