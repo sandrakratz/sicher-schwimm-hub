@@ -33,19 +33,24 @@ const REQ_STATUS: Record<string, string> = { new: "Neu", under_review: "In Prüf
 type Results = { parts: any[]; mems: any[]; wl: any[]; reqs: any[]; names: Record<string, string> };
 
 function clean(q: string) {
-  return q.replace(/[,()*%\\]/g, " ").trim();
+  // Anführungszeichen würden den Filter-Ausdruck der Abfrage zerstören
+  return q.replace(/[,()*%"\\]/g, " ").trim();
 }
 
 function Page() {
   const [q, setQ] = useState("");
   const [res, setRes] = useState<Results | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const term = clean(q);
-    if (term.length < 2) { setRes(null); return; }
+    if (term.length < 2) { setRes(null); setError(null); return; }
+    // Eine ältere, langsamere Antwort darf eine neuere nicht überschreiben
+    let cancelled = false;
     const t = setTimeout(async () => {
       setLoading(true);
+      setError(null);
       const p = `%${term}%`;
       const [parts, mems0, fams, wl, reqs] = await Promise.all([
         supabase.from("course_participants")
@@ -68,6 +73,15 @@ function Page() {
           .or(`child_name.ilike.${p},parent_name.ilike.${p},parent_email.ilike.${p},parent_phone.ilike.${p}`)
           .order("created_at", { ascending: false }).limit(30),
       ]);
+      if (cancelled) return;
+      // Datenbankfehler anzeigen statt „Keine Treffer“
+      const failed = [parts, mems0, fams, wl, reqs].find(r => r.error);
+      if (failed?.error) {
+        setError(failed.error.message);
+        setRes(null);
+        setLoading(false);
+        return;
+      }
       const low = term.toLowerCase();
       const famHits = (fams.data || []).filter((m: any) => JSON.stringify(m.family_members || {}).toLowerCase().includes(low));
       const memMap = new Map<string, any>();
@@ -79,10 +93,11 @@ function Page() {
         const { data } = await supabase.from("profiles").select("id,first_name,last_name,email").in("id", ids);
         (data || []).forEach((u: any) => { names[u.id] = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email; });
       }
+      if (cancelled) return;
       setRes({ parts: parts.data || [], mems: mems.data || [], wl: wl.data || [], reqs: reqs.data || [], names });
       setLoading(false);
     }, 300);
-    return () => clearTimeout(t);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [q]);
 
   const total = res ? res.parts.length + res.mems.length + res.wl.length + res.reqs.length : 0;
@@ -99,6 +114,7 @@ function Page() {
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Suche läuft …</p>}
+      {error && <p className="text-sm text-destructive">Die Suche ist fehlgeschlagen: {error}</p>}
       {res && !loading && total === 0 && <p className="text-sm text-muted-foreground">Keine Treffer.</p>}
 
       {res && res.parts.length > 0 && (

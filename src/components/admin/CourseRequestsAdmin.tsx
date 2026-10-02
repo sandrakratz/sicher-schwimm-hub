@@ -185,7 +185,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     setNotesDraft(selected.admin_notes || "");
     (async () => {
       try {
-        const res = await suggestFn({ data: { email: selected.parent_email } });
+        const res = await suggestFn({ data: { email: selected.parent_email, requestId: selected.id } });
         if (res.isMember === true) setIsMember("yes");
         else if (res.isMember === false) setIsMember("no");
         if (res.parentUserId) {
@@ -566,7 +566,7 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
               <hr />
               <h3 className="font-semibold">Kind</h3>
               <Row label="Name" value={selected.child_name || "—"} />
-              <Row label="Geburtsdatum" value={selected.child_dob || "—"} />
+              <Row label="Geburtsdatum" value={selected.child_dob ? formatDateBerlin(selected.child_dob) : "—"} />
               <Row label="Schwimmlevel" value={selected.swimming_level || "—"} />
               <hr />
               <h3 className="font-semibold">Wunsch</h3>

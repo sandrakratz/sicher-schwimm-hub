@@ -68,6 +68,15 @@ function Page() {
   const sorted = useMemo(() => [...rows].sort((a, b) => dueOf(a).getTime() - dueOf(b).getTime()), [rows]);
   const total = sorted.reduce((s, r) => s + (Number(r.price_amount) || 0), 0);
 
+  async function undoPaid(r: Row) {
+    const { error } = await supabase.from("course_participants").update({
+      paid: false, paid_at: null, paid_by: null, payment_note: r.payment_note,
+    }).eq("id", r.id);
+    if (error) return toast.error(error.message);
+    toast.info(`Zahlung von ${r.participant_name ?? "Teilnehmer"} wieder auf „offen“ gesetzt`);
+    await load();
+  }
+
   async function markPaid(r: Row) {
     setBusy(r.id);
     const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
@@ -80,8 +89,12 @@ function Page() {
     }).eq("id", r.id);
     setBusy(null);
     if (error) return toast.error(error.message);
-    toast.success(`${r.participant_name ?? "Teilnehmer"} als bezahlt markiert`);
     setRows(rs => rs.filter(x => x.id !== r.id));
+    // Fehlklick abfangen: kurz Zeit zum Rückgängigmachen
+    toast.success(`${r.participant_name ?? "Teilnehmer"} als bezahlt markiert`, {
+      duration: 10000,
+      action: { label: "Rückgängig", onClick: () => void undoPaid(r) },
+    });
   }
 
   return (
