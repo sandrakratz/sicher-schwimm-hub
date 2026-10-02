@@ -126,7 +126,7 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
             <strong>Geplant – noch nicht buchbar.</strong> {NOT_BOOKABLE_NOTE}
           </div>
           <div className="space-y-3 text-muted-foreground">
-            {paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}
+            {paragraphs.slice(1).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}
           </div>
           <Card className="border-0 shadow-soft">
             <CardContent className="p-6">
@@ -365,7 +365,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
             )}
             {paragraphs.length > 1 && (
               <InfoItem value="desc" icon={Waves} title="Kursbeschreibung" subtitle={`Was lernt Ihr Kind bei „${program.name}“?`}>
-                <div className="space-y-3">{paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}</div>
+                <div className="space-y-3">{paragraphs.slice(1).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}</div>
               </InfoItem>
             )}
             <InfoItem value="faq" icon={HelpCircle} title="Häufige Fragen" subtitle="Die wichtigsten Fragen kurz beantwortet.">

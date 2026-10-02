@@ -107,7 +107,8 @@ function KursePage() {
                       <div className="text-xs text-muted-foreground mb-3">{status.detail}</div>
                     )}
                     {(() => {
-                      const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/) : []);
+                      // Nur der erste Absatz der Beschreibung ist der Kurztext; weitere Absätze stehen auf der Detailseite.
+                      const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/).filter(Boolean).slice(0, 1) : []);
                       if (paras.length === 0) return null;
                       return (
                         <div className="space-y-2 text-sm text-muted-foreground mb-3">
