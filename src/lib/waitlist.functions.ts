@@ -240,13 +240,22 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
       bookingEntry = { ...entry, child_dob: dob }
     }
 
-    const { bookWaitlistEntry } = await import('@/lib/waitlist-booking.server')
-    const booking = await bookWaitlistEntry(
-      bookingEntry,
-      entry.offer_course_id!,
-      { street: data.street, zip: data.zip, city: data.city },
-      'parent',
-    )
+    const { bookWaitlistEntry, BookingRefused } = await import('@/lib/waitlist-booking.server')
+    let booking: Awaited<ReturnType<typeof bookWaitlistEntry>>
+    try {
+      booking = await bookWaitlistEntry(
+        bookingEntry,
+        entry.offer_course_id!,
+        { street: data.street, zip: data.zip, city: data.city },
+        'parent',
+      )
+    } catch (err) {
+      // Doppelklick / bereits gebucht / Angebot inzwischen ungültig
+      if (err instanceof BookingRefused) {
+        return { ok: false as const, reason: err.reason === 'offer_not_valid' ? ('not_found' as const) : err.reason }
+      }
+      throw err
+    }
     await supabaseAdmin.from('waitlist_entries').update({ decline_count: 0 }).eq('id', entry.id)
 
     return {

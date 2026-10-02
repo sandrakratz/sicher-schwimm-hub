@@ -14,6 +14,20 @@ export type BookingResult = {
   priceAmount: number | null
 }
 
+const REFUSED_MESSAGES = {
+  duplicate: 'Für dieses Kind liegt bereits eine Buchung für diesen Kurs vor.',
+  offer_not_valid: 'Das Angebot ist nicht mehr gültig oder wurde bereits angenommen.',
+  full: 'Der Kurs ist inzwischen ausgebucht.',
+  course_not_found: 'Kurs nicht gefunden',
+} as const
+
+/** Die Buchung wurde von der Datenbankfunktion abgelehnt (Duplikat, Angebot ungültig, voll …). */
+export class BookingRefused extends Error {
+  constructor(public reason: keyof typeof REFUSED_MESSAGES) {
+    super(REFUSED_MESSAGES[reason])
+  }
+}
+
 /**
  * Bucht einen Wartelisteneintrag verbindlich in einen Kurs.
  * `source` steuert nur die Notiz/Beschriftung in Anfrage und interner E-Mail.
@@ -44,8 +58,6 @@ export async function bookWaitlistEntry(
       : course.price_non_member ?? program?.price_non_member ?? null
 
   const issuedAt = new Date().toISOString()
-  const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
-  const documentNo = (docNo as string | null) ?? null
 
   const { paymentTerms } = await import('@/lib/payment-status')
   const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14
@@ -54,6 +66,35 @@ export async function bookWaitlistEntry(
   const paymentDueDate = terms.dueDate.toISOString().slice(0, 10)
 
   const label = source === 'admin' ? 'Direkt aus der Warteliste gebucht' : 'Zusage über die Warteliste'
+
+  // Platz atomar buchen (Duplikat-/Angebotsprüfung, Belegnummer und Einlösen des Angebots in einer Transaktion)
+  const { newPushToken } = await import('@/lib/push.server')
+  const pushToken = newPushToken()
+  const { bookSeat } = await import('@/lib/booking-seat.server')
+  const seat = await bookSeat({
+    courseId: course.id,
+    entryId: entry.id,
+    source: source === 'admin' ? 'admin' : 'parent',
+    participant: {
+      participant_name: entry.child_name,
+      participant_email: entry.parent_email,
+      participant_phone: entry.parent_phone,
+      payer_street: address.street || null,
+      payer_zip: address.zip || null,
+      payer_city: address.city || null,
+      date_of_birth: entry.child_dob,
+      notes: entry.notes,
+      is_member: entry.is_member,
+      price_amount: price,
+      online_booking: source === 'parent',
+      payment_method: paymentMethod,
+      payment_due_date: paymentDueDate,
+      push_token: pushToken,
+      document_issued_at: issuedAt,
+    },
+  })
+  if (seat.result !== 'booked') throw new BookingRefused(seat.result)
+  const documentNo = seat.documentNo
 
   let requestId = entry.request_id as string | null
   if (!requestId) {
@@ -83,43 +124,9 @@ export async function bookWaitlistEntry(
       .eq('id', requestId)
   }
 
-  const { newPushToken } = await import('@/lib/push.server')
-  const pushToken = newPushToken()
-
-  const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
-    push_token: pushToken,
-    course_id: course.id,
-    request_id: requestId,
-    participant_name: entry.child_name,
-    participant_email: entry.parent_email,
-    participant_phone: entry.parent_phone,
-    payer_street: address.street || null,
-    payer_zip: address.zip || null,
-    payer_city: address.city || null,
-    date_of_birth: entry.child_dob,
-    status: 'confirmed',
-    notes: entry.notes,
-    is_member: entry.is_member,
-    price_amount: price,
-    online_booking: source === 'parent',
-    paid: false,
-    payment_method: paymentMethod,
-    payment_due_date: paymentDueDate,
-    document_no: documentNo,
-    document_issued_at: documentNo ? issuedAt : null,
-  })
-  if (partErr) throw new Error(partErr.message)
-
-  await supabaseAdmin
-    .from('waitlist_entries')
-    .update({
-      status: 'accepted',
-      offer_token: null,
-      offer_course_id: course.id,
-      responded_at: issuedAt,
-      request_id: requestId,
-    })
-    .eq('id', entry.id)
+  // Teilnehmer und Wartelisteneintrag mit der Anfrage verknüpfen
+  await supabaseAdmin.from('course_participants').update({ request_id: requestId }).eq('id', seat.participantId)
+  await supabaseAdmin.from('waitlist_entries').update({ request_id: requestId }).eq('id', entry.id)
 
   const { queueTemplateEmail } = await import('@/lib/email-send.server')
   await queueTemplateEmail({

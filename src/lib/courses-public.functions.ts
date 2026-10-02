@@ -365,12 +365,6 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       }
     }
 
-    // Belegung prüfen (inkl. reservierter Plätze aus laufenden Wartelisten-Angeboten)
-    const { freeSlots } = await import('@/lib/waitlist.server')
-    const free = await freeSlots(course.id, course.max_participants)
-    const isFull = free != null && free <= 0
-    const status: 'confirmed' | 'waiting' = isFull ? 'waiting' : 'confirmed'
-
     // Bestehende aktive Mitgliedschaft hat Vorrang vor der Angabe im Formular
     let isMember = data.isMember
     try {
@@ -384,6 +378,58 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     const price = isMember
       ? course.price_member ?? program?.price_member ?? null
       : course.price_non_member ?? program?.price_non_member ?? null
+
+    const issuedAt = new Date().toISOString()
+
+    // Serverseitig verbindlich berechnete Zahlungsbedingungen (manipulationssicher)
+    const { paymentTerms } = await import('@/lib/payment-status')
+    const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14
+    const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
+
+    const { newPushToken } = await import('@/lib/push.server')
+    const pushToken = newPushToken()
+
+    // Platz atomar buchen: Duplikat- und Kapazitätsprüfung (inkl. reservierter Plätze aus laufenden
+    // Wartelisten-Angeboten) und Eintrag laufen in einer Datenbank-Transaktion.
+    const { bookSeat } = await import('@/lib/booking-seat.server')
+    const seat = await bookSeat({
+      courseId: course.id,
+      source: 'parent',
+      participant: {
+        participant_name: data.childName,
+        participant_email: data.parentEmail,
+        participant_phone: data.parentPhone || null,
+        payer_street: data.parentStreet,
+        payer_zip: data.parentZip,
+        payer_city: data.parentCity,
+        date_of_birth: data.childDob,
+        notes: data.healthInfo || null,
+        is_member: isMember,
+        price_amount: price,
+        online_booking: true,
+        payment_method: terms.immediate ? 'immediate' : 'transfer',
+        payment_due_date: terms.dueDate.toISOString().slice(0, 10),
+        push_token: pushToken,
+        document_issued_at: issuedAt,
+      },
+    })
+    if (seat.result === 'course_not_found') throw new Error('Dieser Kurs ist derzeit nicht buchbar.')
+    if (seat.result === 'duplicate') {
+      throw new Error(
+        'Für dieses Kind liegt bereits eine Buchung für diesen Kurs vor. Bitte prüfen Sie Ihr E-Mail-Postfach oder melden Sie sich bei uns.',
+      )
+    }
+    if (seat.result === 'offer_not_valid') throw new Error('Die Buchung konnte nicht abgeschlossen werden.')
+
+    // Ausgebucht: Familie kommt auf die (einzige) Warteliste und erhält automatisch ein Angebot, sobald ein Platz frei wird
+    const isFull = seat.result === 'full'
+    const status: 'confirmed' | 'waiting' = isFull ? 'waiting' : 'confirmed'
+    if (isFull && (course as any).course_programs?.waitlist_open === false) {
+      throw new Error('Dieser Kurs ist ausgebucht, die Warteliste ist derzeit geschlossen.')
+    }
+    const documentNo = seat.result === 'booked' ? seat.documentNo : null
+    const paymentMethod = isFull ? null : terms.immediate ? 'immediate' : 'transfer'
+    const paymentDueDate = isFull ? null : terms.dueDate.toISOString().slice(0, 10)
 
     // Anfrage-Datensatz für die Admin-Übersicht anlegen
     const { data: request } = await supabaseAdmin
@@ -400,59 +446,53 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         gdpr_consent: true,
         contact_permission: true,
         status: isFull ? 'waiting_list' : 'accepted',
-        assigned_course_id: course.id,
-        admin_notes: `Online-Buchung über die Webseite${healthConsentNote(data.healthInfo)}`,
+        assigned_course_id: isFull ? null : course.id,
+        admin_notes: `Online-Buchung über die Webseite${isFull ? ' (Kurs ausgebucht → Warteliste)' : ''}${healthConsentNote(data.healthInfo)}`,
       })
       .select('id')
       .maybeSingle()
 
-    const issuedAt = new Date().toISOString()
-    let documentNo: string | null = null
-    if (!isFull) {
-      const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
-      documentNo = (docNo as string | null) ?? null
+    if (seat.result === 'booked') {
+      if (request?.id) {
+        await supabaseAdmin.from('course_participants').update({ request_id: request.id }).eq('id', seat.participantId)
+      }
+    } else {
+      const escaped = data.childName.trim().replace(/[\\%_]/g, '\\$&')
+      const { data: existingEntry } = await supabaseAdmin
+        .from('waitlist_entries')
+        .select('id')
+        .ilike('parent_email', emailNorm)
+        .ilike('child_name', escaped)
+        .in('status', ['waiting', 'offered'])
+        .limit(1)
+        .maybeSingle()
+      if (!existingEntry) {
+        const { error: wlErr } = await supabaseAdmin.from('waitlist_entries').insert({
+          program_id: program?.id ?? null,
+          course_id: course.id,
+          request_id: request?.id ?? null,
+          child_name: data.childName,
+          child_dob: data.childDob,
+          parent_name: data.parentName,
+          parent_email: data.parentEmail,
+          parent_phone: data.parentPhone || null,
+          is_member: isMember,
+          notes: [data.message, data.healthInfo].filter(Boolean).join('\n') || null,
+          gdpr_consent: true,
+          status: 'waiting',
+        })
+        if (wlErr) throw new Error(wlErr.message)
+      }
     }
 
-    // Serverseitig verbindlich berechnete Zahlungsbedingungen (manipulationssicher)
-    const { paymentTerms } = await import('@/lib/payment-status')
-    const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14
-    const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
-    const paymentMethod = isFull ? null : terms.immediate ? 'immediate' : 'transfer'
-    const paymentDueDate = isFull ? null : terms.dueDate.toISOString().slice(0, 10)
-
-    const { newPushToken } = await import('@/lib/push.server')
-    const pushToken = newPushToken()
-
-    const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
-      push_token: pushToken,
-      course_id: course.id,
-      request_id: request?.id ?? null,
-      payment_method: paymentMethod,
-      payment_due_date: paymentDueDate,
-      participant_name: data.childName,
-      participant_email: data.parentEmail,
-      participant_phone: data.parentPhone || null,
-      payer_street: data.parentStreet,
-      payer_zip: data.parentZip,
-      payer_city: data.parentCity,
-      date_of_birth: data.childDob,
-      status,
-      notes: data.healthInfo || null,
-      is_member: isMember,
-      price_amount: price,
-      online_booking: true,
-      paid: false,
-      document_no: documentNo,
-      document_issued_at: documentNo ? issuedAt : null,
-    })
-    if (partErr) throw new Error(partErr.message)
+    const bookingRef = request?.id ?? (seat.result === 'booked' ? seat.participantId : course.id)
 
     const { queueTemplateEmail } = await import('@/lib/email-send.server')
 
     await queueTemplateEmail({
       templateName: isFull ? 'course-waitlist-confirmation' : 'course-booking-confirmation',
       recipientEmail: data.parentEmail,
-      idempotencyKey: `course-booking-${request?.id ?? course.id}-${data.parentEmail}`,
+      idempotencyKey: `course-booking-${bookingRef}-${data.parentEmail}`,
       templateData: {
         parent_name: data.parentName,
         payer_street: data.parentStreet,
@@ -484,7 +524,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     // Interne Benachrichtigung
     await queueTemplateEmail({
       templateName: 'course-request',
-      idempotencyKey: `course-booking-admin-${request?.id ?? course.id}`,
+      idempotencyKey: `course-booking-admin-${bookingRef}`,
       templateData: {
         parent_name: data.parentName,
         parent_email: data.parentEmail,
@@ -513,7 +553,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     if (!isFull && terms.immediate) {
       await queueTemplateEmail({
         templateName: 'immediate-payment-alert',
-        idempotencyKey: `immediate-payment-${request?.id ?? course.id}-${emailNorm}`,
+        idempotencyKey: `immediate-payment-${bookingRef}-${emailNorm}`,
         templateData: {
           child_name: data.childName,
           parent_name: data.parentName,

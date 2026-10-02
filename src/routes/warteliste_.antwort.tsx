@@ -180,7 +180,9 @@ function OfferResponsePage() {
               ? "Bitte geben Sie die vollständige Rechnungsanschrift an."
               : res.reason === "dob_required"
                 ? "Bitte geben Sie das Geburtsdatum Ihres Kindes an."
-                : "Das Angebot konnte nicht verarbeitet werden.",
+                : res.reason === "duplicate"
+                  ? "Für Ihr Kind liegt bereits eine Buchung für diesen Kurs vor."
+                  : "Das Angebot konnte nicht verarbeitet werden.",
         );
         return;
       }
