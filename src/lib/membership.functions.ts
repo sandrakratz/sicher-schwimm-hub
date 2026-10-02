@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { escapeLike } from "@/lib/like";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const STATUSES = ["pending", "active", "suspended", "terminated"] as const;
@@ -29,7 +30,7 @@ export const getMyMembership = createServerFn({ method: "GET" })
     const { data: row } = await supabaseAdmin
       .from("memberships")
       .select("id,status,membership_type,first_name,last_name,email,user_id")
-      .ilike("email", email)
+      .ilike("email", escapeLike(email))
       .is("user_id", null)
       .order("created_at", { ascending: false })
       .limit(1)

@@ -117,7 +117,24 @@ export const transferParticipant = createServerFn({ method: 'POST' })
       status: 'cancelled', transferred_to_course_id: newI.course.id, transfer_reason: data.reason, transferred_at: now,
       internal_notes: [p.internal_notes, line].filter(Boolean).join('\n'),
     } as never).eq('id', p.id)
-    if (upErr) throw new Error(upErr.message)
+    const newId = (inserted as { id: string }).id
+    if (upErr) {
+      // Neue Buchung zurücknehmen, sonst wäre das Kind in beiden Kursen eingetragen
+      const { error: undoErr } = await supabaseAdmin.from('course_participants').delete().eq('id', newId)
+      throw new Error(
+        undoErr
+          ? `Umbuchung unvollständig: Das Kind steht jetzt in beiden Kursen. Bitte die neue Buchung im Zielkurs „${newI.course.name}“ entfernen. (${upErr.message})`
+          : `Umbuchung fehlgeschlagen und zurückgenommen: ${upErr.message}`,
+      )
+    }
+
+    // Belegnummer erst jetzt ziehen (kein Nummernloch bei einer fehlgeschlagenen Umbuchung)
+    if (due > 0) {
+      const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
+      if (docNo) {
+        await supabaseAdmin.from('course_participants').update({ document_no: docNo as string, document_issued_at: now } as never).eq('id', newId)
+      }
+    }
 
     let emailed = false
     if (data.notify && p.participant_email) {

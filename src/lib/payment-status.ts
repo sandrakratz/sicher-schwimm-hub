@@ -14,6 +14,8 @@ export interface PaymentTermsInput {
 export interface PaymentTerms {
   immediate: boolean;
   dueDate: Date;
+  /** Fälligkeitsdatum als Berliner Kalendertag (YYYY-MM-DD) – so speichern, nicht `dueDate.toISOString()` (UTC). */
+  dueDateIso: string;
   dueDateLabel: string;
   /** Kurzbezeichnung der Zahlungsart. */
   methodLabel: string;
@@ -30,6 +32,7 @@ export function paymentTerms(input: PaymentTermsInput): PaymentTerms {
   return {
     immediate,
     dueDate,
+    dueDateIso: new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(dueDate),
     dueDateLabel,
     methodLabel: immediate ? "Echtzeit-/Sofortüberweisung" : "Überweisung",
     note: immediate

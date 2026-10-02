@@ -87,6 +87,11 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       return `${d}.${m}.${y}`;
     }
 
+    // Spalten je Kurstermin: mindestens 10 (Vordruck), bei längeren Kursen entsprechend mehr
+    const nSess = Math.max(10, ...sessions.map((s) => s.session_index));
+    const lastSessionCol = 4 + nSess;
+    const totalColsAll = 4 + nSess + 3;
+
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();
     wb.creator = "sicher-schwimmen.com";
@@ -111,7 +116,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         : "";
     const titleRow = ws.addRow([`Kursliste: ${course.name}`]);
     titleRow.font = { bold: true, size: 14 };
-    ws.mergeCells(titleRow.number, 1, titleRow.number, 18);
+    ws.mergeCells(titleRow.number, 1, titleRow.number, totalColsAll);
 
     const metaRow = ws.addRow([
       [period && `Zeitraum: ${period}`, course.location && `Ort: ${course.location}`, course.schedule && `Zeitplan: ${course.schedule}`]
@@ -119,13 +124,13 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         .join("    ·    "),
     ]);
     metaRow.font = { italic: true, size: 10 };
-    ws.mergeCells(metaRow.number, 1, metaRow.number, 18);
+    ws.mergeCells(metaRow.number, 1, metaRow.number, totalColsAll);
 
     const legendRow = ws.addRow([
       "Anwesenheit (online erfasst): x = anwesend · e = entschuldigt · f = gefehlt · leer = nicht erfasst",
     ]);
     legendRow.font = { italic: true, size: 9 };
-    ws.mergeCells(legendRow.number, 1, legendRow.number, 18);
+    ws.mergeCells(legendRow.number, 1, legendRow.number, totalColsAll);
 
     ws.addRow([]);
 
@@ -135,7 +140,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       "Name des Teilnehmers",
       "Kursziel erreicht",
       "Klötze",
-      ...Array.from({ length: 10 }, (_, i) => {
+      ...Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
         return s ? fmtDe(s.session_date) : `${i + 1}. Kurstermin`;
       }),
@@ -156,7 +161,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         .replace(/\s+/g, " ")
         .trim();
     participants.forEach((p, idx) => {
-      const sessionCells = Array.from({ length: 10 }, (_, i) => {
+      const sessionCells = Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
         if (!s) return "";
         return attendanceMark.get(`${s.id}:${p.id}`) || "";
@@ -173,7 +178,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       ]);
       row.alignment = { vertical: "middle", wrapText: true };
       row.height = 22;
-      for (let c = 5; c <= 14; c++) {
+      for (let c = 5; c <= lastSessionCol; c++) {
         row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
       }
     });
@@ -181,7 +186,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     // Ensure at least a few blank rows for printing if no participants
     if (participants.length === 0) {
-      for (let i = 0; i < 5; i++) ws.addRow(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+      for (let i = 0; i < 5; i++) ws.addRow(Array(totalColsAll).fill(""));
     }
 
     // Trainer-Nachweisblock: Namen in Spalte 1, Anwesenheit je Kurstermin
@@ -233,7 +238,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       "",
       "",
       "",
-      ...Array.from({ length: 10 }, (_, i) => {
+      ...Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
         return s ? fmtDe(s.session_date) : `${i + 1}. Kurstermin`;
       }),
@@ -250,14 +255,14 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     const rowsForTrainers: { id: string; name: string }[] =
       trainerList.length > 0 ? trainerList : [{ id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }];
     for (const t of rowsForTrainers) {
-      const marks = Array.from({ length: 10 }, (_, i) => {
+      const marks = Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
         if (!s || !t.id) return "";
         return trainerMark.get(`${s.id}:${t.id}`) || "";
       });
       const row = ws.addRow([t.name, "", "", "", ...marks, "", "", ""]);
       row.alignment = { vertical: "middle", wrapText: true };
-      for (let c = 5; c <= 14; c++) {
+      for (let c = 5; c <= lastSessionCol; c++) {
         row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
       }
       row.height = 26;
@@ -266,14 +271,14 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     const trainerRowsEnd = ws.lastRow!.number;
 
     for (let r = trainerHeaderRow.number; r <= trainerRowsEnd; r++) {
-      for (let c = 1; c <= 14; c++) {
+      for (let c = 1; c <= lastSessionCol; c++) {
         ws.getCell(r, c).border = {
           top: { style: "thin" }, left: { style: "thin" },
           bottom: { style: "thin" }, right: { style: "thin" },
         };
       }
     }
-    for (let c = 1; c <= 14; c++) {
+    for (let c = 1; c <= lastSessionCol; c++) {
       ws.getCell(trainerHeaderRow.number, c).fill = {
         type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF7EC" },
       };
@@ -289,7 +294,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     const totalCols = headers.length;
 
     // Column widths
-    const widths = [4, 28, 8, 7, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 16, 8, 24];
+    const widths = [4, 28, 8, 7, ...Array(nSess).fill(11), 16, 8, 24];
     widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
 
     // Borders on all body cells

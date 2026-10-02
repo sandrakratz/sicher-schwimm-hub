@@ -28,7 +28,7 @@ export const removeCourseParticipant = createServerFn({ method: 'POST' })
     const { data: part } = await supabaseAdmin
       .from('course_participants')
       .select(
-        'id,course_id,participant_name,participant_email,date_of_birth,paid,courses!course_participants_course_id_fkey(name,starts_on)',
+        'id,course_id,request_id,participant_name,participant_email,date_of_birth,paid,courses!course_participants_course_id_fkey(name,starts_on)',
       )
       .eq('id', data.participantId)
       .maybeSingle()
@@ -41,7 +41,7 @@ export const removeCourseParticipant = createServerFn({ method: 'POST' })
       const email = (part.participant_email ?? '').trim().toLowerCase() || null
       const child = (part.participant_name ?? '').trim().replace(/\s+/g, ' ').toLowerCase() || null
       if (email || child) {
-        await supabaseAdmin.from('booking_blocklist').insert({
+        const { error: blErr } = await supabaseAdmin.from('booking_blocklist').insert({
           child_name_norm: child,
           child_dob: part.date_of_birth,
           email_norm: email,
@@ -50,11 +50,30 @@ export const removeCourseParticipant = createServerFn({ method: 'POST' })
           active: true,
           created_by: context.userId,
         })
+        // Nicht stillschweigend ohne Sperre weitermachen
+        if (blErr) throw new Error(`Der Sperrlisteneintrag konnte nicht angelegt werden, der Teilnehmer wurde nicht entfernt: ${blErr.message}`)
       }
     }
 
     const { error } = await supabaseAdmin.from('course_participants').delete().eq('id', part.id)
     if (error) throw new Error(error.message)
+
+    // Zugehörige Kursanfrage nicht länger „angenommen“ mit diesem Kurs führen
+    if (part.request_id) {
+      await supabaseAdmin
+        .from('course_requests')
+        .update({ assigned_course_id: null, status: 'contacted' })
+        .eq('id', part.request_id)
+        .eq('assigned_course_id', part.course_id)
+    }
+
+    // Frei gewordenen Platz gleich an die Warteliste vergeben
+    try {
+      const { allocateWaitlist } = await import('@/lib/waitlist.server')
+      await allocateWaitlist(part.course_id as string)
+    } catch (err) {
+      console.error('waitlist allocation after removal failed', err)
+    }
 
     let emailed = false
     const recipient = (part.participant_email ?? '').trim()

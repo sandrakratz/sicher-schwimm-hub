@@ -1,4 +1,5 @@
 // Versendet einmalig pro E-Mail-Adresse die „Konto freigeschaltet“-Mail.
+import { escapeLike } from '@/lib/like'
 const TYPE_LABEL: Record<string, string> = {
   children_youth: 'Kinder & Jugend',
   adult: 'Erwachsene',
@@ -20,7 +21,7 @@ export async function sendAccountActivatedEmail(opts: {
     .from('email_send_log')
     .select('id')
     .eq('template_name', 'account-activated')
-    .ilike('recipient_email', email)
+    .ilike('recipient_email', escapeLike(email))
     .eq('status', 'sent')
     .limit(1)
   if (existing && existing.length) return { sent: false, reason: 'already_sent' }
@@ -31,7 +32,7 @@ export async function sendAccountActivatedEmail(opts: {
     const { data: m } = await supabaseAdmin
       .from('memberships')
       .select('membership_type, first_name')
-      .ilike('email', email)
+      .ilike('email', escapeLike(email))
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()

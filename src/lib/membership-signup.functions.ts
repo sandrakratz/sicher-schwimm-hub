@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { escapeLike } from "@/lib/like";
 import { createClient } from "@supabase/supabase-js";
 
 /**
@@ -28,7 +29,7 @@ export const submitMembershipSignup = createServerFn({ method: "POST" })
     const { data: recent } = await supabaseAdmin
       .from("memberships")
       .select("id")
-      .ilike("email", data.email)
+      .ilike("email", escapeLike(data.email))
       .gte("created_at", tenMinAgo)
       .limit(1)
       .maybeSingle();

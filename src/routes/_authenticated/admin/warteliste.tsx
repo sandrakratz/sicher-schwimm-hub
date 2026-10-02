@@ -4,6 +4,9 @@ import { WaitlistAdmin } from "@/components/admin/WaitlistAdmin";
 import { CourseRequestsAdmin } from "@/components/admin/CourseRequestsAdmin";
 
 export const Route = createFileRoute("/_authenticated/admin/warteliste")({
+  // ?tab=archive öffnet direkt „Frühere Kursanfragen“ (Links aus Posteingang und Dashboard)
+  validateSearch: (search: Record<string, unknown>): { tab?: "archive" } =>
+    search["tab"] === "archive" ? { tab: "archive" } : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -14,8 +17,9 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
 });
 
 function WaitlistPage() {
+  const { tab } = Route.useSearch();
   return (
-    <Tabs defaultValue="waiting" className="space-y-6">
+    <Tabs defaultValue={tab ?? "waiting"} className="space-y-6">
       <TabsList>
         <TabsTrigger value="waiting">Warteliste</TabsTrigger>
         <TabsTrigger value="archive">Frühere Kursanfragen</TabsTrigger>

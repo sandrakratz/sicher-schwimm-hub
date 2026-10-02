@@ -52,6 +52,7 @@ function TaskList() {
         <Link
           key={t.key}
           to={t.to}
+          search={t.search as never}
           className={`flex items-center justify-between gap-4 rounded-xl border p-4 transition hover:shadow-soft ${TONE[t.tone]}`}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -83,7 +84,7 @@ function AdminDashboard() {
   }, []);
 
   const cards = [
-    { icon: ListChecks, label: "Neue Kursanfragen", value: stats.requests, to: "/admin/warteliste" as const },
+    { icon: ListChecks, label: "Neue Kursanfragen", value: stats.requests, to: "/admin/warteliste" as const, search: { tab: "archive" as const } },
     { icon: Users, label: "Mitgliedsanträge offen", value: stats.memberships, to: "/admin/mitgliedschaften" as const },
     { icon: Users, label: "Aktive Benutzer", value: stats.members, to: "/admin/benutzer" as const },
     { icon: MailOpen, label: "Offene Nachrichten", value: stats.messages, to: "/admin/nachrichten" as const },
@@ -99,7 +100,7 @@ function AdminDashboard() {
       <OpenAvailabilityNotice />
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map(s => (
-          <Link key={s.label} to={s.to} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
+          <Link key={s.label} to={s.to} search={(s as { search?: { tab: "archive" } }).search as never} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
             <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
               <CardContent className="p-5">
                 <s.icon className="h-7 w-7 text-accent mb-3" />

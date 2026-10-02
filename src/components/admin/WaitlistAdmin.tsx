@@ -492,7 +492,7 @@ export function WaitlistAdmin() {
     onSuccess: () => {
       invalidate();
     },
-    onError: () => toast.error("Aktualisierung fehlgeschlagen"),
+    onError: (e: Error) => toast.error(e.message || "Aktualisierung fehlgeschlagen"),
   });
 
   const remove = useMutation({
@@ -687,6 +687,10 @@ export function WaitlistAdmin() {
                     .filter((c) => c.free !== 0)
                     .map((c) => ({ ...c, fits: fits(c) }))
                     .sort((a, b) => Number(b.fits) - Number(a.fits));
+                  // Direktbuchung: der Vorstand darf auch volle Kurse überbuchen (Platzangebote nur für freie Plätze)
+                  const bookCourses = (data?.courses ?? [])
+                    .map((c) => ({ ...c, fits: fits(c) }))
+                    .sort((a, b) => Number(b.fits) - Number(a.fits));
                   const tooYoungEverywhere =
                     !!e.child_dob &&
                     minAge != null &&
@@ -717,7 +721,7 @@ export function WaitlistAdmin() {
                             ⏸ Zurückgestellt – erst Kurse ab {formatDateBerlin(String((e as Record<string, unknown>)["available_from"]))}
                           </div>
                         ) : null}
-                        {(e as Record<string, unknown>)["duplicate_of"] ? (
+                        {(e as Record<string, unknown>)["duplicate"] ? (
                           <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
                             <Copy className="h-3 w-3" /> mögliche Dublette
                           </div>
@@ -778,8 +782,7 @@ export function WaitlistAdmin() {
                           parentNote={e.notes}
                           adminNote={e.admin_notes}
                           onSave={(v) => {
-                            update.mutate(v);
-                            toast.success("Notiz gespeichert");
+                            update.mutate(v, { onSuccess: () => toast.success("Notiz gespeichert") });
                           }}
                         />
                       </td>
@@ -861,7 +864,7 @@ export function WaitlistAdmin() {
                               ))}
                             </select>
                           )}
-                          {e.status !== "accepted" && courses.length > 0 && (
+                          {e.status !== "accepted" && bookCourses.length > 0 && (
                             <select
                               className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                               defaultValue=""
@@ -870,10 +873,10 @@ export function WaitlistAdmin() {
                                 const courseId = ev.target.value;
                                 ev.target.value = "";
                                 if (!courseId) return;
-                                const c = courses.find((x) => x.id === courseId);
+                                const c = bookCourses.find((x) => x.id === courseId);
                                 if (
                                   !confirm(
-                                    `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
+                                    `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen${c?.free === 0 ? " (Kurs ist voll – Überbuchung)" : ""}? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
                                   )
                                 )
                                   return;
@@ -881,10 +884,10 @@ export function WaitlistAdmin() {
                               }}
                             >
                               <option value="">Direkt buchen…</option>
-                              {courses.map((c) => (
+                              {bookCourses.map((c) => (
                                 <option key={c.id} value={c.id}>
                                   {c.fits ? "" : "(anderes Angebot) "}{c.name}
-                                  {c.free != null ? ` (${c.free} frei)` : ""}
+                                  {c.free != null ? (c.free > 0 ? ` (${c.free} frei)` : " (voll – überbuchen)") : ""}
                                 </option>
                               ))}
                             </select>
@@ -914,14 +917,16 @@ export function WaitlistAdmin() {
                                 const block = confirm(
                                   "Zusätzlich auf die Sperrliste setzen? (OK = ja, Abbrechen = nein)",
                                 );
-                                update.mutate({
-                                  entryId: e.id,
-                                  status: "removed",
-                                  ...(block
-                                    ? { blocklist: true, blocklistReason: "Von der Warteliste abgemeldet" }
-                                    : {}),
-                                });
-                                toast.success(block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert");
+                                update.mutate(
+                                  {
+                                    entryId: e.id,
+                                    status: "removed",
+                                    ...(block
+                                      ? { blocklist: true, blocklistReason: "Von der Warteliste abgemeldet" }
+                                      : {}),
+                                  },
+                                  { onSuccess: () => toast.success(block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert") },
+                                );
                               }}
                             >
                               <Send className="h-4 w-4 rotate-180" />

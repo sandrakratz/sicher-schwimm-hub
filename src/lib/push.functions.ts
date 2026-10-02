@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { escapeLike } from '@/lib/like'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { todayBerlinIso } from '@/lib/format'
 
@@ -47,7 +48,7 @@ export const subscribePush = createServerFn({ method: 'POST' })
     let ids = [p.id]
     if (email) {
       const { data: sib } = await supabaseAdmin.from('course_participants')
-        .select('id').ilike('participant_email', email).neq('status', 'cancelled')
+        .select('id').ilike('participant_email', escapeLike(email)).neq('status', 'cancelled')
       ids = Array.from(new Set([p.id, ...(sib ?? []).map((s) => s.id)]))
     }
     const rows = ids.map((id) => ({

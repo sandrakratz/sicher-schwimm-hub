@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { escapeLike } from "@/lib/like";
 
 const tokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{48}$/) });
 
@@ -132,7 +133,7 @@ export const submitMajorityConfirmation = createServerFn({ method: "POST" })
 async function ensureMemberAccount(sb: any, email: string, first: string, last: string): Promise<string | null> {
   const origin = "https://sicher-schwimmen.com";
   let userId: string | null = null;
-  const { data: existing } = await sb.from("profiles").select("id").ilike("email", email).maybeSingle();
+  const { data: existing } = await sb.from("profiles").select("id").ilike("email", escapeLike(email)).maybeSingle();
   if (existing?.id) {
     userId = existing.id;
   } else {

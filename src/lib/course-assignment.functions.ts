@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { BILLING } from '@/lib/billing-config'
 import { formatDateBerlin } from '@/lib/format'
+import { escapeLike } from '@/lib/like'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
@@ -62,7 +63,7 @@ export const suggestMatchForRequest = createServerFn({ method: 'POST' })
 
     const [found, profRes] = await Promise.all([
       resolveMembership({ email, childName }),
-      supabaseAdmin.from('profiles').select('id,email,first_name,last_name').ilike('email', email).limit(1).maybeSingle(),
+      supabaseAdmin.from('profiles').select('id,email,first_name,last_name').ilike('email', escapeLike(email)).limit(1).maybeSingle(),
     ])
 
     const isMember = found.isMember
@@ -163,7 +164,7 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
     let parentUserId = data.parentUserId ?? (req as any).profile_id ?? null
     if (!parentUserId && req.parent_email) {
       const { data: prof } = await supabaseAdmin
-        .from('profiles').select('id').ilike('email', req.parent_email).limit(1).maybeSingle()
+        .from('profiles').select('id').ilike('email', escapeLike(req.parent_email)).limit(1).maybeSingle()
       parentUserId = prof?.id ?? null
     }
 
@@ -219,7 +220,7 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
     const dueDays = course.payment_due_days ?? 14
     const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
     const paymentMethod = data.status === 'confirmed' ? (terms.immediate ? 'immediate' : 'transfer') : null
-    const paymentDueDate = data.status === 'confirmed' ? terms.dueDate.toISOString().slice(0, 10) : null
+    const paymentDueDate = data.status === 'confirmed' ? terms.dueDateIso : null
 
     if (data.status === 'waiting') {
       // Es gibt nur eine Warteliste (waitlist_entries): Nur dort greifen automatische Angebote,
@@ -422,11 +423,19 @@ export const moveParticipantToWaitlist = createServerFn({ method: 'POST' })
     const email = ((req?.parent_email ?? part.participant_email) ?? '').toLowerCase().trim()
     const childName = (req?.child_name ?? part.participant_name ?? 'Unbekannt') as string
 
-    const { data: existing } = await supabaseAdmin
-      .from('waitlist_entries')
-      .select('id,status,request_id,parent_email,child_name,admin_notes')
+    // Nur gezielt suchen (Anfrage bzw. E-Mail), nicht die ganze Tabelle laden: Supabase liefert pro Abfrage höchstens 1000 Zeilen
+    const cols = 'id,status,request_id,parent_email,child_name,admin_notes'
+    let existing: Array<{ id: string; status: string; request_id: string | null; parent_email: string | null; child_name: string | null; admin_notes: string | null }> = []
+    if (req?.id) {
+      const { data: byReq } = await supabaseAdmin.from('waitlist_entries').select(cols).eq('request_id', req.id)
+      existing = byReq ?? []
+    }
+    if (existing.length === 0 && email) {
+      const { data: byMail } = await supabaseAdmin.from('waitlist_entries').select(cols).ilike('parent_email', escapeLike(email))
+      existing = byMail ?? []
+    }
 
-    const dup = (existing ?? []).find((e) => {
+    const dup = existing.find((e) => {
       if (req?.id && e.request_id === req.id) return true
       return (
         (e.parent_email ?? '').toLowerCase().trim() === email &&

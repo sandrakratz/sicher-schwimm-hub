@@ -121,7 +121,7 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
               Antworten
             </Button>
             <Button asChild size="sm" variant="outline">
-              <Link to={item.contextTo}>
+              <Link to={item.contextTo} search={item.contextSearch as never}>
                 <ExternalLink className="mr-1 h-4 w-4" />
                 Vorgang öffnen
               </Link>
