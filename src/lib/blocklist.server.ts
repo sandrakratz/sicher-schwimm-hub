@@ -11,6 +11,33 @@ export function normalizeChildName(name: string) {
   return name.trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
+export type ActiveBlock = { email_norm: string | null; child_name_norm: string | null; child_dob: string | null }
+
+/** Alle aktiven Sperrlisteneinträge (für Sammelprüfungen, z. B. die automatische Platzvergabe). */
+export async function loadActiveBlocklist(): Promise<ActiveBlock[]> {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data, error } = await supabaseAdmin
+    .from('booking_blocklist')
+    .select('email_norm,child_name_norm,child_dob')
+    .eq('active', true)
+  if (error) throw new Error(`Sperrliste konnte nicht geladen werden: ${error.message}`)
+  return (data ?? []) as ActiveBlock[]
+}
+
+/** Gleiche Regel wie `isBlocked`, aber gegen eine bereits geladene Liste. */
+export function matchesBlocklist(
+  list: ActiveBlock[],
+  input: { email: string | null | undefined; childName: string | null | undefined; childDob: string | null | undefined },
+): boolean {
+  const email = normalizeEmail(input.email ?? '')
+  const child = normalizeChildName(input.childName ?? '')
+  return list.some(
+    (b) =>
+      (email !== '' && b.email_norm === email) ||
+      (child !== '' && b.child_name_norm === child && (!b.child_dob || b.child_dob === (input.childDob ?? null))),
+  )
+}
+
 /**
  * Treffer bei Eltern-E-Mail ODER beim Kind (Name; ist beim Sperrlisten-Eintrag ein
  * Geburtsdatum hinterlegt, muss es übereinstimmen). Schlägt die Abfrage fehl,

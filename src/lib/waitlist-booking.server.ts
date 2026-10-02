@@ -48,6 +48,12 @@ export async function bookWaitlistEntry(
   if (!course) throw new Error('Kurs nicht gefunden')
   const program = (course as any).course_programs ?? null
 
+  // Zusage der Eltern nur für Kurse, die noch laufen: abgesagte/archivierte Kurse sind nicht mehr buchbar.
+  // (Der Vorstand darf auch hier direkt buchen.)
+  if (source === 'parent' && (course.archived_at || course.status === 'completed')) {
+    throw new BookingRefused('offer_not_valid')
+  }
+
   // Mitgliedschaft kann seit dem Eintrag/Angebot hinzugekommen sein
   const { refreshWaitlistMember } = await import('@/lib/waitlist.server')
   await refreshWaitlistMember(entry)

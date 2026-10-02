@@ -40,6 +40,7 @@ export function CourseLifecycleActions({ course, onDone }: { course: C; onDone: 
       } else {
         const r = await cancelFn({ data: { courseId: course.id, reason: text, notify } });
         toast.success(`Kurs abgesagt · ${r.moved} Kind(er) zurück auf der Warteliste${notify ? ` · ${r.sent} E-Mail(s)` : ""}`);
+        if (r.offersWithdrawn > 0) toast.info(`${r.offersWithdrawn} laufende(s) Platzangebot(e) für diesen Kurs zurückgenommen – die Familien stehen wieder auf der Warteliste. Sie wurden dazu nicht per E-Mail informiert.`);
         if (r.paidCount > 0) toast.info(`${r.paidCount} Familie(n) hatten bereits bezahlt – bitte Erstattung anweisen.`);
       }
       setMode(null); await onDone();

@@ -100,7 +100,22 @@ export async function refreshWaitlistMember(entry: any, rows?: import('@/lib/mem
   entry.is_member = isMember
 }
 
-/** Erzeugt ein Platzangebot inklusive E-Mail an die Eltern. */
+/** Das Platzangebot konnte nicht zugestellt werden; der Eintrag wurde auf „wartend“ zurückgesetzt. */
+export class OfferNotDelivered extends Error {
+  constructor(public reason: string) {
+    super(
+      reason === 'suppressed'
+        ? 'Die E-Mail-Adresse der Familie ist gesperrt oder nicht zustellbar (Rückläufer/Abmeldung) – es wurde kein Angebot erzeugt.'
+        : 'Die E-Mail mit dem Platzangebot konnte nicht versendet werden (z. B. Tageslimit des Mail-Anbieters) – es wurde kein Angebot erzeugt.',
+    )
+  }
+}
+
+/**
+ * Erzeugt ein Platzangebot inklusive E-Mail an die Eltern. Geht die Mail nicht raus, wird das Angebot
+ * zurückgenommen (Eintrag wieder „wartend“, kein Absagezähler), damit kein Platz für eine Familie blockiert
+ * wird, die nichts davon weiß.
+ */
 async function createOffer(entry: any, course: any, program: any) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { queueTemplateEmail } = await import('@/lib/email-send.server')
@@ -129,27 +144,62 @@ async function createOffer(entry: any, course: any, program: any) {
       ? course.price_member ?? program?.price_member ?? null
       : course.price_non_member ?? program?.price_non_member ?? null
 
-  await queueTemplateEmail({
-    templateName: 'waitlist-offer',
-    recipientEmail: entry.parent_email,
-    idempotencyKey: `waitlist-offer-${entry.id}-${course.id}`,
-    templateData: {
-      parent_name: entry.parent_name,
-      child_name: entry.child_name,
-      program_name: program?.name ?? course.name,
-      course_name: course.name,
-      course_starts_on: course.starts_on,
-      course_ends_on: course.ends_on,
-      course_schedule: course.schedule,
-      course_location: course.location ?? program?.location ?? null,
-      price_amount: price,
-      expires_at: expiresAt,
-      expires_label: formatDateBerlin(expiresAt),
-      accept_url: `${SITE_BASE_URL}/warteliste/antwort?token=${token}&aktion=zusage`,
-      decline_url: `${SITE_BASE_URL}/warteliste/antwort?token=${token}&aktion=absage`,
-    },
-    metadata: { waitlist_entry_id: entry.id, course_id: course.id },
-  })
+  const rollback = async (note: string | null) => {
+    await supabaseAdmin
+      .from('waitlist_entries')
+      .update({
+        status: 'waiting',
+        // Wie vor dem Angebot: ein früher abgelehnter Kurs bleibt „bereits angeboten“
+        offer_course_id: entry.offer_course_id ?? null,
+        offer_token: null,
+        offered_at: null,
+        offer_expires_at: null,
+        ...(note ? { admin_notes: stampNote(entry.admin_notes, note) } : {}),
+      })
+      .eq('id', entry.id)
+      .eq('status', 'offered')
+  }
+
+  let sendResult: { queued: boolean; reason?: string | undefined }
+  try {
+    sendResult = await queueTemplateEmail({
+      templateName: 'waitlist-offer',
+      recipientEmail: entry.parent_email,
+      idempotencyKey: `waitlist-offer-${entry.id}-${course.id}`,
+      templateData: {
+        parent_name: entry.parent_name,
+        child_name: entry.child_name,
+        program_name: program?.name ?? course.name,
+        course_name: course.name,
+        course_starts_on: course.starts_on,
+        course_ends_on: course.ends_on,
+        course_schedule: course.schedule,
+        course_location: course.location ?? program?.location ?? null,
+        price_amount: price,
+        expires_at: expiresAt,
+        expires_label: formatDateBerlin(expiresAt),
+        accept_url: `${SITE_BASE_URL}/warteliste/antwort?token=${token}&aktion=zusage`,
+        decline_url: `${SITE_BASE_URL}/warteliste/antwort?token=${token}&aktion=absage`,
+      },
+      metadata: { waitlist_entry_id: entry.id, course_id: course.id },
+    })
+  } catch (err) {
+    // z. B. Mail-Dienst nicht konfiguriert: Angebot zurücknehmen und den Fehler weitergeben
+    await rollback(null)
+    throw err
+  }
+
+  if (!sendResult.queued) {
+    const reason = sendResult.reason ?? 'send_failed'
+    // Nur dauerhafte Gründe vermerken, damit die stündliche Vergabe die Notiz nicht immer wieder anhängt
+    const marker = 'Platzangebot nicht zustellbar'
+    const note =
+      reason === 'suppressed' && !String(entry.admin_notes ?? '').includes(marker)
+        ? `${marker}: E-Mail-Adresse gesperrt/unzustellbar (Rückläufer oder Abmeldung). Bitte telefonisch klären oder Adresse korrigieren.`
+        : null
+    await rollback(note)
+    throw new OfferNotDelivered(reason)
+  }
 
   return { entryId: entry.id as string, courseId: course.id as string, email: entry.parent_email as string, expiresAt }
 }
@@ -177,6 +227,7 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
 
   const offers: AllocationResult['offers'] = []
   let memberRows: import('@/lib/membership-lookup.server').MemberRow[] | undefined
+  let blocklist: import('@/lib/blocklist.server').ActiveBlock[] | undefined
   const { data: allPrograms } = await supabaseAdmin.from('course_programs').select('id,slug')
   const { relatedProgramIds } = await import('@/lib/waitlist-programs')
 
@@ -218,12 +269,25 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
     })
     if (candidates.length === 0) continue
 
-    for (const entry of candidates.slice(0, free)) {
+    // Gesperrte Familien erhalten nie automatisch ein Angebot (Entscheidung liegt beim Vorstand)
+    blocklist ??= await (await import('@/lib/blocklist.server')).loadActiveBlocklist()
+    const { matchesBlocklist } = await import('@/lib/blocklist.server')
+    candidates = candidates.filter(
+      (c: any) => !matchesBlocklist(blocklist!, { email: c.parent_email, childName: c.child_name, childDob: c.child_dob }),
+    )
+    if (candidates.length === 0) continue
 
+    // Nicht zustellbare Angebote werden zurückgenommen; dann kommt die nächste Familie an die Reihe
+    let made = 0
+    for (const entry of candidates) {
+      if (made >= free) break
       try {
         offers.push(await createOffer(entry, course, program))
+        made++
       } catch (err) {
         console.error('waitlist offer failed', err)
+        // Mail-Versand allgemein gestört (Limit, Konfiguration): hier nicht weiter probieren
+        if (!(err instanceof OfferNotDelivered && err.reason === 'suppressed')) break
       }
     }
   }

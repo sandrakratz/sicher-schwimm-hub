@@ -639,11 +639,16 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { matchProgram } = await import('@/lib/waitlist-age')
 
+    const { loadActiveBlocklist, matchesBlocklist } = await import('@/lib/blocklist.server')
+    const blocklist = await loadActiveBlocklist()
+
     const [{ data: requests }, { data: programs }, { data: existing }] = await Promise.all([
       supabaseAdmin
         .from('course_requests')
         .select('*')
-        .neq('status', 'rejected')
+        // Nur Anfragen, die ausdrücklich auf „Warteliste“ stehen. Neue Anfragen (u. a. Sperrlisten-Fälle
+        // zur Einzelfallprüfung) werden nicht automatisch übernommen.
+        .eq('status', 'waiting_list')
         .is('assigned_course_id', null)
         .is('waitlist_archived_at', null)
         .order('created_at', { ascending: true }),
@@ -680,6 +685,8 @@ export const migrateWaitingRequests = createServerFn({ method: 'POST' })
       if (enrolledRequests.has(r.id)) continue
       const key = `${(r.parent_email ?? '').toLowerCase().trim()}|${(r.child_name ?? '').toLowerCase().trim()}`
       if (byPerson.has(key) || enrolledPersons.has(key)) continue
+      // Gesperrte Familien nie automatisch auf die Warteliste setzen – das entscheidet der Vorstand
+      if (matchesBlocklist(blocklist, { email: r.parent_email, childName: r.child_name, childDob: r.child_dob })) continue
       byPerson.add(key)
       const prog = matchProgram(r.desired_course, programs ?? [])
       rows.push({

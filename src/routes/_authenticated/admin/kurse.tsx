@@ -999,9 +999,19 @@ function Page() {
   }
 
   async function remove(c: Course) {
-    if (!confirm(`Kurs "${c.name}" löschen?`)) return;
+    // Buchungen (inkl. Rechnungsnummern und Zahlungen) hängen am Kurs und müssen aufbewahrt werden:
+    // ein Kurs mit Einträgen wird nur archiviert, nie gelöscht.
+    const { count, error: cntErr } = await supabase
+      .from("course_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("course_id", c.id);
+    if (cntErr) return toast.error(`Löschen nicht möglich: ${cntErr.message}`);
+    if ((count ?? 0) > 0) {
+      return toast.error(`„${c.name}“ hat ${count} Buchung(en) und kann nicht gelöscht werden. Bitte stattdessen archivieren.`, { duration: 8000 });
+    }
+    if (!confirm(`Kurs "${c.name}" ohne Buchungen endgültig löschen?`)) return;
     const { error } = await supabase.from("courses").delete().eq("id", c.id);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(error.message.includes("Buchungen") ? "Kurs hat Buchungen und kann nicht gelöscht werden. Bitte archivieren." : error.message);
     toast.success("Gelöscht"); await load();
   }
 

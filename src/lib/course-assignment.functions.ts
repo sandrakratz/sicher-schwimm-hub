@@ -5,6 +5,7 @@ import { formatDateBerlin } from '@/lib/format'
 
 const SITE_NAME = 'Sicher Schwimmen e.V.'
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
+const DUPLICATE_CHILD_MESSAGE = 'Dieses Kind ist in diesem Kurs bereits eingetragen. Es wurde nichts geändert und keine E-Mail versendet.'
 
 /**
  * Schlägt Mitgliedstatus und Eltern-Konto basierend auf einer E-Mail vor.
@@ -190,6 +191,22 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
       else if (isMember === false && course.price_non_member != null) priceAmount = Number(course.price_non_member)
     }
 
+    // Dasselbe Kind (Name + Geburtsdatum) darf im Kurs nur einmal aktiv stehen. Vor der Belegnummer prüfen,
+    // damit bei einem Duplikat weder eine Nummer verbraucht noch eine Bestätigung verschickt wird.
+    if (data.status === 'confirmed' && req.child_dob) {
+      const norm = (v: string | null | undefined) => (v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+      const { data: sameDob, error: dupErr } = await supabaseAdmin
+        .from('course_participants')
+        .select('participant_name')
+        .eq('course_id', course.id)
+        .neq('status', 'cancelled')
+        .eq('date_of_birth', req.child_dob)
+      if (dupErr) throw new Error(dupErr.message)
+      if ((sameDob ?? []).some((p) => norm(p.participant_name) === norm(participantName))) {
+        throw new Error(DUPLICATE_CHILD_MESSAGE)
+      }
+    }
+
     const issuedAt = new Date().toISOString()
     let documentNo: string | null = null
     if (data.status === 'confirmed') {
@@ -261,8 +278,9 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         document_issued_at: documentNo ? issuedAt : null,
       })
 
-      if (partErr && !String(partErr.message).toLowerCase().includes('duplicate')) {
-        throw new Error(partErr.message)
+      if (partErr) {
+        // 23505 = Unique-Index „ein Kind pro Kurs“ (z. B. bei gleichzeitigem Einbuchen)
+        throw new Error(partErr.code === '23505' ? DUPLICATE_CHILD_MESSAGE : partErr.message)
       }
     }
 
