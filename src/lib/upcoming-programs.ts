@@ -1,6 +1,14 @@
 export const NOT_BOOKABLE_NOTE =
   'Dieses Angebot ist derzeit noch nicht buchbar. Die ersten Termine werden bekannt gegeben, sobald die Wasserzeiten feststehen.'
 
+/** Zerlegt das Voraussetzungs-Feld in einzelne Zeilen und entfernt führende Aufzählungszeichen ("-", "•" …). */
+export function parseRequirementLines(text: string | null | undefined): string[] {
+  return (text ?? '')
+    .split('\n')
+    .map((l) => l.trim().replace(/^[-–•*]\s*/, ''))
+    .filter(Boolean)
+}
+
 /**
  * Kompakte Kurzbeschreibungen für die Kursübersicht (/kurse).
  * Die ausführlichen Texte bleiben in der Datenbank und auf den Detailseiten erhalten.

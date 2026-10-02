@@ -44,7 +44,7 @@ import { formatPrice } from "@/lib/format";
 import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
-import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
+import { NOT_BOOKABLE_NOTE, parseRequirementLines } from "@/lib/upcoming-programs";
 import { PaymentSummary } from "@/components/PaymentSummary";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
@@ -109,7 +109,7 @@ function ProgramPage() {
 
 function UpcomingProgramPage({ up }: { up: CourseProgram }) {
   const paragraphs = (up.description ?? "").split(/\n\s*\n/).filter(Boolean);
-  const frame = (up.requirements ?? "").split("\n").filter(Boolean);
+  const frame = parseRequirementLines(up.requirements);
   return (
     <PublicLayout>
       <section className="bg-hero text-white py-16">
@@ -176,7 +176,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
   const [blockedNotice, setBlockedNotice] = useState(false);
 
   const paragraphs = (program.description ?? "").split(/\n\s*\n/).filter(Boolean);
-  const requirements = (program.requirements ?? "").split("\n").map((r) => r.trim()).filter(Boolean);
+  const requirements = parseRequirementLines(program.requirements);
   const openTerms = program.terms.filter((t) => !t.is_full).length;
   const availability = programAvailability({
     openTerms,
