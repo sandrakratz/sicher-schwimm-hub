@@ -358,12 +358,23 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     const { data: partsData } = await supabase
       .from("course_participants")
       .select(
-        "participant_name,participant_email,participant_phone,date_of_birth,status,is_member,online_booking,price_amount,paid,paid_at,payment_note,created_at,notes",
+        "participant_name,participant_email,participant_phone,date_of_birth,status,is_member,online_booking,price_amount,paid,paid_at,payment_note,created_at,notes,request_id",
       )
       .eq("course_id", data.courseId);
     const participants = (partsData || []).slice().sort((a, b) =>
       (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
     );
+
+    // Elternname (Zahler:in) aus der zugehörigen Kursanfrage
+    const parentByRequest = new Map<string, string>();
+    const requestIds = participants.map((p) => p.request_id).filter(Boolean) as Array<string>;
+    if (requestIds.length > 0) {
+      const { fetchIn } = await import("@/lib/fetch-all");
+      const reqs = await fetchIn<{ id: string; parent_name: string | null }>(requestIds, (chunk, from, to) =>
+        supabase.from("course_requests").select("id,parent_name").in("id", chunk).order("id").range(from, to),
+      );
+      for (const r of reqs) if (r.parent_name) parentByRequest.set(r.id, r.parent_name);
+    }
 
     function fmtDe(s: string | null): string {
       if (!s) return "";
@@ -459,7 +470,7 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
         p.participant_name || "",
         fmtDe(p.date_of_birth),
         ageAt(p.date_of_birth, course.starts_on),
-        p.participant_name || "",
+        (p.request_id && parentByRequest.get(p.request_id)) || "",
         p.participant_email || "",
         p.participant_phone || "",
         p.is_member == null ? "" : p.is_member ? "ja" : "nein",
@@ -476,24 +487,25 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     });
 
     const lastDataRow = headerRow.number + participants.length;
+    const confirmedCount = participants.filter((p) => p.status === "confirmed").length;
     const totalCols = headers.length;
 
     let sumRowNumber = 0;
     if (participants.length > 0) {
       const sumRow = ws.addRow([]);
       sumRowNumber = sumRow.number;
-      sumRow.getCell(1).value = `Summe (${participants.length} Teilnehmer)`;
+      sumRow.getCell(1).value = `Summe bestätigter Buchungen (${confirmedCount} von ${participants.length} Einträgen; stornierte/wartende nicht eingerechnet)`;
       ws.mergeCells(sumRowNumber, 1, sumRowNumber, 10);
-      sumRow.getCell(11).value = { formula: `SUM(K${firstDataRow}:K${lastDataRow})` } as never;
+      sumRow.getCell(11).value = { formula: `SUMIFS(K${firstDataRow}:K${lastDataRow},I${firstDataRow}:I${lastDataRow},"${STATUS["confirmed"]}")` } as never;
       sumRow.getCell(11).numFmt = '#,##0.00 "€"';
       sumRow.getCell(12).value = "bezahlt:";
       sumRow.getCell(13).value = {
-        formula: `SUMIF(L${firstDataRow}:L${lastDataRow},"ja",K${firstDataRow}:K${lastDataRow})`,
+        formula: `SUMIFS(K${firstDataRow}:K${lastDataRow},L${firstDataRow}:L${lastDataRow},"ja",I${firstDataRow}:I${lastDataRow},"${STATUS["confirmed"]}")`,
       } as never;
       sumRow.getCell(13).numFmt = '#,##0.00 "€"';
       sumRow.getCell(14).value = "offen:";
       sumRow.getCell(15).value = {
-        formula: `SUMIF(L${firstDataRow}:L${lastDataRow},"nein",K${firstDataRow}:K${lastDataRow})`,
+        formula: `SUMIFS(K${firstDataRow}:K${lastDataRow},L${firstDataRow}:L${lastDataRow},"nein",I${firstDataRow}:I${lastDataRow},"${STATUS["confirmed"]}")`,
       } as never;
       sumRow.getCell(15).numFmt = '#,##0.00 "€"';
       sumRow.font = { bold: true };
@@ -813,32 +825,41 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     const from = `${data.year}-01-01`;
     const to = `${data.year}-12-31`;
 
-    const { data: sessions } = await supabaseAdmin
-      .from("course_sessions")
-      .select("id,session_index,session_date,start_time,end_time,course_id,courses(name,location)")
-      .gte("session_date", from)
-      .lte("session_date", to)
-      .order("session_date", { ascending: true });
-    const list = (sessions || []) as any[];
+    // Seitenweise bzw. in Blöcken laden: ein Jahr hat leicht mehr als 1000 Termine bzw. zu viele IDs für eine URL.
+    // Fehler werden bewusst nicht verschluckt, sonst entstünde ein „leerer“ Nachweis.
+    const { fetchAll, fetchIn } = await import("@/lib/fetch-all");
+    const list = await fetchAll<any>((f, t) =>
+      supabaseAdmin
+        .from("course_sessions")
+        .select("id,session_index,session_date,start_time,end_time,course_id,courses(name,location)")
+        .gte("session_date", from)
+        .lte("session_date", to)
+        .order("session_date", { ascending: true })
+        .order("id")
+        .range(f, t),
+    );
 
-    const { data: att } = list.length
-      ? await supabaseAdmin
+    const rows = await fetchIn<any>(
+      list.map((s) => s.id as string),
+      (chunk, f, t) =>
+        supabaseAdmin
           .from("trainer_session_attendance")
           .select("session_id,trainer_id,present,note,recorded_at,confirmed_at,confirmed_by")
-          .in("session_id", list.map((s) => s.id))
-      : { data: [] as any[] };
-    const rows = (att || []) as any[];
+          .in("session_id", chunk)
+          .order("id")
+          .range(f, t),
+      50,
+    );
 
     const ids = Array.from(
       new Set([...rows.map((r) => r.trainer_id), ...rows.map((r) => r.confirmed_by).filter(Boolean)]),
-    );
+    ) as string[];
     const nameOf = new Map<string, string>();
     if (ids.length > 0) {
-      const { data: profs } = await supabaseAdmin
-        .from("profiles")
-        .select("id,first_name,last_name,email")
-        .in("id", ids);
-      (profs || []).forEach((p: any) => {
+      const profs = await fetchIn<any>(ids, (chunk, f, t) =>
+        supabaseAdmin.from("profiles").select("id,first_name,last_name,email").in("id", chunk).order("id").range(f, t),
+      );
+      profs.forEach((p: any) => {
         nameOf.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—");
       });
     }
@@ -879,9 +900,13 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     }
 
     let sheetNo = 0;
+    const usedSheetNames = new Set<string>();
     for (const tid of sortedTrainers) {
       sheetNo++;
-      const label = (nameOf.get(tid) || "Trainer").replace(/[\\/*?:[\]]/g, " ").slice(0, 28) || `Trainer ${sheetNo}`;
+      let label = (nameOf.get(tid) || "Trainer").replace(/[\\/*?:[\]]/g, " ").slice(0, 28) || `Trainer ${sheetNo}`;
+      // Blattnamen müssen eindeutig sein (zwei Personen mit gleichem Namen würden sonst den Export abbrechen)
+      if (usedSheetNames.has(label.toLowerCase())) label = `${label.slice(0, 25)} ${sheetNo}`;
+      usedSheetNames.add(label.toLowerCase());
       const ws = wb.addWorksheet(label);
       const title = ws.addRow([`Anwesenheitsnachweis ${data.year} – ${nameOf.get(tid) || "Trainer"}`]);
       title.font = { bold: true, size: 14 };

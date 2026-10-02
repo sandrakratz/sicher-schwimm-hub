@@ -2,6 +2,15 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { todayBerlinIso } from '@/lib/format'
+import { fetchAll, fetchIn } from '@/lib/fetch-all'
+import type { Database } from '@/integrations/supabase/types'
+
+type WaitlistRow = Database['public']['Tables']['waitlist_entries']['Row']
+type BookedPart = Pick<
+  Database['public']['Tables']['course_participants']['Row'],
+  | 'id' | 'course_id' | 'request_id' | 'participant_email' | 'participant_name' | 'paid' | 'paid_at'
+  | 'price_amount' | 'payment_method' | 'payment_due_date' | 'status' | 'created_at'
+>
 
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 
@@ -289,13 +298,16 @@ export const listWaitlist = createServerFn({ method: 'GET' })
       console.error('expireOffers failed', err)
     }
 
+    // Einträge und Buchungen seitenweise laden: Supabase liefert pro Abfrage höchstens 1000 Zeilen, sonst
+    // fehlten die neuesten Einträge bzw. der Zahlungsstatus würde still falsch angezeigt.
+    const entries = await fetchAll<WaitlistRow>((f, t) =>
+      supabaseAdmin.from('waitlist_entries').select('*').order('created_at', { ascending: true }).order('id').range(f, t),
+    )
     const [
-      { data: entries, error: entriesError },
       { data: programs, error: programsError },
       { data: courses },
       { data: blocklist },
     ] = await Promise.all([
-      supabaseAdmin.from('waitlist_entries').select('*').order('created_at', { ascending: true }),
       supabaseAdmin.from('course_programs').select('id,name,slug,min_age_years').order('sort_order'),
       supabaseAdmin
         .from('courses')
@@ -307,21 +319,19 @@ export const listWaitlist = createServerFn({ method: 'GET' })
         .select('email_norm,child_name_norm,child_dob,reason')
         .eq('active', true),
     ])
-    if (entriesError || programsError) {
-      const reason = (entriesError ?? programsError)?.message ?? 'unbekannt'
-      console.error('listWaitlist failed', entriesError ?? programsError)
-      throw new Error(`Wartelisten-Abfrage fehlgeschlagen: ${reason}`)
+    if (programsError) {
+      console.error('listWaitlist failed', programsError)
+      throw new Error(`Wartelisten-Abfrage fehlgeschlagen: ${programsError.message}`)
     }
 
     // Originalanfrage (komplett) nachziehen
-    const requestIds = (entries ?? []).map((e) => e.request_id).filter((v): v is string => !!v)
+    const requestIds = entries.map((e) => e.request_id).filter((v): v is string => !!v)
     const requests = new Map<string, Record<string, string | number | boolean | null>>()
     if (requestIds.length) {
-      const { data: reqs } = await supabaseAdmin
-        .from('course_requests')
-        .select('*')
-        .in('id', requestIds)
-      for (const r of reqs ?? []) {
+      const reqs = await fetchIn<Record<string, unknown> & { id: string }>(requestIds, (chunk, f, t) =>
+        supabaseAdmin.from('course_requests').select('*').in('id', chunk).order('id').range(f, t),
+      )
+      for (const r of reqs) {
         const plain: Record<string, string | number | boolean | null> = {}
         for (const [k, v] of Object.entries(r as Record<string, unknown>)) {
           plain[k] =
@@ -337,11 +347,10 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     const courseIds = (courses ?? []).map((c) => c.id)
     const counts = new Map<string, number>()
     if (courseIds.length) {
-      const { data: parts } = await supabaseAdmin
-        .from('course_participants')
-        .select('course_id,status')
-        .in('course_id', courseIds)
-      for (const p of parts ?? []) {
+      const parts = await fetchIn<{ course_id: string; status: string }>(courseIds, (chunk, f, t) =>
+        supabaseAdmin.from('course_participants').select('course_id,status').in('course_id', chunk).order('id').range(f, t),
+      )
+      for (const p of parts) {
         if (p.status === 'confirmed') counts.set(p.course_id, (counts.get(p.course_id) ?? 0) + 1)
       }
     }
@@ -349,25 +358,29 @@ export const listWaitlist = createServerFn({ method: 'GET' })
     const norm = (v: string | null | undefined) => (v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 
     // Zahlungsstatus der bereits gebuchten Plätze (über Anfrage-ID oder E-Mail + Kind)
-    const { data: bookedParts } = await supabaseAdmin
-      .from('course_participants')
-      .select('id,course_id,request_id,participant_email,participant_name,paid,paid_at,price_amount,payment_method,payment_due_date,status,created_at')
-      .neq('status', 'cancelled')
-    const partByRequest = new Map<string, (typeof bookedParts extends null ? never : NonNullable<typeof bookedParts>[number])>()
-    const partByPerson = new Map<string, NonNullable<typeof bookedParts>[number]>()
-    for (const p of bookedParts ?? []) {
+    const bookedParts = await fetchAll<BookedPart>((f, t) =>
+      supabaseAdmin
+        .from('course_participants')
+        .select('id,course_id,request_id,participant_email,participant_name,paid,paid_at,price_amount,payment_method,payment_due_date,status,created_at')
+        .neq('status', 'cancelled')
+        .order('id')
+        .range(f, t),
+    )
+    const partByRequest = new Map<string, BookedPart>()
+    const partByPerson = new Map<string, BookedPart>()
+    for (const p of bookedParts) {
       if (p.request_id) partByRequest.set(p.request_id, p)
       partByPerson.set(`${norm(p.participant_email)}|${norm(p.participant_name)}`, p)
     }
     const dupCount = new Map<string, number>()
-    for (const e of entries ?? []) {
+    for (const e of entries) {
       if (!['waiting', 'offered'].includes(e.status)) continue
       const key = `${norm(e.parent_email)}|${norm(e.child_name)}`
       dupCount.set(key, (dupCount.get(key) ?? 0) + 1)
     }
 
     return {
-      entries: (entries ?? []).map((e) => {
+      entries: entries.map((e) => {
         const req = e.request_id ? requests.get(e.request_id) ?? null : null
         const emailNorm = norm(e.parent_email)
         const childNorm = norm(e.child_name)

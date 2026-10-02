@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { ExamCriteriaState } from "@/lib/swim-exams";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 
 export type TrainerParticipant = {
   id: string;
@@ -57,48 +58,50 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       .eq("trainer_id", me);
     (ownCourses || []).forEach(c => allowed.add(c.id as string));
 
-    const { data: sessions } = await supabaseAdmin
-      .from("course_sessions")
-      .select("id,course_id,assigned_trainer_id");
-    const sessionCourse = new Map<string, string>();
-    (sessions || []).forEach(s => {
-      sessionCourse.set(s.id as string, s.course_id as string);
-      if (s.assigned_trainer_id === me) allowed.add(s.course_id as string);
-    });
+    // Nur die eigenen Zuordnungen laden (nicht alle Termine des Vereins): Supabase liefert pro Abfrage höchstens
+    // 1000 Zeilen, sonst würden eigene Kurse irgendwann nicht mehr erscheinen.
+    const ownSessions = await fetchAll<{ course_id: string }>((f, t) =>
+      supabaseAdmin.from("course_sessions").select("course_id").eq("assigned_trainer_id", me).order("id").range(f, t),
+    );
+    ownSessions.forEach(s => allowed.add(s.course_id));
 
-    const { data: assignments } = await supabaseAdmin
-      .from("course_session_assignments")
-      .select("session_id")
-      .eq("trainer_id", me);
-    (assignments || []).forEach(a => {
-      const cid = sessionCourse.get(a.session_id as string);
-      if (cid) allowed.add(cid);
-    });
+    const assignments = await fetchAll<{ session_id: string }>((f, t) =>
+      supabaseAdmin.from("course_session_assignments").select("session_id").eq("trainer_id", me).order("id").range(f, t),
+    );
+    const assignedSessions = await fetchIn<{ course_id: string }>(
+      assignments.map(a => a.session_id),
+      (chunk, f, t) => supabaseAdmin.from("course_sessions").select("course_id").in("id", chunk).order("id").range(f, t),
+    );
+    assignedSessions.forEach(s => allowed.add(s.course_id));
 
     if (allowed.size === 0) return [];
     const ids = Array.from(allowed);
 
-    const { data: courses } = await supabaseAdmin
-      .from("courses")
-      .select("id,name,location,schedule,starts_on,ends_on")
-      .in("id", ids)
-      .order("starts_on", { ascending: true });
+    const courses = (
+      await fetchIn<any>(ids, (chunk, f, t) =>
+        supabaseAdmin.from("courses").select("id,name,location,schedule,starts_on,ends_on").in("id", chunk).order("id").range(f, t),
+      )
+    ).sort((x, y) => String(x.starts_on ?? "9999").localeCompare(String(y.starts_on ?? "9999")));
 
-    const { data: parts } = await supabaseAdmin
-      .from("course_participants")
-      .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no")
-      .in("course_id", ids)
-      .neq("status", "cancelled")
-      .order("participant_name", { ascending: true });
+    const parts = await fetchIn<any>(ids, (chunk, f, t) =>
+      supabaseAdmin
+        .from("course_participants")
+        .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no")
+        .in("course_id", chunk)
+        .neq("status", "cancelled")
+        .order("participant_name", { ascending: true })
+        .order("id")
+        .range(f, t),
+    );
 
-    return (courses || []).map(c => ({
+    return courses.map(c => ({
       id: c.id as string,
       name: c.name as string,
       location: (c.location ?? null) as string | null,
       schedule: (c.schedule ?? null) as string | null,
       starts_on: (c.starts_on ?? null) as string | null,
       ends_on: (c.ends_on ?? null) as string | null,
-      participants: (parts || [])
+      participants: parts
         .filter(p => p.course_id === c.id)
         .map(p => ({
           id: p.id as string,

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 
 export type AdminTask = {
   key: string;
@@ -32,7 +33,24 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     const in48h = new Date(now.getTime() + 48 * 3600 * 1000).toISOString();
     const in14d = new Date(now.getTime() + 14 * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
-    const [overdue, offers, memberships, messages, requests, sessions, assignments] = await Promise.all([
+    // Termine der nächsten 14 Tage (nur nicht archivierte Kurse), dazu deren Zuordnungen – nicht die ganze Tabelle
+    // (Supabase liefert pro Abfrage höchstens 1000 Zeilen, die Zahl wäre sonst irgendwann zu hoch).
+    const sessions = await fetchAll<any>((f, t) =>
+      supabaseAdmin
+        .from("course_sessions")
+        .select("id,assigned_trainer_id,courses!inner(archived_at,trainer_id)")
+        .is("courses.archived_at", null)
+        .gte("session_date", today)
+        .lte("session_date", in14d)
+        .order("id")
+        .range(f, t),
+    );
+    const assignments = await fetchIn<any>(
+      sessions.map((s) => s.id as string),
+      (chunk, f, t) => supabaseAdmin.from("course_session_assignments").select("session_id").in("session_id", chunk).order("id").range(f, t),
+    );
+
+    const [overdue, offers, memberships, messages, requests] = await Promise.all([
       supabaseAdmin
         .from("course_participants")
         .select("id", { count: "exact", head: true })
@@ -58,17 +76,12 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         .from("course_requests")
         .select("id", { count: "exact", head: true })
         .eq("status", "new"),
-      supabaseAdmin
-        .from("course_sessions")
-        .select("id,assigned_trainer_id")
-        .gte("session_date", today)
-        .lte("session_date", in14d),
-      supabaseAdmin.from("course_session_assignments").select("session_id"),
     ]);
 
-    const assigned = new Set((assignments.data ?? []).map((a) => a.session_id as string));
-    const unstaffed = (sessions.data ?? []).filter(
-      (s) => !s.assigned_trainer_id && !assigned.has(s.id as string),
+    const assigned = new Set(assignments.map((a) => a.session_id as string));
+    // „Besetzt“ wie im Kurskalender: Dienstplan-Eintrag, Termin-Trainer:in oder Kurstrainer:in
+    const unstaffed = sessions.filter(
+      (s) => !s.assigned_trainer_id && !assigned.has(s.id as string) && !s.courses?.trainer_id,
     ).length;
 
     const tasks: AdminTask[] = [
