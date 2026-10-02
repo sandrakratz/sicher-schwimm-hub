@@ -8,14 +8,20 @@ import { Calendar, MapPin } from "lucide-react";
 import { ReweSfvBanner } from "@/components/ReweSfvBanner";
 import { MediaAttachment } from "@/components/MediaAttachment";
 
-
 export const Route = createFileRoute("/news")({
   head: () => ({
     meta: [
       { title: "News & Termine – Sicher Schwimmen e.V. Hennef" },
-      { name: "description", content: "Aktuelle Neuigkeiten, Termine und Informationen aus dem Schwimmverein Sicher Schwimmen e.V. in Hennef." },
+      {
+        name: "description",
+        content:
+          "Aktuelle Neuigkeiten, Termine und Informationen aus dem Schwimmverein Sicher Schwimmen e.V. in Hennef.",
+      },
       { property: "og:title", content: "News – Sicher Schwimmen e.V." },
-      { property: "og:description", content: "Aktuelle Neuigkeiten, Termine und Informationen aus dem Verein." },
+      {
+        property: "og:description",
+        content: "Aktuelle Neuigkeiten, Termine und Informationen aus dem Verein.",
+      },
       { property: "og:url", content: "https://sicher-schwimmen.com/news" },
     ],
     links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/news" }],
@@ -63,7 +69,6 @@ function Page() {
       .then(({ data }) => setEvents((data as EventItem[]) || []));
   }, []);
 
-
   return (
     <PublicLayout>
       <section className="bg-hero text-white py-20">
@@ -84,11 +89,24 @@ function Page() {
                     <h3 className="font-display text-xl font-bold text-primary-deep">{e.title}</h3>
                   </div>
                   <div className="text-sm text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" />{formatDateTimeBerlin(e.starts_at)}{e.ends_at ? ` – ${formatDateTimeBerlin(e.ends_at)}` : ""}</span>
-                    {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{e.location}</span>}
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {formatDateTimeBerlin(e.starts_at)}
+                      {e.ends_at ? ` – ${formatDateTimeBerlin(e.ends_at)}` : ""}
+                    </span>
+                    {e.location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        {e.location}
+                      </span>
+                    )}
                   </div>
                   <MediaAttachment path={e.image_url} alt={e.image_alt} mime={e.image_mime} />
-                  {e.description && <p className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{e.description}</p>}
+                  {e.description && (
+                    <p className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">
+                      {e.description}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -115,7 +133,9 @@ function Page() {
                       </span>
                     )}
                   </div>
-                  <h2 className="font-display text-xl font-bold text-primary-deep mt-1">{n.title}</h2>
+                  <h2 className="font-display text-xl font-bold text-primary-deep mt-1">
+                    {n.title}
+                  </h2>
                   {n.excerpt && (
                     <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>
                   )}
@@ -131,7 +151,6 @@ function Page() {
           )}
         </div>
       </section>
-
     </PublicLayout>
   );
 }

@@ -99,9 +99,15 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
   const header = () => {
     draw(ORG.name, { size: 13, bold: true });
     y -= 13;
-    draw(`${ORG.street}, ${ORG.zipCity} · Mitglied im ${ASSOCIATION.name}`, { size: 8.5, color: MUTED });
+    draw(`${ORG.street}, ${ORG.zipCity} · Mitglied im ${ASSOCIATION.name}`, {
+      size: 8.5,
+      color: MUTED,
+    });
     y -= 22;
-    draw("Prüfungsprotokoll nach der Deutschen Prüfungsordnung Schwimmen (DPO)", { size: 12, bold: true });
+    draw("Prüfungsprotokoll nach der Deutschen Prüfungsordnung Schwimmen (DPO)", {
+      size: 12,
+      bold: true,
+    });
     y -= 16;
     draw(`Kurs: ${input.courseName}`, { size: 10 });
     y -= 12;
@@ -110,7 +116,10 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
       { size: 9, color: MUTED },
     );
     y -= 12;
-    draw(`Abnehmende Trainerin / abnehmender Trainer: ${input.examinerName}`, { size: 9, color: MUTED });
+    draw(`Abnehmende Trainerin / abnehmender Trainer: ${input.examinerName}`, {
+      size: 9,
+      color: MUTED,
+    });
     y -= 10;
     page.drawLine({
       start: { x: LEFT, y },
@@ -194,11 +203,25 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
   y -= 11;
   draw("persönlich abgenommen und geprüft wurden.", { size: 8.5, color: MUTED });
   y -= 40;
-  page.drawLine({ start: { x: LEFT, y }, end: { x: LEFT + 200, y }, thickness: 0.7, color: rgb(0.5, 0.55, 0.6) });
-  page.drawLine({ start: { x: LEFT + 240, y }, end: { x: RIGHT, y }, thickness: 0.7, color: rgb(0.5, 0.55, 0.6) });
+  page.drawLine({
+    start: { x: LEFT, y },
+    end: { x: LEFT + 200, y },
+    thickness: 0.7,
+    color: rgb(0.5, 0.55, 0.6),
+  });
+  page.drawLine({
+    start: { x: LEFT + 240, y },
+    end: { x: RIGHT, y },
+    thickness: 0.7,
+    color: rgb(0.5, 0.55, 0.6),
+  });
   y -= 11;
   draw("Ort, Datum", { size: 8.5, color: MUTED });
-  draw("Unterschrift der prüfenden Person (Lizenz-Nr.)", { size: 8.5, color: MUTED, x: LEFT + 240 });
+  draw("Unterschrift der prüfenden Person (Lizenz-Nr.)", {
+    size: 8.5,
+    color: MUTED,
+    x: LEFT + 240,
+  });
 
   return await pdf.save();
 }

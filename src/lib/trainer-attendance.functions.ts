@@ -29,19 +29,29 @@ async function displayNames(ids: string[]): Promise<Map<string, string>> {
     .from("profiles")
     .select("id,first_name,last_name,email")
     .in("id", unique);
-  (data || []).forEach((p: { id: string; first_name: string | null; last_name: string | null; email: string | null }) => {
-    map.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—");
-  });
+  (data || []).forEach(
+    (p: {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+    }) => {
+      map.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—");
+    },
+  );
   return map;
 }
 
 async function rolesOf(supabase: any, userId: string): Promise<string[]> {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  return ((data || []) as { role: string }[]).map(r => r.role);
+  return ((data || []) as { role: string }[]).map((r) => r.role);
 }
 
 async function assertTrainerOfCourse(supabase: any, userId: string, courseId: string) {
-  const { data } = await supabase.rpc("is_trainer_of_course", { _trainer_id: userId, _course_id: courseId });
+  const { data } = await supabase.rpc("is_trainer_of_course", {
+    _trainer_id: userId,
+    _course_id: courseId,
+  });
   if (!data) throw new Error("Forbidden");
 }
 
@@ -49,65 +59,84 @@ async function assertTrainerOfCourse(supabase: any, userId: string, courseId: st
 export const listCourseTrainerAttendance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { courseId: string }) => {
-    if (!d || typeof d.courseId !== "string" || d.courseId.length < 8) throw new Error("courseId required");
+    if (!d || typeof d.courseId !== "string" || d.courseId.length < 8)
+      throw new Error("courseId required");
     return d;
   })
-  .handler(async ({ data, context }): Promise<{ sessions: TrainerSessionRow[]; rows: TrainerAttendanceRow[]; isStaff: boolean }> => {
-    const roles = await rolesOf(context.supabase, context.userId);
-    if (!roles.some(r => ["admin", "board", "trainer"].includes(r))) throw new Error("Forbidden");
-    const isStaff = roles.some(r => ["admin", "board"].includes(r));
-    // Trainer:innen sehen nur die Einträge ihrer eigenen Kurse
-    if (!isStaff) await assertTrainerOfCourse(context.supabase, context.userId, data.courseId);
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{
+      sessions: TrainerSessionRow[];
+      rows: TrainerAttendanceRow[];
+      isStaff: boolean;
+    }> => {
+      const roles = await rolesOf(context.supabase, context.userId);
+      if (!roles.some((r) => ["admin", "board", "trainer"].includes(r)))
+        throw new Error("Forbidden");
+      const isStaff = roles.some((r) => ["admin", "board"].includes(r));
+      // Trainer:innen sehen nur die Einträge ihrer eigenen Kurse
+      if (!isStaff) await assertTrainerOfCourse(context.supabase, context.userId, data.courseId);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: sessions } = await supabaseAdmin
-      .from("course_sessions")
-      .select("id,session_index,session_date,start_time,end_time")
-      .eq("course_id", data.courseId)
-      .order("session_index", { ascending: true });
-    const list = (sessions || []) as TrainerSessionRow[];
-    if (list.length === 0) return { sessions: [], rows: [], isStaff };
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: sessions } = await supabaseAdmin
+        .from("course_sessions")
+        .select("id,session_index,session_date,start_time,end_time")
+        .eq("course_id", data.courseId)
+        .order("session_index", { ascending: true });
+      const list = (sessions || []) as TrainerSessionRow[];
+      if (list.length === 0) return { sessions: [], rows: [], isStaff };
 
-    const { data: att } = await supabaseAdmin
-      .from("trainer_session_attendance")
-      .select("session_id,trainer_id,present,note,recorded_at,confirmed_at,confirmed_by")
-      .in("session_id", list.map(s => s.id));
+      const { data: att } = await supabaseAdmin
+        .from("trainer_session_attendance")
+        .select("session_id,trainer_id,present,note,recorded_at,confirmed_at,confirmed_by")
+        .in(
+          "session_id",
+          list.map((s) => s.id),
+        );
 
-    const names = await displayNames([
-      ...(att || []).map((a: any) => a.trainer_id as string),
-      ...(att || []).map((a: any) => a.confirmed_by as string).filter(Boolean),
-    ]);
+      const names = await displayNames([
+        ...(att || []).map((a: any) => a.trainer_id as string),
+        ...(att || []).map((a: any) => a.confirmed_by as string).filter(Boolean),
+      ]);
 
-    const rows: TrainerAttendanceRow[] = (att || []).map((a: any) => ({
-      session_id: a.session_id,
-      trainer_id: a.trainer_id,
-      trainer_name: names.get(a.trainer_id) || "—",
-      present: !!a.present,
-      note: a.note ?? null,
-      recorded_at: a.recorded_at,
-      confirmed_at: a.confirmed_at ?? null,
-      confirmed_by_name: a.confirmed_by ? names.get(a.confirmed_by) || null : null,
-    }));
+      const rows: TrainerAttendanceRow[] = (att || []).map((a: any) => ({
+        session_id: a.session_id,
+        trainer_id: a.trainer_id,
+        trainer_name: names.get(a.trainer_id) || "—",
+        present: !!a.present,
+        note: a.note ?? null,
+        recorded_at: a.recorded_at,
+        confirmed_at: a.confirmed_at ?? null,
+        confirmed_by_name: a.confirmed_by ? names.get(a.confirmed_by) || null : null,
+      }));
 
-    return { sessions: list, rows, isStaff };
-  });
+      return { sessions: list, rows, isStaff };
+    },
+  );
 
 /** Trainer:in trägt die eigene Anwesenheit ein (nur solange unbestätigt). */
 export const setOwnTrainerAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { sessionId: string; present: boolean | null; note?: string | null }) => {
-    if (!d || typeof d.sessionId !== "string" || d.sessionId.length < 8) throw new Error("sessionId required");
+    if (!d || typeof d.sessionId !== "string" || d.sessionId.length < 8)
+      throw new Error("sessionId required");
     return d;
   })
   .handler(async ({ data, context }) => {
     const roles = await rolesOf(context.supabase, context.userId);
-    if (!roles.some(r => ["admin", "board", "trainer"].includes(r))) throw new Error("Forbidden");
+    if (!roles.some((r) => ["admin", "board", "trainer"].includes(r))) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Eintragen darf nur, wer zum Kurs des Termins gehört (Vorstand/Admin immer)
-    const { data: sess } = await supabaseAdmin.from("course_sessions").select("course_id").eq("id", data.sessionId).maybeSingle();
+    const { data: sess } = await supabaseAdmin
+      .from("course_sessions")
+      .select("course_id")
+      .eq("id", data.sessionId)
+      .maybeSingle();
     if (!sess) throw new Error("Kurstermin nicht gefunden");
-    if (!roles.some(r => ["admin", "board"].includes(r))) {
+    if (!roles.some((r) => ["admin", "board"].includes(r))) {
       await assertTrainerOfCourse(context.supabase, context.userId, sess.course_id as string);
     }
     const { data: existing } = await supabaseAdmin
@@ -118,18 +147,28 @@ export const setOwnTrainerAttendance = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (existing?.confirmed_at) {
-      throw new Error("Der Eintrag wurde bereits vom Vorstand bestätigt und kann nicht mehr geändert werden.");
+      throw new Error(
+        "Der Eintrag wurde bereits vom Vorstand bestätigt und kann nicht mehr geändert werden.",
+      );
     }
 
     if (data.present === null) {
       if (existing) {
-        const { error } = await supabaseAdmin.from("trainer_session_attendance").delete().eq("id", existing.id);
+        const { error } = await supabaseAdmin
+          .from("trainer_session_attendance")
+          .delete()
+          .eq("id", existing.id);
         if (error) throw error;
       }
     } else if (existing) {
       const { error } = await supabaseAdmin
         .from("trainer_session_attendance")
-        .update({ present: data.present, note: data.note?.trim() || null, recorded_at: new Date().toISOString(), recorded_by: context.userId })
+        .update({
+          present: data.present,
+          note: data.note?.trim() || null,
+          recorded_at: new Date().toISOString(),
+          recorded_by: context.userId,
+        })
         .eq("id", existing.id);
       if (error) throw error;
     } else {
@@ -162,12 +201,13 @@ export const setOwnTrainerAttendance = createServerFn({ method: "POST" })
 export const confirmTrainerAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { sessionId: string; trainerId?: string | null; confirm: boolean }) => {
-    if (!d || typeof d.sessionId !== "string" || d.sessionId.length < 8) throw new Error("sessionId required");
+    if (!d || typeof d.sessionId !== "string" || d.sessionId.length < 8)
+      throw new Error("sessionId required");
     return d;
   })
   .handler(async ({ data, context }) => {
     const roles = await rolesOf(context.supabase, context.userId);
-    if (!roles.some(r => ["admin", "board"].includes(r))) throw new Error("Forbidden");
+    if (!roles.some((r) => ["admin", "board"].includes(r))) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin
@@ -202,7 +242,7 @@ export const countUnconfirmedTrainerAttendance = createServerFn({ method: "GET" 
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<number> => {
     const roles = await rolesOf(context.supabase, context.userId);
-    if (!roles.some(r => ["admin", "board"].includes(r))) return 0;
+    if (!roles.some((r) => ["admin", "board"].includes(r))) return 0;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { count } = await supabaseAdmin
       .from("trainer_session_attendance")

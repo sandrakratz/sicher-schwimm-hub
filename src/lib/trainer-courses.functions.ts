@@ -45,7 +45,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       .select("role")
       .eq("user_id", context.userId);
     const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    if (!roles.some(r => ["admin", "board", "trainer"].includes(r))) {
+    if (!roles.some((r) => ["admin", "board", "trainer"].includes(r))) {
       throw new Response("Forbidden", { status: 403 });
     }
 
@@ -57,37 +57,60 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       .from("courses")
       .select("id")
       .eq("trainer_id", me);
-    (ownCourses || []).forEach(c => allowed.add(c.id as string));
+    (ownCourses || []).forEach((c) => allowed.add(c.id as string));
 
     // Nur die eigenen Zuordnungen laden (nicht alle Termine des Vereins): Supabase liefert pro Abfrage höchstens
     // 1000 Zeilen, sonst würden eigene Kurse irgendwann nicht mehr erscheinen.
     const ownSessions = await fetchAll<{ course_id: string }>((f, t) =>
-      supabaseAdmin.from("course_sessions").select("course_id").eq("assigned_trainer_id", me).order("id").range(f, t),
+      supabaseAdmin
+        .from("course_sessions")
+        .select("course_id")
+        .eq("assigned_trainer_id", me)
+        .order("id")
+        .range(f, t),
     );
-    ownSessions.forEach(s => allowed.add(s.course_id));
+    ownSessions.forEach((s) => allowed.add(s.course_id));
 
     const assignments = await fetchAll<{ session_id: string }>((f, t) =>
-      supabaseAdmin.from("course_session_assignments").select("session_id").eq("trainer_id", me).order("id").range(f, t),
+      supabaseAdmin
+        .from("course_session_assignments")
+        .select("session_id")
+        .eq("trainer_id", me)
+        .order("id")
+        .range(f, t),
     );
     const assignedSessions = await fetchIn<{ course_id: string }>(
-      assignments.map(a => a.session_id),
-      (chunk, f, t) => supabaseAdmin.from("course_sessions").select("course_id").in("id", chunk).order("id").range(f, t),
+      assignments.map((a) => a.session_id),
+      (chunk, f, t) =>
+        supabaseAdmin
+          .from("course_sessions")
+          .select("course_id")
+          .in("id", chunk)
+          .order("id")
+          .range(f, t),
     );
-    assignedSessions.forEach(s => allowed.add(s.course_id));
+    assignedSessions.forEach((s) => allowed.add(s.course_id));
 
     if (allowed.size === 0) return [];
     const ids = Array.from(allowed);
 
     const courses = (
       await fetchIn<any>(ids, (chunk, f, t) =>
-        supabaseAdmin.from("courses").select("id,name,location,schedule,starts_on,ends_on").in("id", chunk).order("id").range(f, t),
+        supabaseAdmin
+          .from("courses")
+          .select("id,name,location,schedule,starts_on,ends_on")
+          .in("id", chunk)
+          .order("id")
+          .range(f, t),
       )
     ).sort((x, y) => String(x.starts_on ?? "9999").localeCompare(String(y.starts_on ?? "9999")));
 
     const parts = await fetchIn<any>(ids, (chunk, f, t) =>
       supabaseAdmin
         .from("course_participants")
-        .select("id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no")
+        .select(
+          "id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no",
+        )
         .in("course_id", chunk)
         .neq("status", "cancelled")
         .order("participant_name", { ascending: true })
@@ -95,7 +118,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
         .range(f, t),
     );
 
-    return courses.map(c => ({
+    return courses.map((c) => ({
       id: c.id as string,
       name: c.name as string,
       location: (c.location ?? null) as string | null,
@@ -103,8 +126,8 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       starts_on: (c.starts_on ?? null) as string | null,
       ends_on: (c.ends_on ?? null) as string | null,
       participants: parts
-        .filter(p => p.course_id === c.id)
-        .map(p => ({
+        .filter((p) => p.course_id === c.id)
+        .map((p) => ({
           id: p.id as string,
           name: (p.participant_name ?? "") as string,
           date_of_birth: (p.date_of_birth ?? null) as string | null,
@@ -117,7 +140,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
           badge: (p.badge ?? null) as string | null,
           achievement: (p.achievement ?? null) as string | null,
           exam_level: (p.exam_level ?? null) as string | null,
-          exam_criteria: ((p.exam_criteria ?? {}) as ExamCriteriaState),
+          exam_criteria: (p.exam_criteria ?? {}) as ExamCriteriaState,
           exam_date: (p.exam_date ?? null) as string | null,
           exam_pass_no: (p.exam_pass_no ?? null) as string | null,
         })),
@@ -128,28 +151,48 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
 export const updateParticipantHint = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { participantId: string; hint: string }) => {
-    if (typeof input?.hint !== "string" || input.hint.length > 2000) throw new Error("Hinweis zu lang");
+    if (typeof input?.hint !== "string" || input.hint.length > 2000)
+      throw new Error("Hinweis zu lang");
     return input;
   })
   .handler(async ({ data, context }): Promise<{ hint: string | null }> => {
-    const { data: roleRows } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId);
+    const { data: roleRows } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
     const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    const isStaff = roles.some((r) => ["admin", "board"].includes(r));
     if (!isStaff && !roles.includes("trainer")) throw new Response("Forbidden", { status: 403 });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: p } = await supabaseAdmin.from("course_participants").select("id,course_id").eq("id", data.participantId).maybeSingle();
+    const { data: p } = await supabaseAdmin
+      .from("course_participants")
+      .select("id,course_id")
+      .eq("id", data.participantId)
+      .maybeSingle();
     if (!p) throw new Error("Teilnehmende:r nicht gefunden.");
     if (!isStaff) {
-      const { data: allowed } = await context.supabase.rpc("is_trainer_of_course", { _trainer_id: context.userId, _course_id: p.course_id as string });
+      const { data: allowed } = await context.supabase.rpc("is_trainer_of_course", {
+        _trainer_id: context.userId,
+        _course_id: p.course_id as string,
+      });
       if (!allowed) throw new Response("Forbidden", { status: 403 });
     }
     const value = data.hint.trim() || null;
-    const { error } = await supabaseAdmin.from("course_participants").update({ notes: value }).eq("id", p.id as string);
+    const { error } = await supabaseAdmin
+      .from("course_participants")
+      .update({ notes: value })
+      .eq("id", p.id as string);
     if (error) throw new Error(error.message);
     try {
       const { logAudit } = await import("@/lib/audit.server");
-      await logAudit(null, context.userId, { action: "participant.hint_updated", entity: "course_participants", entity_id: p.id as string });
-    } catch { /* ignore */ }
+      await logAudit(null, context.userId, {
+        action: "participant.hint_updated",
+        entity: "course_participants",
+        entity_id: p.id as string,
+      });
+    } catch {
+      /* ignore */
+    }
     return { hint: value };
   });
 
@@ -161,8 +204,10 @@ export const updateParticipantHint = createServerFn({ method: "POST" })
 export const updateParticipantPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { participantId: string; phone: string }) => {
-    if (typeof input?.participantId !== "string" || !input.participantId) throw new Error("Teilnehmende:r fehlt.");
-    if (typeof input.phone !== "string" || input.phone.length > 40) throw new Error("Bitte eine gültige Telefonnummer eingeben.");
+    if (typeof input?.participantId !== "string" || !input.participantId)
+      throw new Error("Teilnehmende:r fehlt.");
+    if (typeof input.phone !== "string" || input.phone.length > 40)
+      throw new Error("Bitte eine gültige Telefonnummer eingeben.");
     return input;
   })
   .handler(async ({ data, context }): Promise<{ phone: string | null }> => {
@@ -171,7 +216,7 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", context.userId);
     const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    const isStaff = roles.some((r) => ["admin", "board"].includes(r));
     if (!isStaff && !roles.includes("trainer")) {
       throw new Response("Forbidden", { status: 403 });
     }
@@ -239,9 +284,15 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
         entity: "course_participants",
         entity_id: participant.id as string,
         // Die Nummer selbst gehört nicht ins Protokoll (Datensparsamkeit)
-        metadata: { course_id: participant.course_id, request_id: participant.request_id, phone_set: value !== null },
+        metadata: {
+          course_id: participant.course_id,
+          request_id: participant.request_id,
+          phone_set: value !== null,
+        },
       });
-    } catch { /* Audit-Fehler dürfen die Erfassung nicht blockieren */ }
+    } catch {
+      /* Audit-Fehler dürfen die Erfassung nicht blockieren */
+    }
 
     return { phone: value };
   });
@@ -270,14 +321,18 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
       }
       const text = (v: unknown, max: number, label: string) => {
         if (v == null || v === "") return;
-        if (typeof v !== "string" || v.length > max) throw new Error(`${label} ist zu lang oder ungültig.`);
+        if (typeof v !== "string" || v.length > max)
+          throw new Error(`${label} ist zu lang oder ungültig.`);
       };
-      if (typeof input.badge !== "string" || typeof input.achievement !== "string") throw new Error("Abzeichen und Anmerkung fehlen.");
+      if (typeof input.badge !== "string" || typeof input.achievement !== "string")
+        throw new Error("Abzeichen und Anmerkung fehlen.");
       text(input.badge, 100, "Abzeichen");
       text(input.achievement, 2000, "Die Anmerkung");
       text(input.examPassNo, 40, "Die Schwimmpass-Nr.");
-      if (input.examDate && !/^\d{4}-\d{2}-\d{2}$/.test(input.examDate)) throw new Error("Ungültiges Prüfungsdatum.");
-      if (input.examLevel && !findExamLevel(input.examLevel)) throw new Error("Unbekannte Prüfungsstufe.");
+      if (input.examDate && !/^\d{4}-\d{2}-\d{2}$/.test(input.examDate))
+        throw new Error("Ungültiges Prüfungsdatum.");
+      if (input.examLevel && !findExamLevel(input.examLevel))
+        throw new Error("Unbekannte Prüfungsstufe.");
       return input;
     },
   )
@@ -287,7 +342,7 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", context.userId);
     const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    const isStaff = roles.some((r) => ["admin", "board"].includes(r));
     if (!isStaff && !roles.includes("trainer")) {
       throw new Response("Forbidden", { status: 403 });
     }
@@ -334,8 +389,12 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
         .eq("id", context.userId)
         .maybeSingle();
       const myName =
-        [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim() || me?.email || "Unbekannt";
-      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+        [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim() ||
+        me?.email ||
+        "Unbekannt";
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(
+        new Date(),
+      );
       const isIso = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
       for (const c of level.criteria) {
         const entry = data.examCriteria?.[c.key];
@@ -350,7 +409,13 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
           done,
           value: value || null,
           total: total || null,
-          date: done ? (isIso(entry.date) ? entry.date! : isIso(old?.date) ? old!.date! : today) : null,
+          date: done
+            ? isIso(entry.date)
+              ? entry.date!
+              : isIso(old?.date)
+                ? old!.date!
+                : today
+            : null,
           by_id: done ? (wasDone && old?.by_id ? old.by_id : context.userId) : null,
           by_name: done ? (wasDone && old?.by_name ? old.by_name : myName) : null,
         };
@@ -387,10 +452,12 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
           exam_level: examLevel,
           exam_date: examDate,
           exam_pass_no: examPassNo,
-          criteria_done: Object.values(criteria).filter(c => c.done).length,
+          criteria_done: Object.values(criteria).filter((c) => c.done).length,
         },
       });
-    } catch { /* Audit-Fehler dürfen die Erfassung nicht blockieren */ }
+    } catch {
+      /* Audit-Fehler dürfen die Erfassung nicht blockieren */
+    }
 
     return {
       goal_reached: data.goalReached,
@@ -419,7 +486,7 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
       .select("role")
       .eq("user_id", context.userId);
     const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    const isStaff = roles.some((r) => ["admin", "board"].includes(r));
     if (!isStaff && !roles.includes("trainer")) {
       throw new Response("Forbidden", { status: 403 });
     }
@@ -442,7 +509,9 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
 
     const { data: parts } = await supabaseAdmin
       .from("course_participants")
-      .select("participant_name,date_of_birth,exam_level,exam_criteria,exam_date,exam_pass_no,goal_reached,badge,achievement,status")
+      .select(
+        "participant_name,date_of_birth,exam_level,exam_criteria,exam_date,exam_pass_no,goal_reached,badge,achievement,status",
+      )
       .eq("course_id", data.courseId)
       .neq("status", "cancelled")
       .order("participant_name", { ascending: true });
@@ -453,7 +522,8 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
       .eq("id", context.userId)
       .maybeSingle();
     void me;
-    const examinerName = "Michael Kratz, staatl. gepr. Fachkraft für Bäderbetriebe (Reg.-Nr. 88-5169, Regierungspräsident Düsseldorf)";
+    const examinerName =
+      "Michael Kratz, staatl. gepr. Fachkraft für Bäderbetriebe (Reg.-Nr. 88-5169, Regierungspräsident Düsseldorf)";
 
     const { renderExamProtocolPdf } = await import("@/lib/exam-protocol-pdf.server");
     const bytes = await renderExamProtocolPdf({
@@ -463,11 +533,11 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
       startsOn: (course.starts_on ?? null) as string | null,
       endsOn: (course.ends_on ?? null) as string | null,
       examinerName,
-      participants: (parts || []).map(p => ({
+      participants: (parts || []).map((p) => ({
         name: (p.participant_name ?? "") as string,
         dateOfBirth: (p.date_of_birth ?? null) as string | null,
         examLevel: (p.exam_level ?? null) as string | null,
-        criteria: ((p.exam_criteria ?? {}) as ExamCriteriaState),
+        criteria: (p.exam_criteria ?? {}) as ExamCriteriaState,
         examDate: (p.exam_date ?? null) as string | null,
         passNo: (p.exam_pass_no ?? null) as string | null,
         goalReached: (p.goal_reached ?? null) as boolean | null,
@@ -487,7 +557,9 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
         entity_id: data.courseId,
         metadata: { participants: (parts || []).length },
       });
-    } catch { /* Audit-Fehler dürfen den Export nicht blockieren */ }
+    } catch {
+      /* Audit-Fehler dürfen den Export nicht blockieren */
+    }
 
     return { filename, base64: Buffer.from(bytes).toString("base64") };
   });
@@ -527,7 +599,10 @@ export const exportPartialCertificate = createServerFn({ method: "POST" })
     const { buildPartialCertificate } = await import("@/lib/partial-certificate-pdf.server");
     const { berlinToday } = await import("@/lib/partial-certificate.server");
     const cert = await buildPartialCertificate(data.participantId, berlinToday());
-    if (!cert) throw new Error("Kein Teilleistungsnachweis möglich: Es sind keine oder bereits alle Prüfungsteile bestanden.");
+    if (!cert)
+      throw new Error(
+        "Kein Teilleistungsnachweis möglich: Es sind keine oder bereits alle Prüfungsteile bestanden.",
+      );
     return { filename: cert.filename, base64: Buffer.from(cert.bytes).toString("base64") };
   });
 
@@ -541,7 +616,10 @@ export const sendPartialCertificateNow = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ status: string }> => {
     await assertCourseAccessForParticipant(context.supabase, context.userId, data.participantId);
     const { sendPartialCertificate } = await import("@/lib/partial-certificate.server");
-    const status = await sendPartialCertificate(data.participantId, { force: true, senderUserId: context.userId });
+    const status = await sendPartialCertificate(data.participantId, {
+      force: true,
+      senderUserId: context.userId,
+    });
     return { status };
   });
 
@@ -578,7 +656,9 @@ export const exportMyCourseConfirmation = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
     const { data: p } = await context.supabase
       .from("course_participants")
-      .select("id,parent_user_id,user_id,status,participant_name,payer_street,payer_zip,payer_city,price_amount,document_no,document_issued_at,created_at,request_id,course_id")
+      .select(
+        "id,parent_user_id,user_id,status,participant_name,payer_street,payer_zip,payer_city,price_amount,document_no,document_issued_at,created_at,request_id,course_id",
+      )
       .eq("id", data.participantId)
       .maybeSingle();
     if (!p || (p.parent_user_id !== context.userId && p.user_id !== context.userId)) {
@@ -588,14 +668,23 @@ export const exportMyCourseConfirmation = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: course } = await supabaseAdmin
       .from("courses")
-      .select("name,location,starts_on,ends_on,schedule,unit_count,payment_due_days,course_programs(name,location)")
+      .select(
+        "name,location,starts_on,ends_on,schedule,unit_count,payment_due_days,course_programs(name,location)",
+      )
       .eq("id", p.course_id)
       .maybeSingle();
     if (!course) throw new Error("Kurs nicht gefunden");
-    const program = (course as any).course_programs as { name: string; location: string | null } | null;
+    const program = (course as any).course_programs as {
+      name: string;
+      location: string | null;
+    } | null;
     let payerName = p.participant_name;
     if (p.request_id) {
-      const { data: r } = await supabaseAdmin.from("course_requests").select("parent_name").eq("id", p.request_id).maybeSingle();
+      const { data: r } = await supabaseAdmin
+        .from("course_requests")
+        .select("parent_name")
+        .eq("id", p.request_id)
+        .maybeSingle();
       if (r?.parent_name) payerName = r.parent_name;
     }
     const { renderConfirmationPdf } = await import("@/lib/course-confirmation-pdf.server");

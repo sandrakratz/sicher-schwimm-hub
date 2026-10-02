@@ -12,30 +12,45 @@ export const Route = createFileRoute("/_authenticated/portal/news")({
 function NewsList() {
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {
-    supabase.from("news").select("*").eq("published", true).order("published_at", { ascending: false }).then(({ data }) => setItems(data || []));
+    supabase
+      .from("news")
+      .select("*")
+      .eq("published", true)
+      .order("published_at", { ascending: false })
+      .then(({ data }) => setItems(data || []));
   }, []);
   return (
     <div className="max-w-4xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Vereinsnews</h1>
       {items.length === 0 ? (
-        <Card className="border-0 shadow-soft"><CardContent className="p-10 text-center text-muted-foreground">Aktuell keine Beiträge.</CardContent></Card>
+        <Card className="border-0 shadow-soft">
+          <CardContent className="p-10 text-center text-muted-foreground">
+            Aktuell keine Beiträge.
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
-          {items.map(n => (
-            <Card key={n.id} className="border-0 shadow-soft"><CardContent className="p-6">
-              <div className="text-xs text-accent uppercase font-semibold tracking-wider">
-                {n.category}
-                {n.published_at && (
-                  <span className="ml-2 text-muted-foreground normal-case font-normal">
-                    {formatDateBerlin(n.published_at)}
-                  </span>
+          {items.map((n) => (
+            <Card key={n.id} className="border-0 shadow-soft">
+              <CardContent className="p-6">
+                <div className="text-xs text-accent uppercase font-semibold tracking-wider">
+                  {n.category}
+                  {n.published_at && (
+                    <span className="ml-2 text-muted-foreground normal-case font-normal">
+                      {formatDateBerlin(n.published_at)}
+                    </span>
+                  )}
+                </div>
+                <h2 className="font-display text-xl font-bold text-primary-deep mt-1">{n.title}</h2>
+                {n.excerpt && <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>}
+                <MediaAttachment path={n.image_url} alt={n.image_alt} mime={n.image_mime} />
+                {n.content && (
+                  <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">
+                    {n.content}
+                  </div>
                 )}
-              </div>
-              <h2 className="font-display text-xl font-bold text-primary-deep mt-1">{n.title}</h2>
-              {n.excerpt && <p className="text-muted-foreground mt-2 font-medium">{n.excerpt}</p>}
-              <MediaAttachment path={n.image_url} alt={n.image_alt} mime={n.image_mime} />
-              {n.content && <div className="text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{n.content}</div>}
-            </CardContent></Card>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

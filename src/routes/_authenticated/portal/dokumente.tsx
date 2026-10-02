@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -48,7 +55,9 @@ function Page() {
 
   async function download(d: Doc) {
     if (!d.file_url) return toast.error("Keine Datei verknüpft");
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(d.file_url, 60);
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(d.file_url, 60);
     if (error || !data) return toast.error(error?.message || "Fehler");
     window.open(data.signedUrl, "_blank");
   }
@@ -57,7 +66,9 @@ function Page() {
     <div className="max-w-5xl space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold text-primary-deep">Dokumente</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Satzung, Mitgliedsordnung, Formulare und interne Unterlagen.</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Satzung, Mitgliedsordnung, Formulare und interne Unterlagen.
+        </p>
       </div>
       <Card className="border-0 shadow-soft">
         <CardContent className="p-0 overflow-x-auto">
@@ -72,17 +83,37 @@ function Page() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Lade…</TableCell></TableRow>}
-              {!loading && rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Keine Dokumente verfügbar.</TableCell></TableRow>}
-              {rows.map(d => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Lade…
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && rows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Keine Dokumente verfügbar.
+                  </TableCell>
+                </TableRow>
+              )}
+              {rows.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell className="font-medium">
                     {d.title}
-                    {d.description && <div className="text-xs text-muted-foreground">{d.description}</div>}
+                    {d.description && (
+                      <div className="text-xs text-muted-foreground">{d.description}</div>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs">{d.version || "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[d.visibility] || d.visibility}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDateBerlin(d.created_at)}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {VISIBILITY_LABEL[d.visibility] || d.visibility}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatDateBerlin(d.created_at)}
+                  </TableCell>
                   <TableCell className="text-right">
                     {d.file_url && (
                       <Button variant="ghost" size="sm" onClick={() => download(d)}>

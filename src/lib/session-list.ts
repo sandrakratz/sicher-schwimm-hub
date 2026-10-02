@@ -1,4 +1,10 @@
-export type ParsedSession = { date: string; start: string | null; end: string | null; isBreak: boolean; note: string | null };
+export type ParsedSession = {
+  date: string;
+  start: string | null;
+  end: string | null;
+  isBreak: boolean;
+  note: string | null;
+};
 
 const pad = (n: string) => n.padStart(2, "0");
 
@@ -15,8 +21,11 @@ export function parseSessionList(text: string): ParsedSession[] {
     const dash = !!m[1] && /[—–-]/.test(m[1]);
     const date = `${m[4]}-${pad(m[3])}-${pad(m[2])}`;
     let rest = m[5].trim();
-    const t = rest.match(/^(\d{1,2})[:.](\d{2})\s*(?:[–-]\s*(\d{1,2})[:.](\d{2}))?\s*(?:Uhr)?\s*(.*)$/);
-    let start: string | null = null, end: string | null = null;
+    const t = rest.match(
+      /^(\d{1,2})[:.](\d{2})\s*(?:[–-]\s*(\d{1,2})[:.](\d{2}))?\s*(?:Uhr)?\s*(.*)$/,
+    );
+    let start: string | null = null,
+      end: string | null = null;
     if (t) {
       start = `${pad(t[1])}:${t[2]}`;
       end = t[3] ? `${pad(t[3])}:${t[4]}` : null;

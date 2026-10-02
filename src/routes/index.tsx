@@ -28,27 +28,47 @@ export const Route = createFileRoute("/")({
   loader: async () => await listCoursePrograms(),
   head: () => ({
     meta: [
-      { title: "Schwimmkurse Hennef – Seepferdchen, Wassergewöhnung & mehr | Sicher Schwimmen e.V." },
-      { name: "description", content: "Schwimmen lernen in Hennef und im Rhein-Sieg-Kreis: Seepferdchen-Kurse, Wassergewöhnung, Bronze/Silber/Gold für Kinder, Familien und Erwachsene. Kleine Gruppen, qualifizierte Trainer*innen." },
-      { name: "keywords", content: "Schwimmkurs Hennef, Schwimmen lernen Hennef, Seepferdchen Hennef, Wassergewöhnung, Schwimmkurs Kinder Rhein-Sieg-Kreis, Schwimmverein Hennef" },
+      {
+        title: "Schwimmkurse Hennef – Seepferdchen, Wassergewöhnung & mehr | Sicher Schwimmen e.V.",
+      },
+      {
+        name: "description",
+        content:
+          "Schwimmen lernen in Hennef und im Rhein-Sieg-Kreis: Seepferdchen-Kurse, Wassergewöhnung, Bronze/Silber/Gold für Kinder, Familien und Erwachsene. Kleine Gruppen, qualifizierte Trainer*innen.",
+      },
+      {
+        name: "keywords",
+        content:
+          "Schwimmkurs Hennef, Schwimmen lernen Hennef, Seepferdchen Hennef, Wassergewöhnung, Schwimmkurs Kinder Rhein-Sieg-Kreis, Schwimmverein Hennef",
+      },
       { property: "og:title", content: "Schwimmkurse in Hennef – Sicher Schwimmen e.V." },
-      { property: "og:description", content: "Sichere Schwimmausbildung für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
+      {
+        property: "og:description",
+        content:
+          "Sichere Schwimmausbildung für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis.",
+      },
       { property: "og:url", content: "https://sicher-schwimmen.com/" },
       { property: "og:image", content: "https://sicher-schwimmen.com/og-image.jpg" },
       { name: "twitter:image", content: "https://sicher-schwimmen.com/og-image.jpg" },
     ],
     links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/" }],
-    scripts: [{
-      type: "application/ld+json",
-      children: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        name: "Sicher Schwimmen e.V.",
-        url: "https://sicher-schwimmen.com",
-        inLanguage: "de-DE",
-        publisher: { "@type": "SportsClub", name: "Sicher Schwimmen e.V.", url: "https://sicher-schwimmen.com" },
-      }),
-    }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Sicher Schwimmen e.V.",
+          url: "https://sicher-schwimmen.com",
+          inLanguage: "de-DE",
+          publisher: {
+            "@type": "SportsClub",
+            name: "Sicher Schwimmen e.V.",
+            url: "https://sicher-schwimmen.com",
+          },
+        }),
+      },
+    ],
   }),
   component: Home,
 });
@@ -76,14 +96,15 @@ function Home() {
               Sicher Schwimmen lernen in&nbsp;<span className="text-accent">Hennef</span>
             </h1>
             <p className="text-lg md:text-xl text-white/85 max-w-2xl leading-relaxed text-balance">
-              Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und
-              Vereinsaktivitäten für Kinder, Familien und Erwachsene im
-              Rhein-Sieg-Kreis – mit Herz, Geduld und höchsten
+              Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für
+              Kinder, Familien und Erwachsene im Rhein-Sieg-Kreis – mit Herz, Geduld und höchsten
               Sicherheitsstandards.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
               <Button asChild variant="accent" size="xl">
-                <Link to="/warteliste" search={{ programm: undefined }}>{LABELS.waitlistCta} <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                <Link to="/warteliste" search={{ programm: undefined }}>
+                  {LABELS.waitlistCta} <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
               </Button>
               <Button asChild variant="hero" size="xl">
                 <Link to="/kurse">Kurse ansehen</Link>
@@ -100,7 +121,10 @@ function Home() {
                 "Sicherheitsfokus",
                 "Lokaler Verein",
               ].map((t) => (
-                <span key={t} className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-accent" />{t}</span>
+                <span key={t} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4 text-accent" />
+                  {t}
+                </span>
               ))}
             </div>
           </div>
@@ -125,20 +149,39 @@ function Home() {
       {/* Why */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">Warum wir?</div>
-          <h2 className="text-4xl md:text-5xl font-bold text-primary-deep">Schwimmen lernen mit Herz</h2>
+          <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">
+            Warum wir?
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-primary-deep">
+            Schwimmen lernen mit Herz
+          </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Wir verbinden professionelle Schwimmausbildung mit familiärer
-            Atmosphäre und höchstem Anspruch an Sicherheit.
+            Wir verbinden professionelle Schwimmausbildung mit familiärer Atmosphäre und höchstem
+            Anspruch an Sicherheit.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { icon: Shield, title: "Sicherheit zuerst", text: "Geschultes Personal mit Rettungsschwimmer- und Erste-Hilfe-Qualifikation, klares Vier-Augen-Prinzip." },
-            { icon: Users, title: "Kleine Gruppen", text: "Individuelle Förderung in kleinen Lerngruppen – jedes Kind wird gesehen." },
-            { icon: Heart, title: "Familienorientiert", text: "Vom Säuglingsschwimmen bis zur Familienkarte – wir begleiten alle Altersgruppen." },
+            {
+              icon: Shield,
+              title: "Sicherheit zuerst",
+              text: "Geschultes Personal mit Rettungsschwimmer- und Erste-Hilfe-Qualifikation, klares Vier-Augen-Prinzip.",
+            },
+            {
+              icon: Users,
+              title: "Kleine Gruppen",
+              text: "Individuelle Förderung in kleinen Lerngruppen – jedes Kind wird gesehen.",
+            },
+            {
+              icon: Heart,
+              title: "Familienorientiert",
+              text: "Vom Säuglingsschwimmen bis zur Familienkarte – wir begleiten alle Altersgruppen.",
+            },
           ].map((f) => (
-            <Card key={f.title} className="shadow-card border-0 bg-card hover:-translate-y-1 transition-transform">
+            <Card
+              key={f.title}
+              className="shadow-card border-0 bg-card hover:-translate-y-1 transition-transform"
+            >
               <CardContent className="p-8">
                 <div className="h-14 w-14 rounded-2xl bg-secondary text-primary flex items-center justify-center mb-5">
                   <f.icon className="h-7 w-7" />
@@ -156,11 +199,17 @@ function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-10">
             <div>
-              <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">Unsere Kurse</div>
-              <h2 className="text-4xl md:text-5xl font-bold text-primary-deep">Für jedes Alter passend</h2>
+              <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">
+                Unsere Kurse
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-primary-deep">
+                Für jedes Alter passend
+              </h2>
             </div>
             <Button asChild variant="outline">
-              <Link to="/kurse">Alle Kurse ansehen <ArrowRight className="ml-1 h-4 w-4" /></Link>
+              <Link to="/kurse">
+                Alle Kurse ansehen <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
             </Button>
           </div>
           {featured.length === 0 ? (
@@ -185,7 +234,9 @@ function Home() {
                           {c.age_range || c.target_group || "Alle Altersgruppen"}
                         </div>
                         {c.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-3">{c.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-3">
+                            {c.description}
+                          </p>
                         )}
                       </CardContent>
                     </Card>
@@ -200,7 +251,10 @@ function Home() {
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Sie fragen sich, was Ihr Kind für das Seepferdchen können muss?{" "}
-            <Link to="/ratgeber/seepferdchen-anforderungen" className="text-primary-deep underline underline-offset-4">
+            <Link
+              to="/ratgeber/seepferdchen-anforderungen"
+              className="text-primary-deep underline underline-offset-4"
+            >
               Alle Seepferdchen-Anforderungen im Überblick
             </Link>
           </p>
@@ -210,7 +264,14 @@ function Home() {
       {/* Safety section */}
       <section className="container mx-auto px-4 py-20 grid lg:grid-cols-2 gap-12 items-center">
         <div className="relative">
-          <img src={kids} alt="Kinder im Schwimmkurs (KI-generierte Illustration)" className="rounded-3xl shadow-card" width={1280} height={896} loading="lazy" />
+          <img
+            src={kids}
+            alt="Kinder im Schwimmkurs (KI-generierte Illustration)"
+            className="rounded-3xl shadow-card"
+            width={1280}
+            height={896}
+            loading="lazy"
+          />
           <div className="absolute -bottom-6 -right-6 bg-accent text-accent-foreground rounded-2xl p-5 shadow-glow hidden md:block">
             <div className="font-display font-bold text-3xl">100%</div>
             <div className="text-xs font-semibold">Kinderschutzkonzept</div>
@@ -219,17 +280,28 @@ function Home() {
         </div>
 
         <div>
-          <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">Sicherheit & Schutz</div>
-          <h2 className="text-4xl md:text-5xl font-bold text-primary-deep mb-6">Vertrauen ist unsere Grundlage</h2>
+          <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">
+            Sicherheit & Schutz
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-primary-deep mb-6">
+            Vertrauen ist unsere Grundlage
+          </h2>
           <p className="text-muted-foreground text-lg leading-relaxed mb-6">
             Unsere Übungsleiter*innen verfügen über erweiterte Führungszeugnisse,
-            Rettungsschwimmer-Qualifikation und werden regelmäßig zum
-            Kinderschutz geschult. Klare Verhaltensregeln und das
-            Vier-Augen-Prinzip sind für uns selbstverständlich.
+            Rettungsschwimmer-Qualifikation und werden regelmäßig zum Kinderschutz geschult. Klare
+            Verhaltensregeln und das Vier-Augen-Prinzip sind für uns selbstverständlich.
           </p>
           <ul className="space-y-3 mb-8">
-            {["Erweitertes Führungszeugnis aller Trainer*innen", "Rettungsschwimmer- und Erste-Hilfe-Pflicht", "Vier-Augen-Prinzip & klares Verhaltensregelwerk", "Fotografie-/Filmverbot ohne ausdrückliche Einwilligung"].map(i => (
-              <li key={i} className="flex gap-3"><CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" /><span>{i}</span></li>
+            {[
+              "Erweitertes Führungszeugnis aller Trainer*innen",
+              "Rettungsschwimmer- und Erste-Hilfe-Pflicht",
+              "Vier-Augen-Prinzip & klares Verhaltensregelwerk",
+              "Fotografie-/Filmverbot ohne ausdrückliche Einwilligung",
+            ].map((i) => (
+              <li key={i} className="flex gap-3">
+                <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                <span>{i}</span>
+              </li>
             ))}
           </ul>
           <Button asChild variant="default" size="lg">
@@ -250,8 +322,17 @@ function Home() {
             Setzen Sie Ihr Kind auf die Warteliste oder werden Sie Mitglied im Verein.
           </p>
           <div className="flex flex-wrap gap-3 justify-center relative">
-            <Button asChild variant="accent" size="xl"><Link to="/warteliste" search={{ programm: undefined }}>{LABELS.waitlistCta}</Link></Button>
-            <Button asChild variant="heroOutline" size="xl"><Link to="/kontakt"><MapPin className="mr-1 h-4 w-4" />Kontakt aufnehmen</Link></Button>
+            <Button asChild variant="accent" size="xl">
+              <Link to="/warteliste" search={{ programm: undefined }}>
+                {LABELS.waitlistCta}
+              </Link>
+            </Button>
+            <Button asChild variant="heroOutline" size="xl">
+              <Link to="/kontakt">
+                <MapPin className="mr-1 h-4 w-4" />
+                Kontakt aufnehmen
+              </Link>
+            </Button>
           </div>
         </div>
       </section>

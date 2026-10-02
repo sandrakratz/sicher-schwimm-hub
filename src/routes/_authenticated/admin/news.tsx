@@ -3,15 +3,34 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
@@ -21,8 +40,11 @@ export const Route = createFileRoute("/_authenticated/admin/news")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/admin/benutzer" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/admin/benutzer" });
+    }
   },
   component: Page,
 });
@@ -50,7 +72,11 @@ type News = {
 };
 
 function slugify(s: string) {
-  return s.toLowerCase().replace(/[äöüß]/g, m => ({ä:"ae",ö:"oe",ü:"ue",ß:"ss"}[m] || m)).replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return s
+    .toLowerCase()
+    .replace(/[äöüß]/g, (m) => ({ ä: "ae", ö: "oe", ü: "ue", ß: "ss" })[m] || m)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 function Page() {
@@ -59,11 +85,15 @@ function Page() {
   const [editing, setEditing] = useState<Partial<News>>({});
 
   async function load() {
-    const { data } = await supabase.from("news").select("*").order("created_at", { ascending: false });
+    const { data } = await supabase
+      .from("news")
+      .select("*")
+      .order("created_at", { ascending: false });
     setRows((data as News[]) || []);
   }
-  useEffect(() => { load(); }, []);
-
+  useEffect(() => {
+    load();
+  }, []);
 
   /** Datei im Speicher löschen (Fehler sind nicht kritisch: die Datei bleibt dann nur liegen). */
   async function removeStored(path: string | null | undefined) {
@@ -72,12 +102,19 @@ function Page() {
     if (error) console.warn("Datei konnte nicht gelöscht werden:", path, error.message);
   }
 
-  function startNew() { setEditing({ category: "general", visibility: "public", published: false, content: "" }); setOpen(true); }
-  function startEdit(n: News) { setEditing(n); setOpen(true); }
+  function startNew() {
+    setEditing({ category: "general", visibility: "public", published: false, content: "" });
+    setOpen(true);
+  }
+  function startEdit(n: News) {
+    setEditing(n);
+    setOpen(true);
+  }
 
   async function save() {
     if (!editing.title) return toast.error("Titel erforderlich");
-    if (!editing.content && !editing.image_url) return toast.error("Bitte Text eingeben oder Bild/PDF hochladen");
+    if (!editing.content && !editing.image_url)
+      return toast.error("Bitte Text eingeben oder Bild/PDF hochladen");
     const publish = !!editing.published;
     const payload: any = {
       title: editing.title,
@@ -90,14 +127,14 @@ function Page() {
       category: editing.category || "general",
       visibility: editing.visibility || "public",
       published: publish,
-      published_at: publish ? (editing.published_at || new Date().toISOString()) : null,
+      published_at: publish ? editing.published_at || new Date().toISOString() : null,
     };
     const res = editing.id
       ? await supabase.from("news").update(payload).eq("id", editing.id)
       : await supabase.from("news").insert(payload);
     if (res.error) return toast.error(res.error.message);
     // Ersetztes/entferntes Bild bzw. PDF aus dem Speicher löschen (sonst bleibt es dort liegen)
-    const oldImage = editing.id ? rows.find(r => r.id === editing.id)?.image_url : null;
+    const oldImage = editing.id ? rows.find((r) => r.id === editing.id)?.image_url : null;
     if (oldImage && oldImage !== (editing.image_url || null)) await removeStored(oldImage);
     toast.success("Gespeichert");
     setOpen(false);
@@ -109,7 +146,8 @@ function Page() {
     const { error } = await supabase.from("news").delete().eq("id", n.id);
     if (error) return toast.error(error.message);
     await removeStored(n.image_url);
-    toast.success("Gelöscht"); await load();
+    toast.success("Gelöscht");
+    await load();
   }
 
   return (
@@ -117,66 +155,142 @@ function Page() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-primary-deep">News-Verwaltung</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Beiträge erstellen, veröffentlichen und pflegen.</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Beiträge erstellen, veröffentlichen und pflegen.
+          </p>
         </div>
-        <Button onClick={startNew}><Plus className="h-4 w-4" /> Neuer Beitrag</Button>
+        <Button onClick={startNew}>
+          <Plus className="h-4 w-4" /> Neuer Beitrag
+        </Button>
       </div>
 
-      <CollapsibleCard title="Beiträge" storageKey="admin-news" contentClassName="px-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
+      <CollapsibleCard
+        title="Beiträge"
+        storageKey="admin-news"
+        contentClassName="px-0 overflow-x-auto"
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Titel</TableHead>
+              <TableHead>Kategorie</TableHead>
+              <TableHead>Sichtbarkeit</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Veröffentlicht</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 && (
               <TableRow>
-                <TableHead>Titel</TableHead>
-                <TableHead>Kategorie</TableHead>
-                <TableHead>Sichtbarkeit</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Veröffentlicht</TableHead>
-                <TableHead></TableHead>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Noch keine Beiträge.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Noch keine Beiträge.</TableCell></TableRow>}
-              {rows.map(n => (
-                <TableRow key={n.id}>
-                  <TableCell className="font-medium">{n.title}</TableCell>
-                  <TableCell className="text-xs">{n.category}</TableCell>
-                  <TableCell><Badge variant="secondary">{VISIBILITY_LABEL[n.visibility] || n.visibility}</Badge></TableCell>
-                  <TableCell>{n.published ? <Badge className="bg-emerald-100 text-emerald-900">Veröffentlicht</Badge> : <Badge variant="secondary">Entwurf</Badge>}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{n.published_at ? formatDateBerlin(n.published_at) : "—"}</TableCell>
-                  <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>Bearbeiten</Button>
-                    <Button variant="ghost" size="sm" onClick={() => remove(n)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            )}
+            {rows.map((n) => (
+              <TableRow key={n.id}>
+                <TableCell className="font-medium">{n.title}</TableCell>
+                <TableCell className="text-xs">{n.category}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {VISIBILITY_LABEL[n.visibility] || n.visibility}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {n.published ? (
+                    <Badge className="bg-emerald-100 text-emerald-900">Veröffentlicht</Badge>
+                  ) : (
+                    <Badge variant="secondary">Entwurf</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {n.published_at ? formatDateBerlin(n.published_at) : "—"}
+                </TableCell>
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>
+                    Bearbeiten
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => remove(n)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CollapsibleCard>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing.id ? "Beitrag bearbeiten" : "Neuer Beitrag"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing.id ? "Beitrag bearbeiten" : "Neuer Beitrag"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Titel *</Label><Input value={editing.title || ""} onChange={e => setEditing(p => ({ ...p, title: e.target.value, slug: p.slug || slugify(e.target.value) }))} /></div>
-              <div><Label>Slug</Label><Input value={editing.slug || ""} onChange={e => setEditing(p => ({ ...p, slug: e.target.value }))} /></div>
+              <div>
+                <Label>Titel *</Label>
+                <Input
+                  value={editing.title || ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      title: e.target.value,
+                      slug: p.slug || slugify(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Slug</Label>
+                <Input
+                  value={editing.slug || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, slug: e.target.value }))}
+                />
+              </div>
             </div>
-            <div><Label>Kurzbeschreibung</Label><Textarea rows={2} value={editing.excerpt || ""} onChange={e => setEditing(p => ({ ...p, excerpt: e.target.value }))} /></div>
-            <div><Label>Inhalt (optional, wenn ein Bild hochgeladen ist)</Label><Textarea rows={10} value={editing.content || ""} onChange={e => setEditing(p => ({ ...p, content: e.target.value }))} /></div>
+            <div>
+              <Label>Kurzbeschreibung</Label>
+              <Textarea
+                rows={2}
+                value={editing.excerpt || ""}
+                onChange={(e) => setEditing((p) => ({ ...p, excerpt: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Inhalt (optional, wenn ein Bild hochgeladen ist)</Label>
+              <Textarea
+                rows={10}
+                value={editing.content || ""}
+                onChange={(e) => setEditing((p) => ({ ...p, content: e.target.value }))}
+              />
+            </div>
             <MediaUploadField
               folder="news"
               value={editing.image_url}
               mime={editing.image_mime}
               alt={editing.image_alt}
-              onChange={v => setEditing(p => ({ ...p, ...v }))}
-              onAltChange={v => setEditing(p => ({ ...p, image_alt: v }))}
+              onChange={(v) => setEditing((p) => ({ ...p, ...v }))}
+              onAltChange={(v) => setEditing((p) => ({ ...p, image_alt: v }))}
             />
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Kategorie</Label><Input value={editing.category || ""} onChange={e => setEditing(p => ({ ...p, category: e.target.value }))} placeholder="general / event / kurs ..." /></div>
+              <div>
+                <Label>Kategorie</Label>
+                <Input
+                  value={editing.category || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, category: e.target.value }))}
+                  placeholder="general / event / kurs ..."
+                />
+              </div>
               <div>
                 <Label>Sichtbarkeit</Label>
-                <Select value={editing.visibility} onValueChange={(v: any) => setEditing(p => ({ ...p, visibility: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={editing.visibility}
+                  onValueChange={(v: any) => setEditing((p) => ({ ...p, visibility: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="public">Öffentlich</SelectItem>
                     <SelectItem value="members">Mitglieder</SelectItem>
@@ -186,10 +300,18 @@ function Page() {
                 </Select>
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!editing.published} onCheckedChange={v => setEditing(p => ({ ...p, published: !!v }))} /> Veröffentlichen</label>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={!!editing.published}
+                onCheckedChange={(v) => setEditing((p) => ({ ...p, published: !!v }))}
+              />{" "}
+              Veröffentlichen
+            </label>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Abbrechen
+            </Button>
             <Button onClick={save}>Speichern</Button>
           </DialogFooter>
         </DialogContent>

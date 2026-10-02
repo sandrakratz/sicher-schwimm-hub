@@ -7,47 +7,71 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { HoneypotField, SubmitButton } from "@/components/form-support";
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/kontakt")({
   head: () => ({
     meta: [
       { title: "Kontakt – Sicher Schwimmen e.V. Hennef" },
-      { name: "description", content: "Kontakt zum Schwimmverein Sicher Schwimmen e.V. in Hennef (Rhein-Sieg-Kreis). E-Mail info@sicher-schwimmen.com, Telefon 0178 / 1142945." },
+      {
+        name: "description",
+        content:
+          "Kontakt zum Schwimmverein Sicher Schwimmen e.V. in Hennef (Rhein-Sieg-Kreis). E-Mail info@sicher-schwimmen.com, Telefon 0178 / 1142945.",
+      },
       { property: "og:title", content: "Kontakt – Sicher Schwimmen e.V." },
-      { property: "og:description", content: "Sprechen Sie uns an – wir helfen bei Fragen zu Schwimmkursen, Mitgliedschaft und Vereinsaktivitäten in Hennef." },
+      {
+        property: "og:description",
+        content:
+          "Sprechen Sie uns an – wir helfen bei Fragen zu Schwimmkursen, Mitgliedschaft und Vereinsaktivitäten in Hennef.",
+      },
       { property: "og:url", content: "https://sicher-schwimmen.com/kontakt" },
     ],
     links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/kontakt" }],
-    scripts: [{
-      type: "application/ld+json",
-      children: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        name: "Sicher Schwimmen e.V.",
-        url: "https://sicher-schwimmen.com",
-        email: ORG.email,
-        telephone: ORG.phoneIntl,
-        address: {
-          "@type": "PostalAddress",
-          addressLocality: "Hennef (Sieg)",
-          addressRegion: "Nordrhein-Westfalen",
-          addressCountry: "DE",
-        },
-        areaServed: [
-          { "@type": "City", name: "Hennef" },
-          { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
-        ],
-        sameAs: SOCIAL.map((s) => s.url),
-      }),
-    }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: "Sicher Schwimmen e.V.",
+          url: "https://sicher-schwimmen.com",
+          email: ORG.email,
+          telephone: ORG.phoneIntl,
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "Hennef (Sieg)",
+            addressRegion: "Nordrhein-Westfalen",
+            addressCountry: "DE",
+          },
+          areaServed: [
+            { "@type": "City", name: "Hennef" },
+            { "@type": "AdministrativeArea", name: "Rhein-Sieg-Kreis" },
+          ],
+          sameAs: SOCIAL.map((s) => s.url),
+        }),
+      },
+    ],
   }),
   component: Page,
 });
@@ -68,7 +92,10 @@ function Page() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    if (String(fd.get("website") || "").trim() !== "") { setDone(true); return; } // Spamschutz (Honeypot)
+    if (String(fd.get("website") || "").trim() !== "") {
+      setDone(true);
+      return;
+    } // Spamschutz (Honeypot)
     const parsed = schema.safeParse({
       from_name: fd.get("from_name"),
       from_email: fd.get("from_email"),
@@ -76,9 +103,13 @@ function Page() {
       subject: fd.get("subject"),
       body: fd.get("body"),
     });
-    if (!parsed.success) { toast.error("Bitte Eingaben prüfen"); return; }
+    if (!parsed.success) {
+      toast.error("Bitte Eingaben prüfen");
+      return;
+    }
     setLoading(true);
-    const idem = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now());
+    const idem =
+      typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
     const createdAt = new Date().toISOString();
     const { error } = await supabase.from("messages").insert(parsed.data);
     setLoading(false);
@@ -106,7 +137,8 @@ function Page() {
           <AlertDialogHeader>
             <AlertDialogTitle>Nachricht eingegangen</AlertDialogTitle>
             <AlertDialogDescription>
-              Vielen Dank! Ihre Nachricht ist bei uns eingegangen und wird von unserem Team bearbeitet. Wir melden uns so schnell wie möglich.
+              Vielen Dank! Ihre Nachricht ist bei uns eingegangen und wird von unserem Team
+              bearbeitet. Wir melden uns so schnell wie möglich.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -128,10 +160,12 @@ function Page() {
               title: c.title,
               text: c.text,
             })),
-          ].map(i => (
+          ].map((i) => (
             <Card key={i.title} className="border-0 shadow-soft">
               <CardContent className="p-5 flex gap-4 items-start">
-                <div className="h-11 w-11 rounded-xl bg-secondary text-primary flex items-center justify-center shrink-0"><i.icon className="h-5 w-5" /></div>
+                <div className="h-11 w-11 rounded-xl bg-secondary text-primary flex items-center justify-center shrink-0">
+                  <i.icon className="h-5 w-5" />
+                </div>
                 <div>
                   <div className="font-semibold text-primary-deep">{i.title}</div>
                   <div className="text-muted-foreground text-sm">{i.text}</div>
@@ -148,8 +182,12 @@ function Page() {
           {done ? (
             <Card className="border-0 shadow-card text-center">
               <CardContent className="p-10">
-                <h2 className="font-display text-3xl font-bold text-primary-deep mb-3">Nachricht gesendet</h2>
-                <p className="text-muted-foreground">Wir melden uns so schnell wie möglich bei Ihnen.</p>
+                <h2 className="font-display text-3xl font-bold text-primary-deep mb-3">
+                  Nachricht gesendet
+                </h2>
+                <p className="text-muted-foreground">
+                  Wir melden uns so schnell wie möglich bei Ihnen.
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -157,13 +195,27 @@ function Page() {
               <CardContent className="p-8">
                 <form onSubmit={onSubmit} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
-                    <div><Label htmlFor="from_name">Name *</Label><Input id="from_name" name="from_name" required maxLength={100} /></div>
-                    <div><Label htmlFor="from_email">E-Mail *</Label><Input id="from_email" type="email" name="from_email" required maxLength={255} /></div>
+                    <div>
+                      <Label htmlFor="from_name">Name *</Label>
+                      <Input id="from_name" name="from_name" required maxLength={100} />
+                    </div>
+                    <div>
+                      <Label htmlFor="from_email">E-Mail *</Label>
+                      <Input
+                        id="from_email"
+                        type="email"
+                        name="from_email"
+                        required
+                        maxLength={255}
+                      />
+                    </div>
                   </div>
                   <div>
                     <Label>Kategorie *</Label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="membership">Mitgliedschaft</SelectItem>
                         <SelectItem value="courses">Kurse</SelectItem>
@@ -173,10 +225,22 @@ function Page() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label htmlFor="subject">Betreff</Label><Input id="subject" name="subject" maxLength={200} /></div>
-                  <div><Label htmlFor="body">Nachricht *</Label><Textarea id="body" name="body" rows={6} required maxLength={4000} /></div>
+                  <div>
+                    <Label htmlFor="subject">Betreff</Label>
+                    <Input id="subject" name="subject" maxLength={200} />
+                  </div>
+                  <div>
+                    <Label htmlFor="body">Nachricht *</Label>
+                    <Textarea id="body" name="body" rows={6} required maxLength={4000} />
+                  </div>
                   <HoneypotField />
-                  <SubmitButton loading={loading} loadingText="Nachricht wird gesendet…" className="w-full">Nachricht senden</SubmitButton>
+                  <SubmitButton
+                    loading={loading}
+                    loadingText="Nachricht wird gesendet…"
+                    className="w-full"
+                  >
+                    Nachricht senden
+                  </SubmitButton>
                 </form>
               </CardContent>
             </Card>

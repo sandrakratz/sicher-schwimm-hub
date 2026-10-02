@@ -52,11 +52,18 @@ export function berlinToUtcStamp(dateStr: string, time: string): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: CALENDAR_TZ,
     hour12: false,
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   })
     .formatToParts(probe)
-    .reduce<Record<string, string>>((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+    .reduce<Record<string, string>>((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
   const asUtc = Date.parse(
     `${parts.year}-${parts.month}-${parts.day}T${parts.hour === "24" ? "00" : parts.hour}:${parts.minute}:${parts.second}Z`,
   );
@@ -94,7 +101,10 @@ export type CalendarItem = {
   end?: string | null;
 };
 
-export function buildIcs(items: CalendarItem[], calendarName = "Sicher Schwimmen – meine Kurstermine"): string {
+export function buildIcs(
+  items: CalendarItem[],
+  calendarName = "Sicher Schwimmen – meine Kurstermine",
+): string {
   const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
   const lines = [
     "BEGIN:VCALENDAR",
@@ -130,9 +140,10 @@ export function buildIcs(items: CalendarItem[], calendarName = "Sicher Schwimmen
 
 /** Link zum Anlegen eines Google-Kalender-Termins. */
 export function googleCalendarUrl(item: CalendarItem): string {
-  const dates = item.start && item.end
-    ? `${berlinToUtcStamp(item.date, item.start)}/${berlinToUtcStamp(item.date, item.end)}`
-    : `${icsDate(item.date)}/${icsDate(item.date, 1)}`;
+  const dates =
+    item.start && item.end
+      ? `${berlinToUtcStamp(item.date, item.start)}/${berlinToUtcStamp(item.date, item.end)}`
+      : `${icsDate(item.date)}/${icsDate(item.date, 1)}`;
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: item.title,
@@ -145,7 +156,10 @@ export function googleCalendarUrl(item: CalendarItem): string {
 }
 
 /** Löst einen Download der übergebenen Termine als .ics-Datei aus. */
-export function downloadIcs(items: CalendarItem[], filename = "sicher-schwimmen-termine.ics"): void {
+export function downloadIcs(
+  items: CalendarItem[],
+  filename = "sicher-schwimmen-termine.ics",
+): void {
   const blob = new Blob([buildIcs(items)], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

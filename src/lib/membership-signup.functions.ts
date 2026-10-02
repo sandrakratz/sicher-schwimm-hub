@@ -14,12 +14,14 @@ import { createClient } from "@supabase/supabase-js";
  */
 export const submitMembershipSignup = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
-    z.object({
-      email: z.string().email().max(255),
-      first_name: z.string().trim().min(1).max(100),
-      last_name: z.string().trim().min(1).max(100),
-      password: z.string().min(8).max(72).optional(),
-    }).parse(input),
+    z
+      .object({
+        email: z.string().email().max(255),
+        first_name: z.string().trim().min(1).max(100),
+        last_name: z.string().trim().min(1).max(100),
+        password: z.string().min(8).max(72).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -39,7 +41,9 @@ export const submitMembershipSignup = createServerFn({ method: "POST" })
 
     // Already has an auth account?
     const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    const exists = list?.users?.some(u => (u.email || "").toLowerCase() === data.email.toLowerCase());
+    const exists = list?.users?.some(
+      (u) => (u.email || "").toLowerCase() === data.email.toLowerCase(),
+    );
     if (exists) return { status: "exists" as const };
 
     const userProvidedPassword = !!data.password;
@@ -70,10 +74,14 @@ export const submitMembershipSignup = createServerFn({ method: "POST" })
     // If user did NOT supply a password, also send a recovery email so they
     // can set their own password after confirming.
     if (!userProvidedPassword) {
-      await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
-        redirectTo: "https://sicher-schwimmen.com/reset-password",
-      }).catch((e) => console.warn("[membership-signup.resetEmail]", e));
+      await supabaseAdmin.auth
+        .resetPasswordForEmail(data.email, {
+          redirectTo: "https://sicher-schwimmen.com/reset-password",
+        })
+        .catch((e) => console.warn("[membership-signup.resetEmail]", e));
     }
 
-    return { status: userProvidedPassword ? ("created" as const) : ("created_no_password" as const) };
+    return {
+      status: userProvidedPassword ? ("created" as const) : ("created_no_password" as const),
+    };
   });

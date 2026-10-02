@@ -8,26 +8,38 @@ export const Route = createFileRoute("/unsubscribe")({
   head: () => ({
     meta: [
       { title: "E-Mail-Abmeldung | Sicher Schwimmen e.V." },
-      { name: "description", content: "Melden Sie sich hier von den E-Mail-Benachrichtigungen von Sicher Schwimmen e.V. ab." },
+      {
+        name: "description",
+        content:
+          "Melden Sie sich hier von den E-Mail-Benachrichtigungen von Sicher Schwimmen e.V. ab.",
+      },
       { name: "robots", content: "noindex, nofollow" },
       { property: "og:title", content: "E-Mail-Abmeldung | Sicher Schwimmen e.V." },
-      { property: "og:description", content: "Abmeldung von E-Mail-Benachrichtigungen des Vereins Sicher Schwimmen e.V." },
+      {
+        property: "og:description",
+        content: "Abmeldung von E-Mail-Benachrichtigungen des Vereins Sicher Schwimmen e.V.",
+      },
     ],
   }),
   component: Page,
 });
 
 function Page() {
-  const [state, setState] = useState<"loading" | "valid" | "invalid" | "already" | "success" | "error">("loading");
+  const [state, setState] = useState<
+    "loading" | "valid" | "invalid" | "already" | "success" | "error"
+  >("loading");
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("token");
     setToken(t);
-    if (!t) { setState("invalid"); return; }
+    if (!t) {
+      setState("invalid");
+      return;
+    }
     fetch(`/email/unsubscribe?token=${encodeURIComponent(t)}`)
-      .then(r => r.json())
-      .then(d => {
+      .then((r) => r.json())
+      .then((d) => {
         if (d.valid) setState("valid");
         else if (d.reason === "already_unsubscribed") setState("already");
         else setState("invalid");
@@ -54,16 +66,34 @@ function Page() {
       <section className="container mx-auto px-4 py-20 max-w-xl">
         <Card className="border-0 shadow-soft">
           <CardContent className="p-8 text-center space-y-4">
-            <h1 className="font-display text-2xl font-bold text-primary-deep">Newsletter abbestellen</h1>
+            <h1 className="font-display text-2xl font-bold text-primary-deep">
+              Newsletter abbestellen
+            </h1>
             {state === "loading" && <p className="text-muted-foreground">Bitte warten…</p>}
-            {state === "valid" && <>
-              <p className="text-muted-foreground">Möchten Sie keine E-Mails mehr von uns erhalten?</p>
-              <Button variant="accent" onClick={confirm}>Abmeldung bestätigen</Button>
-            </>}
-            {state === "already" && <p className="text-muted-foreground">Diese Adresse ist bereits abgemeldet.</p>}
-            {state === "success" && <p className="text-success">Sie wurden erfolgreich abgemeldet.</p>}
-            {state === "invalid" && <p className="text-destructive">Ungültiger oder abgelaufener Link.</p>}
-            {state === "error" && <p className="text-destructive">Es ist ein Fehler aufgetreten. Bitte später erneut versuchen.</p>}
+            {state === "valid" && (
+              <>
+                <p className="text-muted-foreground">
+                  Möchten Sie keine E-Mails mehr von uns erhalten?
+                </p>
+                <Button variant="accent" onClick={confirm}>
+                  Abmeldung bestätigen
+                </Button>
+              </>
+            )}
+            {state === "already" && (
+              <p className="text-muted-foreground">Diese Adresse ist bereits abgemeldet.</p>
+            )}
+            {state === "success" && (
+              <p className="text-success">Sie wurden erfolgreich abgemeldet.</p>
+            )}
+            {state === "invalid" && (
+              <p className="text-destructive">Ungültiger oder abgelaufener Link.</p>
+            )}
+            {state === "error" && (
+              <p className="text-destructive">
+                Es ist ein Fehler aufgetreten. Bitte später erneut versuchen.
+              </p>
+            )}
           </CardContent>
         </Card>
       </section>

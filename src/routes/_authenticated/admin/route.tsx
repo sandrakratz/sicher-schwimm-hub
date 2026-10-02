@@ -32,7 +32,9 @@ function AdminLayout() {
     <>
       {section && (
         <div className="mb-6 max-w-6xl">
-          <div className="text-accent font-semibold text-xs uppercase tracking-wider mb-2">{section.label}</div>
+          <div className="text-accent font-semibold text-xs uppercase tracking-wider mb-2">
+            {section.label}
+          </div>
           <div className="flex gap-1 overflow-x-auto border-b border-border">
             {section.tabs.map((t) => (
               <Link

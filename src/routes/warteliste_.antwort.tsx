@@ -17,15 +17,21 @@ import { StayChoice } from "./warteliste_.rueckfrage";
 
 export const Route = createFileRoute("/warteliste_/antwort")({
   validateSearch: (search: Record<string, unknown>) => ({
-    token: typeof search['token'] === "string" ? (search['token'] as string) : "",
-    aktion: search['aktion'] === "absage" ? ("absage" as const) : ("zusage" as const),
+    token: typeof search["token"] === "string" ? (search["token"] as string) : "",
+    aktion: search["aktion"] === "absage" ? ("absage" as const) : ("zusage" as const),
   }),
   head: () => ({
     meta: [
       { title: "Platzangebot beantworten | Sicher Schwimmen e.V." },
-      { name: "description", content: "Nehmen Sie Ihren Kursplatz aus der Warteliste an oder sagen Sie ihn ab." },
+      {
+        name: "description",
+        content: "Nehmen Sie Ihren Kursplatz aus der Warteliste an oder sagen Sie ihn ab.",
+      },
       { property: "og:title", content: "Platzangebot beantworten" },
-      { property: "og:description", content: "Zusage oder Absage zu Ihrem Kursplatz aus der Warteliste." },
+      {
+        property: "og:description",
+        content: "Zusage oder Absage zu Ihrem Kursplatz aus der Warteliste.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
@@ -44,7 +50,13 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 function OfferResponsePage() {
   const { token, aktion } = useSearch({ from: "/warteliste_/antwort" });
-  const [result, setResult] = useState<null | { accepted: boolean; immediate?: boolean; dueDate?: string; deactivated?: boolean; stay?: boolean }>(null);
+  const [result, setResult] = useState<null | {
+    accepted: boolean;
+    immediate?: boolean;
+    dueDate?: string;
+    deactivated?: boolean;
+    stay?: boolean;
+  }>(null);
   const [stay, setStay] = useState<boolean | null>(null);
   const [when, setWhen] = useState<"now" | "date">("now");
   const [fromDate, setFromDate] = useState("");
@@ -81,9 +93,12 @@ function OfferResponsePage() {
     return (
       <Frame>
         <XCircle className="mb-4 h-12 w-12 text-destructive" />
-        <h1 className="font-display text-3xl font-bold text-primary-deep">Angebot nicht gefunden</h1>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">
+          Angebot nicht gefunden
+        </h1>
         <p className="mt-3 text-muted-foreground">
-          Dieses Platzangebot ist nicht mehr gültig. Bei Fragen erreichen Sie uns unter info@sicher-schwimmen.com.
+          Dieses Platzangebot ist nicht mehr gültig. Bei Fragen erreichen Sie uns unter
+          info@sicher-schwimmen.com.
         </p>
       </Frame>
     );
@@ -95,9 +110,12 @@ function OfferResponsePage() {
         {result.accepted ? (
           <>
             <CheckCircle2 className="mb-4 h-12 w-12 text-success" />
-            <h1 className="font-display text-3xl font-bold text-primary-deep">Platz verbindlich gebucht</h1>
+            <h1 className="font-display text-3xl font-bold text-primary-deep">
+              Platz verbindlich gebucht
+            </h1>
             <p className="mt-3 text-muted-foreground">
-              Vielen Dank! Die Buchungsbestätigung mit allen Zahlungsinformationen ist per E-Mail unterwegs.
+              Vielen Dank! Die Buchungsbestätigung mit allen Zahlungsinformationen ist per E-Mail
+              unterwegs.
               {result.immediate
                 ? " Da der Kurs in Kürze startet, ist die Kursgebühr sofort per Echtzeit-/Sofortüberweisung zu zahlen."
                 : result.dueDate
@@ -114,9 +132,10 @@ function OfferResponsePage() {
             </p>
             {result.deactivated ? (
               <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-                Sie haben ein Platzangebot nun zum 3. Mal abgesagt. Um allen wartenden Familien eine faire Chance zu
-                geben, wurde Ihr Wartelistenplatz deaktiviert. Eine erneute Kursbuchung ist nur nach Rücksprache mit
-                unserem Vorstand möglich (info@sicher-schwimmen.com).
+                Sie haben ein Platzangebot nun zum 3. Mal abgesagt. Um allen wartenden Familien eine
+                faire Chance zu geben, wurde Ihr Wartelistenplatz deaktiviert. Eine erneute
+                Kursbuchung ist nur nach Rücksprache mit unserem Vorstand möglich
+                (info@sicher-schwimmen.com).
               </p>
             ) : (
               <p className="mt-3 text-muted-foreground">
@@ -144,8 +163,8 @@ function OfferResponsePage() {
           {data.expired ? "Frist abgelaufen" : "Bereits beantwortet"}
         </h1>
         <p className="mt-3 text-muted-foreground">
-          Dieses Platzangebot ist nicht mehr aktiv. Melden Sie sich gern unter info@sicher-schwimmen.com, wenn Sie
-          weiterhin Interesse haben.
+          Dieses Platzangebot ist nicht mehr aktiv. Melden Sie sich gern unter
+          info@sicher-schwimmen.com, wenn Sie weiterhin Interesse haben.
         </p>
       </Frame>
     );
@@ -153,7 +172,8 @@ function OfferResponsePage() {
 
   async function submit(action: "accept" | "decline", form?: HTMLFormElement) {
     if (action === "decline") {
-      if (stay === null) return toast.error("Bitte angeben, ob Ihr Kind auf der Warteliste bleiben soll.");
+      if (stay === null)
+        return toast.error("Bitte angeben, ob Ihr Kind auf der Warteliste bleiben soll.");
       if (stay && when === "date" && !fromDate) return toast.error("Bitte ein Datum wählen.");
     }
     setLoading(true);
@@ -164,7 +184,11 @@ function OfferResponsePage() {
           token,
           action,
           ...(action === "decline"
-            ? { stay: stay === true, availableFrom: stay && when === "date" ? fromDate : null, reason: reason.trim() || null }
+            ? {
+                stay: stay === true,
+                availableFrom: stay && when === "date" ? fromDate : null,
+                reason: reason.trim() || null,
+              }
             : {}),
           street: String(fd?.get("street") || ""),
           zip: String(fd?.get("zip") || ""),
@@ -236,7 +260,9 @@ function OfferResponsePage() {
             {course.price != null && (
               <p>
                 <strong>Kursgebühr:</strong>{" "}
-                {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(course.price))}
+                {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
+                  Number(course.price),
+                )}
               </p>
             )}
           </CardContent>
@@ -245,14 +271,30 @@ function OfferResponsePage() {
 
       {aktion === "absage" || askDecline ? (
         <div className="mt-8 space-y-5">
-          <p className="text-muted-foreground">Schade! Bevor Sie absagen, beantworten Sie uns bitte kurz:</p>
-          <StayChoice stay={stay} setStay={setStay} when={when} setWhen={setWhen} date={fromDate} setDate={setFromDate} />
+          <p className="text-muted-foreground">
+            Schade! Bevor Sie absagen, beantworten Sie uns bitte kurz:
+          </p>
+          <StayChoice
+            stay={stay}
+            setStay={setStay}
+            when={when}
+            setWhen={setWhen}
+            date={fromDate}
+            setDate={setFromDate}
+          />
           <div className="space-y-2">
             <Label htmlFor="reason">Grund / Anmerkung (optional)</Label>
-            <Textarea id="reason" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+            <Textarea
+              id="reason"
+              rows={2}
+              maxLength={500}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
           </div>
           <p className="text-xs text-muted-foreground">
-            Hinweis: Nach 3 abgesagten oder unbeantworteten Platzangeboten wird der Wartelistenplatz automatisch deaktiviert.
+            Hinweis: Nach 3 abgesagten oder unbeantworteten Platzangeboten wird der Wartelistenplatz
+            automatisch deaktiviert.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" disabled={loading} onClick={() => submit("decline")}>
@@ -275,18 +317,31 @@ function OfferResponsePage() {
           }}
         >
           <p className="text-sm text-muted-foreground">
-            Für die verbindliche Buchung und den Zahlungsbeleg benötigen wir Ihre Rechnungsanschrift.
+            Für die verbindliche Buchung und den Zahlungsbeleg benötigen wir Ihre
+            Rechnungsanschrift.
           </p>
           <div className="grid gap-4 md:grid-cols-3">
             {data.needsDob && (
               <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="child_dob">Geburtsdatum des Kindes *</Label>
-                <Input id="child_dob" name="child_dob" type="date" required max={new Date().toISOString().slice(0, 10)} />
+                <Input
+                  id="child_dob"
+                  name="child_dob"
+                  type="date"
+                  required
+                  max={new Date().toISOString().slice(0, 10)}
+                />
               </div>
             )}
             <div className="space-y-2 md:col-span-3">
               <Label htmlFor="street">Straße und Hausnummer *</Label>
-              <Input id="street" name="street" required maxLength={160} defaultValue={defaults.street} />
+              <Input
+                id="street"
+                name="street"
+                required
+                maxLength={160}
+                defaultValue={defaults.street}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="zip">PLZ *</Label>
@@ -299,7 +354,12 @@ function OfferResponsePage() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <SubmitButton loading={loading}>Platz verbindlich annehmen</SubmitButton>
-            <Button type="button" variant="outline" disabled={loading} onClick={() => setAskDecline(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={loading}
+              onClick={() => setAskDecline(true)}
+            >
               Platz absagen
             </Button>
           </div>

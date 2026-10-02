@@ -40,8 +40,17 @@ function Page() {
     (async () => {
       const nowIso = new Date().toISOString();
       const [up, pa] = await Promise.all([
-        supabase.from("events").select("*").gte("starts_at", nowIso).order("starts_at", { ascending: true }),
-        supabase.from("events").select("*").lt("starts_at", nowIso).order("starts_at", { ascending: false }).limit(10),
+        supabase
+          .from("events")
+          .select("*")
+          .gte("starts_at", nowIso)
+          .order("starts_at", { ascending: true }),
+        supabase
+          .from("events")
+          .select("*")
+          .lt("starts_at", nowIso)
+          .order("starts_at", { ascending: false })
+          .limit(10),
       ]);
       setUpcoming((up.data as Ev[]) || []);
       setPast((pa.data as Ev[]) || []);
@@ -57,14 +66,27 @@ function Page() {
             <div className="flex-1 min-w-0">
               <h3 className="font-display text-lg font-bold text-primary-deep">{e.title}</h3>
               <div className="text-sm text-muted-foreground mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" />{formatDateTimeBerlin(e.starts_at)}{e.ends_at ? ` – ${formatDateTimeBerlin(e.ends_at)}` : ""}</span>
-                {e.location && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{e.location}</span>}
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  {formatDateTimeBerlin(e.starts_at)}
+                  {e.ends_at ? ` – ${formatDateTimeBerlin(e.ends_at)}` : ""}
+                </span>
+                {e.location && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    {e.location}
+                  </span>
+                )}
               </div>
             </div>
             <Badge variant="secondary">{VISIBILITY_LABEL[e.visibility] || e.visibility}</Badge>
           </div>
           <MediaAttachment path={e.image_url} alt={e.image_alt} mime={e.image_mime} />
-          {e.description && <p className="text-sm text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">{e.description}</p>}
+          {e.description && (
+            <p className="text-sm text-foreground/90 mt-3 whitespace-pre-line leading-relaxed">
+              {e.description}
+            </p>
+          )}
         </CardContent>
       </Card>
     );
@@ -73,16 +95,26 @@ function Page() {
   return (
     <div className="max-w-4xl space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary-deep">Termine & Veranstaltungen</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Alle Termine, die für dich sichtbar sind.</p>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">
+          Termine & Veranstaltungen
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Alle Termine, die für dich sichtbar sind.
+        </p>
       </div>
 
       <section className="space-y-3">
         <h2 className="font-display text-xl font-bold text-primary-deep">Kommende Termine</h2>
         {loading ? (
-          <Card className="border-0 shadow-soft"><CardContent className="p-10 text-center text-muted-foreground">Lade…</CardContent></Card>
+          <Card className="border-0 shadow-soft">
+            <CardContent className="p-10 text-center text-muted-foreground">Lade…</CardContent>
+          </Card>
         ) : upcoming.length === 0 ? (
-          <Card className="border-0 shadow-soft"><CardContent className="p-10 text-center text-muted-foreground">Aktuell keine Termine.</CardContent></Card>
+          <Card className="border-0 shadow-soft">
+            <CardContent className="p-10 text-center text-muted-foreground">
+              Aktuell keine Termine.
+            </CardContent>
+          </Card>
         ) : (
           upcoming.map(renderEvent)
         )}

@@ -14,7 +14,10 @@ export function courseStatusClass(tone: CourseStatusTone): string {
 }
 
 /** Status eines Kursangebots (Programm) anhand der buchbaren Termine. */
-export function programStatus(openTerms: number, hasTerms: boolean): {
+export function programStatus(
+  openTerms: number,
+  hasTerms: boolean,
+): {
   tone: CourseStatusTone;
   label: string;
   className: string;
@@ -30,7 +33,10 @@ export function programStatus(openTerms: number, hasTerms: boolean): {
 }
 
 /** Status eines einzelnen Kurstermins. */
-export function termStatus(isFull: boolean, freeSlots: number | null | undefined): {
+export function termStatus(
+  isFull: boolean,
+  freeSlots: number | null | undefined,
+): {
   tone: CourseStatusTone;
   label: string;
   className: string;
@@ -39,7 +45,9 @@ export function termStatus(isFull: boolean, freeSlots: number | null | undefined
   const label = isFull
     ? "Ausgebucht"
     : freeSlots != null
-      ? (freeSlots === 1 ? "1 freier Platz" : `${freeSlots} freie Plätze`)
+      ? freeSlots === 1
+        ? "1 freier Platz"
+        : `${freeSlots} freie Plätze`
       : "Plätze frei";
   return { tone, label, className: TONE_CLASS[tone] };
 }
@@ -49,41 +57,43 @@ export function termStatus(isFull: boolean, freeSlots: number | null | undefined
  * für Eltern verständlich formuliert.
  */
 export function programAvailability(input: {
-  openTerms: number
-  hasTerms: boolean
-  freeSlotsTotal: number | null
-  waitlistCount: number
+  openTerms: number;
+  hasTerms: boolean;
+  freeSlotsTotal: number | null;
+  waitlistCount: number;
 }): { tone: CourseStatusTone; label: string; className: string; detail: string } {
-  const { openTerms, hasTerms, freeSlotsTotal, waitlistCount } = input
+  const { openTerms, hasTerms, freeSlotsTotal, waitlistCount } = input;
   const waitNote =
     waitlistCount > 0
-      ? `${waitlistCount} Familie${waitlistCount > 1 ? 'n' : ''} auf der Warteliste`
-      : 'Noch niemand auf der Warteliste'
+      ? `${waitlistCount} Familie${waitlistCount > 1 ? "n" : ""} auf der Warteliste`
+      : "Noch niemand auf der Warteliste";
 
   if (openTerms > 0) {
     const label =
       freeSlotsTotal != null && freeSlotsTotal > 0
-        ? (freeSlotsTotal === 1 ? '1 freier Platz' : `${freeSlotsTotal} freie Plätze`)
-        : 'Plätze frei'
+        ? freeSlotsTotal === 1
+          ? "1 freier Platz"
+          : `${freeSlotsTotal} freie Plätze`
+        : "Plätze frei";
     return {
-      tone: 'open',
+      tone: "open",
       label,
       className: TONE_CLASS.open,
-      detail: `${openTerms} ${openTerms > 1 ? 'buchbare Zeiträume' : 'buchbarer Zeitraum'} · ${waitNote}`,
-    }
+      detail: `${openTerms} ${openTerms > 1 ? "buchbare Zeiträume" : "buchbarer Zeitraum"} · ${waitNote}`,
+    };
   }
   if (hasTerms) {
     return {
-      tone: 'full',
-      label: 'Ausgebucht – Warteliste',
+      tone: "full",
+      label: "Ausgebucht – Warteliste",
       className: TONE_CLASS.full,
       detail: `Alle Termine belegt · ${waitNote}`,
-    }
+    };
   }
   return {
-    tone: 'waitlist',
-    label: 'Warteliste',
+    tone: "waitlist",
+    label: "Warteliste",
     className: TONE_CLASS.waitlist,
     detail: `Termine in Planung · ${waitNote}`,
-  }
+  };
 }

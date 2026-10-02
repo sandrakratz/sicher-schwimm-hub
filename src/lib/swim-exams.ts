@@ -47,7 +47,12 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
     label: "Seeräuber (Vorbereitungsabzeichen)",
     note: "Freiwilliges Zwischenabzeichen auf dem Weg zu Bronze.",
     criteria: [
-      { key: "100m_brust", label: "100 m Brustschwimmen", valueLabel: "Zeit", valuePlaceholder: "z. B. 4:10" },
+      {
+        key: "100m_brust",
+        label: "100 m Brustschwimmen",
+        valueLabel: "Zeit",
+        valuePlaceholder: "z. B. 4:10",
+      },
       { key: "strecke_5m", label: "5 m Streckentauchen" },
       { key: "gegenstand_1m", label: "Heraufholen eines Gegenstandes aus ca. 1 m Tiefe" },
       { key: "baderegeln", label: "Kenntnis der Baderegeln" },
@@ -67,7 +72,10 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
         totalLabel: "Gesamt in 15 Min.",
         totalPlaceholder: "z. B. 18 Bahnen (225 m)",
       },
-      { key: "tieftauchen", label: "Ca. 2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes" },
+      {
+        key: "tieftauchen",
+        label: "Ca. 2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes",
+      },
       { key: "paketsprung", label: "Paketsprung vom Startblock oder 1-m-Brett" },
       { key: "baderegeln", label: "Kenntnis der Baderegeln" },
     ],
@@ -86,10 +94,19 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
         totalLabel: "Gesamt in 20 Min.",
         totalPlaceholder: "z. B. 34 Bahnen (425 m)",
       },
-      { key: "tieftauchen", label: "2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes" },
+      {
+        key: "tieftauchen",
+        label: "2 m Tieftauchen von der Wasseroberfläche mit Heraufholen eines Ringes",
+      },
       { key: "strecke_10m", label: "10 m Streckentauchen mit Abstoßen vom Beckenrand" },
-      { key: "sprung_3m", label: "Sprung aus 3 m Höhe oder zwei verschiedene Sprünge aus 1 m Höhe" },
-      { key: "baderegeln_selbst", label: "Kenntnis der Baderegeln und des Verhaltens zur Selbstrettung" },
+      {
+        key: "sprung_3m",
+        label: "Sprung aus 3 m Höhe oder zwei verschiedene Sprünge aus 1 m Höhe",
+      },
+      {
+        key: "baderegeln_selbst",
+        label: "Kenntnis der Baderegeln und des Verhaltens zur Selbstrettung",
+      },
     ],
   },
   {
@@ -117,10 +134,14 @@ export const EXAM_LEVELS: Array<ExamLevel> = [
         label: "50 m Rückenschwimmen mit Grätschschwung ohne Armtätigkeit oder Kraulbeinschlag",
       },
       { key: "strecke_10m", label: "10 m Streckentauchen aus der Schwimmlage (ohne Abstoßen)" },
-      { key: "drei_ringe", label: "Tieftauchen ca. 2 m: drei Gegenstände innerhalb von 3 Minuten heraufholen" },
+      {
+        key: "drei_ringe",
+        label: "Tieftauchen ca. 2 m: drei Gegenstände innerhalb von 3 Minuten heraufholen",
+      },
       {
         key: "sprung_3m",
-        label: "Sprung aus 3 m Höhe oder zwei verschiedene Sprünge aus 1 m Höhe (davon einer kopfwärts)",
+        label:
+          "Sprung aus 3 m Höhe oder zwei verschiedene Sprünge aus 1 m Höhe (davon einer kopfwärts)",
       },
       { key: "transport", label: "50 m Transportschwimmen (Schieben oder Ziehen)" },
       {
@@ -147,7 +168,7 @@ export type ExamCriteriaState = Record<string, ExamCriterionState>;
 
 export function findExamLevel(key: string | null | undefined): ExamLevel | null {
   if (!key) return null;
-  return EXAM_LEVELS.find(l => l.key === key) ?? null;
+  return EXAM_LEVELS.find((l) => l.key === key) ?? null;
 }
 
 export function examLevelLabel(key: string | null | undefined): string {
@@ -155,24 +176,30 @@ export function examLevelLabel(key: string | null | undefined): string {
 }
 
 /** Prüft, ob alle Teilleistungen des Abzeichens abgehakt sind. */
-export function allCriteriaDone(levelKey: string | null | undefined, state: ExamCriteriaState): boolean {
+export function allCriteriaDone(
+  levelKey: string | null | undefined,
+  state: ExamCriteriaState,
+): boolean {
   const level = findExamLevel(levelKey);
   if (!level) return false;
-  return level.criteria.every(c => state?.[c.key]?.done === true);
+  return level.criteria.every((c) => state?.[c.key]?.done === true);
 }
 
 /** Anzahl der erfüllten Teilleistungen. */
-export function countCriteriaDone(levelKey: string | null | undefined, state: ExamCriteriaState): number {
+export function countCriteriaDone(
+  levelKey: string | null | undefined,
+  state: ExamCriteriaState,
+): number {
   const level = findExamLevel(levelKey);
   if (!level) return 0;
-  return level.criteria.filter(c => state?.[c.key]?.done === true).length;
+  return level.criteria.filter((c) => state?.[c.key]?.done === true).length;
 }
 
 /** Frühestes Datum einer bestandenen Teilprüfung. */
 export function firstCriterionDate(state: ExamCriteriaState): string | null {
   const dates = Object.values(state || {})
-    .filter(v => v?.done && v.date)
-    .map(v => v.date as string)
+    .filter((v) => v?.done && v.date)
+    .map((v) => v.date as string)
     .sort();
   return dates[0] ?? null;
 }

@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Mail, Phone } from "lucide-react";
 import { PhoneEditor } from "@/components/trainer/PhoneEditor";
-import { ParticipantResultEditor, type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
+import {
+  ParticipantResultEditor,
+  type ParticipantResult,
+} from "@/components/trainer/ParticipantResultEditor";
 import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PartialCertificateActions } from "@/components/trainer/PartialCertificateActions";
@@ -55,7 +58,11 @@ export function ParticipantDetails({
         {" · "}Status: {STATUS_LABEL[p.status] || p.status}
       </div>
       {editablePhone ? (
-        <PhoneEditor participantId={p.id} phone={p.phone} onSaved={phone => onPhoneSaved?.(p.id, phone)} />
+        <PhoneEditor
+          participantId={p.id}
+          phone={p.phone}
+          onSaved={(phone) => onPhoneSaved?.(p.id, phone)}
+        />
       ) : (
         p.phone && (
           <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2 text-primary">
@@ -64,7 +71,10 @@ export function ParticipantDetails({
         )
       )}
       {p.email && (
-        <a href={`mailto:${p.email}`} className="flex min-h-11 items-center gap-2 break-all text-primary">
+        <a
+          href={`mailto:${p.email}`}
+          className="flex min-h-11 items-center gap-2 break-all text-primary"
+        >
           <Mail className="h-4 w-4 shrink-0" /> {p.email}
         </a>
       )}
@@ -129,7 +139,7 @@ export function ParticipantCard({
     <div className="border-b last:border-b-0">
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
@@ -149,7 +159,12 @@ export function ParticipantCard({
 
         <div className="flex shrink-0 items-center gap-2">
           <Badge variant="secondary">{STATUS_LABEL[p.status] || p.status}</Badge>
-          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </div>
       </button>
 

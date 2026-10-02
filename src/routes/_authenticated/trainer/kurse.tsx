@@ -23,24 +23,28 @@ import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog"
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 import { listTransferTargets } from "@/lib/participant-transfer.functions";
 
-
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
-    catch { throw redirect({ to: "/portal" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } });
+    } catch {
+      throw redirect({ to: "/portal" });
+    }
   },
   component: Page,
   head: () => ({
     meta: [
       { title: "Meine Kurse – Trainerbereich | Sicher Schwimmen e.V." },
-      { name: "description", content: "Teilnehmerinformationen zu den eigenen zugeteilten Kursen." },
+      {
+        name: "description",
+        content: "Teilnehmerinformationen zu den eigenen zugeteilten Kursen.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
 });
-
 
 function Page() {
   const [courses, setCourses] = useState<TrainerCourse[]>([]);
@@ -48,19 +52,19 @@ function Page() {
   const load = useServerFn(listMyTrainerCourses);
 
   const applyPhone = (participantId: string, phone: string | null) => {
-    setCourses(prev =>
-      prev.map(c => ({
+    setCourses((prev) =>
+      prev.map((c) => ({
         ...c,
-        participants: c.participants.map(p => (p.id === participantId ? { ...p, phone } : p)),
+        participants: c.participants.map((p) => (p.id === participantId ? { ...p, phone } : p)),
       })),
     );
   };
 
   const applyResult = (participantId: string, result: ParticipantResult) => {
-    setCourses(prev =>
-      prev.map(c => ({
+    setCourses((prev) =>
+      prev.map((c) => ({
         ...c,
-        participants: c.participants.map(p => (p.id === participantId ? { ...p, ...result } : p)),
+        participants: c.participants.map((p) => (p.id === participantId ? { ...p, ...result } : p)),
       })),
     );
   };
@@ -68,12 +72,27 @@ function Page() {
   const exportProtocol = useServerFn(exportExamProtocol);
   const [exporting, setExporting] = useState<string | null>(null);
   const [broadcast, setBroadcast] = useState<{ id: string; name: string } | null>(null);
-  const [transferPart, setTransferPart] = useState<{ id: string; participant_name: string | null; participant_email: string | null; course_id: string } | null>(null);
-  const [targets, setTargets] = useState<Array<{ id: string; name: string; schedule: string | null; location: string | null; free: number | null }>>([]);
+  const [transferPart, setTransferPart] = useState<{
+    id: string;
+    participant_name: string | null;
+    participant_email: string | null;
+    course_id: string;
+  } | null>(null);
+  const [targets, setTargets] = useState<
+    Array<{
+      id: string;
+      name: string;
+      schedule: string | null;
+      location: string | null;
+      free: number | null;
+    }>
+  >([]);
   const loadTargets = useServerFn(listTransferTargets);
   useEffect(() => {
     if (transferPart && targets.length === 0) {
-      loadTargets().then(setTargets).catch(e => toast.error((e as Error)?.message || "Kurse konnten nicht geladen werden"));
+      loadTargets()
+        .then(setTargets)
+        .catch((e) => toast.error((e as Error)?.message || "Kurse konnten nicht geladen werden"));
     }
   }, [transferPart]);
 
@@ -120,36 +139,49 @@ function Page() {
       </div>
 
       {loading && (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">Lädt…</CardContent></Card>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">Lädt…</CardContent>
+        </Card>
       )}
 
       {!loading && courses.length === 0 && (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">
-          Du bist aktuell keinem Kurs zugeteilt.
-        </CardContent></Card>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Du bist aktuell keinem Kurs zugeteilt.
+          </CardContent>
+        </Card>
       )}
 
       <CourseBroadcastDialog course={broadcast} onClose={() => setBroadcast(null)} />
 
       <TransferParticipantDialog
         participant={transferPart}
-        courses={targets.filter(t => t.id !== transferPart?.course_id)}
+        courses={targets.filter((t) => t.id !== transferPart?.course_id)}
         onClose={() => setTransferPart(null)}
-        onDone={async () => { setTransferPart(null); setCourses(await load()); }}
+        onDone={async () => {
+          setTransferPart(null);
+          setCourses(await load());
+        }}
       />
 
       {courses.map((c, i) => {
         const beltNo = buildBeltNumbers(c.participants);
         return (
-        <CollapsibleCard
-          key={c.id}
-          defaultOpen={i === 0}
-          storageKey={`trainer-kurs-${c.id}`}
-          title={c.name}
-          subtitle={[c.location, c.schedule, c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null].filter(Boolean).join(" · ")}
-          meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
-          contentClassName="px-0"
-        >
+          <CollapsibleCard
+            key={c.id}
+            defaultOpen={i === 0}
+            storageKey={`trainer-kurs-${c.id}`}
+            title={c.name}
+            subtitle={[
+              c.location,
+              c.schedule,
+              c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+            meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
+            contentClassName="px-0"
+          >
             <div className="px-4 pb-2 sm:px-6">
               <Button
                 variant="outline"
@@ -180,35 +212,58 @@ function Page() {
                 </TabsList>
                 <TabsContent value="kinder" className="mt-3">
                   <p className="mb-2 text-xs text-muted-foreground">
-                    Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den Prüfungsnachweis zu öffnen.
+                    Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den
+                    Prüfungsnachweis zu öffnen.
                   </p>
                   <AttendanceBoard
                     courseId={c.id}
                     participants={c.participants
-                      .filter(p => p.status !== "cancelled")
-                      .map(p => ({ id: p.id, name: p.name || "—", no: beltNo.get(p.id) ?? null, hint: p.notes, paid: p.paid }))}
+                      .filter((p) => p.status !== "cancelled")
+                      .map((p) => ({
+                        id: p.id,
+                        name: p.name || "—",
+                        no: beltNo.get(p.id) ?? null,
+                        hint: p.notes,
+                        paid: p.paid,
+                      }))}
                     editableHints
-                    onHintSaved={(id, hint) => setCourses(prev => prev.map(cc => ({ ...cc, participants: cc.participants.map(pp => (pp.id === id ? { ...pp, notes: hint } : pp)) })))}
-                    renderDetails={id => {
-                      const p = c.participants.find(x => x.id === id);
+                    onHintSaved={(id, hint) =>
+                      setCourses((prev) =>
+                        prev.map((cc) => ({
+                          ...cc,
+                          participants: cc.participants.map((pp) =>
+                            pp.id === id ? { ...pp, notes: hint } : pp,
+                          ),
+                        })),
+                      )
+                    }
+                    renderDetails={(id) => {
+                      const p = c.participants.find((x) => x.id === id);
                       if (!p) return null;
                       return (
                         <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mb-2 min-h-11"
-                          onClick={() => setTransferPart({ id: p.id, participant_name: p.name, participant_email: p.email, course_id: c.id })}
-                        >
-                          ↔ Kind umbuchen
-                        </Button>
-                        <ParticipantDetails
-                          p={p}
-                          editablePhone
-                          onPhoneSaved={applyPhone}
-                          editableResult
-                          onResultSaved={applyResult}
-                        />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mb-2 min-h-11"
+                            onClick={() =>
+                              setTransferPart({
+                                id: p.id,
+                                participant_name: p.name,
+                                participant_email: p.email,
+                                course_id: c.id,
+                              })
+                            }
+                          >
+                            ↔ Kind umbuchen
+                          </Button>
+                          <ParticipantDetails
+                            p={p}
+                            editablePhone
+                            onPhoneSaved={applyPhone}
+                            editableResult
+                            onResultSaved={applyResult}
+                          />
                         </>
                       );
                     }}
@@ -221,8 +276,8 @@ function Page() {
                   <MultiWatch
                     location={c.location}
                     participants={c.participants
-                      .filter(p => p.status !== "cancelled")
-                      .map(p => ({
+                      .filter((p) => p.status !== "cancelled")
+                      .map((p) => ({
                         id: p.id,
                         name: p.name || "—",
                         no: beltNo.get(p.id) ?? null,
@@ -248,17 +303,19 @@ function Page() {
               </Tabs>
             </div>
 
-            {c.participants.some(p => p.status === "cancelled") && (
+            {c.participants.some((p) => p.status === "cancelled") && (
               <div className="border-t pt-2">
-                <h3 className="px-4 py-2 text-sm font-semibold text-muted-foreground">Stornierte Anmeldungen</h3>
+                <h3 className="px-4 py-2 text-sm font-semibold text-muted-foreground">
+                  Stornierte Anmeldungen
+                </h3>
                 {c.participants
-                  .filter(p => p.status === "cancelled")
-                  .map(p => (
+                  .filter((p) => p.status === "cancelled")
+                  .map((p) => (
                     <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
                   ))}
               </div>
             )}
-        </CollapsibleCard>
+          </CollapsibleCard>
         );
       })}
     </div>

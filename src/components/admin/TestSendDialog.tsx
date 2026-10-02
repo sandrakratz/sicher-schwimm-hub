@@ -4,7 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +17,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { sendTestEmails, TEST_TEMPLATES } from "@/lib/email-test.functions";
 import { templateLabel } from "@/lib/email-template-labels";
 
-type Result = { recipient: string; template: string; label: string; sent: boolean; reason?: string; error?: string };
+type Result = {
+  recipient: string;
+  template: string;
+  label: string;
+  sent: boolean;
+  reason?: string;
+  error?: string;
+};
 
 const STORAGE_KEY = "ssv-test-recipients";
 
@@ -26,19 +38,26 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
     try {
       const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "null");
       if (Array.isArray(saved) && saved.length === 3) return saved as string[];
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return ["info@sicher-schwimmen.com", "", ""];
   });
 
   const go = async () => {
-    const recipients = addrs.map(a => a.trim()).filter(Boolean);
+    const recipients = addrs.map((a) => a.trim()).filter(Boolean);
     if (recipients.length === 0) {
       toast.error("Bitte mindestens eine E-Mail-Adresse eintragen.");
       return;
     }
     // Jede Test-Mail zählt zum Tageskontingent des Mail-Anbieters (100/Tag) – vorher bestätigen lassen
     const total = recipients.length * TEST_TEMPLATES.length;
-    if (!window.confirm(`Es werden ${total} echte E-Mails verschickt (${recipients.length} Adresse(n) × ${TEST_TEMPLATES.length} Vorlagen). Sie zählen zum Tageskontingent von 100 E-Mails. Fortfahren?`)) return;
+    if (
+      !window.confirm(
+        `Es werden ${total} echte E-Mails verschickt (${recipients.length} Adresse(n) × ${TEST_TEMPLATES.length} Vorlagen). Sie zählen zum Tageskontingent von 100 E-Mails. Fortfahren?`,
+      )
+    )
+      return;
     setBusy(true);
     setResults(null);
     try {
@@ -58,7 +77,10 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="secondary"><Send className="h-4 w-4 mr-1" />Testversand</Button>
+        <Button size="sm" variant="secondary">
+          <Send className="h-4 w-4 mr-1" />
+          Testversand
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -77,15 +99,21 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
                 type="email"
                 value={a}
                 placeholder="name@beispiel.de"
-                onChange={e => setAddrs(prev => prev.map((v, idx) => (idx === i ? e.target.value : v)))}
+                onChange={(e) =>
+                  setAddrs((prev) => prev.map((v, idx) => (idx === i ? e.target.value : v)))
+                }
               />
             </div>
           ))}
 
           <div className="rounded-md border p-3">
-            <div className="text-xs font-semibold text-muted-foreground mb-2">Getestete Vorlagen</div>
+            <div className="text-xs font-semibold text-muted-foreground mb-2">
+              Getestete Vorlagen
+            </div>
             <ul className="text-sm space-y-1">
-              {TEST_TEMPLATES.map(t => <li key={t}>• {templateLabel(t)}</li>)}
+              {TEST_TEMPLATES.map((t) => (
+                <li key={t}>• {templateLabel(t)}</li>
+              ))}
             </ul>
           </div>
 
@@ -96,10 +124,15 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
           {results && (
             <div className="space-y-1">
               {results.map((r, i) => (
-                <div key={i} className="flex items-center justify-between gap-2 text-sm border-t py-1">
-                  <span className="truncate">{r.recipient} · {r.label}</span>
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 text-sm border-t py-1"
+                >
+                  <span className="truncate">
+                    {r.recipient} · {r.label}
+                  </span>
                   <Badge variant={r.sent ? "default" : "destructive"}>
-                    {r.sent ? "Versendet" : (r.error || r.reason || "Fehler")}
+                    {r.sent ? "Versendet" : r.error || r.reason || "Fehler"}
                   </Badge>
                 </div>
               ))}

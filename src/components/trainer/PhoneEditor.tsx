@@ -46,7 +46,7 @@ export function PhoneEditor({
           inputMode="tel"
           autoFocus
           value={value}
-          onChange={e => setValue(e.target.value)}
+          onChange={(e) => setValue(e.target.value)}
           placeholder="z. B. 0170 1234567"
           className="h-10 w-48"
         />

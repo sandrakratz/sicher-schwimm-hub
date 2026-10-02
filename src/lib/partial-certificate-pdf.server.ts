@@ -78,7 +78,9 @@ export function isPartial(level: string | null | undefined, criteria: ExamCriter
   return countCriteriaDone(level, criteria) > 0 && !allCriteriaDone(level, criteria);
 }
 
-export async function renderPartialCertificatePdf(input: PartialCertificateInput): Promise<Uint8Array> {
+export async function renderPartialCertificatePdf(
+  input: PartialCertificateInput,
+): Promise<Uint8Array> {
   const level = findExamLevel(input.examLevel);
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -90,8 +92,17 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
   const page = pdf.addPage(A4);
   let y = A4[1] - 56;
 
-  const text = (s: string, o: { size?: number; b?: boolean; x?: number; color?: ReturnType<typeof rgb> } = {}) =>
-    page.drawText(SAFE(s), { x: o.x ?? LEFT, y, size: o.size ?? 10, font: o.b ? bold : font, color: o.color ?? INK });
+  const text = (
+    s: string,
+    o: { size?: number; b?: boolean; x?: number; color?: ReturnType<typeof rgb> } = {},
+  ) =>
+    page.drawText(SAFE(s), {
+      x: o.x ?? LEFT,
+      y,
+      size: o.size ?? 10,
+      font: o.b ? bold : font,
+      color: o.color ?? INK,
+    });
   const para = (s: string, size = 9.5, color = INK) => {
     for (const l of wrap(s, font, size, WIDTH)) {
       text(l, { size, color });
@@ -101,7 +112,12 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
 
   // Briefkopf
   const logoSize = 64;
-  page.drawImage(logo, { x: RIGHT - logoSize, y: y - logoSize + 14, width: logoSize, height: logoSize });
+  page.drawImage(logo, {
+    x: RIGHT - logoSize,
+    y: y - logoSize + 14,
+    width: logoSize,
+    height: logoSize,
+  });
   text(ORG.name, { size: 14, b: true });
   y -= 14;
   text(`${ORG.street}, ${ORG.zipCity}`, { size: 9, color: MUTED });
@@ -131,7 +147,12 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
   );
   y -= 10;
 
-  page.drawLine({ start: { x: LEFT, y: y + 4 }, end: { x: RIGHT, y: y + 4 }, thickness: 0.8, color: rgb(0.8, 0.85, 0.9) });
+  page.drawLine({
+    start: { x: LEFT, y: y + 4 },
+    end: { x: RIGHT, y: y + 4 },
+    thickness: 0.8,
+    color: rgb(0.8, 0.85, 0.9),
+  });
   y -= 10;
   for (const c of level?.criteria ?? []) {
     const st = input.criteria?.[c.key];
@@ -146,7 +167,13 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
       color: done ? GREEN : MUTED,
     });
     lines.forEach((l, i) => {
-      page.drawText(l, { x: LEFT + 26, y: y - i * 12.5, size: 9.5, font: done ? bold : font, color: INK });
+      page.drawText(l, {
+        x: LEFT + 26,
+        y: y - i * 12.5,
+        size: 9.5,
+        font: done ? bold : font,
+        color: INK,
+      });
     });
     y -= lines.length * 12.5;
     const extras: string[] = [];
@@ -158,7 +185,12 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
     }
     y -= 6;
   }
-  page.drawLine({ start: { x: LEFT, y: y + 6 }, end: { x: RIGHT, y: y + 6 }, thickness: 0.8, color: rgb(0.8, 0.85, 0.9) });
+  page.drawLine({
+    start: { x: LEFT, y: y + 6 },
+    end: { x: RIGHT, y: y + 6 },
+    thickness: 0.8,
+    color: rgb(0.8, 0.85, 0.9),
+  });
   y -= 14;
 
   text("Wichtiger Hinweis zur Frist", { size: 10.5, b: true });
@@ -176,7 +208,12 @@ export async function renderPartialCertificatePdf(input: PartialCertificateInput
   const lineY = Math.max(y - Math.max(sigH, 60), 90);
   page.drawImage(signature, { x: LEFT, y: lineY + 2, width: sigW, height: sigH });
   page.drawImage(stamp, { x: RIGHT - stampW, y: lineY - 10, width: stampW, height: stampH });
-  page.drawLine({ start: { x: LEFT, y: lineY }, end: { x: LEFT + 240, y: lineY }, thickness: 0.6, color: INK });
+  page.drawLine({
+    start: { x: LEFT, y: lineY },
+    end: { x: LEFT + 240, y: lineY },
+    thickness: 0.6,
+    color: INK,
+  });
   y = lineY - 13;
   text(`${EXAMINER_NAME}, ${deDate(input.issuedOn)}`, { size: 9.5, b: true });
   y -= 12;
@@ -200,7 +237,10 @@ type Loaded = {
 };
 
 /** Lädt die Daten eines Kindes und erstellt den Nachweis (nur bei offenen Teilleistungen). */
-export async function buildPartialCertificate(participantId: string, issuedOn: string): Promise<Loaded | null> {
+export async function buildPartialCertificate(
+  participantId: string,
+  issuedOn: string,
+): Promise<Loaded | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: p } = await supabaseAdmin
     .from("course_participants")
@@ -212,8 +252,13 @@ export async function buildPartialCertificate(participantId: string, issuedOn: s
   if (!p) return null;
   const criteria = (p.exam_criteria ?? {}) as ExamCriteriaState;
   if (!isPartial(p.exam_level, criteria)) return null;
-  const course = (p as any).courses as { name?: string; location?: string | null; ends_on?: string | null } | null;
-  const base = firstCriterionDate(criteria) ?? (p.exam_date as string | null) ?? course?.ends_on ?? issuedOn;
+  const course = (p as any).courses as {
+    name?: string;
+    location?: string | null;
+    ends_on?: string | null;
+  } | null;
+  const base =
+    firstCriterionDate(criteria) ?? (p.exam_date as string | null) ?? course?.ends_on ?? issuedOn;
   const deadline = addMonths(base, 2);
   const childName = (p.participant_name ?? "") as string;
   const bytes = await renderPartialCertificatePdf({

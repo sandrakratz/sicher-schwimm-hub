@@ -3,21 +3,63 @@ import { exportExamProtocol } from "@/lib/trainer-courses.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, Pencil, Award, Euro, FileSpreadsheet, CalendarDays, Archive, ArchiveRestore, Receipt, FileText, FileArchive, FileDown, ArrowRightLeft, Lock } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Users,
+  Pencil,
+  Award,
+  Euro,
+  FileSpreadsheet,
+  CalendarDays,
+  Archive,
+  ArchiveRestore,
+  Receipt,
+  FileText,
+  FileArchive,
+  FileDown,
+  ArrowRightLeft,
+  Lock,
+} from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
-import { generateCourseListXlsx, generateTaxParticipantListXlsx, generateCourseConfirmations, generateMeinVereinCsv, generateTrainerProofXlsx } from "@/lib/course-sessions.functions";
+import {
+  generateCourseListXlsx,
+  generateTaxParticipantListXlsx,
+  generateCourseConfirmations,
+  generateMeinVereinCsv,
+  generateTrainerProofXlsx,
+} from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/role-guard";
 import { removeCourseParticipant } from "@/lib/participants-admin.functions";
@@ -32,20 +74,35 @@ import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog"
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { Megaphone, ChevronDown, MoreHorizontal, Smartphone } from "lucide-react";
 import { sendPushInvites } from "@/lib/push.functions";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-type CourseCounts = { confirmed: number; waiting: number; unpaid: number; overdue: number; sessions: number; staffed: number; offered?: number };
-
-
-
+type CourseCounts = {
+  confirmed: number;
+  waiting: number;
+  unpaid: number;
+  overdue: number;
+  sessions: number;
+  staffed: number;
+  offered?: number;
+};
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
     // Trainer:innen arbeiten im Trainerbereich („Meine Kurse“); die Kursverwaltung ist Vorstand/Admin vorbehalten
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/trainer/kurse" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/trainer/kurse" });
+    }
   },
   component: Page,
 });
@@ -106,16 +163,19 @@ const REQUEST_STATUS_LABEL: Record<string, string> = {
   rejected: "Abgelehnt",
 };
 
-
-
 const ENROLL_STATUS = [
   { value: "confirmed", label: "Bestätigt" },
   { value: "waiting", label: "Warteliste" },
   { value: "cancelled", label: "Abgesagt" },
 ];
-const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(ENROLL_STATUS.map(o => [o.value, o.label]));
+const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  ENROLL_STATUS.map((o) => [o.value, o.label]),
+);
 
-function ageAt(dobStr: string | null | undefined, refStr: string | null | undefined): number | null {
+function ageAt(
+  dobStr: string | null | undefined,
+  refStr: string | null | undefined,
+): number | null {
   if (!dobStr) return null;
   const dob = new Date(dobStr);
   const ref = refStr ? new Date(refStr) : new Date();
@@ -139,8 +199,6 @@ function addDaysIso(iso: string, days: number): string {
 function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
 }
-
-
 
 type Course = {
   id: string;
@@ -197,8 +255,6 @@ type ProgramRow = {
   course_info: string | null;
 };
 
-
-
 const STATUS_OPTIONS = [
   { value: "planned", label: "Geplant" },
   { value: "open", label: "Offen" },
@@ -206,10 +262,16 @@ const STATUS_OPTIONS = [
   { value: "fully_booked", label: "Ausgebucht" },
   { value: "completed", label: "Abgeschlossen" },
 ];
-const STATUS_LABEL: Record<string, string> = Object.fromEntries(STATUS_OPTIONS.map(o => [o.value, o.label]));
+const STATUS_LABEL: Record<string, string> = Object.fromEntries(
+  STATUS_OPTIONS.map((o) => [o.value, o.label]),
+);
 
 function slugify(s: string) {
-  return s.toLowerCase().replace(/[äöüß]/g, m => ({ä:"ae",ö:"oe",ü:"ue",ß:"ss"}[m] || m)).replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return s
+    .toLowerCase()
+    .replace(/[äöüß]/g, (m) => ({ ä: "ae", ö: "oe", ü: "ue", ß: "ss" })[m] || m)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 function Page() {
@@ -229,16 +291,40 @@ function Page() {
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const listConsentsFn = useServerFn(listTransferConsents);
-  const [transferConsents, setTransferConsents] = useState<Record<string, { participant_id: string; status: string; confirmed_at: string | null; reminded_at: string | null } | undefined>>({});
+  const [transferConsents, setTransferConsents] = useState<
+    Record<
+      string,
+      | {
+          participant_id: string;
+          status: string;
+          confirmed_at: string | null;
+          reminded_at: string | null;
+        }
+      | undefined
+    >
+  >({});
   const [payFilter, setPayFilter] = useState<string>("all");
   const [paySort, setPaySort] = useState<string>("name");
-  const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+  const [newPart, setNewPart] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    status: "confirmed" | "waiting";
+    notes: string;
+    date_of_birth: string;
+  }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
   const [editPart, setEditPart] = useState<Participant | null>(null);
   const [transferPart, setTransferPart] = useState<Participant | null>(null);
   const [broadcastCourse, setBroadcastCourse] = useState<Course | null>(null);
   const [wlEntries, setWlEntries] = useState<any[]>([]);
   const [wlPick, setWlPick] = useState<string>("");
-  const [removeState, setRemovePart] = useState<{ participant: Participant; reason: string; blocklist: boolean; notify: "unpaid" | "agreed" | "none"; note: string } | null>(null);
+  const [removeState, setRemovePart] = useState<{
+    participant: Participant;
+    reason: string;
+    blocklist: boolean;
+    notify: "unpaid" | "agreed" | "none";
+    note: string;
+  } | null>(null);
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
   const moveToWaitlistFn = useServerFn(moveParticipantToWaitlist);
@@ -250,8 +336,19 @@ function Page() {
 
   const [sessOpen, setSessOpen] = useState(false);
   const [sessCourse, setSessCourse] = useState<Course | null>(null);
-  const [sessions, setSessions] = useState<{ id: string; session_index: number; session_date: string; start_time?: string | null; end_time?: string | null; assigned_trainer_id?: string | null }[]>([]);
-  const [sessAvail, setSessAvail] = useState<{ session_id: string; trainer_id: string; available: boolean }[]>([]);
+  const [sessions, setSessions] = useState<
+    {
+      id: string;
+      session_index: number;
+      session_date: string;
+      start_time?: string | null;
+      end_time?: string | null;
+      assigned_trainer_id?: string | null;
+    }[]
+  >([]);
+  const [sessAvail, setSessAvail] = useState<
+    { session_id: string; trainer_id: string; available: boolean }[]
+  >([]);
   const [sessAssign, setSessAssign] = useState<{ session_id: string; trainer_id: string }[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const trainersFn = useServerFn(listTrainers);
@@ -278,18 +375,34 @@ function Page() {
   const [inviting, setInviting] = useState(false);
 
   async function handleSendPushInvites() {
-    if (!confirm("Info-Mail zu den Handy-Mitteilungen jetzt an alle Familien mit laufenden Kursen senden? Jede Familie bekommt diese Mail nur ein einziges Mal.")) return;
+    if (
+      !confirm(
+        "Info-Mail zu den Handy-Mitteilungen jetzt an alle Familien mit laufenden Kursen senden? Jede Familie bekommt diese Mail nur ein einziges Mal.",
+      )
+    )
+      return;
     setInviting(true);
     try {
       const r = await pushInvitesFn();
-      toast.success(r.sent > 0 ? `Info-Mail an ${r.sent} Familien gesendet` : "Keine neuen Familien – alle haben die Info-Mail bereits erhalten");
+      toast.success(
+        r.sent > 0
+          ? `Info-Mail an ${r.sent} Familien gesendet`
+          : "Keine neuen Familien – alle haben die Info-Mail bereits erhalten",
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Senden fehlgeschlagen");
-    } finally { setInviting(false); }
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function handleSendReminders(courseId?: string | null) {
-    if (!confirm("Zahlungserinnerung an alle offenen Fälle (Sofortzahlung erwartet oder überfällig) senden?")) return;
+    if (
+      !confirm(
+        "Zahlungserinnerung an alle offenen Fälle (Sofortzahlung erwartet oder überfällig) senden?",
+      )
+    )
+      return;
     setReminding(true);
     try {
       const res: any = await remindFn({ data: { courseId: courseId ?? null } });
@@ -303,29 +416,42 @@ function Page() {
   }
 
   async function openSessions(c: Course) {
-    setSessCourse(c); setSessOpen(true);
-    const { data } = await supabase.from("course_sessions")
+    setSessCourse(c);
+    setSessOpen(true);
+    const { data } = await supabase
+      .from("course_sessions")
       .select("id,session_index,session_date,start_time,end_time,assigned_trainer_id")
-      .eq("course_id", c.id).order("session_index", { ascending: true });
+      .eq("course_id", c.id)
+      .order("session_index", { ascending: true });
     const rows = (data as any[]) || [];
     setSessions(rows as any);
     if (rows.length > 0) {
       const { data: av } = await supabase
         .from("course_session_availability")
         .select("session_id,trainer_id,available")
-        .in("session_id", rows.map(r => r.id));
+        .in(
+          "session_id",
+          rows.map((r) => r.id),
+        );
       setSessAvail((av as any) || []);
       const { data: asg } = await supabase
         .from("course_session_assignments")
         .select("session_id,trainer_id")
-        .in("session_id", rows.map(r => r.id));
+        .in(
+          "session_id",
+          rows.map((r) => r.id),
+        );
       setSessAssign((asg as any) || []);
     } else {
       setSessAvail([]);
       setSessAssign([]);
     }
     if (trainers.length === 0) {
-      try { setTrainers(await trainersFn()); } catch { /* optional */ }
+      try {
+        setTrainers(await trainersFn());
+      } catch {
+        /* optional */
+      }
     }
   }
 
@@ -335,7 +461,7 @@ function Page() {
         .from("course_session_assignments")
         .insert({ session_id: sessionId, trainer_id: trainerId });
       if (error) return toast.error(error.message);
-      setSessAssign(a => [...a, { session_id: sessionId, trainer_id: trainerId }]);
+      setSessAssign((a) => [...a, { session_id: sessionId, trainer_id: trainerId }]);
     } else {
       const { error } = await supabase
         .from("course_session_assignments")
@@ -343,7 +469,9 @@ function Page() {
         .eq("session_id", sessionId)
         .eq("trainer_id", trainerId);
       if (error) return toast.error(error.message);
-      setSessAssign(a => a.filter(x => !(x.session_id === sessionId && x.trainer_id === trainerId)));
+      setSessAssign((a) =>
+        a.filter((x) => !(x.session_id === sessionId && x.trainer_id === trainerId)),
+      );
     }
   }
 
@@ -353,25 +481,50 @@ function Page() {
   async function importSessions() {
     if (!sessCourse) return;
     const parsed = parseSessionList(bulkText);
-    const real = parsed.filter(p => !p.isBreak);
-    if (real.length === 0) return toast.error("Keine Termine erkannt. Format z. B.: 07.11.2026 11:00–11:45 Uhr");
-    if (sessions.length > 0 && !window.confirm(`Die ${sessions.length} vorhandenen Termine (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${real.length} neue ersetzt. Fortfahren?`)) return;
+    const real = parsed.filter((p) => !p.isBreak);
+    if (real.length === 0)
+      return toast.error("Keine Termine erkannt. Format z. B.: 07.11.2026 11:00–11:45 Uhr");
+    if (
+      sessions.length > 0 &&
+      !window.confirm(
+        `Die ${sessions.length} vorhandenen Termine (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${real.length} neue ersetzt. Fortfahren?`,
+      )
+    )
+      return;
     setBulkBusy(true);
     try {
       if (sessions.length > 0) {
-        const { error } = await supabase.from("course_sessions").delete().eq("course_id", sessCourse.id);
+        const { error } = await supabase
+          .from("course_sessions")
+          .delete()
+          .eq("course_id", sessCourse.id);
         if (error) throw error;
       }
-      const { error } = await supabase.from("course_sessions").insert(real.map((p, i) => ({
-        course_id: sessCourse.id, session_index: i + 1, session_date: p.date, start_time: p.start, end_time: p.end,
-      })));
+      const { error } = await supabase.from("course_sessions").insert(
+        real.map((p, i) => ({
+          course_id: sessCourse.id,
+          session_index: i + 1,
+          session_date: p.date,
+          start_time: p.start,
+          end_time: p.end,
+        })),
+      );
       if (error) throw error;
-      const breaks = parsed.filter(p => p.isBreak).map(p => ({ date: p.date, note: p.note || "kein Termin" }));
-      const { error: e2 } = await supabase.from("courses").update({
-        session_breaks: breaks as any, starts_on: real[0].date, ends_on: real[real.length - 1].date,
-      } as any).eq("id", sessCourse.id);
+      const breaks = parsed
+        .filter((p) => p.isBreak)
+        .map((p) => ({ date: p.date, note: p.note || "kein Termin" }));
+      const { error: e2 } = await supabase
+        .from("courses")
+        .update({
+          session_breaks: breaks as any,
+          starts_on: real[0].date,
+          ends_on: real[real.length - 1].date,
+        } as any)
+        .eq("id", sessCourse.id);
       if (e2) throw e2;
-      toast.success(`${real.length} Termine${breaks.length ? ` und ${breaks.length} Pausen` : ""} übernommen`);
+      toast.success(
+        `${real.length} Termine${breaks.length ? ` und ${breaks.length} Pausen` : ""} übernommen`,
+      );
       setBulkText("");
       await openSessions(sessCourse);
     } catch (e: any) {
@@ -400,32 +553,56 @@ function Page() {
   }
   /** Kursbeginn/-ende folgen den Terminen (Zahlungsfristen und Erinnerungen hängen am Kursstart). */
   async function syncCourseDates(courseId: string) {
-    const { data } = await supabase.from("course_sessions").select("session_date").eq("course_id", courseId).order("session_date", { ascending: true });
-    const dates = ((data as { session_date: string }[]) || []).map(d => d.session_date);
+    const { data } = await supabase
+      .from("course_sessions")
+      .select("session_date")
+      .eq("course_id", courseId)
+      .order("session_date", { ascending: true });
+    const dates = ((data as { session_date: string }[]) || []).map((d) => d.session_date);
     if (dates.length === 0) return;
-    const { error } = await supabase.from("courses").update({ starts_on: dates[0], ends_on: dates[dates.length - 1] }).eq("id", courseId);
-    if (error) { toast.error(`Kursbeginn/-ende konnten nicht angepasst werden: ${error.message}`); return; }
+    const { error } = await supabase
+      .from("courses")
+      .update({ starts_on: dates[0], ends_on: dates[dates.length - 1] })
+      .eq("id", courseId);
+    if (error) {
+      toast.error(`Kursbeginn/-ende konnten nicht angepasst werden: ${error.message}`);
+      return;
+    }
     await load();
   }
   async function updateSessionDate(id: string, date: string) {
     if (!date) return; // Feld wurde geleert: nichts speichern
-    const { error } = await supabase.from("course_sessions").update({ session_date: date }).eq("id", id);
+    const { error } = await supabase
+      .from("course_sessions")
+      .update({ session_date: date })
+      .eq("id", id);
     if (error) return toast.error(error.message);
-    if (sessCourse) { await syncCourseDates(sessCourse.id); await openSessions(sessCourse); }
+    if (sessCourse) {
+      await syncCourseDates(sessCourse.id);
+      await openSessions(sessCourse);
+    }
   }
   async function updateSessionTime(id: string, field: "start_time" | "end_time", value: string) {
     const next = value ? `${value}:00` : null;
-    setSessions(list => list.map(s => (s.id === id ? { ...s, [field]: next } : s)));
+    setSessions((list) => list.map((s) => (s.id === id ? { ...s, [field]: next } : s)));
     const patch = field === "start_time" ? { start_time: next } : { end_time: next };
     const { error } = await supabase.from("course_sessions").update(patch).eq("id", id);
     if (error) toast.error(error.message);
   }
   async function removeSession(id: string) {
-    const s = sessions.find(x => x.id === id);
-    if (!window.confirm(`${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} wirklich löschen? Anwesenheiten und Trainer-Nachweise zu diesem Termin gehen verloren.`)) return;
+    const s = sessions.find((x) => x.id === id);
+    if (
+      !window.confirm(
+        `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} wirklich löschen? Anwesenheiten und Trainer-Nachweise zu diesem Termin gehen verloren.`,
+      )
+    )
+      return;
     const { error } = await supabase.from("course_sessions").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    if (sessCourse) { await syncCourseDates(sessCourse.id); await openSessions(sessCourse); }
+    if (sessCourse) {
+      await syncCourseDates(sessCourse.id);
+      await openSessions(sessCourse);
+    }
   }
 
   async function exportCourseList(c: Course) {
@@ -435,12 +612,17 @@ function Page() {
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = res.filename;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       toast.success("Excel-Kursliste erstellt");
     } catch (e: any) {
       toast.error(e?.message || "Export fehlgeschlagen");
@@ -456,12 +638,17 @@ function Page() {
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = res.filename;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       toast.success("Trainer-Nachweis erstellt");
     } catch (e: any) {
       toast.error(e?.message || "Export fehlgeschlagen");
@@ -477,12 +664,17 @@ function Page() {
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = res.filename;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       toast.success("Teilnehmerliste (Steuer) erstellt");
     } catch (e: any) {
       toast.error(e?.message || "Export fehlgeschlagen");
@@ -498,12 +690,17 @@ function Page() {
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: format === "pdf" ? "application/pdf" : "application/zip" });
+      const blob = new Blob([bytes], {
+        type: format === "pdf" ? "application/pdf" : "application/zip",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = res.filename;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       toast.success("Kursbestätigungen erstellt");
     } catch (e: any) {
       toast.error(e?.message || "Export fehlgeschlagen");
@@ -522,9 +719,12 @@ function Page() {
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
       const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
       const a = document.createElement("a");
-      a.href = url; a.download = res.filename;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       toast.success("Prüfungsprotokoll erstellt");
     } catch (e: any) {
       toast.error(e?.message || "Export fehlgeschlagen");
@@ -543,9 +743,12 @@ function Page() {
       const blob = new Blob([bytes], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = res.filename;
-      document.body.appendChild(a); a.click();
-      a.remove(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
       toast.success(
         res.missingDocNo > 0
           ? `CSV erstellt (${res.rows} Posten, davon ${res.missingDocNo} ohne Rechnungsnummer)`
@@ -570,32 +773,73 @@ function Page() {
       const { roles } = await rolesFn();
       manage = roles.includes("admin") || roles.includes("board");
       setCanManage(manage);
-    } catch { /* keep current */ }
+    } catch {
+      /* keep current */
+    }
 
     // Alle Abfragen seitenweise/in Blöcken: Supabase liefert sonst höchstens 1000 Zeilen und rechnet still mit zu wenigen Daten.
-    let list = await fetchAll<Course>((f, t) => supabase.from("courses").select("*").order("created_at", { ascending: false }).order("id").range(f, t));
+    let list = await fetchAll<Course>((f, t) =>
+      supabase
+        .from("courses")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .order("id")
+        .range(f, t),
+    );
 
     if (!manage) {
       // Trainer: nur eigene Kurse (als Kurstrainer oder einem Termin zugewiesen)
       const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
       const allowed = new Set<string>();
       if (uid) {
-        list.forEach(c => { if (c.trainer_id === uid) allowed.add(c.id); });
-        const sessions = await fetchAll<any>((f, t) => supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").order("id").range(f, t));
-        sessions.forEach(s => { if (s.assigned_trainer_id === uid) allowed.add(s.course_id); });
-        const myAssign = await fetchAll<any>((f, t) => supabase.from("course_session_assignments").select("session_id").eq("trainer_id", uid).order("session_id").range(f, t));
-        const assignedSessionIds = new Set(myAssign.map(a => a.session_id));
-        sessions.forEach(s => { if (assignedSessionIds.has(s.id)) allowed.add(s.course_id); });
+        list.forEach((c) => {
+          if (c.trainer_id === uid) allowed.add(c.id);
+        });
+        const sessions = await fetchAll<any>((f, t) =>
+          supabase
+            .from("course_sessions")
+            .select("id,course_id,assigned_trainer_id")
+            .order("id")
+            .range(f, t),
+        );
+        sessions.forEach((s) => {
+          if (s.assigned_trainer_id === uid) allowed.add(s.course_id);
+        });
+        const myAssign = await fetchAll<any>((f, t) =>
+          supabase
+            .from("course_session_assignments")
+            .select("session_id")
+            .eq("trainer_id", uid)
+            .order("session_id")
+            .range(f, t),
+        );
+        const assignedSessionIds = new Set(myAssign.map((a) => a.session_id));
+        sessions.forEach((s) => {
+          if (assignedSessionIds.has(s.id)) allowed.add(s.course_id);
+        });
       }
-      list = list.filter(c => allowed.has(c.id));
+      list = list.filter((c) => allowed.has(c.id));
     }
     setRows(list);
 
-    const parts = await fetchAll<any>((f, t) => supabase.from("course_participants").select("course_id,status,paid,payment_due_date").order("id").range(f, t));
+    const parts = await fetchAll<any>((f, t) =>
+      supabase
+        .from("course_participants")
+        .select("course_id,status,paid,payment_due_date")
+        .order("id")
+        .range(f, t),
+    );
     const today = todayBerlinIso();
     const map: Record<string, CourseCounts> = {};
     parts.forEach((p: any) => {
-      map[p.course_id] = map[p.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+      map[p.course_id] = map[p.course_id] || {
+        confirmed: 0,
+        waiting: 0,
+        unpaid: 0,
+        overdue: 0,
+        sessions: 0,
+        staffed: 0,
+      };
       if (p.status === "confirmed") {
         map[p.course_id].confirmed++;
         if (!p.paid) {
@@ -604,30 +848,65 @@ function Page() {
         }
       } else if (p.status === "waiting") map[p.course_id].waiting++;
     });
-    const courseIds = list.map(c => c.id);
+    const courseIds = list.map((c) => c.id);
     if (courseIds.length) {
-      const offers = await fetchIn<any>(courseIds, (chunk, f, t) => supabase.from("waitlist_entries").select("offer_course_id,offer_expires_at")
-        .eq("status", "offered").in("offer_course_id", chunk).order("id").range(f, t));
+      const offers = await fetchIn<any>(courseIds, (chunk, f, t) =>
+        supabase
+          .from("waitlist_entries")
+          .select("offer_course_id,offer_expires_at")
+          .eq("status", "offered")
+          .in("offer_course_id", chunk)
+          .order("id")
+          .range(f, t),
+      );
       const nowIso = new Date().toISOString();
-      offers.forEach(o => {
+      offers.forEach((o) => {
         if (!o.offer_course_id || (o.offer_expires_at && o.offer_expires_at < nowIso)) return;
-        const m = map[o.offer_course_id] = map[o.offer_course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+        const m = (map[o.offer_course_id] = map[o.offer_course_id] || {
+          confirmed: 0,
+          waiting: 0,
+          unpaid: 0,
+          overdue: 0,
+          sessions: 0,
+          staffed: 0,
+        });
         m.offered = (m.offered ?? 0) + 1;
       });
     }
     if (courseIds.length) {
-      const sessList = await fetchIn<any>(courseIds, (chunk, f, t) => supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").in("course_id", chunk).order("id").range(f, t));
-      const sessIds = sessList.map(s => s.id);
+      const sessList = await fetchIn<any>(courseIds, (chunk, f, t) =>
+        supabase
+          .from("course_sessions")
+          .select("id,course_id,assigned_trainer_id")
+          .in("course_id", chunk)
+          .order("id")
+          .range(f, t),
+      );
+      const sessIds = sessList.map((s) => s.id);
       const assigned = new Map<string, Set<string>>();
-      const asgRows = await fetchIn<any>(sessIds, (chunk, f, t) => supabase.from("course_session_assignments").select("session_id,trainer_id").in("session_id", chunk).order("id").range(f, t));
-      asgRows.forEach(a => {
+      const asgRows = await fetchIn<any>(sessIds, (chunk, f, t) =>
+        supabase
+          .from("course_session_assignments")
+          .select("session_id,trainer_id")
+          .in("session_id", chunk)
+          .order("id")
+          .range(f, t),
+      );
+      asgRows.forEach((a) => {
         const set = assigned.get(a.session_id) ?? new Set<string>();
         set.add(a.trainer_id);
         assigned.set(a.session_id, set);
       });
-      const needed = new Map(list.map(c => [c.id, c.trainers_needed ?? 2] as const));
-      sessList.forEach(s => {
-        const m = map[s.course_id] = map[s.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+      const needed = new Map(list.map((c) => [c.id, c.trainers_needed ?? 2] as const));
+      sessList.forEach((s) => {
+        const m = (map[s.course_id] = map[s.course_id] || {
+          confirmed: 0,
+          waiting: 0,
+          unpaid: 0,
+          overdue: 0,
+          sessions: 0,
+          staffed: 0,
+        });
         m.sessions++;
         const team = new Set(assigned.get(s.id) ?? []);
         if (s.assigned_trainer_id) team.add(s.assigned_trainer_id);
@@ -635,28 +914,45 @@ function Page() {
       });
     }
     setCounts(map);
-    const { data: progs } = await supabase.from("course_programs").select("*").order("sort_order", { ascending: true });
+    const { data: progs } = await supabase
+      .from("course_programs")
+      .select("*")
+      .order("sort_order", { ascending: true });
     let progList = (progs as ProgramRow[]) || [];
     if (!manage) {
-      const usedIds = new Set(list.map(c => c.program_id).filter(Boolean) as string[]);
-      progList = progList.filter(p => usedIds.has(p.id));
+      const usedIds = new Set(list.map((c) => c.program_id).filter(Boolean) as string[]);
+      progList = progList.filter((p) => usedIds.has(p.id));
     }
     setPrograms(progList);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   function startNewProgram() {
-    setEditingProg({ is_public: true, bookable: true, payment_due_days: 14, sort_order: (programs.at(-1)?.sort_order ?? 0) + 10, price_member: 150, price_non_member: 200 });
+    setEditingProg({
+      is_public: true,
+      bookable: true,
+      payment_due_days: 14,
+      sort_order: (programs.at(-1)?.sort_order ?? 0) + 10,
+      price_member: 150,
+      price_non_member: 200,
+    });
     setProgOpen(true);
   }
-  function startEditProgram(p: ProgramRow) { setEditingProg(p); setProgOpen(true); }
+  function startEditProgram(p: ProgramRow) {
+    setEditingProg(p);
+    setProgOpen(true);
+  }
 
   async function saveProgram() {
     if (!editingProg.name) return toast.error("Name erforderlich");
     const slugValue = editingProg.slug || slugify(editingProg.name);
     // Die Adresse erscheint in Links und E-Mails: sprechend, klein geschrieben, mindestens 3 Zeichen
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slugValue) || slugValue.length < 3) {
-      return toast.error("Adresse (Slug): mindestens 3 Zeichen, nur Kleinbuchstaben, Ziffern und Bindestriche (z. B. „schwimmstarter“).");
+      return toast.error(
+        "Adresse (Slug): mindestens 3 Zeichen, nur Kleinbuchstaben, Ziffern und Bindestriche (z. B. „schwimmstarter“).",
+      );
     }
     const payload: any = {
       name: editingProg.name,
@@ -688,13 +984,13 @@ function Page() {
   }
 
   async function removeProgram(p: ProgramRow) {
-    if (!confirm(`Kursangebot "${p.name}" löschen? Zugeordnete Kurszeiträume bleiben erhalten.`)) return;
+    if (!confirm(`Kursangebot "${p.name}" löschen? Zugeordnete Kurszeiträume bleiben erhalten.`))
+      return;
     const { error } = await supabase.from("course_programs").delete().eq("id", p.id);
     if (error) return toast.error(error.message);
-    toast.success("Gelöscht"); await load();
+    toast.success("Gelöscht");
+    await load();
   }
-
-
 
   async function openRequest(requestId: string) {
     setReqOpen(true);
@@ -702,38 +998,65 @@ function Page() {
     setReqLoading(true);
     const { data, error } = await supabase
       .from("course_requests")
-      .select("id,created_at,status,parent_name,parent_email,parent_phone,child_name,child_dob,swimming_level,desired_course,health_info,message,admin_notes,contact_permission")
+      .select(
+        "id,created_at,status,parent_name,parent_email,parent_phone,child_name,child_dob,swimming_level,desired_course,health_info,message,admin_notes,contact_permission",
+      )
       .eq("id", requestId)
       .maybeSingle();
     setReqLoading(false);
-    if (error) { toast.error(error.message); return; }
-    if (!data) { toast.error("Anfrage nicht gefunden"); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (!data) {
+      toast.error("Anfrage nicht gefunden");
+      return;
+    }
     setReqRow(data as CourseRequest);
   }
 
   async function openParticipants(c: Course) {
-
-    setPartCourse(c); setPartOpen(true);
-    const { data } = await supabase.from("course_participants").select("*").eq("course_id", c.id).order("created_at", { ascending: true });
+    setPartCourse(c);
+    setPartOpen(true);
+    const { data } = await supabase
+      .from("course_participants")
+      .select("*")
+      .eq("course_id", c.id)
+      .order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
     try {
-      const rows = await listConsentsFn({ data: { participantIds: ((data as Participant[]) || []).map(x => x.id) } });
-      setTransferConsents(Object.fromEntries(rows.map(r => [r.participant_id, r])));
-    } catch { setTransferConsents({}); }
-    const { data: wl } = await supabase.from("waitlist_entries")
-      .select("id,child_name,child_dob,parent_name,parent_email,parent_phone,notes,is_member,program_id,status,created_at")
-      .in("status", ["waiting", "offered"]).order("created_at", { ascending: true });
+      const rows = await listConsentsFn({
+        data: { participantIds: ((data as Participant[]) || []).map((x) => x.id) },
+      });
+      setTransferConsents(Object.fromEntries(rows.map((r) => [r.participant_id, r])));
+    } catch {
+      setTransferConsents({});
+    }
+    const { data: wl } = await supabase
+      .from("waitlist_entries")
+      .select(
+        "id,child_name,child_dob,parent_name,parent_email,parent_phone,notes,is_member,program_id,status,created_at",
+      )
+      .in("status", ["waiting", "offered"])
+      .order("created_at", { ascending: true });
     const rel = relatedProgramIds((c as any).program_id ?? null, programs as any);
-    const list = ((wl as any[]) || []).map(e => ({ ...e, fits: rel.includes(e.program_id) }));
+    const list = ((wl as any[]) || []).map((e) => ({ ...e, fits: rel.includes(e.program_id) }));
     list.sort((a, b) => Number(b.fits) - Number(a.fits));
     setWlEntries(list);
     setWlPick("");
   }
   function pickWaitlist(id: string) {
     setWlPick(id);
-    const e = wlEntries.find(x => x.id === id);
+    const e = wlEntries.find((x) => x.id === id);
     if (!e) return;
-    setNewPart(p => ({ ...p, name: e.child_name || "", email: e.parent_email || "", phone: e.parent_phone || "", date_of_birth: e.child_dob || "", notes: e.notes || "" }));
+    setNewPart((p) => ({
+      ...p,
+      name: e.child_name || "",
+      email: e.parent_email || "",
+      phone: e.parent_phone || "",
+      date_of_birth: e.child_dob || "",
+      notes: e.notes || "",
+    }));
   }
   const participantPaymentState = (p: Participant) =>
     paymentState({
@@ -751,14 +1074,17 @@ function Page() {
   const visibleParticipants = useMemo(() => {
     let list = participants;
     if (payFilter !== "all") {
-      list = list.filter(p => {
+      list = list.filter((p) => {
         const key = participantPaymentState(p).key;
         return payFilter === "open" ? key !== "paid" : key === payFilter;
       });
     }
     const sorted = [...list];
     if (paySort === "payment") {
-      sorted.sort((a, b) => PAY_RANK[participantPaymentState(a).key] - PAY_RANK[participantPaymentState(b).key]);
+      sorted.sort(
+        (a, b) =>
+          PAY_RANK[participantPaymentState(a).key] - PAY_RANK[participantPaymentState(b).key],
+      );
     } else if (paySort === "due") {
       const due = (p: Participant) => p.payment_due_date || "9999-12-31";
       sorted.sort((a, b) => due(a).localeCompare(due(b)));
@@ -775,7 +1101,9 @@ function Page() {
     if (!newPart.date_of_birth) return toast.error("Geburtsdatum erforderlich");
     if (newPart.status === "waiting" && wlPick) {
       // Der Eintrag steht bereits auf der (einzigen) Warteliste – kein Teilnehmer mit Status „Warteliste“ anlegen
-      return toast.info("Dieses Kind steht bereits auf der Warteliste. Zum Einbuchen den Status „Bestätigt“ wählen.");
+      return toast.info(
+        "Dieses Kind steht bereits auf der Warteliste. Zum Einbuchen den Status „Bestätigt“ wählen.",
+      );
     }
     if (newPart.status === "waiting" && !wlPick) {
       // Es gibt nur eine Warteliste: Eintrag dort anlegen, damit automatische Angebote greifen
@@ -793,7 +1121,14 @@ function Page() {
       });
       if (wlError) return toast.error(wlError.message);
       toast.success("Auf die Warteliste gesetzt");
-      setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+      setNewPart({
+        name: "",
+        email: "",
+        phone: "",
+        status: "confirmed",
+        notes: "",
+        date_of_birth: "",
+      });
       await openParticipants(partCourse);
       await load();
       return;
@@ -806,21 +1141,36 @@ function Page() {
       status: newPart.status,
       notes: newPart.notes.trim() || null,
       date_of_birth: newPart.date_of_birth || null,
-      ...(wlPick ? { is_member: wlEntries.find(x => x.id === wlPick)?.is_member ?? null } : {}),
+      ...(wlPick ? { is_member: wlEntries.find((x) => x.id === wlPick)?.is_member ?? null } : {}),
     });
     if (error) {
       return toast.error(
-        error.code === "23505" ? "Dieses Kind ist in diesem Kurs bereits eingetragen." : error.message,
+        error.code === "23505"
+          ? "Dieses Kind ist in diesem Kurs bereits eingetragen."
+          : error.message,
       );
     }
     if (wlPick) {
-      await supabase.from("waitlist_entries").update({
-        status: "accepted", offer_token: null, offer_course_id: partCourse.id, responded_at: new Date().toISOString(),
-      }).eq("id", wlPick);
+      await supabase
+        .from("waitlist_entries")
+        .update({
+          status: "accepted",
+          offer_token: null,
+          offer_course_id: partCourse.id,
+          responded_at: new Date().toISOString(),
+        })
+        .eq("id", wlPick);
       setWlPick("");
     }
     toast.success(wlPick ? "Aus der Warteliste übernommen" : "Teilnehmer hinzugefügt");
-    setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+    setNewPart({
+      name: "",
+      email: "",
+      phone: "",
+      status: "confirmed",
+      notes: "",
+      date_of_birth: "",
+    });
 
     await openParticipants(partCourse);
     await load();
@@ -870,7 +1220,9 @@ function Page() {
         [
           removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
           res?.emailed ? "E-Mail an die Eltern versendet" : null,
-        ].filter(Boolean).join(" · "),
+        ]
+          .filter(Boolean)
+          .join(" · "),
       );
       setRemovePart(null);
       if (partCourse) await openParticipants(partCourse);
@@ -887,9 +1239,16 @@ function Page() {
     try {
       const res = await syncMemberPricesFn({ data: { courseId: partCourse.id } });
       const parts: string[] = [];
-      if (res.updated.length) parts.push(`${res.updated.length} Kursgebühr(en) angepasst: ${res.updated.map(u => `${u.participant} ${u.from ?? "–"} → ${u.to} €`).join(", ")}`);
-      if (res.keptPrice.length) parts.push(`Mitglied erkannt, aber individueller Preis bleibt: ${res.keptPrice.join(", ")}`);
-      if (res.alreadyPaid.length) parts.push(`Mitglied, aber bereits bezahlt (bitte prüfen): ${res.alreadyPaid.join(", ")}`);
+      if (res.updated.length)
+        parts.push(
+          `${res.updated.length} Kursgebühr(en) angepasst: ${res.updated.map((u) => `${u.participant} ${u.from ?? "–"} → ${u.to} €`).join(", ")}`,
+        );
+      if (res.keptPrice.length)
+        parts.push(
+          `Mitglied erkannt, aber individueller Preis bleibt: ${res.keptPrice.join(", ")}`,
+        );
+      if (res.alreadyPaid.length)
+        parts.push(`Mitglied, aber bereits bezahlt (bitte prüfen): ${res.alreadyPaid.join(", ")}`);
       if (parts.length) toast.success(parts.join(" · "), { duration: 10000 });
       else toast.success("Alles aktuell – keine Anpassung nötig");
       await openParticipants(partCourse);
@@ -904,26 +1263,34 @@ function Page() {
     if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
     const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
     const memberConfirmedChanged = editPart.member_confirmed && !editPart.member_confirmed_at;
-    const { error } = await supabase.from("course_participants").update({
-      participant_name: editPart.participant_name.trim(),
-      participant_email: editPart.participant_email?.trim() || null,
-      participant_phone: editPart.participant_phone?.trim() || null,
-      date_of_birth: editPart.date_of_birth || null,
-      status: editPart.status,
-      notes: editPart.notes?.trim() || null,
-      internal_notes: editPart.internal_notes?.trim() || null,
-      paid: editPart.paid,
-      paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
-      // „bezahlt von“ / „Mitgliedschaft bestätigt von“ bleiben erhalten, solange sich der Wert nicht ändert
-      paid_by: editPart.paid ? (editPart.paid_by ?? userId) : null,
-      payment_note: editPart.payment_note?.trim() || null,
-      is_member: editPart.is_member,
-      member_confirmed: editPart.member_confirmed,
-      member_confirmed_at: editPart.member_confirmed ? (editPart.member_confirmed_at || (memberConfirmedChanged ? new Date().toISOString() : null)) : null,
-      member_confirmed_by: editPart.member_confirmed ? (editPart.member_confirmed_by ?? userId) : null,
-      price_amount: editPart.price_amount,
-      parent_user_id: editPart.parent_user_id || null,
-    }).eq("id", editPart.id);
+    const { error } = await supabase
+      .from("course_participants")
+      .update({
+        participant_name: editPart.participant_name.trim(),
+        participant_email: editPart.participant_email?.trim() || null,
+        participant_phone: editPart.participant_phone?.trim() || null,
+        date_of_birth: editPart.date_of_birth || null,
+        status: editPart.status,
+        notes: editPart.notes?.trim() || null,
+        internal_notes: editPart.internal_notes?.trim() || null,
+        paid: editPart.paid,
+        paid_at: editPart.paid ? editPart.paid_at || new Date().toISOString() : null,
+        // „bezahlt von“ / „Mitgliedschaft bestätigt von“ bleiben erhalten, solange sich der Wert nicht ändert
+        paid_by: editPart.paid ? (editPart.paid_by ?? userId) : null,
+        payment_note: editPart.payment_note?.trim() || null,
+        is_member: editPart.is_member,
+        member_confirmed: editPart.member_confirmed,
+        member_confirmed_at: editPart.member_confirmed
+          ? editPart.member_confirmed_at ||
+            (memberConfirmedChanged ? new Date().toISOString() : null)
+          : null,
+        member_confirmed_by: editPart.member_confirmed
+          ? (editPart.member_confirmed_by ?? userId)
+          : null,
+        price_amount: editPart.price_amount,
+        parent_user_id: editPart.parent_user_id || null,
+      })
+      .eq("id", editPart.id);
     if (error) return toast.error(error.message);
     toast.success("Gespeichert");
     setEditPart(null);
@@ -933,18 +1300,29 @@ function Page() {
 
   async function togglePaid(p: Participant, paid: boolean) {
     const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
-    const { error } = await supabase.from("course_participants").update({
-      paid,
-      paid_at: paid ? new Date().toISOString() : null,
-      paid_by: paid ? userId : null,
-    }).eq("id", p.id);
+    const { error } = await supabase
+      .from("course_participants")
+      .update({
+        paid,
+        paid_at: paid ? new Date().toISOString() : null,
+        paid_by: paid ? userId : null,
+      })
+      .eq("id", p.id);
     if (error) return toast.error(error.message);
     toast.success(paid ? "Als bezahlt markiert" : "Zahlung zurückgesetzt");
     if (partCourse) await openParticipants(partCourse);
   }
 
-
-  function startNew() { setEditing({ status: "planned", is_public: true, price_member: 150, price_non_member: 200, payment_due_days: 14 }); setOpen(true); }
+  function startNew() {
+    setEditing({
+      status: "planned",
+      is_public: true,
+      price_member: 150,
+      price_non_member: 200,
+      payment_due_days: 14,
+    });
+    setOpen(true);
+  }
   function startNewTerm(p: ProgramRow | null) {
     setEditing({
       status: "planned",
@@ -964,18 +1342,32 @@ function Page() {
     });
     setOpen(true);
   }
-  function startEdit(c: Course) { setFormSessText(""); setEditing(c); setOpen(true); }
+  function startEdit(c: Course) {
+    setFormSessText("");
+    setEditing(c);
+    setOpen(true);
+  }
 
   async function save() {
     if (!editing.name) return toast.error("Name erforderlich");
     const parsedList = formSessText.trim() ? parseSessionList(formSessText) : [];
-    const realList = parsedList.filter(p => !p.isBreak);
-    if (formSessText.trim() && realList.length === 0) return toast.error("In der Terminliste wurden keine Termine erkannt.");
+    const realList = parsedList.filter((p) => !p.isBreak);
+    if (formSessText.trim() && realList.length === 0)
+      return toast.error("In der Terminliste wurden keine Termine erkannt.");
     if (realList.length > 30) return toast.error("Maximal 30 Termine");
-    if (realList.length > 0 && editing.id && !window.confirm(`Die bisherigen Termine dieses Zeitraums (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${realList.length} neue ersetzt. Fortfahren?`)) return;
+    if (
+      realList.length > 0 &&
+      editing.id &&
+      !window.confirm(
+        `Die bisherigen Termine dieses Zeitraums (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${realList.length} neue ersetzt. Fortfahren?`,
+      )
+    )
+      return;
     const payload: any = {
       name: editing.name,
-      slug: editing.slug || slugify(`${editing.name}${editing.starts_on ? ` ${editing.starts_on}` : ""}`),
+      slug:
+        editing.slug ||
+        slugify(`${editing.name}${editing.starts_on ? ` ${editing.starts_on}` : ""}`),
       description: editing.description || null,
       target_group: editing.target_group || null,
       age_range: editing.age_range || null,
@@ -1000,13 +1392,18 @@ function Page() {
       tentative_note: editing.tentative_note || null,
     };
     if (realList.length > 0) {
-      const first = realList[0], last = realList[realList.length - 1];
+      const first = realList[0],
+        last = realList[realList.length - 1];
       payload.starts_on = first.date;
       payload.ends_on = last.date;
       payload.unit_count = realList.length;
-      payload.session_breaks = parsedList.filter(p => p.isBreak).map(p => ({ date: p.date, note: p.note || "kein Termin" }));
+      payload.session_breaks = parsedList
+        .filter((p) => p.isBreak)
+        .map((p) => ({ date: p.date, note: p.note || "kein Termin" }));
       if (!editing.schedule && first.start) {
-        const wd = new Date(`${first.date}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
+        const wd = new Date(`${first.date}T12:00:00`)
+          .toLocaleDateString("de-DE", { weekday: "short" })
+          .replace(".", "");
         payload.schedule = `${wd} ${first.start}${first.end ? `–${first.end}` : ""} Uhr`;
       }
       if (!editing.slug && !editing.id) payload.slug = slugify(`${editing.name} ${first.date}`);
@@ -1020,12 +1417,20 @@ function Page() {
     if (courseId && realList.length > 0) {
       const del = await supabase.from("course_sessions").delete().eq("course_id", courseId);
       if (del.error) return toast.error(del.error.message);
-      const ins = await supabase.from("course_sessions").insert(realList.map((p, i) => ({
-        course_id: courseId, session_index: i + 1, session_date: p.date, start_time: p.start, end_time: p.end,
-      })));
+      const ins = await supabase.from("course_sessions").insert(
+        realList.map((p, i) => ({
+          course_id: courseId,
+          session_index: i + 1,
+          session_date: p.date,
+          start_time: p.start,
+          end_time: p.end,
+        })),
+      );
       if (ins.error) return toast.error(ins.error.message);
     }
-    toast.success(realList.length ? `Gespeichert – ${realList.length} Termine übernommen` : "Gespeichert");
+    toast.success(
+      realList.length ? `Gespeichert – ${realList.length} Termine übernommen` : "Gespeichert",
+    );
     setFormSessText("");
     setOpen(false);
     await load();
@@ -1040,58 +1445,129 @@ function Page() {
       .eq("course_id", c.id);
     if (cntErr) return toast.error(`Löschen nicht möglich: ${cntErr.message}`);
     if ((count ?? 0) > 0) {
-      return toast.error(`„${c.name}“ hat ${count} Buchung(en) und kann nicht gelöscht werden. Bitte stattdessen archivieren.`, { duration: 8000 });
+      return toast.error(
+        `„${c.name}“ hat ${count} Buchung(en) und kann nicht gelöscht werden. Bitte stattdessen archivieren.`,
+        { duration: 8000 },
+      );
     }
     if (!confirm(`Kurs "${c.name}" ohne Buchungen endgültig löschen?`)) return;
     const { error } = await supabase.from("courses").delete().eq("id", c.id);
-    if (error) return toast.error(error.message.includes("Buchungen") ? "Kurs hat Buchungen und kann nicht gelöscht werden. Bitte archivieren." : error.message);
-    toast.success("Gelöscht"); await load();
+    if (error)
+      return toast.error(
+        error.message.includes("Buchungen")
+          ? "Kurs hat Buchungen und kann nicht gelöscht werden. Bitte archivieren."
+          : error.message,
+      );
+    toast.success("Gelöscht");
+    await load();
   }
 
   async function archive(c: Course) {
     if (!confirm(`Kurs "${c.name}" archivieren?`)) return;
-    const { error } = await supabase.from("courses").update({ archived_at: new Date().toISOString() }).eq("id", c.id);
+    const { error } = await supabase
+      .from("courses")
+      .update({ archived_at: new Date().toISOString() })
+      .eq("id", c.id);
     if (error) return toast.error(error.message);
-    toast.success("Kurs archiviert"); await load();
+    toast.success("Kurs archiviert");
+    await load();
   }
 
   async function unarchive(c: Course) {
     const { error } = await supabase.from("courses").update({ archived_at: null }).eq("id", c.id);
     if (error) return toast.error(error.message);
-    toast.success("Kurs wiederhergestellt"); await load();
+    toast.success("Kurs wiederhergestellt");
+    await load();
   }
 
-  const detailProgram = detailId ? programs.find(p => p.id === detailId) ?? null : null;
+  const detailProgram = detailId ? (programs.find((p) => p.id === detailId) ?? null) : null;
 
   function termsOf(programId: string | null) {
-    return rows.filter(r => (programId === null ? !r.program_id : r.program_id === programId));
+    return rows.filter((r) => (programId === null ? !r.program_id : r.program_id === programId));
   }
 
   function renderTermRow(c: Course) {
-    const cnt = counts[c.id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
+    const cnt = counts[c.id] || {
+      confirmed: 0,
+      waiting: 0,
+      unpaid: 0,
+      overdue: 0,
+      sessions: 0,
+      staffed: 0,
+    };
     const max = c.max_participants;
     const full = max != null && cnt.confirmed >= max;
     const pct = max ? Math.min(100, Math.round((cnt.confirmed / max) * 100)) : 0;
-    const payLabel = cnt.confirmed === 0 ? "Keine Buchungen" : cnt.overdue > 0 ? `${cnt.overdue} überfällig · ${cnt.unpaid} offen` : cnt.unpaid > 0 ? `${cnt.unpaid} offen` : "Alle bezahlt";
-    const payVariant: "destructive" | "secondary" | "outline" = cnt.overdue > 0 ? "destructive" : cnt.unpaid > 0 ? "secondary" : "outline";
+    const payLabel =
+      cnt.confirmed === 0
+        ? "Keine Buchungen"
+        : cnt.overdue > 0
+          ? `${cnt.overdue} überfällig · ${cnt.unpaid} offen`
+          : cnt.unpaid > 0
+            ? `${cnt.unpaid} offen`
+            : "Alle bezahlt";
+    const payVariant: "destructive" | "secondary" | "outline" =
+      cnt.overdue > 0 ? "destructive" : cnt.unpaid > 0 ? "secondary" : "outline";
     const openSess = cnt.sessions - cnt.staffed;
-    const rosterLabel = cnt.sessions === 0 ? "Keine Termine" : openSess === 0 ? `Vollständig besetzt (${cnt.staffed}/${cnt.sessions})` : `${openSess} ${openSess === 1 ? "Termin" : "Termine"} nicht voll besetzt (${c.trainers_needed ?? 2} Trainer:innen nötig)`;
-    const rosterVariant: "destructive" | "outline" = cnt.sessions > 0 && openSess > 0 ? "destructive" : "outline";
+    const rosterLabel =
+      cnt.sessions === 0
+        ? "Keine Termine"
+        : openSess === 0
+          ? `Vollständig besetzt (${cnt.staffed}/${cnt.sessions})`
+          : `${openSess} ${openSess === 1 ? "Termin" : "Termine"} nicht voll besetzt (${c.trainers_needed ?? 2} Trainer:innen nötig)`;
+    const rosterVariant: "destructive" | "outline" =
+      cnt.sessions > 0 && openSess > 0 ? "destructive" : "outline";
     return (
-      <div key={c.id} className={`rounded-lg border bg-card p-4 space-y-3 ${c.archived_at ? "opacity-70" : ""}`}>
+      <div
+        key={c.id}
+        className={`rounded-lg border bg-card p-4 space-y-3 ${c.archived_at ? "opacity-70" : ""}`}
+      >
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <div className="font-semibold">{fmtDate(c.starts_on) || "—"} – {fmtDate(c.ends_on) || "—"}</div>
-            <div className="text-xs text-muted-foreground">{c.name} · {c.schedule || "Zeitplan offen"}{!c.is_public && " · intern"}{c.archived_at && " · archiviert"}</div>
+            <div className="font-semibold">
+              {fmtDate(c.starts_on) || "—"} – {fmtDate(c.ends_on) || "—"}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {c.name} · {c.schedule || "Zeitplan offen"}
+              {!c.is_public && " · intern"}
+              {c.archived_at && " · archiviert"}
+            </div>
           </div>
           <Badge variant="secondary">{STATUS_LABEL[c.status] || c.status}</Badge>
         </div>
         <div className="grid gap-3 sm:grid-cols-3 text-xs">
           <div>
             <div className="text-muted-foreground mb-1">Belegung</div>
-            <div className={full ? "text-destructive font-semibold" : "font-semibold"}>{cnt.confirmed}{max != null ? ` / ${max}` : ""} belegt{cnt.waiting > 0 && <span className="font-normal text-muted-foreground"> · +{cnt.waiting} Warteliste</span>}</div>
-            {max != null && <div className="text-muted-foreground">{(cnt.offered ?? 0) > 0 && <>{cnt.offered} reserviert · </>}<span className={max - cnt.confirmed - (cnt.offered ?? 0) > 0 ? "text-success font-semibold" : ""}>{Math.max(0, max - cnt.confirmed - (cnt.offered ?? 0))} frei</span></div>}
-            {max ? <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden"><div className={`h-full ${full ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} /></div> : null}
+            <div className={full ? "text-destructive font-semibold" : "font-semibold"}>
+              {cnt.confirmed}
+              {max != null ? ` / ${max}` : ""} belegt
+              {cnt.waiting > 0 && (
+                <span className="font-normal text-muted-foreground">
+                  {" "}
+                  · +{cnt.waiting} Warteliste
+                </span>
+              )}
+            </div>
+            {max != null && (
+              <div className="text-muted-foreground">
+                {(cnt.offered ?? 0) > 0 && <>{cnt.offered} reserviert · </>}
+                <span
+                  className={
+                    max - cnt.confirmed - (cnt.offered ?? 0) > 0 ? "text-success font-semibold" : ""
+                  }
+                >
+                  {Math.max(0, max - cnt.confirmed - (cnt.offered ?? 0))} frei
+                </span>
+              </div>
+            )}
+            {max ? (
+              <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full ${full ? "bg-destructive" : "bg-primary"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            ) : null}
           </div>
           <div>
             <div className="text-muted-foreground mb-1">Zahlungen</div>
@@ -1099,36 +1575,104 @@ function Page() {
           </div>
           <div>
             <div className="text-muted-foreground mb-1">Dienstplan</div>
-            <a href={`/admin/kalender?kurs=${c.id}`}><Badge variant={rosterVariant}>{rosterLabel}</Badge></a>
+            <a href={`/admin/kalender?kurs=${c.id}`}>
+              <Badge variant={rosterVariant}>{rosterLabel}</Badge>
+            </a>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1 border-t pt-3">
-          <Button variant="outline" size="sm" onClick={() => openParticipants(c)}><Users className="h-4 w-4" /> Teilnehmer</Button>
-          <Button variant="outline" size="sm" onClick={() => openSessions(c)}><CalendarDays className="h-4 w-4" /> Termine</Button>
-          <Button variant="outline" size="sm" asChild title="Trainerteam für alle Termine dieses Kurses einteilen"><a href={`/admin/kalender?kurs=${c.id}`}><Users className="h-4 w-4" /> Dienstplan</a></Button>
-          {canManage && <Button variant="outline" size="sm" onClick={() => startEdit(c)}><Pencil className="h-4 w-4" /> Bearbeiten</Button>}
+          <Button variant="outline" size="sm" onClick={() => openParticipants(c)}>
+            <Users className="h-4 w-4" /> Teilnehmer
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => openSessions(c)}>
+            <CalendarDays className="h-4 w-4" /> Termine
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            title="Trainerteam für alle Termine dieses Kurses einteilen"
+          >
+            <a href={`/admin/kalender?kurs=${c.id}`}>
+              <Users className="h-4 w-4" /> Dienstplan
+            </a>
+          </Button>
+          {canManage && (
+            <Button variant="outline" size="sm" onClick={() => startEdit(c)}>
+              <Pencil className="h-4 w-4" /> Bearbeiten
+            </Button>
+          )}
           {canManage && !c.archived_at && <CourseLifecycleActions course={c} onDone={load} />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="sm" className="ml-auto"><MoreHorizontal className="h-4 w-4" /> Aktionen & Downloads <ChevronDown className="h-3 w-3" /></Button>
+              <Button variant="secondary" size="sm" className="ml-auto">
+                <MoreHorizontal className="h-4 w-4" /> Aktionen & Downloads{" "}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Downloads</DropdownMenuLabel>
-              <DropdownMenuItem disabled={exporting === c.id} onSelect={() => exportCourseList(c)}><FileSpreadsheet /> {exporting === c.id ? "Erstelle…" : "Teilnehmerliste (Excel)"}</DropdownMenuItem>
-              <DropdownMenuItem disabled={exportingTax === c.id || !hasStarted(c)} onSelect={() => exportTaxList(c)}><Receipt /> {exportingTax === c.id ? "Erstelle…" : hasStarted(c) ? "Steuerliste" : "Steuerliste (ab Kursbeginn)"}</DropdownMenuItem>
-              <DropdownMenuItem disabled={exportingConf === `${c.id}-pdf`} onSelect={() => exportConfirmations(c, "pdf")}><FileText /> {exportingConf === `${c.id}-pdf` ? "Erstelle…" : "Kursbestätigungen (PDF)"}</DropdownMenuItem>
-              <DropdownMenuItem disabled={exportingConf === `${c.id}-zip`} onSelect={() => exportConfirmations(c, "zip")}><FileArchive /> {exportingConf === `${c.id}-zip` ? "Erstelle…" : "Kursbestätigungen einzeln (ZIP)"}</DropdownMenuItem>
-              <DropdownMenuItem disabled={exportingProtocol === c.id} onSelect={() => exportProtocol(c)}><FileText /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll (DPO)"}</DropdownMenuItem>
-              <DropdownMenuItem disabled={exportingCsv === c.id} onSelect={() => exportMeinVerein(c)}><FileDown /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}</DropdownMenuItem>
-              {canManage && <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => setBroadcastCourse(c)}><Megaphone className="text-destructive" /> Eilnachricht an alle Eltern</DropdownMenuItem>
-                {c.archived_at
-                  ? <DropdownMenuItem onSelect={() => unarchive(c)}><ArchiveRestore /> Wiederherstellen</DropdownMenuItem>
-                  : <DropdownMenuItem onSelect={() => archive(c)}><Archive /> Archivieren</DropdownMenuItem>}
-                <DropdownMenuItem className="text-destructive" onSelect={() => remove(c)}><Trash2 /> Löschen</DropdownMenuItem>
-              </>}
+              <DropdownMenuItem disabled={exporting === c.id} onSelect={() => exportCourseList(c)}>
+                <FileSpreadsheet /> {exporting === c.id ? "Erstelle…" : "Teilnehmerliste (Excel)"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={exportingTax === c.id || !hasStarted(c)}
+                onSelect={() => exportTaxList(c)}
+              >
+                <Receipt />{" "}
+                {exportingTax === c.id
+                  ? "Erstelle…"
+                  : hasStarted(c)
+                    ? "Steuerliste"
+                    : "Steuerliste (ab Kursbeginn)"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={exportingConf === `${c.id}-pdf`}
+                onSelect={() => exportConfirmations(c, "pdf")}
+              >
+                <FileText />{" "}
+                {exportingConf === `${c.id}-pdf` ? "Erstelle…" : "Kursbestätigungen (PDF)"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={exportingConf === `${c.id}-zip`}
+                onSelect={() => exportConfirmations(c, "zip")}
+              >
+                <FileArchive />{" "}
+                {exportingConf === `${c.id}-zip` ? "Erstelle…" : "Kursbestätigungen einzeln (ZIP)"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={exportingProtocol === c.id}
+                onSelect={() => exportProtocol(c)}
+              >
+                <FileText /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll (DPO)"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={exportingCsv === c.id}
+                onSelect={() => exportMeinVerein(c)}
+              >
+                <FileDown /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}
+              </DropdownMenuItem>
+              {canManage && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => setBroadcastCourse(c)}>
+                    <Megaphone className="text-destructive" /> Eilnachricht an alle Eltern
+                  </DropdownMenuItem>
+                  {c.archived_at ? (
+                    <DropdownMenuItem onSelect={() => unarchive(c)}>
+                      <ArchiveRestore /> Wiederherstellen
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onSelect={() => archive(c)}>
+                      <Archive /> Archivieren
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem className="text-destructive" onSelect={() => remove(c)}>
+                    <Trash2 /> Löschen
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -1138,17 +1682,22 @@ function Page() {
 
   function renderTermTable(programId: string | null) {
     const all = termsOf(programId);
-    const active = all.filter(t => !t.archived_at);
-    const archived = all.filter(t => !!t.archived_at);
+    const active = all.filter((t) => !t.archived_at);
+    const archived = all.filter((t) => !!t.archived_at);
     const visible = showArchived ? [...active, ...archived] : active;
     return (
       <div className="space-y-3">
-        {visible.length === 0
-          ? <div className="rounded-lg border py-6 text-center text-muted-foreground text-xs">Noch keine Kurszeiträume.</div>
-          : visible.map(renderTermRow)}
+        {visible.length === 0 ? (
+          <div className="rounded-lg border py-6 text-center text-muted-foreground text-xs">
+            Noch keine Kurszeiträume.
+          </div>
+        ) : (
+          visible.map(renderTermRow)
+        )}
         {archived.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => setShowArchived(v => !v)}>
-            <Archive className="h-4 w-4" /> {showArchived ? "Archivierte ausblenden" : `Archivierte anzeigen (${archived.length})`}
+          <Button variant="ghost" size="sm" onClick={() => setShowArchived((v) => !v)}>
+            <Archive className="h-4 w-4" />{" "}
+            {showArchived ? "Archivierte ausblenden" : `Archivierte anzeigen (${archived.length})`}
           </Button>
         )}
       </div>
@@ -1161,28 +1710,49 @@ function Page() {
     <div className="max-w-7xl space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-3xl font-bold text-primary-deep">{canManage ? "Kursverwaltung" : "Meine Kurse"}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{canManage
-            ? "Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite."
-            : "Hier siehst du nur die Kurse, in denen du als Trainer eingetragen bist."}</p>
+          <h1 className="font-display text-3xl font-bold text-primary-deep">
+            {canManage ? "Kursverwaltung" : "Meine Kurse"}
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {canManage
+              ? "Auf einen Kurs klicken, um alle Angaben zu bearbeiten und neue Zeiträume anzulegen. Öffentliche Kurse erscheinen automatisch in der Kursübersicht der Webseite."
+              : "Hier siehst du nur die Kurse, in denen du als Trainer eingetragen bist."}
+          </p>
         </div>
         {canManage && (
           <div className="flex flex-wrap gap-2">
             <div className="flex items-center gap-1">
-              <Select value={String(proofYear)} onValueChange={v => setProofYear(Number(v))}>
-                <SelectTrigger className="h-9 w-[88px]" aria-label="Jahr für den Trainer-Nachweis"><SelectValue /></SelectTrigger>
+              <Select value={String(proofYear)} onValueChange={(v) => setProofYear(Number(v))}>
+                <SelectTrigger className="h-9 w-[88px]" aria-label="Jahr für den Trainer-Nachweis">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {[0, 1, 2, 3].map(i => new Date().getFullYear() - i).map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  {[0, 1, 2, 3]
+                    .map((i) => new Date().getFullYear() - i)
+                    .map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               <Button variant="outline" disabled={proofBusy} onClick={downloadTrainerProof}>
-                <FileSpreadsheet className="h-4 w-4" /> {proofBusy ? "Erstelle…" : `Trainer-Nachweis ${proofYear}`}
+                <FileSpreadsheet className="h-4 w-4" />{" "}
+                {proofBusy ? "Erstelle…" : `Trainer-Nachweis ${proofYear}`}
               </Button>
             </div>
-            <Button variant="outline" disabled={inviting} onClick={handleSendPushInvites} title="Einmalige Info-Mail mit Link zum Aktivieren der Handy-Mitteilungen">
-              <Smartphone className="h-4 w-4" /> {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
+            <Button
+              variant="outline"
+              disabled={inviting}
+              onClick={handleSendPushInvites}
+              title="Einmalige Info-Mail mit Link zum Aktivieren der Handy-Mitteilungen"
+            >
+              <Smartphone className="h-4 w-4" />{" "}
+              {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
             </Button>
-            <Button onClick={startNewProgram}><Plus className="h-4 w-4" /> Neuer Kurs</Button>
+            <Button onClick={startNewProgram}>
+              <Plus className="h-4 w-4" /> Neuer Kurs
+            </Button>
           </div>
         )}
       </div>
@@ -1190,48 +1760,122 @@ function Page() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {programs.length === 0 && unassigned.length === 0 && (
           <Card className="border-0 shadow-soft md:col-span-2 xl:col-span-3">
-            <CardContent className="py-10 text-center text-muted-foreground text-sm">{canManage ? "Noch keine Kurse angelegt." : "Du bist derzeit in keinen Kurs eingeteilt."}</CardContent>
+            <CardContent className="py-10 text-center text-muted-foreground text-sm">
+              {canManage
+                ? "Noch keine Kurse angelegt."
+                : "Du bist derzeit in keinen Kurs eingeteilt."}
+            </CardContent>
           </Card>
         )}
 
-        {programs.map(p => {
-          const terms = termsOf(p.id).filter(t => !t.archived_at);
+        {programs.map((p) => {
+          const terms = termsOf(p.id).filter((t) => !t.archived_at);
           const confirmed = terms.reduce((s, t) => s + (counts[t.id]?.confirmed ?? 0), 0);
           const reserved = terms.reduce((s, t) => s + (counts[t.id]?.offered ?? 0), 0);
           const capacity = terms.reduce((s, t) => s + (t.max_participants ?? 0), 0);
-          const hasCap = terms.length > 0 && terms.every(t => t.max_participants != null);
-          const free = terms.reduce((s, t) => t.max_participants == null ? s : s + Math.max(0, t.max_participants - (counts[t.id]?.confirmed ?? 0) - (counts[t.id]?.offered ?? 0)), 0);
-          const bookable = terms.filter(t => t.max_participants == null || (counts[t.id]?.confirmed ?? 0) + (counts[t.id]?.offered ?? 0) < t.max_participants).length;
+          const hasCap = terms.length > 0 && terms.every((t) => t.max_participants != null);
+          const free = terms.reduce(
+            (s, t) =>
+              t.max_participants == null
+                ? s
+                : s +
+                  Math.max(
+                    0,
+                    t.max_participants -
+                      (counts[t.id]?.confirmed ?? 0) -
+                      (counts[t.id]?.offered ?? 0),
+                  ),
+            0,
+          );
+          const bookable = terms.filter(
+            (t) =>
+              t.max_participants == null ||
+              (counts[t.id]?.confirmed ?? 0) + (counts[t.id]?.offered ?? 0) < t.max_participants,
+          ).length;
           return (
             <Card
               key={p.id}
               className="border-0 shadow-soft cursor-pointer transition hover:shadow-lg"
-              onClick={() => { setEditingProg(p); setDetailId(p.id); }}
+              onClick={() => {
+                setEditingProg(p);
+                setDetailId(p.id);
+              }}
             >
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="font-display text-lg font-semibold text-primary-deep">{p.name}</div>
+                    <div className="font-display text-lg font-semibold text-primary-deep">
+                      {p.name}
+                    </div>
                     <div className="text-xs text-muted-foreground">{p.location || "Ort offen"}</div>
                   </div>
-                  {!p.is_public && <Badge variant="secondary" className="text-xs">Intern</Badge>}
+                  {!p.is_public && (
+                    <Badge variant="secondary" className="text-xs">
+                      Intern
+                    </Badge>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  <div>{p.age_range || "Alter offen"}{p.min_age_years != null ? ` (min. ${p.min_age_years} J.)` : ""}</div>
-                  <div><Euro className="inline h-3 w-3 mr-1" />{p.price_non_member ?? "—"} € / {p.price_member ?? "—"} € (Mitgl.)</div>
+                  <div>
+                    {p.age_range || "Alter offen"}
+                    {p.min_age_years != null ? ` (min. ${p.min_age_years} J.)` : ""}
+                  </div>
+                  <div>
+                    <Euro className="inline h-3 w-3 mr-1" />
+                    {p.price_non_member ?? "—"} € / {p.price_member ?? "—"} € (Mitgl.)
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <Badge variant="outline">{terms.length} Zeiträume</Badge>
                   <Badge variant="outline">{bookable} buchbar</Badge>
-                  <Badge variant="outline">{confirmed}{capacity > 0 ? ` / ${capacity}` : ""} belegt</Badge>
-                  {reserved > 0 && <Badge variant="secondary" title="Plätze, die gerade einem Kind von der Warteliste angeboten sind">{reserved} reserviert</Badge>}
-                  {hasCap && (free > 0
-                    ? <Badge className="bg-success text-success-foreground hover:bg-success" title="Tatsächlich frei für neue Anmeldungen">{free} frei</Badge>
-                    : <Badge variant="destructive">Ausgebucht</Badge>)}
+                  <Badge variant="outline">
+                    {confirmed}
+                    {capacity > 0 ? ` / ${capacity}` : ""} belegt
+                  </Badge>
+                  {reserved > 0 && (
+                    <Badge
+                      variant="secondary"
+                      title="Plätze, die gerade einem Kind von der Warteliste angeboten sind"
+                    >
+                      {reserved} reserviert
+                    </Badge>
+                  )}
+                  {hasCap &&
+                    (free > 0 ? (
+                      <Badge
+                        className="bg-success text-success-foreground hover:bg-success"
+                        title="Tatsächlich frei für neue Anmeldungen"
+                      >
+                        {free} frei
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">Ausgebucht</Badge>
+                    ))}
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); setEditingProg(p); setDetailId(p.id); }}>Öffnen</Button>
-                  {canManage && <Button size="sm" variant="ghost" onClick={e => { e.stopPropagation(); startNewTerm(p); }}><Plus className="h-4 w-4" /> Neuer Zeitraum</Button>}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingProg(p);
+                      setDetailId(p.id);
+                    }}
+                  >
+                    Öffnen
+                  </Button>
+                  {canManage && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startNewTerm(p);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" /> Neuer Zeitraum
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1239,20 +1883,42 @@ function Page() {
         })}
 
         {unassigned.length > 0 && (
-          <Card className="border-0 shadow-soft cursor-pointer transition hover:shadow-lg" onClick={() => { setEditingProg({}); setDetailId("unassigned"); }}>
+          <Card
+            className="border-0 shadow-soft cursor-pointer transition hover:shadow-lg"
+            onClick={() => {
+              setEditingProg({});
+              setDetailId("unassigned");
+            }}
+          >
             <CardContent className="p-5 space-y-3">
-              <div className="font-display text-lg font-semibold text-primary-deep">Ohne Kursangebot</div>
-              <p className="text-xs text-muted-foreground">Zeiträume, die keinem Kurs zugeordnet sind und daher nicht auf der Webseite erscheinen.</p>
-              <Badge variant="outline" className="text-xs">{unassigned.length} Zeiträume</Badge>
+              <div className="font-display text-lg font-semibold text-primary-deep">
+                Ohne Kursangebot
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Zeiträume, die keinem Kurs zugeordnet sind und daher nicht auf der Webseite
+                erscheinen.
+              </p>
+              <Badge variant="outline" className="text-xs">
+                {unassigned.length} Zeiträume
+              </Badge>
             </CardContent>
           </Card>
         )}
       </div>
 
-      <Dialog open={detailId !== null} onOpenChange={o => { if (!o) setDetailId(null); }}>
+      <Dialog
+        open={detailId !== null}
+        onOpenChange={(o) => {
+          if (!o) setDetailId(null);
+        }}
+      >
         <DialogContent className="w-[95vw] max-w-[1100px] sm:max-w-[1100px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{detailId === "unassigned" ? "Zeiträume ohne Kursangebot" : detailProgram?.name || "Kurs"}</DialogTitle>
+            <DialogTitle>
+              {detailId === "unassigned"
+                ? "Zeiträume ohne Kursangebot"
+                : detailProgram?.name || "Kurs"}
+            </DialogTitle>
           </DialogHeader>
 
           {canManage && detailId !== "unassigned" && detailProgram ? (
@@ -1264,7 +1930,9 @@ function Page() {
 
               <TabsContent value="zeitraeume" className="mt-4 space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-muted-foreground">Termine, Plätze und Buchbarkeit je Zeitraum.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Termine, Plätze und Buchbarkeit je Zeitraum.
+                  </p>
                   <Button size="sm" onClick={() => startNewTerm(detailProgram)}>
                     <Plus className="h-4 w-4" /> Neuer Zeitraum
                   </Button>
@@ -1273,226 +1941,899 @@ function Page() {
               </TabsContent>
 
               <TabsContent value="angaben" className="mt-4">
-            <div className="space-y-3 border rounded-md p-4">
-              <div>
-                <div className="font-semibold text-sm">Kursangaben (gelten für alle Zeiträume)</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Diese Angaben steuern die öffentliche Darstellung: die Kurskarte in der Kursübersicht (/kurse) und die Detailseite
-                  (/kurse/{editingProg.slug || detailProgram.slug}). Kurszeiträume, Termine und Buchbarkeit werden im Reiter „Kurszeiträume" gepflegt.
-                </p>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value }))} /></div>
-                <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /><Hint>Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern verändert bestehende Links.</Hint></div>
-              </div>
-              <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können einen abweichenden Ort haben.</Hint></div>
-              <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
-              <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
-              <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editingProg.course_info || ""} onChange={e => setEditingProg(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.</Hint></div>
-              <div className="grid sm:grid-cols-5 gap-3">
-                <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
-                <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
-                <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung und Warteliste.</Hint></div>
-                <div><Label>Höchstalter (Jahre)</Label><Input type="number" value={editingProg.max_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, max_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine Obergrenze. Prüfung bei Buchung und Warteliste.</Hint></div>
-                <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /><Hint>Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").</Hint></div>
-              </div>
-              <div className="grid sm:grid-cols-4 gap-3 items-end">
-                <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
-                <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
-                <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /><Hint>Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext genutzt.</Hint></div>
-                <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /><Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint></div>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
-                  Auf der Webseite anzeigen
-                  <span className="text-[11px] text-muted-foreground">(Karte in /kurse + eigene Detailseite)</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={(editingProg as any).waitlist_open ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, waitlist_open: Boolean(v) } as any))} />
-                  Warteliste aktiv
-                  <span className="text-[11px] text-muted-foreground">(aus: keine neuen Wartelisten-Einträge)</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
-                  Online buchbar
-                  <span className="text-[11px] text-muted-foreground">(aus: Status „Geplant – noch nicht buchbar", keine Buchung)</span>
-                </label>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => { removeProgram(detailProgram); setDetailId(null); }}><Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen</Button>
-                  <Button onClick={saveProgram}>Kursangaben speichern</Button>
+                <div className="space-y-3 border rounded-md p-4">
+                  <div>
+                    <div className="font-semibold text-sm">
+                      Kursangaben (gelten für alle Zeiträume)
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Diese Angaben steuern die öffentliche Darstellung: die Kurskarte in der
+                      Kursübersicht (/kurse) und die Detailseite (/kurse/
+                      {editingProg.slug || detailProgram.slug}). Kurszeiträume, Termine und
+                      Buchbarkeit werden im Reiter „Kurszeiträume" gepflegt.
+                    </p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label>Name *</Label>
+                      <Input
+                        value={editingProg.name || ""}
+                        onChange={(e) => setEditingProg((p) => ({ ...p, name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Slug (URL)</Label>
+                      <Input
+                        value={editingProg.slug || ""}
+                        onChange={(e) => setEditingProg((p) => ({ ...p, slug: e.target.value }))}
+                      />
+                      <Hint>
+                        Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches
+                        Ändern verändert bestehende Links.
+                      </Hint>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Ort</Label>
+                    <Input
+                      value={editingProg.location || ""}
+                      onChange={(e) => setEditingProg((p) => ({ ...p, location: e.target.value }))}
+                    />
+                    <Hint>
+                      Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können einen
+                      abweichenden Ort haben.
+                    </Hint>
+                  </div>
+                  <div>
+                    <Label>Beschreibung</Label>
+                    <Textarea
+                      rows={3}
+                      value={editingProg.description || ""}
+                      onChange={(e) =>
+                        setEditingProg((p) => ({ ...p, description: e.target.value }))
+                      }
+                    />
+                    <Hint>
+                      Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf
+                      der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf
+                      der Detailseite.
+                    </Hint>
+                  </div>
+                  <div>
+                    <Label>Voraussetzungen</Label>
+                    <Textarea
+                      rows={2}
+                      value={editingProg.requirements || ""}
+                      onChange={(e) =>
+                        setEditingProg((p) => ({ ...p, requirements: e.target.value }))
+                      }
+                    />
+                    <Hint>
+                      Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als
+                      „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem
+                      Aufzählungspunkt.
+                    </Hint>
+                  </div>
+                  <div>
+                    <Label>Ablauf & Wichtiges für den Kurstag</Label>
+                    <Textarea
+                      rows={6}
+                      value={editingProg.course_info || ""}
+                      onChange={(e) =>
+                        setEditingProg((p) => ({ ...p, course_info: e.target.value }))
+                      }
+                      placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"}
+                    />
+                    <Hint>
+                      Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in
+                      der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.
+                    </Hint>
+                  </div>
+                  <div className="grid sm:grid-cols-5 gap-3">
+                    <div>
+                      <Label>Zielgruppe</Label>
+                      <Input
+                        value={editingProg.target_group || ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({ ...p, target_group: e.target.value }))
+                        }
+                      />
+                      <Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint>
+                    </div>
+                    <div>
+                      <Label>Altersangabe</Label>
+                      <Input
+                        value={editingProg.age_range || ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({ ...p, age_range: e.target.value }))
+                        }
+                      />
+                      <Hint>
+                        Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).
+                      </Hint>
+                    </div>
+                    <div>
+                      <Label>Mindestalter (Jahre)</Label>
+                      <Input
+                        type="number"
+                        value={editingProg.min_age_years ?? ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({
+                            ...p,
+                            min_age_years: e.target.value === "" ? null : Number(e.target.value),
+                          }))
+                        }
+                      />
+                      <Hint>
+                        Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung
+                        und Warteliste.
+                      </Hint>
+                    </div>
+                    <div>
+                      <Label>Höchstalter (Jahre)</Label>
+                      <Input
+                        type="number"
+                        value={editingProg.max_age_years ?? ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({
+                            ...p,
+                            max_age_years: e.target.value === "" ? null : Number(e.target.value),
+                          }))
+                        }
+                      />
+                      <Hint>
+                        Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine
+                        Obergrenze. Prüfung bei Buchung und Warteliste.
+                      </Hint>
+                    </div>
+                    <div>
+                      <Label>Dauer</Label>
+                      <Input
+                        value={editingProg.duration || ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({ ...p, duration: e.target.value }))
+                        }
+                      />
+                      <Hint>
+                        Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40
+                        Minuten").
+                      </Hint>
+                    </div>
+                  </div>
+                  <div className="grid sm:grid-cols-4 gap-3 items-end">
+                    <div>
+                      <Label>Preis Nicht-Mitglied (€)</Label>
+                      <Input
+                        type="number"
+                        value={editingProg.price_non_member ?? ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({
+                            ...p,
+                            price_non_member: e.target.value === "" ? null : Number(e.target.value),
+                          }))
+                        }
+                      />
+                      <Hint>Preiszeile auf Kurskarte und Detailseite.</Hint>
+                    </div>
+                    <div>
+                      <Label>Preis Mitglied (€)</Label>
+                      <Input
+                        type="number"
+                        value={editingProg.price_member ?? ""}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({
+                            ...p,
+                            price_member: e.target.value === "" ? null : Number(e.target.value),
+                          }))
+                        }
+                      />
+                      <Hint>Preiszeile auf Kurskarte und Detailseite.</Hint>
+                    </div>
+                    <div>
+                      <Label>Zahlungsziel (Tage)</Label>
+                      <Input
+                        type="number"
+                        value={editingProg.payment_due_days ?? 14}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({
+                            ...p,
+                            payment_due_days: Number(e.target.value),
+                          }))
+                        }
+                      />
+                      <Hint>
+                        Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext
+                        genutzt.
+                      </Hint>
+                    </div>
+                    <div>
+                      <Label>Sortierung</Label>
+                      <Input
+                        type="number"
+                        value={editingProg.sort_order ?? 0}
+                        onChange={(e) =>
+                          setEditingProg((p) => ({ ...p, sort_order: Number(e.target.value) }))
+                        }
+                      />
+                      <Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={editingProg.is_public ?? true}
+                        onCheckedChange={(v) =>
+                          setEditingProg((p) => ({ ...p, is_public: Boolean(v) }))
+                        }
+                      />
+                      Auf der Webseite anzeigen
+                      <span className="text-[11px] text-muted-foreground">
+                        (Karte in /kurse + eigene Detailseite)
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={(editingProg as any).waitlist_open ?? true}
+                        onCheckedChange={(v) =>
+                          setEditingProg((p) => ({ ...p, waitlist_open: Boolean(v) }) as any)
+                        }
+                      />
+                      Warteliste aktiv
+                      <span className="text-[11px] text-muted-foreground">
+                        (aus: keine neuen Wartelisten-Einträge)
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={editingProg.bookable ?? true}
+                        onCheckedChange={(v) =>
+                          setEditingProg((p) => ({ ...p, bookable: Boolean(v) }))
+                        }
+                      />
+                      Online buchbar
+                      <span className="text-[11px] text-muted-foreground">
+                        (aus: Status „Geplant – noch nicht buchbar", keine Buchung)
+                      </span>
+                    </label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          removeProgram(detailProgram);
+                          setDetailId(null);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen
+                      </Button>
+                      <Button onClick={saveProgram}>Kursangaben speichern</Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
               </TabsContent>
             </Tabs>
           ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold text-sm">Kurszeiträume</div>
-              {canManage && (
-                <Button size="sm" onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}>
-                  <Plus className="h-4 w-4" /> Neuer Zeitraum
-                </Button>
-              )}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="font-semibold text-sm">Kurszeiträume</div>
+                {canManage && (
+                  <Button
+                    size="sm"
+                    onClick={() => startNewTerm(detailId === "unassigned" ? null : detailProgram)}
+                  >
+                    <Plus className="h-4 w-4" /> Neuer Zeitraum
+                  </Button>
+                )}
+              </div>
+              {renderTermTable(detailId === "unassigned" ? null : detailId)}
             </div>
-            {renderTermTable(detailId === "unassigned" ? null : detailId)}
-          </div>
           )}
 
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailId(null)}>Schließen</Button>
+            <Button variant="outline" onClick={() => setDetailId(null)}>
+              Schließen
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
       <Dialog open={progOpen} onOpenChange={setProgOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingProg.id ? "Kursangebot bearbeiten" : "Neues Kursangebot"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>
+              {editingProg.id ? "Kursangebot bearbeiten" : "Neues Kursangebot"}
+            </DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Name *</Label><Input value={editingProg.name || ""} onChange={e => setEditingProg(p => ({ ...p, name: e.target.value, slug: p.slug || slugify(e.target.value) }))} /></div>
-              <div><Label>Slug (URL)</Label><Input value={editingProg.slug || ""} onChange={e => setEditingProg(p => ({ ...p, slug: e.target.value }))} /><Hint>Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern verändert bestehende Links.</Hint></div>
+              <div>
+                <Label>Name *</Label>
+                <Input
+                  value={editingProg.name || ""}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({
+                      ...p,
+                      name: e.target.value,
+                      slug: p.slug || slugify(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Slug (URL)</Label>
+                <Input
+                  value={editingProg.slug || ""}
+                  onChange={(e) => setEditingProg((p) => ({ ...p, slug: e.target.value }))}
+                />
+                <Hint>
+                  Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern
+                  verändert bestehende Links.
+                </Hint>
+              </div>
             </div>
-            <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
-            <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
-              <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editingProg.course_info || ""} onChange={e => setEditingProg(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.</Hint></div>
+            <div>
+              <Label>Beschreibung</Label>
+              <Textarea
+                rows={3}
+                value={editingProg.description || ""}
+                onChange={(e) => setEditingProg((p) => ({ ...p, description: e.target.value }))}
+              />
+              <Hint>
+                Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der
+                Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der
+                Detailseite.
+              </Hint>
+            </div>
+            <div>
+              <Label>Voraussetzungen</Label>
+              <Textarea
+                rows={2}
+                value={editingProg.requirements || ""}
+                onChange={(e) => setEditingProg((p) => ({ ...p, requirements: e.target.value }))}
+              />
+              <Hint>
+                Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als
+                „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.
+              </Hint>
+            </div>
+            <div>
+              <Label>Ablauf & Wichtiges für den Kurstag</Label>
+              <Textarea
+                rows={6}
+                value={editingProg.course_info || ""}
+                onChange={(e) => setEditingProg((p) => ({ ...p, course_info: e.target.value }))}
+                placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"}
+              />
+              <Hint>
+                Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der
+                Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.
+              </Hint>
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
-              <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
-              <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung und Warteliste.</Hint></div>
-              <div><Label>Höchstalter (Jahre)</Label><Input type="number" value={editingProg.max_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, max_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine Obergrenze.</Hint></div>
-              <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /><Hint>Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").</Hint></div>
+              <div>
+                <Label>Zielgruppe</Label>
+                <Input
+                  value={editingProg.target_group || ""}
+                  onChange={(e) => setEditingProg((p) => ({ ...p, target_group: e.target.value }))}
+                />
+                <Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint>
+              </div>
+              <div>
+                <Label>Altersangabe</Label>
+                <Input
+                  value={editingProg.age_range || ""}
+                  onChange={(e) => setEditingProg((p) => ({ ...p, age_range: e.target.value }))}
+                />
+                <Hint>
+                  Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).
+                </Hint>
+              </div>
+              <div>
+                <Label>Mindestalter (Jahre)</Label>
+                <Input
+                  type="number"
+                  value={editingProg.min_age_years ?? ""}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({
+                      ...p,
+                      min_age_years: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                />
+                <Hint>
+                  Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung und
+                  Warteliste.
+                </Hint>
+              </div>
+              <div>
+                <Label>Höchstalter (Jahre)</Label>
+                <Input
+                  type="number"
+                  value={editingProg.max_age_years ?? ""}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({
+                      ...p,
+                      max_age_years: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                />
+                <Hint>
+                  Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine
+                  Obergrenze.
+                </Hint>
+              </div>
+              <div>
+                <Label>Dauer</Label>
+                <Input
+                  value={editingProg.duration || ""}
+                  onChange={(e) => setEditingProg((p) => ({ ...p, duration: e.target.value }))}
+                />
+                <Hint>
+                  Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").
+                </Hint>
+              </div>
             </div>
-            <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen abweichenden Ort haben.</Hint></div>
+            <div>
+              <Label>Ort</Label>
+              <Input
+                value={editingProg.location || ""}
+                onChange={(e) => setEditingProg((p) => ({ ...p, location: e.target.value }))}
+              />
+              <Hint>
+                Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen
+                abweichenden Ort haben.
+              </Hint>
+            </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>Preis Nicht-Mitglied (€)</Label><Input type="number" value={editingProg.price_non_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_non_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
-              <div><Label>Preis Mitglied (€)</Label><Input type="number" value={editingProg.price_member ?? ""} onChange={e => setEditingProg(p => ({ ...p, price_member: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Preiszeile auf Kurskarte und Detailseite.</Hint></div>
-              <div><Label>Zahlungsziel (Tage)</Label><Input type="number" value={editingProg.payment_due_days ?? 14} onChange={e => setEditingProg(p => ({ ...p, payment_due_days: Number(e.target.value) }))} /><Hint>Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext genutzt.</Hint></div>
+              <div>
+                <Label>Preis Nicht-Mitglied (€)</Label>
+                <Input
+                  type="number"
+                  value={editingProg.price_non_member ?? ""}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({
+                      ...p,
+                      price_non_member: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                />
+                <Hint>Preiszeile auf Kurskarte und Detailseite.</Hint>
+              </div>
+              <div>
+                <Label>Preis Mitglied (€)</Label>
+                <Input
+                  type="number"
+                  value={editingProg.price_member ?? ""}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({
+                      ...p,
+                      price_member: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                />
+                <Hint>Preiszeile auf Kurskarte und Detailseite.</Hint>
+              </div>
+              <div>
+                <Label>Zahlungsziel (Tage)</Label>
+                <Input
+                  type="number"
+                  value={editingProg.payment_due_days ?? 14}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({ ...p, payment_due_days: Number(e.target.value) }))
+                  }
+                />
+                <Hint>
+                  Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext genutzt.
+                </Hint>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3 items-end">
-              <div><Label>Sortierung</Label><Input type="number" value={editingProg.sort_order ?? 0} onChange={e => setEditingProg(p => ({ ...p, sort_order: Number(e.target.value) }))} /><Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint></div>
+              <div>
+                <Label>Sortierung</Label>
+                <Input
+                  type="number"
+                  value={editingProg.sort_order ?? 0}
+                  onChange={(e) =>
+                    setEditingProg((p) => ({ ...p, sort_order: Number(e.target.value) }))
+                  }
+                />
+                <Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint>
+              </div>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={editingProg.is_public ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, is_public: Boolean(v) }))} />
+                <Checkbox
+                  checked={editingProg.is_public ?? true}
+                  onCheckedChange={(v) => setEditingProg((p) => ({ ...p, is_public: Boolean(v) }))}
+                />
                 Auf der Webseite anzeigen
-                <span className="text-[11px] text-muted-foreground">(Karte in /kurse + Detailseite)</span>
+                <span className="text-[11px] text-muted-foreground">
+                  (Karte in /kurse + Detailseite)
+                </span>
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={(editingProg as any).waitlist_open ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, waitlist_open: Boolean(v) } as any))} />
+                <Checkbox
+                  checked={(editingProg as any).waitlist_open ?? true}
+                  onCheckedChange={(v) =>
+                    setEditingProg((p) => ({ ...p, waitlist_open: Boolean(v) }) as any)
+                  }
+                />
                 Warteliste aktiv
-                <span className="text-[11px] text-muted-foreground">(aus: keine neuen Wartelisten-Einträge)</span>
+                <span className="text-[11px] text-muted-foreground">
+                  (aus: keine neuen Wartelisten-Einträge)
+                </span>
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={editingProg.bookable ?? true} onCheckedChange={v => setEditingProg(p => ({ ...p, bookable: Boolean(v) }))} />
+                <Checkbox
+                  checked={editingProg.bookable ?? true}
+                  onCheckedChange={(v) => setEditingProg((p) => ({ ...p, bookable: Boolean(v) }))}
+                />
                 Online buchbar
-                <span className="text-[11px] text-muted-foreground">(aus: „Geplant – noch nicht buchbar")</span>
+                <span className="text-[11px] text-muted-foreground">
+                  (aus: „Geplant – noch nicht buchbar")
+                </span>
               </label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setProgOpen(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setProgOpen(false)}>
+              Abbrechen
+            </Button>
             <Button onClick={saveProgram}>Speichern</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing.id ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing.id ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Name *</Label><Input value={editing.name || ""} onChange={e => setEditing(p => ({ ...p, name: e.target.value, slug: p.slug || slugify(e.target.value) }))} /></div>
-              <div><Label>Slug</Label><Input value={editing.slug || ""} onChange={e => setEditing(p => ({ ...p, slug: e.target.value }))} /></div>
+              <div>
+                <Label>Name *</Label>
+                <Input
+                  value={editing.name || ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      name: e.target.value,
+                      slug: p.slug || slugify(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Slug</Label>
+                <Input
+                  value={editing.slug || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, slug: e.target.value }))}
+                />
+              </div>
             </div>
             <div>
               <Label>Kursangebot (für die Webseite)</Label>
-              <Select value={editing.program_id || "none"} onValueChange={v => setEditing(p => ({ ...p, program_id: v === "none" ? null : v }))}>
-                <SelectTrigger><SelectValue placeholder="Kein Kursangebot" /></SelectTrigger>
+              <Select
+                value={editing.program_id || "none"}
+                onValueChange={(v) =>
+                  setEditing((p) => ({ ...p, program_id: v === "none" ? null : v }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Kein Kursangebot" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Kein Kursangebot (nur intern)</SelectItem>
-                  {programs.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  {programs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">Zugeordnete Zeiträume erscheinen auf der Webseite unter dem Kursangebot und können dort gebucht werden.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Zugeordnete Zeiträume erscheinen auf der Webseite unter dem Kursangebot und können
+                dort gebucht werden.
+              </p>
             </div>
 
-            <div><Label>Beschreibung</Label><Textarea rows={3} value={editing.description || ""} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} /></div>
+            <div>
+              <Label>Beschreibung</Label>
+              <Textarea
+                rows={3}
+                value={editing.description || ""}
+                onChange={(e) => setEditing((p) => ({ ...p, description: e.target.value }))}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Zielgruppe</Label><Input value={editing.target_group || ""} onChange={e => setEditing(p => ({ ...p, target_group: e.target.value }))} /></div>
-              <div><Label>Altersgruppe</Label><Input value={editing.age_range || ""} onChange={e => setEditing(p => ({ ...p, age_range: e.target.value }))} /></div>
-              <div><Label>Dauer</Label><Input value={editing.duration || ""} onChange={e => setEditing(p => ({ ...p, duration: e.target.value }))} placeholder="z.B. 10 Wochen" /></div>
-              <div><Label>Ort</Label><Input value={editing.location || ""} onChange={e => setEditing(p => ({ ...p, location: e.target.value }))} /></div>
-              <div><Label>Start</Label><Input type="date" value={editing.starts_on || ""} onChange={e => setEditing(p => ({ ...p, starts_on: e.target.value || null }))} /></div>
-              <div><Label>Ende</Label><Input type="date" value={editing.ends_on || ""} onChange={e => setEditing(p => ({ ...p, ends_on: e.target.value || null }))} /></div>
-              <div><Label>Max. Plätze</Label><Input type="number" value={editing.max_participants ?? ""} onChange={e => setEditing(p => ({ ...p, max_participants: e.target.value ? Number(e.target.value) : null }))} /></div>
-              <div><Label>Mindestteilnehmerzahl</Label><Input type="number" value={editing.min_participants ?? ""} onChange={e => setEditing(p => ({ ...p, min_participants: e.target.value ? Number(e.target.value) : null }))} placeholder="z.B. 14" /></div>
+              <div>
+                <Label>Zielgruppe</Label>
+                <Input
+                  value={editing.target_group || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, target_group: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Altersgruppe</Label>
+                <Input
+                  value={editing.age_range || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, age_range: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Dauer</Label>
+                <Input
+                  value={editing.duration || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, duration: e.target.value }))}
+                  placeholder="z.B. 10 Wochen"
+                />
+              </div>
+              <div>
+                <Label>Ort</Label>
+                <Input
+                  value={editing.location || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, location: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Start</Label>
+                <Input
+                  type="date"
+                  value={editing.starts_on || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, starts_on: e.target.value || null }))}
+                />
+              </div>
+              <div>
+                <Label>Ende</Label>
+                <Input
+                  type="date"
+                  value={editing.ends_on || ""}
+                  onChange={(e) => setEditing((p) => ({ ...p, ends_on: e.target.value || null }))}
+                />
+              </div>
+              <div>
+                <Label>Max. Plätze</Label>
+                <Input
+                  type="number"
+                  value={editing.max_participants ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      max_participants: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Mindestteilnehmerzahl</Label>
+                <Input
+                  type="number"
+                  value={editing.min_participants ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      min_participants: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                  placeholder="z.B. 14"
+                />
+              </div>
               <div>
                 <Label>Bahnen</Label>
-                <Select value={editing.lanes ? String(editing.lanes) : "none"} onValueChange={v => setEditing(p => ({ ...p, lanes: v === "none" ? null : Number(v) }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="none">Keine Angabe</SelectItem><SelectItem value="1">1 Bahn</SelectItem><SelectItem value="2">2 Bahnen</SelectItem></SelectContent>
+                <Select
+                  value={editing.lanes ? String(editing.lanes) : "none"}
+                  onValueChange={(v) =>
+                    setEditing((p) => ({ ...p, lanes: v === "none" ? null : Number(v) }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Keine Angabe</SelectItem>
+                    <SelectItem value="1">1 Bahn</SelectItem>
+                    <SelectItem value="2">2 Bahnen</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Benötigte Trainer:innen pro Termin</Label>
-                <Input type="number" min={1} max={10} value={editing.trainers_needed ?? 2} onChange={e => setEditing(p => ({ ...p, trainers_needed: e.target.value ? Number(e.target.value) : null }))} />
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={editing.trainers_needed ?? 2}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      trainers_needed: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                />
                 <Hint>Maßgeblich für Dienstplan und Kurskalender (Ampel „unterbesetzt“).</Hint>
               </div>
-              <div><Label>Anzahl der Einheiten</Label><Input type="number" value={editing.unit_count ?? ""} onChange={e => setEditing(p => ({ ...p, unit_count: e.target.value ? Number(e.target.value) : null }))} placeholder="z.B. 12" /></div>
+              <div>
+                <Label>Anzahl der Einheiten</Label>
+                <Input
+                  type="number"
+                  value={editing.unit_count ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      unit_count: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                  placeholder="z.B. 12"
+                />
+              </div>
               <div>
                 <Label>Status</Label>
-                <Select value={editing.status} onValueChange={(v: any) => setEditing(p => ({ ...p, status: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{STATUS_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                <Select
+                  value={editing.status}
+                  onValueChange={(v: any) => setEditing((p) => ({ ...p, status: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
-              <Label className="text-sm font-semibold">Terminliste einfügen (z. B. aus der KI kopiert)</Label>
-              <p className="text-xs text-muted-foreground">Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren. Beim Speichern werden Start, Ende, Anzahl der Einheiten und alle Termine übernommen – Eltern sehen sie auf der Kursseite.{editing.id ? " Vorhandene Termine werden ersetzt." : ""} Leer lassen, um nichts zu ändern.</p>
-              <Textarea rows={6} value={formSessText} onChange={e => setFormSessText(e.target.value)} placeholder={"1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027  11:00–11:45 Uhr"} />
-              {formSessText.trim() && (() => { const p = parseSessionList(formSessText); const r = p.filter(x => !x.isBreak); return <p className="text-xs text-muted-foreground">Erkannt: {r.length} Termine, {p.length - r.length} Pausen{r.length ? ` · ${formatDateBerlin(r[0].date)} – ${formatDateBerlin(r[r.length - 1].date)}` : ""}</p>; })()}
+              <Label className="text-sm font-semibold">
+                Terminliste einfügen (z. B. aus der KI kopiert)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“
+                markieren. Beim Speichern werden Start, Ende, Anzahl der Einheiten und alle Termine
+                übernommen – Eltern sehen sie auf der Kursseite.
+                {editing.id ? " Vorhandene Termine werden ersetzt." : ""} Leer lassen, um nichts zu
+                ändern.
+              </p>
+              <Textarea
+                rows={6}
+                value={formSessText}
+                onChange={(e) => setFormSessText(e.target.value)}
+                placeholder={
+                  "1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027  11:00–11:45 Uhr"
+                }
+              />
+              {formSessText.trim() &&
+                (() => {
+                  const p = parseSessionList(formSessText);
+                  const r = p.filter((x) => !x.isBreak);
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      Erkannt: {r.length} Termine, {p.length - r.length} Pausen
+                      {r.length
+                        ? ` · ${formatDateBerlin(r[0].date)} – ${formatDateBerlin(r[r.length - 1].date)}`
+                        : ""}
+                    </p>
+                  );
+                })()}
             </div>
             <div className="rounded-md border p-3 space-y-2">
-              <label className="flex items-center gap-2 text-sm"><Checkbox checked={!!editing.start_tentative} onCheckedChange={v => setEditing(p => ({ ...p, start_tentative: !!v }))} /> Starttermin unter Vorbehalt (z. B. Wiedereröffnung / Sanierung)</label>
-              {editing.start_tentative && (<><Input value={editing.tentative_note || ""} onChange={e => setEditing(p => ({ ...p, tentative_note: e.target.value }))} placeholder="vorbehaltlich der Wiedereröffnung der Sportschule Hennef" /><Hint>Wird bei Kursbeginn auf der Webseite angezeigt. Buchung und Zahlungsfrist laufen normal.</Hint></>)}
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={!!editing.start_tentative}
+                  onCheckedChange={(v) => setEditing((p) => ({ ...p, start_tentative: !!v }))}
+                />{" "}
+                Starttermin unter Vorbehalt (z. B. Wiedereröffnung / Sanierung)
+              </label>
+              {editing.start_tentative && (
+                <>
+                  <Input
+                    value={editing.tentative_note || ""}
+                    onChange={(e) => setEditing((p) => ({ ...p, tentative_note: e.target.value }))}
+                    placeholder="vorbehaltlich der Wiedereröffnung der Sportschule Hennef"
+                  />
+                  <Hint>
+                    Wird bei Kursbeginn auf der Webseite angezeigt. Buchung und Zahlungsfrist laufen
+                    normal.
+                  </Hint>
+                </>
+              )}
             </div>
-            <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editing.course_info || ""} onChange={e => setEditing(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Erscheint auf der Kursdetailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail 3 Tage vor Kursstart. Absätze und Zeilen bleiben erhalten.</Hint></div>
-            <div><Label>Zeitplan</Label><Input value={editing.schedule || ""} onChange={e => setEditing(p => ({ ...p, schedule: e.target.value }))} placeholder="z.B. Mo & Mi 17:00–18:00" /></div>
+            <div>
+              <Label>Ablauf & Wichtiges für den Kurstag</Label>
+              <Textarea
+                rows={6}
+                value={editing.course_info || ""}
+                onChange={(e) => setEditing((p) => ({ ...p, course_info: e.target.value }))}
+                placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"}
+              />
+              <Hint>
+                Erscheint auf der Kursdetailseite, in der Buchungsbestätigung und in der
+                Erinnerungs-E-Mail 3 Tage vor Kursstart. Absätze und Zeilen bleiben erhalten.
+              </Hint>
+            </div>
+            <div>
+              <Label>Zeitplan</Label>
+              <Input
+                value={editing.schedule || ""}
+                onChange={(e) => setEditing((p) => ({ ...p, schedule: e.target.value }))}
+                placeholder="z.B. Mo & Mi 17:00–18:00"
+              />
+            </div>
             <div className="grid grid-cols-3 gap-3 border-t pt-3">
               <div>
                 <Label>Preis Mitglied (€)</Label>
-                <Input type="number" step="0.01" value={editing.price_member ?? ""} onChange={e => setEditing(p => ({ ...p, price_member: e.target.value ? Number(e.target.value) : null }))} placeholder="150" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editing.price_member ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      price_member: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                  placeholder="150"
+                />
               </div>
               <div>
                 <Label>Preis Nicht-Mitglied (€)</Label>
-                <Input type="number" step="0.01" value={editing.price_non_member ?? ""} onChange={e => setEditing(p => ({ ...p, price_non_member: e.target.value ? Number(e.target.value) : null }))} placeholder="200" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editing.price_non_member ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      price_non_member: e.target.value ? Number(e.target.value) : null,
+                    }))
+                  }
+                  placeholder="200"
+                />
               </div>
               <div>
                 <Label>Zahlungsfrist (Tage)</Label>
-                <Input type="number" value={editing.payment_due_days ?? 14} onChange={e => setEditing(p => ({ ...p, payment_due_days: e.target.value ? Number(e.target.value) : 14 }))} />
+                <Input
+                  type="number"
+                  value={editing.payment_due_days ?? 14}
+                  onChange={(e) =>
+                    setEditing((p) => ({
+                      ...p,
+                      payment_due_days: e.target.value ? Number(e.target.value) : 14,
+                    }))
+                  }
+                />
               </div>
             </div>
-            {editing.starts_on && (() => {
-              const terms = paymentTerms({ startsOn: editing.starts_on, paymentDueDays: editing.payment_due_days ?? 14 });
-              return (
-                <div className="rounded-md border bg-muted/40 p-3 text-xs">
-                  <div className="font-medium">Zahlungsvorschau bei Buchung heute</div>
-                  <div className="mt-1 text-muted-foreground">
-                    Kursbeginn {formatDateBerlin(editing.starts_on)} · Zahlungsart: {terms.methodLabel} · fällig bis {terms.dueDateLabel}
+            {editing.starts_on &&
+              (() => {
+                const terms = paymentTerms({
+                  startsOn: editing.starts_on,
+                  paymentDueDays: editing.payment_due_days ?? 14,
+                });
+                return (
+                  <div className="rounded-md border bg-muted/40 p-3 text-xs">
+                    <div className="font-medium">Zahlungsvorschau bei Buchung heute</div>
+                    <div className="mt-1 text-muted-foreground">
+                      Kursbeginn {formatDateBerlin(editing.starts_on)} · Zahlungsart:{" "}
+                      {terms.methodLabel} · fällig bis {terms.dueDateLabel}
+                    </div>
+                    <div className="mt-1 text-muted-foreground">{terms.note}</div>
                   </div>
-                  <div className="mt-1 text-muted-foreground">{terms.note}</div>
-                </div>
-              );
-            })()}
-            <label className="flex items-center gap-2 text-sm"><Checkbox checked={editing.is_public ?? true} onCheckedChange={v => setEditing(p => ({ ...p, is_public: !!v }))} /> Öffentlich sichtbar</label>
-
+                );
+              })()}
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={editing.is_public ?? true}
+                onCheckedChange={(v) => setEditing((p) => ({ ...p, is_public: !!v }))}
+              />{" "}
+              Öffentlich sichtbar
+            </label>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Abbrechen
+            </Button>
             <Button onClick={save}>Speichern</Button>
           </DialogFooter>
         </DialogContent>
@@ -1503,23 +2844,38 @@ function Page() {
           <DialogHeader>
             <DialogTitle>Teilnehmer: {partCourse?.name}</DialogTitle>
           </DialogHeader>
-          {partCourse && (() => {
-            const cnt = counts[partCourse.id] || { confirmed: 0, waiting: 0 };
-            const max = partCourse.max_participants;
-            const free = max != null ? Math.max(0, max - cnt.confirmed) : null;
-            return (
-              <div className="text-sm text-muted-foreground mb-2">
-                Bestätigt: <span className="font-semibold text-foreground">{cnt.confirmed}</span>
-                {max != null && <> von {max} · Frei: <span className="font-semibold text-foreground">{free}</span></>}
-                {cnt.waiting > 0 && <> · Warteliste: <span className="font-semibold text-foreground">{cnt.waiting}</span></>}
-              </div>
-            );
-          })()}
+          {partCourse &&
+            (() => {
+              const cnt = counts[partCourse.id] || { confirmed: 0, waiting: 0 };
+              const max = partCourse.max_participants;
+              const free = max != null ? Math.max(0, max - cnt.confirmed) : null;
+              return (
+                <div className="text-sm text-muted-foreground mb-2">
+                  Bestätigt: <span className="font-semibold text-foreground">{cnt.confirmed}</span>
+                  {max != null && (
+                    <>
+                      {" "}
+                      von {max} · Frei:{" "}
+                      <span className="font-semibold text-foreground">{free}</span>
+                    </>
+                  )}
+                  {cnt.waiting > 0 && (
+                    <>
+                      {" "}
+                      · Warteliste:{" "}
+                      <span className="font-semibold text-foreground">{cnt.waiting}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           {canManage && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="text-xs text-muted-foreground">Zahlungsstatus:</span>
               <Select value={payFilter} onValueChange={setPayFilter}>
-                <SelectTrigger className="h-8 w-[220px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-[220px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle</SelectItem>
                   <SelectItem value="open">Alle offenen</SelectItem>
@@ -1531,14 +2887,18 @@ function Page() {
               </Select>
               <span className="text-xs text-muted-foreground">Sortierung:</span>
               <Select value={paySort} onValueChange={setPaySort}>
-                <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8 w-[200px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="payment">Zahlungsstatus (dringend zuerst)</SelectItem>
                   <SelectItem value="due">Fälligkeitsdatum</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-xs text-muted-foreground">{visibleParticipants.length} von {participants.length}</span>
+              <span className="text-xs text-muted-foreground">
+                {visibleParticipants.length} von {participants.length}
+              </span>
               <Button
                 size="sm"
                 variant="outline"
@@ -1575,308 +2935,679 @@ function Page() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibleParticipants.length === 0 && <TableRow><TableCell colSpan={canManage ? 9 : 8} className="text-center py-6 text-muted-foreground text-xs">Noch keine Teilnehmer.</TableCell></TableRow>}
-
-                {visibleParticipants.map(p => {
-                  const age = ageAt(p.date_of_birth, partCourse?.starts_on);
-                  return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium text-sm">
-                      {p.request_id ? (
-                        <button
-                          type="button"
-                          onClick={() => openRequest(p.request_id!)}
-                          className="text-left text-primary underline underline-offset-2 hover:opacity-80"
-                          title="Kursanfrage anzeigen"
-                        >
-                          {p.participant_name || "—"}
-                        </button>
-                      ) : (
-                        <span title="Manuell angelegt (keine Kursanfrage)">{p.participant_name || "—"}</span>
-                      )}
-                      {transferConsents[p.id] && (
-                        <div className="mt-1">
-                          {transferConsents[p.id]!.status === "confirmed"
-                            ? <Badge className="bg-green-600 hover:bg-green-700" title="Eltern haben der Umbuchung per E-Mail-Link zugestimmt">Umbuchung zugestimmt {fmtDate(transferConsents[p.id]!.confirmed_at)}</Badge>
-                            : <Badge variant="outline" className="border-amber-500 text-amber-700" title="Die Eltern haben den Link in der Umbuchungs-Mail noch nicht bestätigt">Zustimmung Eltern offen{transferConsents[p.id]!.reminded_at ? ` · erinnert ${fmtDate(transferConsents[p.id]!.reminded_at)}` : ""}</Badge>}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-xs">
-                      {p.date_of_birth ? (
-                        <>
-                          {fmtDate(p.date_of_birth)}
-                          {age != null && (
-                            <div className="text-muted-foreground">{age} J. {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div>
-                          )}
-                        </>
-                      ) : "—"}
-                    </TableCell>
-                    <TableCell className="text-xs">{p.participant_email || "—"}{p.participant_phone && <><br />{p.participant_phone}</>}</TableCell>
-                    <TableCell>
-                      <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
-                        <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {p.is_member === true && (
-                        <Badge className={p.member_confirmed ? "bg-green-600 hover:bg-green-700" : ""} variant={p.member_confirmed ? "default" : "outline"}>
-                          Mitglied{p.member_confirmed ? " ✓" : ""}
-                        </Badge>
-                      )}
-                      {p.is_member === false && <Badge variant="secondary">Nicht-Mitglied</Badge>}
-                      {p.is_member == null && <span className="text-muted-foreground">offen</span>}
-                      {canManage && p.price_amount != null && <div className="text-muted-foreground mt-1">{Number(p.price_amount).toFixed(2)} €</div>}
-                    </TableCell>
-
-                    <TableCell className="text-xs">
-                      {p.goal_reached === true && <Badge className="bg-green-600 hover:bg-green-700"><Award className="h-3 w-3 mr-1" />Ziel erreicht</Badge>}
-                      {p.goal_reached === false && <Badge variant="secondary">Ziel offen</Badge>}
-                      {p.badge && <div className="mt-1">{p.badge}</div>}
-                      {p.achievement && <div className="text-muted-foreground mt-0.5 max-w-[180px] truncate" title={p.achievement}>{p.achievement}</div>}
-                      {p.goal_reached == null && !p.badge && !p.achievement && "—"}
-                    </TableCell>
-                    {canManage && (() => {
-                      const st = participantPaymentState(p);
-                      return (
-                        <TableCell className="text-xs">
-                          <label className="flex items-start gap-2 cursor-pointer">
-                            <Checkbox className="mt-0.5" checked={p.paid} onCheckedChange={v => togglePaid(p, !!v)} />
-                            <span>
-                              <Badge variant="outline" className={st.className}>{st.label}</Badge>
-                              <span className="block text-muted-foreground mt-0.5">{st.detail}</span>
-                            </span>
-                          </label>
-                        </TableCell>
-                      );
-                    })()}
-                    <TableCell className="text-xs max-w-[220px]">
-                      {p.notes && <div className="truncate rounded bg-amber-50 px-1 text-amber-900" title={p.notes}>{p.notes}</div>}
-                      {canManage && p.internal_notes && <div className="mt-0.5 flex items-center gap-1 truncate text-muted-foreground" title={p.internal_notes}><Lock className="h-3 w-3 shrink-0" />{p.internal_notes}</div>}
-                      {!p.notes && !(canManage && p.internal_notes) && "—"}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}><Pencil className="h-4 w-4" /></Button>
-                      {canManage && p.status !== "cancelled" && <Button variant="ghost" size="sm" title="Kind umbuchen / Kurs wechseln" onClick={() => setTransferPart(p)}><ArrowRightLeft className="h-4 w-4" /></Button>}
-                      {canManage && <Button variant="ghost" size="sm" onClick={() => removePart(p)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                {visibleParticipants.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={canManage ? 9 : 8}
+                      className="text-center py-6 text-muted-foreground text-xs"
+                    >
+                      Noch keine Teilnehmer.
                     </TableCell>
                   </TableRow>
-                )})}
+                )}
+
+                {visibleParticipants.map((p) => {
+                  const age = ageAt(p.date_of_birth, partCourse?.starts_on);
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium text-sm">
+                        {p.request_id ? (
+                          <button
+                            type="button"
+                            onClick={() => openRequest(p.request_id!)}
+                            className="text-left text-primary underline underline-offset-2 hover:opacity-80"
+                            title="Kursanfrage anzeigen"
+                          >
+                            {p.participant_name || "—"}
+                          </button>
+                        ) : (
+                          <span title="Manuell angelegt (keine Kursanfrage)">
+                            {p.participant_name || "—"}
+                          </span>
+                        )}
+                        {transferConsents[p.id] && (
+                          <div className="mt-1">
+                            {transferConsents[p.id]!.status === "confirmed" ? (
+                              <Badge
+                                className="bg-green-600 hover:bg-green-700"
+                                title="Eltern haben der Umbuchung per E-Mail-Link zugestimmt"
+                              >
+                                Umbuchung zugestimmt {fmtDate(transferConsents[p.id]!.confirmed_at)}
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="border-amber-500 text-amber-700"
+                                title="Die Eltern haben den Link in der Umbuchungs-Mail noch nicht bestätigt"
+                              >
+                                Zustimmung Eltern offen
+                                {transferConsents[p.id]!.reminded_at
+                                  ? ` · erinnert ${fmtDate(transferConsents[p.id]!.reminded_at)}`
+                                  : ""}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-xs">
+                        {p.date_of_birth ? (
+                          <>
+                            {fmtDate(p.date_of_birth)}
+                            {age != null && (
+                              <div className="text-muted-foreground">
+                                {age} J. {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {p.participant_email || "—"}
+                        {p.participant_phone && (
+                          <>
+                            <br />
+                            {p.participant_phone}
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
+                          <SelectTrigger className="h-8 w-[130px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ENROLL_STATUS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {p.is_member === true && (
+                          <Badge
+                            className={p.member_confirmed ? "bg-green-600 hover:bg-green-700" : ""}
+                            variant={p.member_confirmed ? "default" : "outline"}
+                          >
+                            Mitglied{p.member_confirmed ? " ✓" : ""}
+                          </Badge>
+                        )}
+                        {p.is_member === false && <Badge variant="secondary">Nicht-Mitglied</Badge>}
+                        {p.is_member == null && (
+                          <span className="text-muted-foreground">offen</span>
+                        )}
+                        {canManage && p.price_amount != null && (
+                          <div className="text-muted-foreground mt-1">
+                            {Number(p.price_amount).toFixed(2)} €
+                          </div>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-xs">
+                        {p.goal_reached === true && (
+                          <Badge className="bg-green-600 hover:bg-green-700">
+                            <Award className="h-3 w-3 mr-1" />
+                            Ziel erreicht
+                          </Badge>
+                        )}
+                        {p.goal_reached === false && <Badge variant="secondary">Ziel offen</Badge>}
+                        {p.badge && <div className="mt-1">{p.badge}</div>}
+                        {p.achievement && (
+                          <div
+                            className="text-muted-foreground mt-0.5 max-w-[180px] truncate"
+                            title={p.achievement}
+                          >
+                            {p.achievement}
+                          </div>
+                        )}
+                        {p.goal_reached == null && !p.badge && !p.achievement && "—"}
+                      </TableCell>
+                      {canManage &&
+                        (() => {
+                          const st = participantPaymentState(p);
+                          return (
+                            <TableCell className="text-xs">
+                              <label className="flex items-start gap-2 cursor-pointer">
+                                <Checkbox
+                                  className="mt-0.5"
+                                  checked={p.paid}
+                                  onCheckedChange={(v) => togglePaid(p, !!v)}
+                                />
+                                <span>
+                                  <Badge variant="outline" className={st.className}>
+                                    {st.label}
+                                  </Badge>
+                                  <span className="block text-muted-foreground mt-0.5">
+                                    {st.detail}
+                                  </span>
+                                </span>
+                              </label>
+                            </TableCell>
+                          );
+                        })()}
+                      <TableCell className="text-xs max-w-[220px]">
+                        {p.notes && (
+                          <div
+                            className="truncate rounded bg-amber-50 px-1 text-amber-900"
+                            title={p.notes}
+                          >
+                            {p.notes}
+                          </div>
+                        )}
+                        {canManage && p.internal_notes && (
+                          <div
+                            className="mt-0.5 flex items-center gap-1 truncate text-muted-foreground"
+                            title={p.internal_notes}
+                          >
+                            <Lock className="h-3 w-3 shrink-0" />
+                            {p.internal_notes}
+                          </div>
+                        )}
+                        {!p.notes && !(canManage && p.internal_notes) && "—"}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {canManage && p.status !== "cancelled" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Kind umbuchen / Kurs wechseln"
+                            onClick={() => setTransferPart(p)}
+                          >
+                            <ArrowRightLeft className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canManage && (
+                          <Button variant="ghost" size="sm" onClick={() => removePart(p)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
 
-          {canManage && <div className="border-t pt-4 mt-4 space-y-3">
-            <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
-            {wlEntries.length > 0 && (
-              <div>
-                <Label>Kind aus Warteliste übernehmen</Label>
-                <Select value={wlPick} onValueChange={pickWaitlist}>
-                  <SelectTrigger><SelectValue placeholder={`Aus Warteliste wählen … (${wlEntries.length})`} /></SelectTrigger>
-                  <SelectContent>
-                    {wlEntries.map(e => {
-                      const prog = programs.find(p => p.id === e.program_id);
-                      return (
-                        <SelectItem key={e.id} value={e.id}>
-                          {e.child_name || "—"}{e.child_dob ? ` (${fmtDate(e.child_dob)})` : ""} · {prog?.name ?? "ohne Angebot"}{e.status === "offered" ? " · Angebot läuft" : ""}{e.fits ? "" : " (anderes Angebot)"}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-muted-foreground mt-1">Füllt die Felder automatisch aus. Beim Hinzufügen wird der Wartelisten-Eintrag als gebucht markiert.</div>
+          {canManage && (
+            <div className="border-t pt-4 mt-4 space-y-3">
+              <div className="font-semibold text-sm">Teilnehmer hinzufügen</div>
+              {wlEntries.length > 0 && (
+                <div>
+                  <Label>Kind aus Warteliste übernehmen</Label>
+                  <Select value={wlPick} onValueChange={pickWaitlist}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Aus Warteliste wählen … (${wlEntries.length})`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {wlEntries.map((e) => {
+                        const prog = programs.find((p) => p.id === e.program_id);
+                        return (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.child_name || "—"}
+                            {e.child_dob ? ` (${fmtDate(e.child_dob)})` : ""} ·{" "}
+                            {prog?.name ?? "ohne Angebot"}
+                            {e.status === "offered" ? " · Angebot läuft" : ""}
+                            {e.fits ? "" : " (anderes Angebot)"}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Füllt die Felder automatisch aus. Beim Hinzufügen wird der Wartelisten-Eintrag
+                    als gebucht markiert.
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Name *</Label>
+                  <Input
+                    value={newPart.name}
+                    onChange={(e) => setNewPart((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Geburtsdatum *</Label>
+                  <Input
+                    type="date"
+                    value={newPart.date_of_birth}
+                    onChange={(e) => setNewPart((p) => ({ ...p, date_of_birth: e.target.value }))}
+                  />
+                  {newPart.date_of_birth &&
+                    (() => {
+                      const a = ageAt(newPart.date_of_birth, partCourse?.starts_on);
+                      return a != null ? (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}
+                        </div>
+                      ) : null;
+                    })()}
+                </div>
+                <div>
+                  <Label>E-Mail</Label>
+                  <Input
+                    type="email"
+                    value={newPart.email}
+                    onChange={(e) => setNewPart((p) => ({ ...p, email: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Telefon</Label>
+                  <Input
+                    value={newPart.phone}
+                    onChange={(e) => setNewPart((p) => ({ ...p, phone: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={newPart.status}
+                    onValueChange={(v: any) => setNewPart((p) => ({ ...p, status: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="confirmed">Bestätigt</SelectItem>
+                      <SelectItem value="waiting">Warteliste</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Name *</Label><Input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} /></div>
-              <div>
-                <Label>Geburtsdatum *</Label>
-                <Input type="date" value={newPart.date_of_birth} onChange={e => setNewPart(p => ({ ...p, date_of_birth: e.target.value }))} />
-                {newPart.date_of_birth && (() => {
-                  const a = ageAt(newPart.date_of_birth, partCourse?.starts_on);
-                  return a != null ? <div className="text-xs text-muted-foreground mt-1">{a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div> : null;
-                })()}
-              </div>
-              <div><Label>E-Mail</Label><Input type="email" value={newPart.email} onChange={e => setNewPart(p => ({ ...p, email: e.target.value }))} /></div>
-              <div><Label>Telefon</Label><Input value={newPart.phone} onChange={e => setNewPart(p => ({ ...p, phone: e.target.value }))} /></div>
-              <div>
-                <Label>Status</Label>
-                <Select value={newPart.status} onValueChange={(v: any) => setNewPart(p => ({ ...p, status: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="confirmed">Bestätigt</SelectItem>
-                    <SelectItem value="waiting">Warteliste</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div><Label>Notiz</Label><Textarea rows={2} value={newPart.notes} onChange={e => setNewPart(p => ({ ...p, notes: e.target.value }))} /></div>
-            <Button onClick={addParticipant}><Plus className="h-4 w-4" /> Hinzufügen</Button>
-          </div>}
+              <div>
+                <Label>Notiz</Label>
+                <Textarea
+                  rows={2}
+                  value={newPart.notes}
+                  onChange={(e) => setNewPart((p) => ({ ...p, notes: e.target.value }))}
+                />
+              </div>
+              <Button onClick={addParticipant}>
+                <Plus className="h-4 w-4" /> Hinzufügen
+              </Button>
+            </div>
+          )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPartOpen(false)}>Schließen</Button>
+            <Button variant="outline" onClick={() => setPartOpen(false)}>
+              Schließen
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={reqOpen} onOpenChange={setReqOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Kursanfrage</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Kursanfrage</DialogTitle>
+          </DialogHeader>
           {reqLoading && <div className="text-sm text-muted-foreground">Wird geladen …</div>}
-          {!reqLoading && !reqRow && <div className="text-sm text-muted-foreground">Keine Anfrage gefunden.</div>}
+          {!reqLoading && !reqRow && (
+            <div className="text-sm text-muted-foreground">Keine Anfrage gefunden.</div>
+          )}
           {reqRow && (
             <div className="space-y-3 text-sm">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">{REQUEST_STATUS_LABEL[reqRow.status] || reqRow.status}</Badge>
-                <span className="text-muted-foreground">Eingegangen: {formatDateTimeBerlin(reqRow.created_at)}</span>
+                <Badge variant="outline">
+                  {REQUEST_STATUS_LABEL[reqRow.status] || reqRow.status}
+                </Badge>
+                <span className="text-muted-foreground">
+                  Eingegangen: {formatDateTimeBerlin(reqRow.created_at)}
+                </span>
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <div><div className="text-xs text-muted-foreground">Eltern / Kontakt</div><div className="font-medium">{reqRow.parent_name}</div></div>
-                <div><div className="text-xs text-muted-foreground">E-Mail</div><div className="font-medium break-all">{reqRow.parent_email}</div></div>
-                <div><div className="text-xs text-muted-foreground">Telefon</div><div className="font-medium">{reqRow.parent_phone || "—"}</div></div>
-                <div><div className="text-xs text-muted-foreground">Kontaktaufnahme erlaubt</div><div className="font-medium">{reqRow.contact_permission ? "Ja" : "Nein"}</div></div>
-                <div><div className="text-xs text-muted-foreground">Kind</div><div className="font-medium">{reqRow.child_name || "—"}</div></div>
-                <div><div className="text-xs text-muted-foreground">Geburtsdatum</div><div className="font-medium">{reqRow.child_dob ? fmtDate(reqRow.child_dob) : "—"}</div></div>
-                <div><div className="text-xs text-muted-foreground">Gewünschter Kurs</div><div className="font-medium">{reqRow.desired_course || "—"}</div></div>
-                <div><div className="text-xs text-muted-foreground">Schwimmniveau</div><div className="font-medium">{reqRow.swimming_level || "—"}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Eltern / Kontakt</div>
+                  <div className="font-medium">{reqRow.parent_name}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">E-Mail</div>
+                  <div className="font-medium break-all">{reqRow.parent_email}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Telefon</div>
+                  <div className="font-medium">{reqRow.parent_phone || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Kontaktaufnahme erlaubt</div>
+                  <div className="font-medium">{reqRow.contact_permission ? "Ja" : "Nein"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Kind</div>
+                  <div className="font-medium">{reqRow.child_name || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Geburtsdatum</div>
+                  <div className="font-medium">
+                    {reqRow.child_dob ? fmtDate(reqRow.child_dob) : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Gewünschter Kurs</div>
+                  <div className="font-medium">{reqRow.desired_course || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Schwimmniveau</div>
+                  <div className="font-medium">{reqRow.swimming_level || "—"}</div>
+                </div>
               </div>
               {reqRow.health_info && (
-                <div><div className="text-xs text-muted-foreground">Gesundheitshinweise</div><div className="whitespace-pre-wrap">{reqRow.health_info}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Gesundheitshinweise</div>
+                  <div className="whitespace-pre-wrap">{reqRow.health_info}</div>
+                </div>
               )}
               {reqRow.message && (
-                <div><div className="text-xs text-muted-foreground">Nachricht</div><div className="whitespace-pre-wrap">{reqRow.message}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Nachricht</div>
+                  <div className="whitespace-pre-wrap">{reqRow.message}</div>
+                </div>
               )}
               {reqRow.admin_notes && (
-                <div><div className="text-xs text-muted-foreground">Interne Notizen</div><div className="whitespace-pre-wrap">{reqRow.admin_notes}</div></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Interne Notizen</div>
+                  <div className="whitespace-pre-wrap">{reqRow.admin_notes}</div>
+                </div>
               )}
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReqOpen(false)}>Schließen</Button>
+            <Button variant="outline" onClick={() => setReqOpen(false)}>
+              Schließen
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
 
       <TransferParticipantDialog
         participant={transferPart}
-        courses={rows.filter(c => !(c as any).archived_at).map(c => ({ id: c.id, name: c.name, schedule: c.schedule, location: c.location, free: c.max_participants != null ? c.max_participants - (counts[c.id]?.confirmed ?? 0) : null }))}
+        courses={rows
+          .filter((c) => !(c as any).archived_at)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            schedule: c.schedule,
+            location: c.location,
+            free:
+              c.max_participants != null
+                ? c.max_participants - (counts[c.id]?.confirmed ?? 0)
+                : null,
+          }))}
         onClose={() => setTransferPart(null)}
-        onDone={async () => { setTransferPart(null); if (partCourse) await openParticipants(partCourse); await load(); }}
+        onDone={async () => {
+          setTransferPart(null);
+          if (partCourse) await openParticipants(partCourse);
+          await load();
+        }}
       />
 
-      <Dialog open={!!editPart} onOpenChange={v => !v && setEditPart(null)}>
+      <Dialog open={!!editPart} onOpenChange={(v) => !v && setEditPart(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Teilnehmer bearbeiten</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Teilnehmer bearbeiten</DialogTitle>
+          </DialogHeader>
           {editPart && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Name *</Label><Input value={editPart.participant_name || ""} onChange={e => setEditPart(p => p && { ...p, participant_name: e.target.value })} /></div>
+                <div>
+                  <Label>Name *</Label>
+                  <Input
+                    value={editPart.participant_name || ""}
+                    onChange={(e) =>
+                      setEditPart((p) => p && { ...p, participant_name: e.target.value })
+                    }
+                  />
+                </div>
                 <div>
                   <Label>Geburtsdatum</Label>
-                  <Input type="date" value={editPart.date_of_birth || ""} onChange={e => setEditPart(p => p && { ...p, date_of_birth: e.target.value })} />
-                  {editPart.date_of_birth && (() => {
-                    const a = ageAt(editPart.date_of_birth, partCourse?.starts_on);
-                    return a != null ? <div className="text-xs text-muted-foreground mt-1">{a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}</div> : null;
-                  })()}
+                  <Input
+                    type="date"
+                    value={editPart.date_of_birth || ""}
+                    onChange={(e) =>
+                      setEditPart((p) => p && { ...p, date_of_birth: e.target.value })
+                    }
+                  />
+                  {editPart.date_of_birth &&
+                    (() => {
+                      const a = ageAt(editPart.date_of_birth, partCourse?.starts_on);
+                      return a != null ? (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}
+                        </div>
+                      ) : null;
+                    })()}
                 </div>
-                <div><Label>E-Mail</Label><Input type="email" value={editPart.participant_email || ""} onChange={e => setEditPart(p => p && { ...p, participant_email: e.target.value })} /></div>
-                <div><Label>Telefon</Label><Input value={editPart.participant_phone || ""} onChange={e => setEditPart(p => p && { ...p, participant_phone: e.target.value })} /></div>
+                <div>
+                  <Label>E-Mail</Label>
+                  <Input
+                    type="email"
+                    value={editPart.participant_email || ""}
+                    onChange={(e) =>
+                      setEditPart((p) => p && { ...p, participant_email: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Telefon</Label>
+                  <Input
+                    value={editPart.participant_phone || ""}
+                    onChange={(e) =>
+                      setEditPart((p) => p && { ...p, participant_phone: e.target.value })
+                    }
+                  />
+                </div>
                 <div>
                   <Label>Status</Label>
-                  <Select value={editPart.status} onValueChange={(v: any) => setEditPart(p => p && { ...p, status: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={editPart.status}
+                    onValueChange={(v: any) => setEditPart((p) => p && { ...p, status: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     {/* „Warteliste“ gibt es nur über die Wartelisten-Funktionen (Status-Auswahl in der Teilnehmerliste) */}
-                    <SelectContent>{ENROLL_STATUS.filter(o => o.value !== "waiting" || editPart.status === "waiting").map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {ENROLL_STATUS.filter(
+                        (o) => o.value !== "waiting" || editPart.status === "waiting",
+                      ).map((o) => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-2"><Label>Wichtiger Hinweis zum Kind (für Trainer sichtbar)</Label><Textarea rows={2} placeholder="Gesundheit, Ängste, Besonderheiten …" value={editPart.notes || ""} onChange={e => setEditPart(p => p && { ...p, notes: e.target.value })} /></div>
-              {canManage && <div className="rounded-md border bg-muted/40 p-2"><Label className="flex items-center gap-1"><Lock className="h-3 w-3" />Interne Notiz (nur Vorstand – Trainer sehen das nicht)</Label><Textarea rows={2} placeholder="Zahlungsabsprache, Geschwisterkind, Umbuchung …" value={editPart.internal_notes || ""} onChange={e => setEditPart(p => p && { ...p, internal_notes: e.target.value })} /></div>}
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-2">
+                <Label>Wichtiger Hinweis zum Kind (für Trainer sichtbar)</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="Gesundheit, Ängste, Besonderheiten …"
+                  value={editPart.notes || ""}
+                  onChange={(e) => setEditPart((p) => p && { ...p, notes: e.target.value })}
+                />
+              </div>
+              {canManage && (
+                <div className="rounded-md border bg-muted/40 p-2">
+                  <Label className="flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    Interne Notiz (nur Vorstand – Trainer sehen das nicht)
+                  </Label>
+                  <Textarea
+                    rows={2}
+                    placeholder="Zahlungsabsprache, Geschwisterkind, Umbuchung …"
+                    value={editPart.internal_notes || ""}
+                    onChange={(e) =>
+                      setEditPart((p) => p && { ...p, internal_notes: e.target.value })
+                    }
+                  />
+                </div>
+              )}
 
-              {canManage && <div className="border-t pt-3 mt-2">
-                <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label>Mitglied?</Label>
-                    <Select
-                      value={editPart.is_member == null ? "unset" : editPart.is_member ? "yes" : "no"}
-                      onValueChange={(v) => setEditPart(p => {
-                        if (!p) return p;
-                        const next = v === "unset" ? null : v === "yes";
-                        // Preis mitziehen, solange er noch dem Standardpreis der bisherigen Stufe entspricht (oder leer ist)
-                        const memberPrice = partCourse?.price_member ?? null;
-                        const nonMemberPrice = partCourse?.price_non_member ?? null;
-                        const cur = p.price_amount == null ? null : Number(p.price_amount);
-                        const isStandard = cur == null || cur === memberPrice || cur === nonMemberPrice;
-                        let price = p.price_amount;
-                        if (isStandard && next === true && memberPrice != null) price = memberPrice;
-                        if (isStandard && next === false && nonMemberPrice != null) price = nonMemberPrice;
-                        return { ...p, is_member: next, price_amount: price };
-                      })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unset">— Unklar —</SelectItem>
-                        <SelectItem value="yes">Ja</SelectItem>
-                        <SelectItem value="no">Nein</SelectItem>
-                      </SelectContent>
-                    </Select>
+              {canManage && (
+                <div className="border-t pt-3 mt-2">
+                  <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label>Mitglied?</Label>
+                      <Select
+                        value={
+                          editPart.is_member == null ? "unset" : editPart.is_member ? "yes" : "no"
+                        }
+                        onValueChange={(v) =>
+                          setEditPart((p) => {
+                            if (!p) return p;
+                            const next = v === "unset" ? null : v === "yes";
+                            // Preis mitziehen, solange er noch dem Standardpreis der bisherigen Stufe entspricht (oder leer ist)
+                            const memberPrice = partCourse?.price_member ?? null;
+                            const nonMemberPrice = partCourse?.price_non_member ?? null;
+                            const cur = p.price_amount == null ? null : Number(p.price_amount);
+                            const isStandard =
+                              cur == null || cur === memberPrice || cur === nonMemberPrice;
+                            let price = p.price_amount;
+                            if (isStandard && next === true && memberPrice != null)
+                              price = memberPrice;
+                            if (isStandard && next === false && nonMemberPrice != null)
+                              price = nonMemberPrice;
+                            return { ...p, is_member: next, price_amount: price };
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unset">— Unklar —</SelectItem>
+                          <SelectItem value="yes">Ja</SelectItem>
+                          <SelectItem value="no">Nein</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Kursgebühr (€)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={editPart.price_amount ?? ""}
+                        onChange={(e) =>
+                          setEditPart(
+                            (p) =>
+                              p && {
+                                ...p,
+                                price_amount: e.target.value ? Number(e.target.value) : null,
+                              },
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={editPart.member_confirmed}
+                          onCheckedChange={(v) =>
+                            setEditPart((p) => p && { ...p, member_confirmed: !!v })
+                          }
+                        />
+                        Mitgliedschaft bestätigt (Buchhaltung)
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <Label>Kursgebühr (€)</Label>
-                    <Input type="number" step="0.01" value={editPart.price_amount ?? ""} onChange={e => setEditPart(p => p && { ...p, price_amount: e.target.value ? Number(e.target.value) : null })} />
-                  </div>
-                  <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={editPart.member_confirmed} onCheckedChange={v => setEditPart(p => p && { ...p, member_confirmed: !!v })} />
-                      Mitgliedschaft bestätigt (Buchhaltung)
-                    </label>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Elternkonto-Verknüpfung:{" "}
+                    {editPart.parent_user_id ? (
+                      <span className="font-mono">{editPart.parent_user_id}</span>
+                    ) : (
+                      "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"
+                    )}
                   </div>
                 </div>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Elternkonto-Verknüpfung: {editPart.parent_user_id ? <span className="font-mono">{editPart.parent_user_id}</span> : "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"}
-                </div>
-              </div>}
-
+              )}
 
               <div className="border-t pt-3 mt-2">
-                <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Award className="h-4 w-4" /> Kursergebnis</div>
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <Award className="h-4 w-4" /> Kursergebnis
+                </div>
                 <div className="text-sm space-y-1">
                   <div>
                     <span className="text-muted-foreground">Kursziel: </span>
-                    {editPart.goal_reached === true ? "erreicht" : editPart.goal_reached === false ? "nicht erreicht" : "offen"}
+                    {editPart.goal_reached === true
+                      ? "erreicht"
+                      : editPart.goal_reached === false
+                        ? "nicht erreicht"
+                        : "offen"}
                   </div>
-                  <div><span className="text-muted-foreground">Abzeichen: </span>{editPart.badge || "—"}</div>
-                  <div className="whitespace-pre-wrap"><span className="text-muted-foreground">Geschafft / Anmerkungen: </span>{editPart.achievement || "—"}</div>
+                  <div>
+                    <span className="text-muted-foreground">Abzeichen: </span>
+                    {editPart.badge || "—"}
+                  </div>
+                  <div className="whitespace-pre-wrap">
+                    <span className="text-muted-foreground">Geschafft / Anmerkungen: </span>
+                    {editPart.achievement || "—"}
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Das Kursergebnis wird von den Trainer:innen vor Ort im Trainerbereich unter „Meine Kurse“ erfasst.
+                  Das Kursergebnis wird von den Trainer:innen vor Ort im Trainerbereich unter „Meine
+                  Kurse“ erfasst.
                 </p>
               </div>
 
-              {canManage && <div className="border-t pt-3 mt-2">
-                <div className="font-semibold text-sm mb-2 flex items-center gap-2"><Euro className="h-4 w-4" /> Zahlung (Buchhaltung)</div>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={editPart.paid} onCheckedChange={v => setEditPart(p => p && { ...p, paid: !!v, paid_at: v ? (p.paid_at || new Date().toISOString()) : null })} />
-                  Kursgebühr bezahlt
-                </label>
-                {editPart.paid && editPart.paid_at && (
-                  <div className="text-xs text-muted-foreground mt-1">Bestätigt am {fmtDate(editPart.paid_at)}</div>
-                )}
-                <div className="mt-3"><Label>Zahlungsnotiz</Label><Textarea rows={2} placeholder="z.B. Überweisung, Bar, Rechnungsnr. …" value={editPart.payment_note || ""} onChange={e => setEditPart(p => p && { ...p, payment_note: e.target.value })} /></div>
-              </div>}
+              {canManage && (
+                <div className="border-t pt-3 mt-2">
+                  <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                    <Euro className="h-4 w-4" /> Zahlung (Buchhaltung)
+                  </div>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={editPart.paid}
+                      onCheckedChange={(v) =>
+                        setEditPart(
+                          (p) =>
+                            p && {
+                              ...p,
+                              paid: !!v,
+                              paid_at: v ? p.paid_at || new Date().toISOString() : null,
+                            },
+                        )
+                      }
+                    />
+                    Kursgebühr bezahlt
+                  </label>
+                  {editPart.paid && editPart.paid_at && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Bestätigt am {fmtDate(editPart.paid_at)}
+                    </div>
+                  )}
+                  <div className="mt-3">
+                    <Label>Zahlungsnotiz</Label>
+                    <Textarea
+                      rows={2}
+                      placeholder="z.B. Überweisung, Bar, Rechnungsnr. …"
+                      value={editPart.payment_note || ""}
+                      onChange={(e) =>
+                        setEditPart((p) => p && { ...p, payment_note: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditPart(null)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setEditPart(null)}>
+              Abbrechen
+            </Button>
             <Button onClick={savePart}>Speichern</Button>
           </DialogFooter>
         </DialogContent>
@@ -1884,34 +3615,70 @@ function Page() {
 
       <Dialog open={sessOpen} onOpenChange={setSessOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle>
+          </DialogHeader>
           <div className="rounded-md border bg-muted/30 p-3 space-y-2">
             <Label className="text-sm font-semibold">Terminliste einfügen</Label>
-            <p className="text-xs text-muted-foreground">Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren. Kursbeginn und -ende werden automatisch übernommen, Eltern sehen die Liste auf der Kursseite.</p>
-            <Textarea rows={6} value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027"} />
-            {bulkText.trim() && (() => { const p = parseSessionList(bulkText); return <p className="text-xs text-muted-foreground">Erkannt: {p.filter(x => !x.isBreak).length} Termine, {p.filter(x => x.isBreak).length} Pausen</p>; })()}
-            <Button size="sm" onClick={importSessions} disabled={bulkBusy || !bulkText.trim()}>{bulkBusy ? "Übernehme…" : "Termine übernehmen"}</Button>
+            <p className="text-xs text-muted-foreground">
+              Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren.
+              Kursbeginn und -ende werden automatisch übernommen, Eltern sehen die Liste auf der
+              Kursseite.
+            </p>
+            <Textarea
+              rows={6}
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              placeholder={
+                "1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027"
+              }
+            />
+            {bulkText.trim() &&
+              (() => {
+                const p = parseSessionList(bulkText);
+                return (
+                  <p className="text-xs text-muted-foreground">
+                    Erkannt: {p.filter((x) => !x.isBreak).length} Termine,{" "}
+                    {p.filter((x) => x.isBreak).length} Pausen
+                  </p>
+                );
+              })()}
+            <Button size="sm" onClick={importSessions} disabled={bulkBusy || !bulkText.trim()}>
+              {bulkBusy ? "Übernehme…" : "Termine übernehmen"}
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground">Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender, das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre Verfügbarkeit unter „Verfügbarkeit“.</p>
+          <p className="text-xs text-muted-foreground">
+            Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender,
+            das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre
+            Verfügbarkeit unter „Verfügbarkeit“.
+          </p>
           <div className="space-y-3">
-            {sessions.length === 0 && <div className="text-sm text-muted-foreground">Noch keine Termine.</div>}
-            {sessions.map(s => {
-              const nameOf = (id: string) => trainers.find(t => t.id === id)?.name || "Unbekannt";
-              const yes = sessAvail.filter(a => a.session_id === s.id && a.available);
-              const no = sessAvail.filter(a => a.session_id === s.id && !a.available);
-              const assignedIds = sessAssign.filter(a => a.session_id === s.id).map(a => a.trainer_id);
-              const declined = assignedIds.filter(id => no.some(n => n.trainer_id === id));
+            {sessions.length === 0 && (
+              <div className="text-sm text-muted-foreground">Noch keine Termine.</div>
+            )}
+            {sessions.map((s) => {
+              const nameOf = (id: string) => trainers.find((t) => t.id === id)?.name || "Unbekannt";
+              const yes = sessAvail.filter((a) => a.session_id === s.id && a.available);
+              const no = sessAvail.filter((a) => a.session_id === s.id && !a.available);
+              const assignedIds = sessAssign
+                .filter((a) => a.session_id === s.id)
+                .map((a) => a.trainer_id);
+              const declined = assignedIds.filter((id) => no.some((n) => n.trainer_id === id));
               return (
                 <div key={s.id} className="rounded-md border p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
-                    <Input type="date" value={s.session_date} onChange={e => updateSessionDate(s.id, e.target.value)} />
+                    <Input
+                      type="date"
+                      value={s.session_date}
+                      onChange={(e) => updateSessionDate(s.id, e.target.value)}
+                    />
                     <Input
                       type="time"
                       className="w-28"
                       title="Beginn"
                       value={(s.start_time || "").slice(0, 5)}
-                      onChange={e => updateSessionTime(s.id, "start_time", e.target.value)}
+                      onChange={(e) => updateSessionTime(s.id, "start_time", e.target.value)}
                     />
                     <span className="text-xs text-muted-foreground">bis</span>
                     <Input
@@ -1919,26 +3686,55 @@ function Page() {
                       className="w-28"
                       title="Ende"
                       value={(s.end_time || "").slice(0, 5)}
-                      onChange={e => updateSessionTime(s.id, "end_time", e.target.value)}
+                      onChange={(e) => updateSessionTime(s.id, "end_time", e.target.value)}
                     />
-                    <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 pl-10 text-xs">
-                    {yes.map(a => <Badge key={a.trainer_id} className="border-transparent bg-green-600 text-white">{nameOf(a.trainer_id)}</Badge>)}
-                    {no.map(a => <Badge key={a.trainer_id} className="border-transparent bg-red-600 text-white">{nameOf(a.trainer_id)}</Badge>)}
-                    {yes.length === 0 && no.length === 0 && <span className="text-muted-foreground">Noch keine Rückmeldungen</span>}
+                    {yes.map((a) => (
+                      <Badge
+                        key={a.trainer_id}
+                        className="border-transparent bg-green-600 text-white"
+                      >
+                        {nameOf(a.trainer_id)}
+                      </Badge>
+                    ))}
+                    {no.map((a) => (
+                      <Badge
+                        key={a.trainer_id}
+                        className="border-transparent bg-red-600 text-white"
+                      >
+                        {nameOf(a.trainer_id)}
+                      </Badge>
+                    ))}
+                    {yes.length === 0 && no.length === 0 && (
+                      <span className="text-muted-foreground">Noch keine Rückmeldungen</span>
+                    )}
                   </div>
                   <div className="space-y-1 pl-10">
-                    <Label className="text-xs text-muted-foreground">Eingeteilt (Mehrfachauswahl)</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      Eingeteilt (Mehrfachauswahl)
+                    </Label>
                     <div className="flex flex-wrap gap-2">
-                      {trainers.length === 0 && <span className="text-xs text-muted-foreground">Keine Trainer gefunden</span>}
+                      {trainers.length === 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          Keine Trainer gefunden
+                        </span>
+                      )}
                       {trainers
                         .slice()
                         .sort((a, b) => {
-                          const rank = (id: string) => (yes.some(y => y.trainer_id === id) ? 0 : no.some(n => n.trainer_id === id) ? 2 : 1);
+                          const rank = (id: string) =>
+                            yes.some((y) => y.trainer_id === id)
+                              ? 0
+                              : no.some((n) => n.trainer_id === id)
+                                ? 2
+                                : 1;
                           return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de");
                         })
-                        .map(t => {
+                        .map((t) => {
                           const on = assignedIds.includes(t.id);
                           return (
                             <Button
@@ -1947,24 +3743,35 @@ function Page() {
                               size="sm"
                               variant="outline"
                               onClick={() => toggleAssignment(s.id, t.id, !on)}
-                              className={on ? "border-transparent bg-primary text-primary-foreground hover:bg-primary/90" : ""}
+                              className={
+                                on
+                                  ? "border-transparent bg-primary text-primary-foreground hover:bg-primary/90"
+                                  : ""
+                              }
                             >
                               {t.name}
                               <span className="ml-1 text-[10px] opacity-80">
-                                {yes.some(y => y.trainer_id === t.id) ? "kann" : no.some(n => n.trainer_id === t.id) ? "kann nicht" : ""}
+                                {yes.some((y) => y.trainer_id === t.id)
+                                  ? "kann"
+                                  : no.some((n) => n.trainer_id === t.id)
+                                    ? "kann nicht"
+                                    : ""}
                               </span>
                             </Button>
                           );
                         })}
                     </div>
-                    {assignedIds.length === 0 && <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>}
+                    {assignedIds.length === 0 && (
+                      <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>
+                    )}
                     {declined.length > 0 && (
-                      <span className="text-xs text-red-600">Abgesagt, aber eingeteilt: {declined.map(nameOf).join(", ")}</span>
+                      <span className="text-xs text-red-600">
+                        Abgesagt, aber eingeteilt: {declined.map(nameOf).join(", ")}
+                      </span>
                     )}
                   </div>
                 </div>
               );
-
             })}
           </div>
           {sessCourse && (
@@ -1977,13 +3784,17 @@ function Page() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSessOpen(false)}>Schließen</Button>
-            <Button onClick={addSession} disabled={sessions.length >= 30}><Plus className="h-4 w-4" /> Termin hinzufügen</Button>
+            <Button variant="outline" onClick={() => setSessOpen(false)}>
+              Schließen
+            </Button>
+            <Button onClick={addSession} disabled={sessions.length >= 30}>
+              <Plus className="h-4 w-4" /> Termin hinzufügen
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!removeState} onOpenChange={v => !v && setRemovePart(null)}>
+      <Dialog open={!!removeState} onOpenChange={(v) => !v && setRemovePart(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Teilnehmer entfernen</DialogTitle>
@@ -1997,10 +3808,28 @@ function Page() {
               <div className="space-y-1">
                 <Label>Grund</Label>
                 <Select
-                  value={["Nichtzahlung", "Rücktritt der Eltern", "Sonstiges"].includes(removeState.reason) ? removeState.reason : "Sonstiges"}
-                  onValueChange={v => setRemovePart(s => s && { ...s, reason: v === "Sonstiges" ? "" : v, blocklist: v === "Nichtzahlung" ? true : s.blocklist, notify: v === "Nichtzahlung" ? "unpaid" : s.notify })}
+                  value={
+                    ["Nichtzahlung", "Rücktritt der Eltern", "Sonstiges"].includes(
+                      removeState.reason,
+                    )
+                      ? removeState.reason
+                      : "Sonstiges"
+                  }
+                  onValueChange={(v) =>
+                    setRemovePart(
+                      (s) =>
+                        s && {
+                          ...s,
+                          reason: v === "Sonstiges" ? "" : v,
+                          blocklist: v === "Nichtzahlung" ? true : s.blocklist,
+                          notify: v === "Nichtzahlung" ? "unpaid" : s.notify,
+                        },
+                    )
+                  }
                 >
-                  <SelectTrigger><SelectValue placeholder="Grund wählen" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Grund wählen" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Nichtzahlung">Nichtzahlung</SelectItem>
                     <SelectItem value="Rücktritt der Eltern">Rücktritt der Eltern</SelectItem>
@@ -2009,7 +3838,7 @@ function Page() {
                 </Select>
                 <Textarea
                   value={removeState.reason}
-                  onChange={e => setRemovePart(s => s && { ...s, reason: e.target.value })}
+                  onChange={(e) => setRemovePart((s) => s && { ...s, reason: e.target.value })}
                   placeholder="Notiz zum Grund (optional)"
                   rows={2}
                 />
@@ -2019,12 +3848,27 @@ function Page() {
                 <Select
                   value={removeState.participant.participant_email ? removeState.notify : "none"}
                   disabled={!removeState.participant.participant_email}
-                  onValueChange={v => setRemovePart(s => s && { ...s, notify: v as "unpaid" | "agreed" | "none", blocklist: v === "unpaid" ? true : s.blocklist })}
+                  onValueChange={(v) =>
+                    setRemovePart(
+                      (s) =>
+                        s && {
+                          ...s,
+                          notify: v as "unpaid" | "agreed" | "none",
+                          blocklist: v === "unpaid" ? true : s.blocklist,
+                        },
+                    )
+                  }
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unpaid">Platz freigegeben (keine Rückmeldung/Zahlung)</SelectItem>
-                    <SelectItem value="agreed">Abmeldung wie besprochen (z. B. Krankheit)</SelectItem>
+                    <SelectItem value="unpaid">
+                      Platz freigegeben (keine Rückmeldung/Zahlung)
+                    </SelectItem>
+                    <SelectItem value="agreed">
+                      Abmeldung wie besprochen (z. B. Krankheit)
+                    </SelectItem>
                     <SelectItem value="none">Keine E-Mail senden</SelectItem>
                   </SelectContent>
                 </Select>
@@ -2038,7 +3882,7 @@ function Page() {
                 {removeState.notify !== "none" && !!removeState.participant.participant_email && (
                   <Textarea
                     value={removeState.note}
-                    onChange={e => setRemovePart(s => s && { ...s, note: e.target.value })}
+                    onChange={(e) => setRemovePart((s) => s && { ...s, note: e.target.value })}
                     placeholder="Persönliche Ergänzung für die E-Mail (optional)"
                     rows={3}
                   />
@@ -2048,19 +3892,22 @@ function Page() {
                 <Checkbox
                   className="mt-0.5"
                   checked={removeState.blocklist}
-                  onCheckedChange={v => setRemovePart(s => s && { ...s, blocklist: !!v })}
+                  onCheckedChange={(v) => setRemovePart((s) => s && { ...s, blocklist: !!v })}
                 />
                 <span>
                   Auf die Sperrliste setzen
                   <span className="block text-xs text-muted-foreground">
-                    Zukünftige Buchungen und Wartelisteneinträge werden blockiert (jederzeit unter „Sperrliste“ rücknehmbar).
+                    Zukünftige Buchungen und Wartelisteneinträge werden blockiert (jederzeit unter
+                    „Sperrliste“ rücknehmbar).
                   </span>
                 </span>
               </label>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemovePart(null)}>Abbrechen</Button>
+            <Button variant="outline" onClick={() => setRemovePart(null)}>
+              Abbrechen
+            </Button>
             <Button variant="destructive" onClick={confirmRemovePart} disabled={removing}>
               {removing ? "Wird entfernt…" : "Entfernen"}
             </Button>
@@ -2068,7 +3915,5 @@ function Page() {
         </DialogContent>
       </Dialog>
     </div>
-
   );
 }
-

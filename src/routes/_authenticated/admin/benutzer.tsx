@@ -3,13 +3,35 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -20,13 +42,19 @@ export const Route = createFileRoute("/_authenticated/admin/benutzer")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
-    catch { throw redirect({ to: "/portal" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } });
+    } catch {
+      throw redirect({ to: "/portal" });
+    }
   },
   head: () => ({
     meta: [
       { title: "Benutzerverwaltung – Adminbereich | Sicher Schwimmen e.V." },
-      { name: "description", content: "Verwaltung von Benutzerkonten, Rollen und Freischaltungen." },
+      {
+        name: "description",
+        content: "Verwaltung von Benutzerkonten, Rollen und Freischaltungen.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -34,9 +62,9 @@ export const Route = createFileRoute("/_authenticated/admin/benutzer")({
 });
 
 const ROLES = ["admin", "board", "trainer", "member", "parent"] as const;
-type Role = typeof ROLES[number];
+type Role = (typeof ROLES)[number];
 const STATUSES = ["pending", "active", "disabled", "archived"] as const;
-type Status = typeof STATUSES[number];
+type Status = (typeof STATUSES)[number];
 
 const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrator",
@@ -77,7 +105,9 @@ function Page() {
   // Administratoren (und das Löschen von Konten) bleiben Administratoren vorbehalten – der Server erzwingt das ebenfalls
   const isAdmin = roles.includes("admin");
   const [myId, setMyId] = useState<string | null>(null);
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyId(data.user?.id ?? null)); }, []);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMyId(data.user?.id ?? null));
+  }, []);
   const isAdminRow = (id: string) => (rolesByUser[id] || []).includes("admin");
   const locked = (id: string) => !isAdmin && isAdminRow(id);
 
@@ -99,7 +129,7 @@ function Page() {
       await deleteUserFn({ data: { userId: toDelete.id } });
       toast.success("Benutzer gelöscht");
       setToDelete(null);
-      setSelected(s => s && s.id === toDelete.id ? null : s);
+      setSelected((s) => (s && s.id === toDelete.id ? null : s));
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Löschen fehlgeschlagen");
@@ -122,7 +152,9 @@ function Page() {
     setRolesByUser(map);
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function setStatus(id: string, status: Status) {
     if (!canManage) return;
@@ -130,7 +162,7 @@ function Page() {
       await setUserStatusFn({ data: { userId: id, status } });
       toast.success("Status aktualisiert");
       await load();
-      setSelected(s => s && s.id === id ? { ...s, status } : s);
+      setSelected((s) => (s && s.id === id ? { ...s, status } : s));
     } catch (e: any) {
       toast.error(e?.message || "Fehler");
     }
@@ -150,10 +182,12 @@ function Page() {
   // Trainer-Modus: nur aktive Mitglieder (Rolle „member") anzeigen
   const visibleRows = useMemo(() => {
     if (canManage) return rows;
-    return rows.filter(p => p.status === "active" && (rolesByUser[p.id] || []).includes("member"));
+    return rows.filter(
+      (p) => p.status === "active" && (rolesByUser[p.id] || []).includes("member"),
+    );
   }, [rows, rolesByUser, canManage]);
 
-  const filtered = visibleRows.filter(r => {
+  const filtered = visibleRows.filter((r) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return [r.email, r.first_name, r.last_name].filter(Boolean).join(" ").toLowerCase().includes(q);
@@ -172,82 +206,168 @@ function Page() {
               : "Übersicht der aktiven Vereinsmitglieder (nur Anzeige)."}
           </p>
         </div>
-        <Input value={query} onChange={e => setQuery(e.target.value)} placeholder="Suche nach Name oder E-Mail…" className="max-w-xs" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Suche nach Name oder E-Mail…"
+          className="max-w-xs"
+        />
       </div>
 
-      <CollapsibleCard title="Benutzerliste" storageKey="admin-benutzer" contentClassName="px-0 overflow-x-auto">
-          <Table>
-            <TableHeader>
+      <CollapsibleCard
+        title="Benutzerliste"
+        storageKey="admin-benutzer"
+        contentClassName="px-0 overflow-x-auto"
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>E-Mail</TableHead>
+              {canManage && <TableHead>Status</TableHead>}
+              {canManage ? <TableHead>Rollen</TableHead> : <TableHead>Telefon</TableHead>}
+              <TableHead>{canManage ? "Registriert" : "Mitglied seit"}</TableHead>
+              {canManage && <TableHead></TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && (
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>E-Mail</TableHead>
-                {canManage && <TableHead>Status</TableHead>}
-                {canManage ? <TableHead>Rollen</TableHead> : <TableHead>Telefon</TableHead>}
-                <TableHead>{canManage ? "Registriert" : "Mitglied seit"}</TableHead>
-                {canManage && <TableHead></TableHead>}
+                <TableCell
+                  colSpan={canManage ? 6 : 4}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  Lade…
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && <TableRow><TableCell colSpan={canManage ? 6 : 4} className="text-center py-8 text-muted-foreground">Lade…</TableCell></TableRow>}
-              {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={canManage ? 6 : 4} className="text-center py-8 text-muted-foreground">Keine Einträge gefunden.</TableCell></TableRow>}
-              {filtered.map(p => (
-                <TableRow key={p.id} className={canManage ? "cursor-pointer" : ""} onClick={() => canManage && setSelected(p)}>
-                  <TableCell className="font-medium">{[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
-                  <TableCell className="text-sm">{p.email}</TableCell>
-                  {canManage && <TableCell><Badge className={STATUS_COLOR[p.status]} variant="secondary">{STATUS_LABEL[p.status]}</Badge></TableCell>}
-                  {canManage
-                    ? <TableCell className="text-xs">{(rolesByUser[p.id] || []).map(r => ROLE_LABEL[r]).join(", ") || <span className="text-muted-foreground">—</span>}</TableCell>
-                    : <TableCell className="text-sm">{p.phone || <span className="text-muted-foreground">—</span>}</TableCell>}
-                  <TableCell className="text-xs text-muted-foreground">{formatDateBerlin(p.created_at)}</TableCell>
-                  {canManage && (
-                    <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>Details</Button>
-                      {isAdmin && p.id !== myId && (
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            )}
+            {!loading && filtered.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={canManage ? 6 : 4}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  Keine Einträge gefunden.
+                </TableCell>
+              </TableRow>
+            )}
+            {filtered.map((p) => (
+              <TableRow
+                key={p.id}
+                className={canManage ? "cursor-pointer" : ""}
+                onClick={() => canManage && setSelected(p)}
+              >
+                <TableCell className="font-medium">
+                  {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
+                </TableCell>
+                <TableCell className="text-sm">{p.email}</TableCell>
+                {canManage && (
+                  <TableCell>
+                    <Badge className={STATUS_COLOR[p.status]} variant="secondary">
+                      {STATUS_LABEL[p.status]}
+                    </Badge>
+                  </TableCell>
+                )}
+                {canManage ? (
+                  <TableCell className="text-xs">
+                    {(rolesByUser[p.id] || []).map((r) => ROLE_LABEL[r]).join(", ") || (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                ) : (
+                  <TableCell className="text-sm">
+                    {p.phone || <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                )}
+                <TableCell className="text-xs text-muted-foreground">
+                  {formatDateBerlin(p.created_at)}
+                </TableCell>
+                {canManage && (
+                  <TableCell className="text-right space-x-1" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>
+                      Details
+                    </Button>
+                    {isAdmin && p.id !== myId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setToDelete(p)}
+                        aria-label="Benutzer löschen"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CollapsibleCard>
 
       {canManage && (
-        <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+        <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
           <DialogContent className="max-w-2xl">
             {selected && (
               <>
                 <DialogHeader>
-                  <DialogTitle>{[selected.first_name, selected.last_name].filter(Boolean).join(" ") || selected.email}</DialogTitle>
+                  <DialogTitle>
+                    {[selected.first_name, selected.last_name].filter(Boolean).join(" ") ||
+                      selected.email}
+                  </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="text-sm grid grid-cols-2 gap-2">
-                    <div><span className="text-muted-foreground">E-Mail:</span> {selected.email}</div>
-                    <div><span className="text-muted-foreground">Telefon:</span> {selected.phone || "—"}</div>
+                    <div>
+                      <span className="text-muted-foreground">E-Mail:</span> {selected.email}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Telefon:</span>{" "}
+                      {selected.phone || "—"}
+                    </div>
                   </div>
 
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Status</div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      Status
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {STATUSES.map(s => (
-                        <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} disabled={locked(selected.id) || (selected.id === myId && s !== "active")} onClick={() => setStatus(selected.id, s)}>{STATUS_LABEL[s]}</Button>
+                      {STATUSES.map((s) => (
+                        <Button
+                          key={s}
+                          size="sm"
+                          variant={selected.status === s ? "default" : "outline"}
+                          disabled={locked(selected.id) || (selected.id === myId && s !== "active")}
+                          onClick={() => setStatus(selected.id, s)}
+                        >
+                          {STATUS_LABEL[s]}
+                        </Button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Rollen</div>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      Rollen
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
-                      {ROLES.map(r => {
+                      {ROLES.map((r) => {
                         const has = (rolesByUser[selected.id] || []).includes(r);
                         // Nur Administratoren vergeben/entziehen „Administrator“; die eigene Admin-Rolle bleibt erhalten
-                        const disabled = locked(selected.id) || (r === "admin" && (!isAdmin || (has && selected.id === myId)));
+                        const disabled =
+                          locked(selected.id) ||
+                          (r === "admin" && (!isAdmin || (has && selected.id === myId)));
                         return (
-                          <label key={r} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
-                            <Checkbox checked={has} disabled={disabled} onCheckedChange={() => toggleRole(selected.id, r, has)} />
+                          <label
+                            key={r}
+                            className="flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50"
+                          >
+                            <Checkbox
+                              checked={has}
+                              disabled={disabled}
+                              onCheckedChange={() => toggleRole(selected.id, r, has)}
+                            />
                             <span>{ROLE_LABEL[r]}</span>
                           </label>
                         );
@@ -255,14 +375,23 @@ function Page() {
                     </div>
                   </div>
                 </div>
-                {locked(selected.id) && <p className="text-xs text-muted-foreground">Konten von Administratoren können nur Administratoren ändern.</p>}
+                {locked(selected.id) && (
+                  <p className="text-xs text-muted-foreground">
+                    Konten von Administratoren können nur Administratoren ändern.
+                  </p>
+                )}
                 <DialogFooter className="gap-2 sm:justify-between">
                   {isAdmin && selected.id !== myId ? (
                     <Button variant="destructive" onClick={() => setToDelete(selected)}>
-                      <Trash2 className="h-4 w-4" />Benutzer löschen
+                      <Trash2 className="h-4 w-4" />
+                      Benutzer löschen
                     </Button>
-                  ) : <span />}
-                  <Button variant="outline" onClick={() => setSelected(null)}>Schließen</Button>
+                  ) : (
+                    <span />
+                  )}
+                  <Button variant="outline" onClick={() => setSelected(null)}>
+                    Schließen
+                  </Button>
                 </DialogFooter>
               </>
             )}
@@ -271,17 +400,30 @@ function Page() {
       )}
 
       {canManage && (
-        <AlertDialog open={!!toDelete} onOpenChange={o => !o && !deleting && setToDelete(null)}>
+        <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && !deleting && setToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Benutzer endgültig löschen?</AlertDialogTitle>
               <AlertDialogDescription>
-                {toDelete && (<>Das Konto von <strong>{[toDelete.first_name, toDelete.last_name].filter(Boolean).join(" ") || toDelete.email}</strong> wird unwiderruflich gelöscht – inklusive Profil, Rollen und zugehörigen Daten.</>)}
+                {toDelete && (
+                  <>
+                    Das Konto von{" "}
+                    <strong>
+                      {[toDelete.first_name, toDelete.last_name].filter(Boolean).join(" ") ||
+                        toDelete.email}
+                    </strong>{" "}
+                    wird unwiderruflich gelöscht – inklusive Profil, Rollen und zugehörigen Daten.
+                  </>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
-              <AlertDialogAction disabled={deleting} onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertDialogAction
+                disabled={deleting}
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
                 {deleting ? "Lösche…" : "Endgültig löschen"}
               </AlertDialogAction>
             </AlertDialogFooter>

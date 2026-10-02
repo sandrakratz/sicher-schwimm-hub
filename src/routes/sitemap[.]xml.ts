@@ -34,8 +34,8 @@ export const Route = createFileRoute("/sitemap.xml")({
         ];
 
         const { createClient } = await import("@supabase/supabase-js");
-        const key = process.env['SUPABASE_PUBLISHABLE_KEY']!;
-        const supabase = createClient(process.env['SUPABASE_URL']!, key, {
+        const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+        const supabase = createClient(process.env["SUPABASE_URL"]!, key, {
           auth: { persistSession: false, autoRefreshToken: false },
           global: {
             fetch: (input, init) => {
@@ -66,7 +66,6 @@ export const Route = createFileRoute("/sitemap.xml")({
           );
           if (!data || data.length < pageSize) break;
         }
-
 
         const urls = entries.map((e) =>
           [

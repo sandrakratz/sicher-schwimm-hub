@@ -45,7 +45,9 @@ export const listActiveMembers = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("memberships")
       // Bewusst ohne sepa_* Spalten – Bankdaten verlassen den Server nicht.
-      .select("id, first_name, last_name, membership_type, approved_at, created_at, date_of_birth, email, phone, family_members")
+      .select(
+        "id, first_name, last_name, membership_type, approved_at, created_at, date_of_birth, email, phone, family_members",
+      )
       .eq("status", "active")
       .order("last_name", { ascending: true });
     if (error) throw new Error(error.message);

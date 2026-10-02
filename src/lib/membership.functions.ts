@@ -51,9 +51,7 @@ export const getMyMembership = createServerFn({ method: "GET" })
 export const setMembershipStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z
-      .object({ id: z.string().uuid(), status: z.enum(STATUSES) })
-      .parse(input),
+    z.object({ id: z.string().uuid(), status: z.enum(STATUSES) }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
@@ -74,12 +72,23 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
     if (data.status === "active") {
       try {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: m } = await supabaseAdmin.from("memberships").select("email, first_name, membership_type").eq("id", data.id).maybeSingle();
+        const { data: m } = await supabaseAdmin
+          .from("memberships")
+          .select("email, first_name, membership_type")
+          .eq("id", data.id)
+          .maybeSingle();
         if (m?.email) {
           const { sendAccountActivatedEmail } = await import("@/lib/account-activation.server");
-          await sendAccountActivatedEmail({ email: m.email, firstName: m.first_name, membershipType: m.membership_type, senderUserId: context.userId });
+          await sendAccountActivatedEmail({
+            email: m.email,
+            firstName: m.first_name,
+            membershipType: m.membership_type,
+            senderUserId: context.userId,
+          });
         }
-      } catch (e) { console.error("[setMembershipStatus] activation mail failed", e); }
+      } catch (e) {
+        console.error("[setMembershipStatus] activation mail failed", e);
+      }
     }
     let repriced = 0;
     if (data.status === "active") {
@@ -93,10 +102,16 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
             action: "membership.repriced",
             entity: "memberships",
             entity_id: data.id,
-            metadata: { updated: res.updated, alreadyPaid: res.alreadyPaid, keptPrice: res.keptPrice },
+            metadata: {
+              updated: res.updated,
+              alreadyPaid: res.alreadyPaid,
+              keptPrice: res.keptPrice,
+            },
           });
         }
-      } catch (e) { console.error("[setMembershipStatus] reprice failed", e); }
+      } catch (e) {
+        console.error("[setMembershipStatus] reprice failed", e);
+      }
     }
     return { ok: true, repriced };
   });
@@ -123,15 +138,10 @@ export const syncMemberPrices = createServerFn({ method: "POST" })
 
 export const deleteMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({ id: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
-    const { error } = await context.supabase
-      .from("memberships")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await context.supabase.from("memberships").delete().eq("id", data.id);
     if (error) throw new Response(error.message, { status: 500 });
     const { logAudit } = await import("@/lib/audit.server");
     await logAudit(context.supabase, context.userId, {

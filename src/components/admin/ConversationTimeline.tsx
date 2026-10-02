@@ -34,9 +34,7 @@ function ReplyItem({ r }: { r: ReplyEntry }) {
         <StatusBadge status={r.status} />
       </div>
       <div className="font-semibold text-sm">{r.subject || "(Kein Betreff)"}</div>
-      {r.error_message && (
-        <div className="text-xs text-red-600">Fehler: {r.error_message}</div>
-      )}
+      {r.error_message && <div className="text-xs text-red-600">Fehler: {r.error_message}</div>}
       {!hasContent && (
         <div className="text-xs italic text-muted-foreground">
           Inhalt nicht gespeichert (Antwort vor Aktivierung der Inhalts-Protokollierung).
@@ -56,7 +54,7 @@ function ReplyItem({ r }: { r: ReplyEntry }) {
         />
       )}
       {r.body_html && (
-        <Button variant="ghost" size="sm" onClick={() => setShowHtml(v => !v)}>
+        <Button variant="ghost" size="sm" onClick={() => setShowHtml((v) => !v)}>
           {showHtml ? "Text-Ansicht" : "HTML-Ansicht"}
         </Button>
       )}
@@ -83,11 +81,12 @@ export function ConversationTimeline({
     setLoading(true);
     (async () => {
       try {
-        const res = kind === "message"
-          ? await getMessageConversation({ data: { messageId: id } })
-          : kind === "waitlist"
-            ? await getWaitlistConversation({ data: { entryId: id } })
-            : await getCourseRequestConversation({ data: { requestId: id } });
+        const res =
+          kind === "message"
+            ? await getMessageConversation({ data: { messageId: id } })
+            : kind === "waitlist"
+              ? await getWaitlistConversation({ data: { entryId: id } })
+              : await getCourseRequestConversation({ data: { requestId: id } });
         if (!cancelled) setReplies(res.replies);
       } catch {
         if (!cancelled) setReplies([]);
@@ -95,7 +94,9 @@ export function ConversationTimeline({
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [kind, id, reloadKey]);
 
   return (
@@ -103,7 +104,9 @@ export function ConversationTimeline({
       <h3 className="font-semibold">Verlauf</h3>
       <div className="rounded-md border bg-muted/30 p-3 space-y-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="text-xs text-muted-foreground">Eingegangen · {formatDateTimeBerlin(original.when)}</div>
+          <div className="text-xs text-muted-foreground">
+            Eingegangen · {formatDateTimeBerlin(original.when)}
+          </div>
           <Badge variant="outline">Eingang</Badge>
         </div>
         <div className="font-semibold text-sm">{original.title}</div>
@@ -115,9 +118,11 @@ export function ConversationTimeline({
 
       {loading && <div className="text-xs text-muted-foreground">Lade Antworten …</div>}
       {!loading && replies.length === 0 && (
-        <div className="text-xs text-muted-foreground italic">Noch keine Antworten über die Website versendet.</div>
+        <div className="text-xs text-muted-foreground italic">
+          Noch keine Antworten über die Website versendet.
+        </div>
       )}
-      {!loading && replies.map(r => <ReplyItem key={r.id} r={r} />)}
+      {!loading && replies.map((r) => <ReplyItem key={r.id} r={r} />)}
     </div>
   );
 }

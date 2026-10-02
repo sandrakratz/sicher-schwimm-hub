@@ -77,7 +77,7 @@ export function paymentState(p: {
     paymentDueDays: p.paymentDueDays,
   });
   const now = p.now ?? new Date();
-  const immediate = p.method ? p.method === 'immediate' : terms.immediate;
+  const immediate = p.method ? p.method === "immediate" : terms.immediate;
   const dueDate = p.dueDate ? new Date(`${p.dueDate}T23:59:59`) : terms.dueDate;
   const dueLabel = p.dueDate ? formatDateBerlin(p.dueDate) : terms.dueDateLabel;
   if (immediate) {

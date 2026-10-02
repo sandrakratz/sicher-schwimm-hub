@@ -6,10 +6,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
-import { listDeliveryEvents, type DeliveryEvent, type DeliveryCounts } from "@/lib/email-logs.functions";
+import {
+  listDeliveryEvents,
+  type DeliveryEvent,
+  type DeliveryCounts,
+} from "@/lib/email-logs.functions";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { RefreshCw } from "lucide-react";
 import { TestSendDialog } from "@/components/admin/TestSendDialog";
@@ -18,8 +35,11 @@ export const Route = createFileRoute("/_authenticated/admin/versandstatus")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/admin/benutzer" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/admin/benutzer" });
+    }
   },
   component: Page,
 });
@@ -110,7 +130,9 @@ function Page() {
     }
   }, [load, range, recipientFilter, eventFilter, debouncedSearch]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   // Filter wirken in der Datenbank; die Liste zeigt die neuesten Einträge
   const filtered = events;
@@ -120,27 +142,32 @@ function Page() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-bold text-primary-deep">Versandstatus</h1>
         <div className="flex gap-2 items-center">
-        <TestSendDialog onDone={() => void refresh()} />
+          <TestSendDialog onDone={() => void refresh()} />
           <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
             <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
           </Button>
         </div>
       </div>
 
-
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Card className="border-0 shadow-soft"><CardContent className="py-4">
-          <div className="text-xs text-muted-foreground">Versendet</div>
-          <div className="text-2xl font-bold text-green-700">{counts.sent}</div>
-        </CardContent></Card>
-        <Card className="border-0 shadow-soft"><CardContent className="py-4">
-          <div className="text-xs text-muted-foreground">Fehlgeschlagen / blockiert</div>
-          <div className="text-2xl font-bold text-red-700">{counts.failed}</div>
-        </CardContent></Card>
-        <Card className="border-0 shadow-soft"><CardContent className="py-4">
-          <div className="text-xs text-muted-foreground">Rückläufer / Beschwerden</div>
-          <div className="text-2xl font-bold text-orange-600">{counts.bounced}</div>
-        </CardContent></Card>
+        <Card className="border-0 shadow-soft">
+          <CardContent className="py-4">
+            <div className="text-xs text-muted-foreground">Versendet</div>
+            <div className="text-2xl font-bold text-green-700">{counts.sent}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-soft">
+          <CardContent className="py-4">
+            <div className="text-xs text-muted-foreground">Fehlgeschlagen / blockiert</div>
+            <div className="text-2xl font-bold text-red-700">{counts.failed}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-soft">
+          <CardContent className="py-4">
+            <div className="text-xs text-muted-foreground">Rückläufer / Beschwerden</div>
+            <div className="text-2xl font-bold text-orange-600">{counts.bounced}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="border-0 shadow-soft mb-4">
@@ -148,18 +175,27 @@ function Page() {
           <div className="space-y-1">
             <Label className="text-xs">Zeitraum</Label>
             <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {(Object.keys(RANGE_LABEL) as RangeKey[]).map(k => (
-                  <SelectItem key={k} value={k}>{RANGE_LABEL[k]}</SelectItem>
+                {(Object.keys(RANGE_LABEL) as RangeKey[]).map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {RANGE_LABEL[k]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Empfänger-Typ</Label>
-            <Select value={recipientFilter} onValueChange={(v) => setRecipientFilter(v as RecipientFilter)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={recipientFilter}
+              onValueChange={(v) => setRecipientFilter(v as RecipientFilter)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Empfänger</SelectItem>
                 <SelectItem value="admin">Vereins-Postfach (intern)</SelectItem>
@@ -170,7 +206,9 @@ function Page() {
           <div className="space-y-1">
             <Label className="text-xs">Status</Label>
             <Select value={eventFilter} onValueChange={(v) => setEventFilter(v as EventFilter)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle Ereignisse</SelectItem>
                 <SelectItem value="sent">Versendet</SelectItem>
@@ -181,7 +219,11 @@ function Page() {
           </div>
           <div className="space-y-1">
             <Label className="text-xs">E-Mail-Adresse</Label>
-            <Input placeholder="Suche nach Empfänger" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input
+              placeholder="Suche nach Empfänger"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </CardContent>
       </Card>
@@ -192,51 +234,62 @@ function Page() {
         </Card>
       )}
 
-      <CollapsibleCard title="Versandstatus" storageKey="admin-versandstatus" contentClassName="px-0">
-          {loading ? (
-            <div className="py-10 text-center text-muted-foreground">Lade Zustellereignisse…</div>
-          ) : filtered.length === 0 ? (
-            <div className="py-10 text-center text-muted-foreground">Keine Zustellereignisse im gewählten Zeitraum.</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Zeitpunkt</TableHead>
-                  <TableHead>Empfänger</TableHead>
-                  <TableHead>Typ</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((e, i) => {
-                  const isAdmin = (e.recipient || "").toLowerCase() === ADMIN_EMAIL;
-                  return (
-                    <TableRow key={`${e.message_id || "x"}-${e.timestamp}-${i}`}>
-                      <TableCell className="whitespace-nowrap text-xs">{formatDateTimeBerlin(e.timestamp)}</TableCell>
-                      <TableCell className="text-sm">{e.recipient}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{isAdmin ? "Intern" : "Eltern / Mitglieder"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={EVENT_CLASS[e.event_type] || ""}>
-                          {EVENT_LABEL[e.event_type] || e.event_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{e.status || "—"}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
+      <CollapsibleCard
+        title="Versandstatus"
+        storageKey="admin-versandstatus"
+        contentClassName="px-0"
+      >
+        {loading ? (
+          <div className="py-10 text-center text-muted-foreground">Lade Zustellereignisse…</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-10 text-center text-muted-foreground">
+            Keine Zustellereignisse im gewählten Zeitraum.
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Zeitpunkt</TableHead>
+                <TableHead>Empfänger</TableHead>
+                <TableHead>Typ</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Details</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((e, i) => {
+                const isAdmin = (e.recipient || "").toLowerCase() === ADMIN_EMAIL;
+                return (
+                  <TableRow key={`${e.message_id || "x"}-${e.timestamp}-${i}`}>
+                    <TableCell className="whitespace-nowrap text-xs">
+                      {formatDateTimeBerlin(e.timestamp)}
+                    </TableCell>
+                    <TableCell className="text-sm">{e.recipient}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{isAdmin ? "Intern" : "Eltern / Mitglieder"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={EVENT_CLASS[e.event_type] || ""}>
+                        {EVENT_LABEL[e.event_type] || e.event_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {e.status || "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </CollapsibleCard>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Angezeigt werden die neuesten {filtered.length} von {total} passenden Einträgen; die Kennzahlen oben zählen alle Einträge des Zeitraums. Zustellereignisse des E-Mail-Versands
+        Angezeigt werden die neuesten {filtered.length} von {total} passenden Einträgen; die
+        Kennzahlen oben zählen alle Einträge des Zeitraums. Zustellereignisse des E-Mail-Versands
         {historyStartsAt ? ` (verfügbar ab ${formatDateTimeBerlin(historyStartsAt)})` : ""}.
-        Öffnungs- oder Leseraten werden nicht erfasst. Die Inhalte der gesendeten E-Mails
-        findest du unter „Gesendete E-Mails“.
+        Öffnungs- oder Leseraten werden nicht erfasst. Die Inhalte der gesendeten E-Mails findest du
+        unter „Gesendete E-Mails“.
       </p>
     </div>
   );

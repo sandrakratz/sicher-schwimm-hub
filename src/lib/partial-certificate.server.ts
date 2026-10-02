@@ -42,7 +42,11 @@ export async function sendPartialCertificate(
     templateName: "partial-certificate",
     recipientEmail: cert.email,
     idempotencyKey: opts.force ? `${idempotencyKey}-${Date.now()}` : idempotencyKey,
-    metadata: { participant_id: participantId, course_id: cert.courseId, idempotency_key: idempotencyKey },
+    metadata: {
+      participant_id: participantId,
+      course_id: cert.courseId,
+      idempotency_key: idempotencyKey,
+    },
     senderUserId: opts.senderUserId ?? null,
     templateData: {
       parent_name: cert.parentName,

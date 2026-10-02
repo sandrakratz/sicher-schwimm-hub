@@ -57,7 +57,9 @@ export const listInbox = createServerFn({ method: "POST" })
     const [requests, waitlist] = await Promise.all([
       supabaseAdmin
         .from("course_requests")
-        .select("id,parent_name,parent_email,child_name,desired_course,message,health_info,status,created_at")
+        .select(
+          "id,parent_name,parent_email,child_name,desired_course,message,health_info,status,created_at",
+        )
         .in("status", OPEN_REQUEST)
         .is("waitlist_archived_at", null)
         .order("created_at", { ascending: false })

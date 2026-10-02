@@ -1,12 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Download, Search, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -19,8 +32,11 @@ export const Route = createFileRoute("/_authenticated/admin/widerrufe")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/admin/benutzer" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/admin/benutzer" });
+    }
   },
   component: Page,
 });
@@ -83,7 +99,9 @@ function Page() {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [status, from, to]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line */
+  }, [status, from, to]);
 
   async function changeStatus(id: string, next: Row["status"]) {
     try {
@@ -98,17 +116,43 @@ function Page() {
 
   const csvHref = useMemo(() => {
     const header = [
-      "Referenz", "Eingegangen", "Status", "Vorname", "Nachname", "E-Mail",
-      "Telefon", "Kind", "Kurs", "Buchungsdatum", "Bemerkungen", "Widerrufstext", "IP",
+      "Referenz",
+      "Eingegangen",
+      "Status",
+      "Vorname",
+      "Nachname",
+      "E-Mail",
+      "Telefon",
+      "Kind",
+      "Kurs",
+      "Buchungsdatum",
+      "Bemerkungen",
+      "Widerrufstext",
+      "IP",
     ];
-    const csv = [header.join(";")].concat(
-      rows.map((r) => [
-        r.reference_number, formatDateTimeBerlin(r.created_at), STATUS_LABEL[r.status],
-        r.parent_first_name, r.parent_last_name, r.email, r.phone, r.child_name,
-        r.course_name, r.booking_date, (r.notes || "").replace(/[\r\n;]/g, " "),
-        r.revocation_text.replace(/[\r\n;]/g, " "), r.ip_address || "",
-      ].map((c) => csvCell(c)).join(";")),
-    ).join("\n");
+    const csv = [header.join(";")]
+      .concat(
+        rows.map((r) =>
+          [
+            r.reference_number,
+            formatDateTimeBerlin(r.created_at),
+            STATUS_LABEL[r.status],
+            r.parent_first_name,
+            r.parent_last_name,
+            r.email,
+            r.phone,
+            r.child_name,
+            r.course_name,
+            r.booking_date,
+            (r.notes || "").replace(/[\r\n;]/g, " "),
+            r.revocation_text.replace(/[\r\n;]/g, " "),
+            r.ip_address || "",
+          ]
+            .map((c) => csvCell(c))
+            .join(";"),
+        ),
+      )
+      .join("\n");
     return "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
   }, [rows]);
 
@@ -129,7 +173,9 @@ function Page() {
             <div>
               <Label className="text-xs">Status</Label>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Alle</SelectItem>
                   <SelectItem value="eingegangen">Eingegangen</SelectItem>
@@ -148,8 +194,18 @@ function Page() {
             </div>
             <div>
               <Label className="text-xs">Suche</Label>
-              <form onSubmit={(e) => { e.preventDefault(); load(); }} className="flex gap-2">
-                <Input placeholder="Name, E-Mail, Referenz…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  load();
+                }}
+                className="flex gap-2"
+              >
+                <Input
+                  placeholder="Name, E-Mail, Referenz…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
                 <Button type="submit" variant="outline" size="icon" aria-label="Suchen">
                   <Search className="h-4 w-4" />
                 </Button>
@@ -172,36 +228,62 @@ function Page() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={7}>Lädt…</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={7}>Lädt…</TableCell>
+                  </TableRow>
                 ) : rows.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-muted-foreground">Keine Widerrufe gefunden.</TableCell></TableRow>
-                ) : rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-xs">{r.reference_number}</TableCell>
-                    <TableCell>{formatDateTimeBerlin(r.created_at)}</TableCell>
-                    <TableCell>{r.parent_first_name} {r.parent_last_name}<div className="text-xs text-muted-foreground">{r.email}</div></TableCell>
-                    <TableCell>{r.child_name}</TableCell>
-                    <TableCell>{r.course_name}<div className="text-xs text-muted-foreground">Gebucht: {formatDateBerlin(r.booking_date)}</div></TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Select value={r.status} onValueChange={(v) => changeStatus(r.id, v as Row["status"])}>
-                          <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="eingegangen">Eingegangen</SelectItem>
-                            <SelectItem value="in_bearbeitung">In Bearbeitung</SelectItem>
-                            <SelectItem value="abgeschlossen">Abgeschlossen</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button variant="ghost" size="icon" onClick={() => setDetail(r)} aria-label="Details">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-muted-foreground">
+                      Keine Widerrufe gefunden.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  rows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-mono text-xs">{r.reference_number}</TableCell>
+                      <TableCell>{formatDateTimeBerlin(r.created_at)}</TableCell>
+                      <TableCell>
+                        {r.parent_first_name} {r.parent_last_name}
+                        <div className="text-xs text-muted-foreground">{r.email}</div>
+                      </TableCell>
+                      <TableCell>{r.child_name}</TableCell>
+                      <TableCell>
+                        {r.course_name}
+                        <div className="text-xs text-muted-foreground">
+                          Gebucht: {formatDateBerlin(r.booking_date)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[r.status]}>{STATUS_LABEL[r.status]}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Select
+                            value={r.status}
+                            onValueChange={(v) => changeStatus(r.id, v as Row["status"])}
+                          >
+                            <SelectTrigger className="h-8 w-[150px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="eingegangen">Eingegangen</SelectItem>
+                              <SelectItem value="in_bearbeitung">In Bearbeitung</SelectItem>
+                              <SelectItem value="abgeschlossen">Abgeschlossen</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDetail(r)}
+                            aria-label="Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -217,7 +299,10 @@ function Page() {
             <div className="space-y-2 text-sm">
               <Row label="Eingegangen" value={formatDateTimeBerlin(detail.created_at)} />
               <Row label="Status" value={STATUS_LABEL[detail.status]} />
-              <Row label="Eltern" value={`${detail.parent_first_name} ${detail.parent_last_name}`} />
+              <Row
+                label="Eltern"
+                value={`${detail.parent_first_name} ${detail.parent_last_name}`}
+              />
               <Row label="E-Mail" value={detail.email} />
               <Row label="Telefon" value={detail.phone} />
               <Row label="Kind" value={detail.child_name} />
@@ -226,7 +311,9 @@ function Page() {
               <Row label="Bemerkungen" value={detail.notes || "—"} />
               <div>
                 <div className="text-xs text-muted-foreground">Widerrufstext</div>
-                <div className="whitespace-pre-wrap rounded border p-3 bg-muted/40 mt-1">{detail.revocation_text}</div>
+                <div className="whitespace-pre-wrap rounded border p-3 bg-muted/40 mt-1">
+                  {detail.revocation_text}
+                </div>
               </div>
               <Row label="IP-Adresse" value={detail.ip_address || "—"} />
             </div>

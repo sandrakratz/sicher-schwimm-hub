@@ -32,8 +32,13 @@ export function MediaUploadField({ folder, value, mime, alt, onChange, onAltChan
 
     setBusy(true);
     const path = `${folder}/${Date.now()}-${f.name.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`;
-    const { error } = await supabase.storage.from("media").upload(path, f, { upsert: false, contentType: f.type });
-    if (error) { setBusy(false); return toast.error(error.message); }
+    const { error } = await supabase.storage
+      .from("media")
+      .upload(path, f, { upsert: false, contentType: f.type });
+    if (error) {
+      setBusy(false);
+      return toast.error(error.message);
+    }
     // Alte Datei bleibt bestehen, bis gespeichert wird – sonst wäre sie beim Abbrechen verloren.
     onChange({ image_url: path, image_mime: f.type });
     setBusy(false);
@@ -50,7 +55,13 @@ export function MediaUploadField({ folder, value, mime, alt, onChange, onAltChan
     <div className="space-y-2">
       <Label>Bild oder PDF (JPG, PNG, PDF – max. 10 MB)</Label>
       <div className="flex items-center gap-2">
-        <Input ref={fileRef} type="file" accept="image/jpeg,image/png,application/pdf" onChange={onPick} disabled={busy} />
+        <Input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,application/pdf"
+          onChange={onPick}
+          disabled={busy}
+        />
         {value && (
           <Button type="button" variant="ghost" size="sm" onClick={removeFile} disabled={busy}>
             <Trash2 className="h-4 w-4 text-destructive" />
@@ -62,7 +73,11 @@ export function MediaUploadField({ folder, value, mime, alt, onChange, onAltChan
           <MediaAttachment path={value} mime={mime} alt={alt} className="max-w-sm" />
           <div>
             <Label>Bildtext (optional)</Label>
-            <Input value={alt || ""} onChange={e => onAltChange(e.target.value)} placeholder="Kurze Beschreibung des Bildes" />
+            <Input
+              value={alt || ""}
+              onChange={(e) => onAltChange(e.target.value)}
+              placeholder="Kurze Beschreibung des Bildes"
+            />
           </div>
         </>
       )}

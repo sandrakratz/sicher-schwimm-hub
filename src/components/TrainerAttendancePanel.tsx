@@ -10,7 +10,13 @@ import {
 } from "@/lib/trainer-attendance.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -41,17 +47,16 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
     setSessions(res.sessions);
     setRows(res.rows);
     setIsStaff(res.isStaff);
-    setSessionId(prev => {
-      if (prev && res.sessions.some(s => s.id === prev)) return prev;
+    setSessionId((prev) => {
+      if (prev && res.sessions.some((s) => s.id === prev)) return prev;
       const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
       const next =
-        res.sessions.find(s => s.session_date === today) ||
-        res.sessions.find(s => s.session_date >= today) ||
+        res.sessions.find((s) => s.session_date === today) ||
+        res.sessions.find((s) => s.session_date >= today) ||
         res.sessions[res.sessions.length - 1];
       return next?.id || "";
     });
   }
-
 
   useEffect(() => {
     let cancelled = false;
@@ -62,7 +67,8 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
         if (!cancelled) setMe(u.user?.id ?? null);
         await refresh();
       } catch (e: unknown) {
-        if (!cancelled) toast.error((e as Error)?.message || "Trainer-Anwesenheit konnte nicht geladen werden");
+        if (!cancelled)
+          toast.error((e as Error)?.message || "Trainer-Anwesenheit konnte nicht geladen werden");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -97,20 +103,26 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
     }
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">Trainer-Anwesenheit wird geladen…</p>;
+  if (loading)
+    return <p className="text-sm text-muted-foreground">Trainer-Anwesenheit wird geladen…</p>;
   if (sessions.length === 0) {
-    return <p className="text-sm text-muted-foreground">Für diesen Kurs sind noch keine Termine angelegt.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        Für diesen Kurs sind noch keine Termine angelegt.
+      </p>
+    );
   }
 
-  const s = sessions.find(x => x.id === sessionId) ?? sessions[0];
-  const entries = rows.filter(r => r.session_id === s.id);
-  const mine = entries.find(r => r.trainer_id === me);
-  const openCount = entries.filter(r => !r.confirmed_at).length;
+  const s = sessions.find((x) => x.id === sessionId) ?? sessions[0];
+  const entries = rows.filter((r) => r.session_id === s.id);
+  const mine = entries.find((r) => r.trainer_id === me);
+  const openCount = entries.filter((r) => !r.confirmed_at).length;
 
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Nachweis für die Abrechnung: Trainer:innen bestätigen ihre eigene Anwesenheit, der Vorstand zeichnet gegen.
+        Nachweis für die Abrechnung: Trainer:innen bestätigen ihre eigene Anwesenheit, der Vorstand
+        zeichnet gegen.
       </p>
 
       <Select value={s.id} onValueChange={setSessionId}>
@@ -118,8 +130,10 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
           <SelectValue placeholder="Termin wählen" />
         </SelectTrigger>
         <SelectContent>
-          {sessions.map(x => (
-            <SelectItem key={x.id} value={x.id}>{sessionLabel(x)}</SelectItem>
+          {sessions.map((x) => (
+            <SelectItem key={x.id} value={x.id}>
+              {sessionLabel(x)}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -127,17 +141,22 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
       <div className="rounded-lg border p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-semibold">{sessionLabel(s)}</span>
-          {isStaff && entries.length > 0 && (
-            openCount > 0 ? (
+          {isStaff &&
+            entries.length > 0 &&
+            (openCount > 0 ? (
               <Button size="sm" disabled={busy === s.id} onClick={() => confirmSession(s.id, true)}>
                 {openCount} Eintrag/Einträge bestätigen
               </Button>
             ) : (
-              <Button size="sm" variant="outline" disabled={busy === s.id} onClick={() => confirmSession(s.id, false)}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy === s.id}
+                onClick={() => confirmSession(s.id, false)}
+              >
                 Bestätigung aufheben
               </Button>
-            )
-          )}
+            ))}
         </div>
 
         <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-sm">
@@ -167,8 +186,10 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
         )}
 
         <div className="mt-2 space-y-1">
-          {entries.length === 0 && <span className="text-xs text-muted-foreground">Noch keine Eintragungen.</span>}
-          {entries.map(r => (
+          {entries.length === 0 && (
+            <span className="text-xs text-muted-foreground">Noch keine Eintragungen.</span>
+          )}
+          {entries.map((r) => (
             <div key={r.trainer_id} className="flex flex-wrap items-center gap-2 text-xs">
               <Badge
                 className={
@@ -179,7 +200,9 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
               >
                 {r.trainer_name}: {r.present ? "anwesend" : "nicht anwesend"}
               </Badge>
-              <span className="text-muted-foreground">erfasst {formatDateTimeBerlin(r.recorded_at)}</span>
+              <span className="text-muted-foreground">
+                erfasst {formatDateTimeBerlin(r.recorded_at)}
+              </span>
               {r.confirmed_at ? (
                 <span className="text-green-700">
                   bestätigt {formatDateTimeBerlin(r.confirmed_at)}
@@ -195,6 +218,5 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
     </div>
   );
 }
-
 
 export default TrainerAttendancePanel;

@@ -7,16 +7,28 @@ export function useMediaUrl(path?: string | null) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    if (!path) { setUrl(null); return; }
-    supabase.storage.from("media").createSignedUrl(path, 60 * 60).then(async ({ data }) => {
-      let signed = data?.signedUrl ?? null;
-      // Besucher ohne Anmeldung: Link über den Server, nur für öffentliche Beiträge.
-      if (!signed) {
-        try { signed = (await getPublicMediaUrl({ data: { path } })).url; } catch { signed = null; }
-      }
-      if (active) setUrl(signed);
-    });
-    return () => { active = false; };
+    if (!path) {
+      setUrl(null);
+      return;
+    }
+    supabase.storage
+      .from("media")
+      .createSignedUrl(path, 60 * 60)
+      .then(async ({ data }) => {
+        let signed = data?.signedUrl ?? null;
+        // Besucher ohne Anmeldung: Link über den Server, nur für öffentliche Beiträge.
+        if (!signed) {
+          try {
+            signed = (await getPublicMediaUrl({ data: { path } })).url;
+          } catch {
+            signed = null;
+          }
+        }
+        if (active) setUrl(signed);
+      });
+    return () => {
+      active = false;
+    };
   }, [path]);
   return url;
 }

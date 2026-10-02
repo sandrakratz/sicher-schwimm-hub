@@ -56,9 +56,11 @@ export function HelperGroupsPanel({
     }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [eventId, signups.length]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [eventId, signups.length]);
 
-  const trainerName = (id: string) => trainers.find(t => t.id === id)?.name || "Unbekannt";
+  const trainerName = (id: string) => trainers.find((t) => t.id === id)?.name || "Unbekannt";
 
   async function add() {
     if (!name.trim()) return toast.error("Bitte einen Namen für die Helferstelle angeben");
@@ -113,18 +115,18 @@ export function HelperGroupsPanel({
     <div>
       <div className="mb-2 text-sm font-medium">Helferstellen</div>
       <p className="mb-2 text-xs text-muted-foreground">
-        Lege fest, welche Aufgaben besetzt werden müssen (z. B. Kuchenstand, Erste Hilfe). Sobald genügend
-        Zusagen vorliegen, wird die Stelle automatisch als besetzt markiert.
+        Lege fest, welche Aufgaben besetzt werden müssen (z. B. Kuchenstand, Erste Hilfe). Sobald
+        genügend Zusagen vorliegen, wird die Stelle automatisch als besetzt markiert.
       </p>
 
       <div className="divide-y rounded-md border">
         {groups.length === 0 && (
           <p className="p-3 text-sm text-muted-foreground">Noch keine Helferstellen angelegt.</p>
         )}
-        {groups.map(g => {
-          const helpers = signups.filter(s => s.group_id === g.id && s.available);
+        {groups.map((g) => {
+          const helpers = signups.filter((s) => s.group_id === g.id && s.available);
           // gezählt werden Personen, nicht Zeitfenster
-          const people = new Set(helpers.map(h => helperKey(h))).size;
+          const people = new Set(helpers.map((h) => helperKey(h))).size;
           const full = people >= g.needed_count;
           return (
             <div key={g.id} className="space-y-2 p-3">
@@ -132,7 +134,9 @@ export function HelperGroupsPanel({
                 <Input
                   className="h-8 w-48"
                   defaultValue={g.name}
-                  onBlur={e => { if (e.target.value !== g.name) patch(g, { name: e.target.value }); }}
+                  onBlur={(e) => {
+                    if (e.target.value !== g.name) patch(g, { name: e.target.value });
+                  }}
                 />
                 <span className="text-xs text-muted-foreground">benötigt</span>
                 <Input
@@ -140,7 +144,7 @@ export function HelperGroupsPanel({
                   min={1}
                   className="h-8 w-16"
                   defaultValue={g.needed_count}
-                  onBlur={e => {
+                  onBlur={(e) => {
                     const v = Number(e.target.value);
                     if (v >= 1 && v !== g.needed_count) patch(g, { needed_count: v });
                   }}
@@ -149,14 +153,20 @@ export function HelperGroupsPanel({
                   type="datetime-local"
                   className="h-8 w-[13rem]"
                   defaultValue={toBerlinInput(g.starts_at)}
-                  onBlur={e => { if (e.target.value !== toBerlinInput(g.starts_at)) patch(g, { starts_at: fromBerlinInput(e.target.value) }); }}
+                  onBlur={(e) => {
+                    if (e.target.value !== toBerlinInput(g.starts_at))
+                      patch(g, { starts_at: fromBerlinInput(e.target.value) });
+                  }}
                 />
                 <span className="text-xs text-muted-foreground">bis</span>
                 <Input
                   type="datetime-local"
                   className="h-8 w-[13rem]"
                   defaultValue={toBerlinInput(g.ends_at)}
-                  onBlur={e => { if (e.target.value !== toBerlinInput(g.ends_at)) patch(g, { ends_at: fromBerlinInput(e.target.value) }); }}
+                  onBlur={(e) => {
+                    if (e.target.value !== toBerlinInput(g.ends_at))
+                      patch(g, { ends_at: fromBerlinInput(e.target.value) });
+                  }}
                 />
                 {full ? (
                   <Badge className="gap-1 border-transparent bg-green-600 text-white">
@@ -173,7 +183,7 @@ export function HelperGroupsPanel({
               </div>
               <div className="text-xs text-muted-foreground">
                 {helpers.length > 0
-                  ? `Zusagen: ${helpers.map(h => h.helper_name || trainerName(h.trainer_id)).join(", ")}`
+                  ? `Zusagen: ${helpers.map((h) => h.helper_name || trainerName(h.trainer_id)).join(", ")}`
                   : "Noch keine Zusagen für diese Stelle."}
               </div>
             </div>
@@ -186,14 +196,14 @@ export function HelperGroupsPanel({
           className="h-8 w-48"
           placeholder="Neue Helferstelle"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
         />
         <Input
           type="number"
           min={1}
           className="h-8 w-16"
           value={needed}
-          onChange={e => setNeeded(Math.max(1, Number(e.target.value) || 1))}
+          onChange={(e) => setNeeded(Math.max(1, Number(e.target.value) || 1))}
         />
         <Button size="sm" variant="outline" disabled={busy} onClick={add}>
           <Plus className="h-4 w-4" /> Hinzufügen

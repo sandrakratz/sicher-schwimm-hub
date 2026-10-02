@@ -58,14 +58,18 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
   if (variant === "compact") {
     return (
       <div className="space-y-3 text-sm">
-        <h2 className="font-display text-lg font-bold text-primary-deep">Baderegeln zum Mitnehmen</h2>
+        <h2 className="font-display text-lg font-bold text-primary-deep">
+          Baderegeln zum Mitnehmen
+        </h2>
         <p className="text-muted-foreground">
-          Unsere 10 Baderegeln plus Rettungskette – kindgerecht erklärt für alle, die auf dem Weg zum Seepferdchen sind.
+          Unsere 10 Baderegeln plus Rettungskette – kindgerecht erklärt für alle, die auf dem Weg
+          zum Seepferdchen sind.
         </p>
         {preview}
         {download}
         <p className="text-[11px] text-muted-foreground">
-          Quellen: DLRG e.V. – Baderegeln · Deutscher Schwimm-Verband e.V. – Seepferdchen &amp; Sicherheit im Wasser
+          Quellen: DLRG e.V. – Baderegeln · Deutscher Schwimm-Verband e.V. – Seepferdchen &amp;
+          Sicherheit im Wasser
         </p>
         {dialog}
       </div>
@@ -80,12 +84,14 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
             Baderegeln für dein Seepferdchen
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Zehn einfache Baderegeln und die Rettungskette – kindgerecht illustriert. Schauen Sie das Poster gemeinsam
-            mit Ihrem Kind an oder laden Sie es herunter und hängen Sie es zu Hause auf.
+            Zehn einfache Baderegeln und die Rettungskette – kindgerecht illustriert. Schauen Sie
+            das Poster gemeinsam mit Ihrem Kind an oder laden Sie es herunter und hängen Sie es zu
+            Hause auf.
           </p>
           {download}
           <p className="text-[11px] text-muted-foreground mt-3">
-            Quellen: DLRG e.V. – Baderegeln · Deutscher Schwimm-Verband e.V. – Seepferdchen &amp; Sicherheit im Wasser
+            Quellen: DLRG e.V. – Baderegeln · Deutscher Schwimm-Verband e.V. – Seepferdchen &amp;
+            Sicherheit im Wasser
           </p>
         </div>
         {preview}

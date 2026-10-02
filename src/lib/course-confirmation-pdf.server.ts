@@ -20,25 +20,46 @@ function writer(page: PDFPage, font: PDFFont, bold: PDFFont, cursor: Cursor) {
   const left = 56;
   const width = 595.28 - left * 2;
   return {
-    text(value: string, opts: { size?: number; bold?: boolean; gap?: number; color?: [number, number, number] } = {}) {
+    text(
+      value: string,
+      opts: { size?: number; bold?: boolean; gap?: number; color?: [number, number, number] } = {},
+    ) {
       const size = opts.size ?? 10.5;
       const f = opts.bold ? bold : font;
       const color = opts.color ?? [0.06, 0.09, 0.16];
       const lines = wrap(WIN_ANSI_SAFE(value), f, size, width);
       for (const line of lines) {
         cursor.y -= size + 3;
-        page.drawText(line, { x: left, y: cursor.y, size, font: f, color: rgb(color[0], color[1], color[2]) });
+        page.drawText(line, {
+          x: left,
+          y: cursor.y,
+          size,
+          font: f,
+          color: rgb(color[0], color[1], color[2]),
+        });
       }
       cursor.y -= opts.gap ?? 0;
     },
     row(label: string, value: string, size = 10.5) {
       const f = font;
       cursor.y -= size + 3;
-      page.drawText(WIN_ANSI_SAFE(label), { x: left, y: cursor.y, size, font: bold, color: rgb(0.06, 0.09, 0.16) });
+      page.drawText(WIN_ANSI_SAFE(label), {
+        x: left,
+        y: cursor.y,
+        size,
+        font: bold,
+        color: rgb(0.06, 0.09, 0.16),
+      });
       const lines = wrap(WIN_ANSI_SAFE(value), f, size, width - 150);
       lines.forEach((line, i) => {
         if (i > 0) cursor.y -= size + 3;
-        page.drawText(line, { x: left + 150, y: cursor.y, size, font: f, color: rgb(0.06, 0.09, 0.16) });
+        page.drawText(line, {
+          x: left + 150,
+          y: cursor.y,
+          size,
+          font: f,
+          color: rgb(0.06, 0.09, 0.16),
+        });
       });
     },
     rule(gap = 8) {
@@ -87,7 +108,9 @@ export async function renderConfirmationPdf(input: ConfirmationInput): Promise<U
   return await pdf.save();
 }
 
-export async function renderConfirmationsPdf(inputs: Array<ConfirmationInput>): Promise<Uint8Array> {
+export async function renderConfirmationsPdf(
+  inputs: Array<ConfirmationInput>,
+): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   for (const input of inputs) await addConfirmationPage(pdf, input);
   return await pdf.save();
@@ -99,7 +122,13 @@ async function drawQr(page: PDFPage, payload: string, x: number, y: number, size
   const count = qr.modules.size;
   const data = qr.modules.data;
   const cell = size / count;
-  page.drawRectangle({ x: x - cell, y: y - cell, width: size + cell * 2, height: size + cell * 2, color: rgb(1, 1, 1) });
+  page.drawRectangle({
+    x: x - cell,
+    y: y - cell,
+    width: size + cell * 2,
+    height: size + cell * 2,
+    color: rgb(1, 1, 1),
+  });
   for (let r = 0; r < count; r += 1) {
     for (let c = 0; c < count; c += 1) {
       if (!data[r * count + c]) continue;
@@ -174,7 +203,10 @@ async function addConfirmationPage(pdf: PDFDocument, input: ConfirmationInput) {
   if (d.epcPayload) {
     w.space(14);
     w.text("QR-Code für die Echtzeit-/Sofortüberweisung", { size: 12, bold: true });
-    w.text("Scannen Sie den Code mit Ihrer Banking-App - Empfänger, IBAN, Betrag und Verwendungszweck werden automatisch übernommen.", { size: 9.5 });
+    w.text(
+      "Scannen Sie den Code mit Ihrer Banking-App - Empfänger, IBAN, Betrag und Verwendungszweck werden automatisch übernommen.",
+      { size: 9.5 },
+    );
     w.space(6);
     await drawQr(page, d.epcPayload, 56, cursor.y - 110, 104);
     cursor.y -= 116;
