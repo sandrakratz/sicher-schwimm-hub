@@ -1,5 +1,10 @@
 const TZ = "Europe/Berlin";
 
+/** Heutiges Datum in Berlin (YYYY-MM-DD) – nicht UTC, sonst stimmt „heute“ nachts zwischen 0 und 2 Uhr nicht. */
+export function todayBerlinIso(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date());
+}
+
 export function formatDateBerlin(input: string | Date | null | undefined): string {
   if (!input) return "—";
   try {

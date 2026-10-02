@@ -172,6 +172,7 @@ type ProgramRow = {
   target_group: string | null;
   age_range: string | null;
   min_age_years: number | null;
+  max_age_years?: number | null;
   description: string | null;
   requirements: string | null;
   duration: string | null;
@@ -625,12 +626,18 @@ function Page() {
 
   async function saveProgram() {
     if (!editingProg.name) return toast.error("Name erforderlich");
+    const slugValue = editingProg.slug || slugify(editingProg.name);
+    // Die Adresse erscheint in Links und E-Mails: sprechend, klein geschrieben, mindestens 3 Zeichen
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slugValue) || slugValue.length < 3) {
+      return toast.error("Adresse (Slug): mindestens 3 Zeichen, nur Kleinbuchstaben, Ziffern und Bindestriche (z. B. „schwimmstarter“).");
+    }
     const payload: any = {
       name: editingProg.name,
       slug: editingProg.slug || slugify(editingProg.name),
       target_group: editingProg.target_group || null,
       age_range: editingProg.age_range || null,
       min_age_years: editingProg.min_age_years ?? null,
+      max_age_years: editingProg.max_age_years ?? null,
       description: editingProg.description || null,
       requirements: editingProg.requirements || null,
       course_info: editingProg.course_info || null,
@@ -1227,10 +1234,11 @@ function Page() {
               <div><Label>Beschreibung</Label><Textarea rows={3} value={editingProg.description || ""} onChange={e => setEditingProg(p => ({ ...p, description: e.target.value }))} /><Hint>Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der Detailseite.</Hint></div>
               <div><Label>Voraussetzungen</Label><Textarea rows={2} value={editingProg.requirements || ""} onChange={e => setEditingProg(p => ({ ...p, requirements: e.target.value }))} /><Hint>Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.</Hint></div>
               <div><Label>Ablauf & Wichtiges für den Kurstag</Label><Textarea rows={6} value={editingProg.course_info || ""} onChange={e => setEditingProg(p => ({ ...p, course_info: e.target.value }))} placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"} /><Hint>Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.</Hint></div>
-              <div className="grid sm:grid-cols-4 gap-3">
+              <div className="grid sm:grid-cols-5 gap-3">
                 <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
                 <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
-                <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei der Buchung.</Hint></div>
+                <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung und Warteliste.</Hint></div>
+                <div><Label>Höchstalter (Jahre)</Label><Input type="number" value={editingProg.max_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, max_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine Obergrenze. Prüfung bei Buchung und Warteliste.</Hint></div>
                 <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /><Hint>Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").</Hint></div>
               </div>
               <div className="grid sm:grid-cols-4 gap-3 items-end">
@@ -1299,7 +1307,8 @@ function Page() {
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Zielgruppe</Label><Input value={editingProg.target_group || ""} onChange={e => setEditingProg(p => ({ ...p, target_group: e.target.value }))} /><Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint></div>
               <div><Label>Altersangabe</Label><Input value={editingProg.age_range || ""} onChange={e => setEditingProg(p => ({ ...p, age_range: e.target.value }))} /><Hint>Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).</Hint></div>
-              <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei der Buchung.</Hint></div>
+              <div><Label>Mindestalter (Jahre)</Label><Input type="number" value={editingProg.min_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, min_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung und Warteliste.</Hint></div>
+              <div><Label>Höchstalter (Jahre)</Label><Input type="number" value={editingProg.max_age_years ?? ""} onChange={e => setEditingProg(p => ({ ...p, max_age_years: e.target.value === "" ? null : Number(e.target.value) }))} /><Hint>Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine Obergrenze.</Hint></div>
               <div><Label>Dauer</Label><Input value={editingProg.duration || ""} onChange={e => setEditingProg(p => ({ ...p, duration: e.target.value }))} /><Hint>Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").</Hint></div>
             </div>
             <div><Label>Ort</Label><Input value={editingProg.location || ""} onChange={e => setEditingProg(p => ({ ...p, location: e.target.value }))} /><Hint>Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen abweichenden Ort haben.</Hint></div>

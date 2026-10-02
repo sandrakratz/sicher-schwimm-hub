@@ -386,6 +386,7 @@ export type Database = {
           id: string
           is_public: boolean
           location: string | null
+          max_age_years: number | null
           min_age_years: number | null
           name: string
           payment_due_days: number
@@ -409,6 +410,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           location?: string | null
+          max_age_years?: number | null
           min_age_years?: number | null
           name: string
           payment_due_days?: number
@@ -432,6 +434,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           location?: string | null
+          max_age_years?: number | null
           min_age_years?: number | null
           name?: string
           payment_due_days?: number

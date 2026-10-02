@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { todayBerlinIso } from '@/lib/format'
 
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 
@@ -233,7 +234,7 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
     let bookingEntry = entry
     if (!entry.child_dob) {
       const dob = data.childDob
-      if (!dob || dob > new Date().toISOString().slice(0, 10)) {
+      if (!dob || dob > todayBerlinIso()) {
         return { ok: false as const, reason: 'dob_required' as const }
       }
       await supabaseAdmin.from('waitlist_entries').update({ child_dob: dob }).eq('id', entry.id)
@@ -381,7 +382,7 @@ export const listWaitlist = createServerFn({ method: 'GET' })
           (e.request_id ? partByRequest.get(e.request_id) : undefined) ??
           partByPerson.get(`${emailNorm}|${childNorm}`) ??
           null
-        const today = new Date().toISOString().slice(0, 10)
+        const today = todayBerlinIso()
         const paymentStatus = !part
           ? 'none'
           : part.paid
