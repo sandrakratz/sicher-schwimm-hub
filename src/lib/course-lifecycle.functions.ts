@@ -155,11 +155,30 @@ export const cancelCourse = createServerFn({ method: 'POST' })
       }
     }
 
+    // Laufende Platzangebote für diesen Kurs zurücknehmen: Familie wartet wieder (ohne Absagezähler),
+    // der Link in der Angebotsmail wird ungültig. offer_course_id bleibt, der Kurs ist ohnehin geschlossen.
+    const { data: openOffers, error: offersErr } = await supabaseAdmin
+      .from('waitlist_entries')
+      .select('id,admin_notes')
+      .eq('status', 'offered')
+      .eq('offer_course_id', course.id)
+    if (offersErr) throw new Error(`Laufende Platzangebote konnten nicht gelesen werden: ${offersErr.message}`)
+    const stamp = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
+    let offersWithdrawn = 0
+    for (const o of openOffers ?? []) {
+      const { error: wErr } = await supabaseAdmin.from('waitlist_entries').update({
+        status: 'waiting', offer_token: null, offered_at: null, offer_expires_at: null,
+        admin_notes: [o.admin_notes, `[${stamp}] Kurs „${course.name}“ abgesagt – laufendes Platzangebot zurückgenommen.`].filter(Boolean).join('\n'),
+      } as never).eq('id', o.id)
+      if (wErr) throw new Error(`Platzangebot konnte nicht zurückgenommen werden: ${wErr.message}`)
+      offersWithdrawn++
+    }
+
     await supabaseAdmin.from('courses').update({ is_public: false, status: 'completed', archived_at: new Date().toISOString() }).eq('id', course.id)
     const { logAudit } = await import('@/lib/audit.server')
-    await logAudit(null, context.userId, { action: 'course.cancelled', entity: 'courses', entity_id: course.id, metadata: { moved, sent, reason: data.reason ?? null } })
+    await logAudit(null, context.userId, { action: 'course.cancelled', entity: 'courses', entity_id: course.id, metadata: { moved, sent, offersWithdrawn, reason: data.reason ?? null } })
     const paidCount = (parts ?? []).filter(p => p.paid).length
-    return { ok: true, moved, sent, paidCount }
+    return { ok: true, moved, sent, paidCount, offersWithdrawn }
   })
 
 /** Eilnachricht (z. B. Ausfall, Badschließung) an alle gebuchten Eltern eines Kurses. */
