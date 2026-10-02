@@ -16,6 +16,7 @@ import { templateLabel } from "@/lib/email-template-labels";
 import { TestSendDialog } from "@/components/admin/TestSendDialog";
 import { toast } from "sonner";
 import { fetchAll } from "@/lib/fetch-all";
+import { getMyAdminRoles } from "@/lib/role-guard";
 
 
 export const Route = createFileRoute("/_authenticated/admin/emails")({
@@ -83,6 +84,12 @@ function Page() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [bodyLoading, setBodyLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  // „Inhalte rekonstruieren“ darf nur der Administrator (Server prüft das ebenfalls)
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    getMyAdminRoles().then(r => setIsAdmin(r.roles.includes("admin"))).catch(() => setIsAdmin(false));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +115,7 @@ function Page() {
       .catch(e => { if (!cancelled) setLoadError(e?.message || "Die E-Mail-Liste konnte nicht geladen werden."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [range]);
+  }, [range, reloadKey]);
 
   // Inhalt einer E-Mail nachladen (alle Protokollzeilen derselben Nachricht zusammenführen, wie bei der Liste)
   async function openRow(r: LogRow) {
@@ -194,8 +201,8 @@ function Page() {
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
-          <TestSendDialog onDone={() => setRange(r => r)} />
-          <BackfillButton />
+          <TestSendDialog onDone={() => setReloadKey(k => k + 1)} />
+          {isAdmin && <BackfillButton />}
         </div>
       </div>
 

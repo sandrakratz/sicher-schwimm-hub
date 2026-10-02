@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
-import { listDeliveryEvents, type DeliveryEvent } from "@/lib/email-logs.functions";
+import { listDeliveryEvents, type DeliveryEvent, type DeliveryCounts } from "@/lib/email-logs.functions";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { RefreshCw } from "lucide-react";
 import { TestSendDialog } from "@/components/admin/TestSendDialog";
@@ -73,6 +73,13 @@ function Page() {
   const [search, setSearch] = useState("");
   const [events, setEvents] = useState<DeliveryEvent[]>([]);
   const [historyStartsAt, setHistoryStartsAt] = useState<string | null>(null);
+  const [counts, setCounts] = useState<DeliveryCounts>({ sent: 0, failed: 0, bounced: 0 });
+  const [total, setTotal] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -80,8 +87,19 @@ function Page() {
     setLoading(true);
     try {
       const since = sinceFor(range);
-      const res = await load({ data: { ...(since ? { since } : {}), limit: 100 } });
+      // Filter und Kennzahlen rechnet die Datenbank (über alle Einträge des Zeitraums), die Liste zeigt die neuesten 100
+      const res = await load({
+        data: {
+          ...(since ? { since } : {}),
+          ...(debouncedSearch ? { recipient: debouncedSearch } : {}),
+          recipientType: recipientFilter,
+          group: eventFilter,
+          limit: 100,
+        },
+      });
       setEvents(res.events || []);
+      setCounts(res.counts);
+      setTotal(res.total);
       setHistoryStartsAt(res.historyStartsAt);
       setError(res.error);
     } catch (e: any) {
@@ -90,36 +108,12 @@ function Page() {
     } finally {
       setLoading(false);
     }
-  }, [load, range]);
+  }, [load, range, recipientFilter, eventFilter, debouncedSearch]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return events.filter(e => {
-      const isAdmin = (e.recipient || "").toLowerCase() === ADMIN_EMAIL;
-      if (recipientFilter === "admin" && !isAdmin) return false;
-      if (recipientFilter === "external" && isAdmin) return false;
-      if (eventFilter === "sent" && e.event_type !== "sent") return false;
-      if (eventFilter === "failed" && !["rejected", "suppressed", "rate_limited"].includes(e.event_type)) return false;
-      if (eventFilter === "bounced" && !["bounced", "complained"].includes(e.event_type)) return false;
-      if (q && !(e.recipient || "").toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [events, eventFilter, recipientFilter, search]);
-
-  const counts = useMemo(() => {
-    const base = { sent: 0, failed: 0, bounced: 0 };
-    for (const e of events) {
-      const isAdmin = (e.recipient || "").toLowerCase() === ADMIN_EMAIL;
-      if (recipientFilter === "admin" && !isAdmin) continue;
-      if (recipientFilter === "external" && isAdmin) continue;
-      if (e.event_type === "sent") base.sent++;
-      else if (["rejected", "suppressed", "rate_limited"].includes(e.event_type)) base.failed++;
-      else if (["bounced", "complained"].includes(e.event_type)) base.bounced++;
-    }
-    return base;
-  }, [events, recipientFilter]);
+  // Filter wirken in der Datenbank; die Liste zeigt die neuesten Einträge
+  const filtered = events;
 
   return (
     <div className="max-w-6xl">
@@ -239,7 +233,7 @@ function Page() {
       </CollapsibleCard>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        Angezeigt werden Zustellereignisse des E-Mail-Versands
+        Angezeigt werden die neuesten {filtered.length} von {total} passenden Einträgen; die Kennzahlen oben zählen alle Einträge des Zeitraums. Zustellereignisse des E-Mail-Versands
         {historyStartsAt ? ` (verfügbar ab ${formatDateTimeBerlin(historyStartsAt)})` : ""}.
         Öffnungs- oder Leseraten werden nicht erfasst. Die Inhalte der gesendeten E-Mails
         findest du unter „Gesendete E-Mails“.

@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { helperKey } from '@/lib/event-shifts'
 
 async function assertStaff(context: any) {
   const { data: isStaff } = await context.supabase.rpc('is_staff', { _user_id: context.userId })
@@ -97,14 +98,14 @@ export const syncHelperGroupFill = createServerFn({ method: 'POST' })
       supabaseAdmin.from('event_helper_groups').select('*').eq('event_id', data.eventId),
       supabaseAdmin
         .from('event_shift_signups')
-        .select('id,group_id,trainer_id,available')
+        .select('id,group_id,trainer_id,helper_name,available')
         .eq('event_id', data.eventId),
     ])
     const now = new Date().toISOString()
     let filled = 0
     for (const g of groups ?? []) {
       const helpers = new Set(
-        (signups ?? []).filter((s) => s.group_id === g.id && s.available).map((s) => s.trainer_id),
+        (signups ?? []).filter((s) => s.group_id === g.id && s.available).map((s) => helperKey(s)),
       )
       const isFull = helpers.size >= g.needed_count
       if (isFull) filled++

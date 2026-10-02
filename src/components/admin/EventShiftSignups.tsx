@@ -11,7 +11,7 @@ import { formatDateTimeBerlin } from "@/lib/format";
 import { buildIcs, type CalendarItem } from "@/lib/ics";
 import {
   berlinParts, berlinTime, coverageGaps, formatRange, signupInterval,
-  toBerlinInput, fromBerlinInput, type ShiftSignup,
+  toBerlinInput, fromBerlinInput, helperKey, type ShiftSignup,
 } from "@/lib/event-shifts";
 import type { TrainerOption } from "@/lib/trainers.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -282,7 +282,7 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
               {groups.filter(g => g.event_id === e.id).length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {groups.filter(g => g.event_id === e.id).map(g => {
-                    const count = all.filter(s => s.group_id === g.id && s.available).length;
+                    const count = new Set(all.filter(s => s.group_id === g.id && s.available).map(s => helperKey(s))).size;
                     const full = count >= g.needed_count;
                     return (
                       <Badge

@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, X, CalendarDays, MapPin, Clock, CalendarPlus, AlertTriangle, List, ChevronLeft, ChevronRight } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { buildIcs, googleCalendarUrl, parseTimeRange, type CalendarItem } from "@/lib/ics";
 import { EventShiftSignups } from "@/components/admin/EventShiftSignups";
 
@@ -18,6 +19,8 @@ type SessionRow = {
   course_id: string;
   session_index: number;
   session_date: string;
+  start_time: string | null;
+  end_time: string | null;
   assigned_trainer_id: string | null;
 };
 
@@ -34,6 +37,14 @@ function weekday(dateStr: string): string {
 }
 
 // Kalenderlogik (ICS, Zeiten, Google-Links) liegt zentral in @/lib/ics.
+
+/** Termin-Zeiten (intern, für Trainer:innen) haben Vorrang; sonst die Zeiten aus dem Zeitplan des Kurses. */
+function sessionTimes(s: SessionRow, c?: CourseRow) {
+  if (s.start_time) {
+    return { start: s.start_time.slice(0, 5), end: s.end_time ? s.end_time.slice(0, 5) : parseTimeRange(c?.schedule, c?.duration)?.end ?? s.start_time.slice(0, 5) };
+  }
+  return parseTimeRange(c?.schedule, c?.duration);
+}
 
 
 
@@ -59,31 +70,29 @@ export function AvailabilityBoard() {
     const { data: userData } = await supabase.auth.getUser();
     setMe(userData.user?.id || "");
 
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: ss } = await supabase
-      .from("course_sessions")
-      .select("id,course_id,session_index,session_date,assigned_trainer_id")
-      .gte("session_date", today)
-      .order("session_date", { ascending: true });
-    const sessionRows = (ss as SessionRow[]) || [];
+    // Seitenweise bzw. in Blöcken laden (Zeilengrenze der Schnittstelle, lange ID-Listen sprengen die Adresszeile)
+    const today = todayBerlinIso();
+    const sessionRows = await fetchAll<SessionRow>((f, t) =>
+      supabase
+        .from("course_sessions")
+        .select("id,course_id,session_index,session_date,start_time,end_time,assigned_trainer_id")
+        .gte("session_date", today)
+        .order("session_date", { ascending: true })
+        .order("id")
+        .range(f, t));
     setSessions(sessionRows);
 
-    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule,duration,trainers_needed");
+    const cs = await fetchAll<CourseRow>((f, t) => supabase.from("courses").select("id,name,location,schedule,duration,trainers_needed").order("id").range(f, t));
     const map: Record<string, CourseRow> = {};
-    for (const c of (cs as CourseRow[]) || []) map[c.id] = c;
+    for (const c of cs) map[c.id] = c;
     setCourses(map);
 
     if (sessionRows.length > 0) {
-      const { data: av } = await supabase
-        .from("course_session_availability")
-        .select("session_id,trainer_id,available")
-        .in("session_id", sessionRows.map(s => s.id));
-      setAvail((av as Avail[]) || []);
-      const { data: asg } = await supabase
-        .from("course_session_assignments")
-        .select("session_id,trainer_id")
-        .in("session_id", sessionRows.map(s => s.id));
-      setAssign((asg as Assign[]) || []);
+      const ids = sessionRows.map(s => s.id);
+      setAvail(await fetchIn<Avail>(ids, (chunk, f, t) =>
+        supabase.from("course_session_availability").select("session_id,trainer_id,available").in("session_id", chunk).order("id").range(f, t)));
+      setAssign(await fetchIn<Assign>(ids, (chunk, f, t) =>
+        supabase.from("course_session_assignments").select("session_id,trainer_id").in("session_id", chunk).order("id").range(f, t)));
     } else {
       setAvail([]);
       setAssign([]);
@@ -184,7 +193,7 @@ export function AvailabilityBoard() {
         : assign.some(a => a.session_id === s.id && a.trainer_id === me))
       .map<CalendarItem>(s => {
         const c = courses[s.course_id];
-        const t = parseTimeRange(c?.schedule, c?.duration);
+        const t = sessionTimes(s, c);
         return {
           id: `${s.id}-${mode}`,
           date: s.session_date,
@@ -212,7 +221,7 @@ export function AvailabilityBoard() {
 
   function googleLink(s: SessionRow): string {
     const c = courses[s.course_id];
-    const t = parseTimeRange(c?.schedule, c?.duration);
+    const t = sessionTimes(s, c);
     return googleCalendarUrl({
       id: s.id,
       date: s.session_date,

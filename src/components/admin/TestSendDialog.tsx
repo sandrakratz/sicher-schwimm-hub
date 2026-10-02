@@ -36,6 +36,9 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
       toast.error("Bitte mindestens eine E-Mail-Adresse eintragen.");
       return;
     }
+    // Jede Test-Mail zählt zum Tageskontingent des Mail-Anbieters (100/Tag) – vorher bestätigen lassen
+    const total = recipients.length * TEST_TEMPLATES.length;
+    if (!window.confirm(`Es werden ${total} echte E-Mails verschickt (${recipients.length} Adresse(n) × ${TEST_TEMPLATES.length} Vorlagen). Sie zählen zum Tageskontingent von 100 E-Mails. Fortfahren?`)) return;
     setBusy(true);
     setResults(null);
     try {

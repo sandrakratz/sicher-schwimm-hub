@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { ExamCriteriaState } from "@/lib/swim-exams";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
+import { findExamLevel } from "@/lib/swim-exams";
 
 export type TrainerParticipant = {
   id: string;
@@ -159,7 +160,11 @@ export const updateParticipantHint = createServerFn({ method: "POST" })
  */
 export const updateParticipantPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { participantId: string; phone: string }) => input)
+  .inputValidator((input: { participantId: string; phone: string }) => {
+    if (typeof input?.participantId !== "string" || !input.participantId) throw new Error("Teilnehmende:r fehlt.");
+    if (typeof input.phone !== "string" || input.phone.length > 40) throw new Error("Bitte eine gültige Telefonnummer eingeben.");
+    return input;
+  })
   .handler(async ({ data, context }): Promise<{ phone: string | null }> => {
     const { data: roleRows } = await context.supabase
       .from("user_roles")
@@ -233,7 +238,8 @@ export const updateParticipantPhone = createServerFn({ method: "POST" })
         action: "participant.phone_updated",
         entity: "course_participants",
         entity_id: participant.id as string,
-        metadata: { course_id: participant.course_id, request_id: participant.request_id, phone: value },
+        // Die Nummer selbst gehört nicht ins Protokoll (Datensparsamkeit)
+        metadata: { course_id: participant.course_id, request_id: participant.request_id, phone_set: value !== null },
       });
     } catch { /* Audit-Fehler dürfen die Erfassung nicht blockieren */ }
 
@@ -262,6 +268,16 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
       if (input.goalReached !== null && typeof input.goalReached !== "boolean") {
         throw new Error("Ungültige Angabe zum Kursziel.");
       }
+      const text = (v: unknown, max: number, label: string) => {
+        if (v == null || v === "") return;
+        if (typeof v !== "string" || v.length > max) throw new Error(`${label} ist zu lang oder ungültig.`);
+      };
+      if (typeof input.badge !== "string" || typeof input.achievement !== "string") throw new Error("Abzeichen und Anmerkung fehlen.");
+      text(input.badge, 100, "Abzeichen");
+      text(input.achievement, 2000, "Die Anmerkung");
+      text(input.examPassNo, 40, "Die Schwimmpass-Nr.");
+      if (input.examDate && !/^\d{4}-\d{2}-\d{2}$/.test(input.examDate)) throw new Error("Ungültiges Prüfungsdatum.");
+      if (input.examLevel && !findExamLevel(input.examLevel)) throw new Error("Unbekannte Prüfungsstufe.");
       return input;
     },
   )

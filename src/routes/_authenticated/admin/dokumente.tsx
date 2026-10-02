@@ -95,6 +95,9 @@ function Page() {
       ? await supabase.from("documents").update(payload).eq("id", editing.id)
       : await supabase.from("documents").insert(payload);
     if (res.error) return toast.error(res.error.message);
+    // Ersetzte Datei aus dem Speicher löschen
+    const oldFile = editing.id ? rows.find(r => r.id === editing.id)?.file_url : null;
+    if (oldFile && oldFile !== (editing.file_url || null)) await supabase.storage.from("documents").remove([oldFile]);
     toast.success("Gespeichert");
     setOpen(false);
     await load();

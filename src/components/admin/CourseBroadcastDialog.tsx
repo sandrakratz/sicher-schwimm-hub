@@ -11,7 +11,7 @@ import { countCoursePush } from "@/lib/push.functions";
 
 const PRESETS = [
   { label: "Termin fällt aus", subject: "Kurstermin heute fällt aus", message: "leider muss der heutige Kurstermin kurzfristig ausfallen. Einen Ersatztermin teilen wir Ihnen so bald wie möglich mit.\n\nWir bitten um Ihr Verständnis." },
-  { label: "Bad geschlossen", subject: "Schwimmbad vorübergehend nicht nutzbar", message: "das Schwimmbad ist aus technischen Gründen (bzw. wegen zu geringer Wassertemperatur) vorübergehend nicht nutzbar. Der Kurstermin findet daher nicht statt. Wir melden uns mit einem Nachholtermin." },
+  { label: "Bad geschlossen", subject: "Schwimmbad vorübergehend nicht nutzbar", message: "das Schwimmbad ist [Grund eintragen, z. B. aus technischen Gründen] vorübergehend nicht nutzbar. Der Kurstermin findet daher nicht statt. Wir melden uns mit einem Nachholtermin." },
   { label: "Nachholtermin", subject: "Nachholtermin für unseren Schwimmkurs", message: "der ausgefallene Kurstermin wird nachgeholt am: [Datum, Uhrzeit].\n\nOrt und Ablauf bleiben wie gewohnt." },
   { label: "Freier Text", subject: "", message: "" },
 ];
@@ -37,6 +37,9 @@ export function CourseBroadcastDialog({ course, onClose }: { course: { id: strin
   async function submit() {
     if (!course) return;
     if (subject.trim().length < 3 || message.trim().length < 5) return toast.error("Bitte Betreff und Nachricht ausfüllen");
+    // Platzhalter in eckigen Klammern (aus den Vorlagen) dürfen nicht versehentlich an alle Eltern gehen
+    const placeholder = /\[[^\]]{2,}\]/.exec(`${subject} ${message}`);
+    if (placeholder) return toast.error(`Bitte ${placeholder[0]} noch ersetzen, bevor die Nachricht gesendet wird.`);
     if (!window.confirm(`Nachricht jetzt an ${count ?? "alle"} Eltern senden?`)) return;
     setBusy(true);
     try {

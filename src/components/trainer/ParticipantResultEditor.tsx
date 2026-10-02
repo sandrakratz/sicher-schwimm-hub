@@ -15,6 +15,7 @@ import {
   type ExamCriteriaState,
 } from "@/lib/swim-exams";
 import { toast } from "sonner";
+import { todayBerlinIso } from "@/lib/format";
 
 export type ParticipantResult = {
   goal_reached: boolean | null;
@@ -26,7 +27,7 @@ export type ParticipantResult = {
   exam_pass_no?: string | null;
 };
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => todayBerlinIso();
 
 /**
  * Prüfungsnachweis vor Ort erfassen: Abzeichenstufe, Teilleistungen nach DPO,

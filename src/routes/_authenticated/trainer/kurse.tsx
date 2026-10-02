@@ -12,6 +12,7 @@ import {
   type TrainerCourse,
 } from "@/lib/trainer-courses.functions";
 import { formatDateBerlin } from "@/lib/format";
+import { getMyAdminRoles } from "@/lib/role-guard";
 import { toast } from "sonner";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
@@ -67,6 +68,11 @@ function Page() {
 
   const exportProtocol = useServerFn(exportExamProtocol);
   const [exporting, setExporting] = useState<string | null>(null);
+  // Umbuchen dürfen nur Vorstand/Admin (Server prüft das ebenfalls)
+  const [isStaff, setIsStaff] = useState(false);
+  useEffect(() => {
+    getMyAdminRoles().then(r => setIsStaff(r.roles.some(x => x === "admin" || x === "board"))).catch(() => setIsStaff(false));
+  }, []);
   const [broadcast, setBroadcast] = useState<{ id: string; name: string } | null>(null);
   const [transferPart, setTransferPart] = useState<{ id: string; participant_name: string | null; participant_email: string | null; course_id: string } | null>(null);
   const [targets, setTargets] = useState<Array<{ id: string; name: string; schedule: string | null; location: string | null; free: number | null }>>([]);
@@ -194,6 +200,7 @@ function Page() {
                       if (!p) return null;
                       return (
                         <>
+                        {isStaff && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -202,6 +209,7 @@ function Page() {
                         >
                           ↔ Kind umbuchen
                         </Button>
+                        )}
                         <ParticipantDetails
                           p={p}
                           editablePhone
