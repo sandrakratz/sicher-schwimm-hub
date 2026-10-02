@@ -227,5 +227,6 @@ select document_no from course_participants
   Warteliste“ legen einen Wartelisteneintrag an statt eines `waiting`-Teilnehmers; beim Zurücksetzen auf die Warteliste
   (`moveParticipantToWaitlist`, Kurs absagen) wird `offer_course_id` auf den verlassenen Kurs gesetzt; Kurs-Absage
   ordnet Teilnehmer nur noch dem Eintrag derselben Anfrage zu (nicht irgendeinem Eintrag des Kurses).
-- **Noch offen:** eindeutiger Index auf aktive Teilnehmer (erst nach Abfrage B und Bereinigung); `unassignRequestFromCourse`
+- Umgesetzt: eindeutiger Index auf aktive Teilnehmer (Migration `20261002150000_participants_unique_child.sql`, Abfrage B war leer).
+- **Noch offen:** `unassignRequestFromCourse`
   setzt keinen Wartelisteneintrag (Übernahme erfolgt beim Öffnen der Warteliste).

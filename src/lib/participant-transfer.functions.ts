@@ -107,7 +107,11 @@ export const transferParticipant = createServerFn({ method: 'POST' })
       exam_level: p.exam_level, exam_criteria: p.exam_criteria, exam_date: p.exam_date, exam_pass_no: p.exam_pass_no,
       transferred_from_participant_id: p.id, transfer_reason: data.reason, transferred_at: now,
     } as never).select('id').single()
-    if (insErr) throw new Error(insErr.message)
+    if (insErr) {
+      throw new Error(
+        insErr.code === '23505' ? 'Dieses Kind ist im Zielkurs bereits eingetragen.' : insErr.message,
+      )
+    }
 
     const { error: upErr } = await supabaseAdmin.from('course_participants').update({
       status: 'cancelled', transferred_to_course_id: newI.course.id, transfer_reason: data.reason, transferred_at: now,
