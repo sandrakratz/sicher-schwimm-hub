@@ -452,6 +452,9 @@ export const offerWaitlistPlace = createServerFn({ method: 'POST' })
     ])
     if (!entry || !course) throw new Error('Eintrag oder Kurs nicht gefunden')
     if (entry.status !== 'waiting') throw new Error('Für diesen Eintrag läuft bereits ein Angebot')
+    if ((course as any).course_programs?.bookable === false) {
+      throw new Error('Dieses Kursangebot ist derzeit nicht buchbar – es können keine Plätze angeboten werden')
+    }
 
     const { offerPlaceManually, freeSlots } = await import('@/lib/waitlist.server')
     const free = await freeSlots(course.id, course.max_participants)

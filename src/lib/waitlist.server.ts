@@ -182,6 +182,8 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
 
   for (const course of relevant) {
     const program = (course as any).course_programs ?? null
+    // Angebote, die (noch) nicht buchbar sind, erhalten keine automatischen Platzangebote
+    if (program?.bookable === false) continue
     const free = await freeSlots(course.id, course.max_participants)
     if (free == null || free <= 0) continue
 
