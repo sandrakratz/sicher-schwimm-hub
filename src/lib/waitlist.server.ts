@@ -1,8 +1,8 @@
 // Server-only Kernlogik der Warteliste: freie Plätze ermitteln, Platzangebote
 // erzeugen (Mitglieder zuerst, danach nach Eingangsdatum), abgelaufene
 // Angebote schließen und Zusagen in verbindliche Buchungen überführen.
-import { formatDateBerlin } from '@/lib/format'
-import { meetsMinAge } from '@/lib/waitlist-age'
+import { formatDateBerlin, todayBerlinIso } from '@/lib/format'
+import { meetsMinAge, withinMaxAge } from '@/lib/waitlist-age'
 
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 
@@ -172,7 +172,7 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
   const { data: courses, error } = await courseQuery
   if (error) throw new Error(error.message)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayBerlinIso()
   const relevant = (courses ?? []).filter((c) => !c.ends_on || c.ends_on >= today)
 
   const offers: AllocationResult['offers'] = []
@@ -202,9 +202,11 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
     for (const c of candidates) await refreshWaitlistMember(c, memberRows)
     candidates = sortCandidates(candidates)
 
-    // Mindestalter zum Kursstart prüfen – zu junge Kinder bleiben auf der Warteliste
-    candidates = candidates.filter((c) =>
-      meetsMinAge(c.child_dob ?? null, course.starts_on ?? null, program?.min_age_years ?? null),
+    // Alter zum Kursstart prüfen – zu junge und zu alte Kinder bleiben auf der Warteliste
+    candidates = candidates.filter(
+      (c) =>
+        meetsMinAge(c.child_dob ?? null, course.starts_on ?? null, program?.min_age_years ?? null) &&
+        withinMaxAge(c.child_dob ?? null, course.starts_on ?? null, program?.max_age_years ?? null),
     )
     // Wer genau diesen Kurs bereits abgelehnt hat bzw. verfallen ließ, bekommt ihn nicht erneut automatisch
     candidates = candidates.filter((c: any) => c.offer_course_id !== course.id)

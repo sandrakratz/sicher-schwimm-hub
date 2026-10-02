@@ -7,6 +7,8 @@
 //  - oder (nur bei aktiver Mitgliedschaft) den Namen des Kindes als Mitglied,
 //    Partner oder Kind der Familienmitgliedschaft.
 
+import { todayBerlinIso } from '@/lib/format'
+
 export type MemberRow = {
   id: string
   status: string
@@ -97,7 +99,7 @@ export async function repriceMemberParticipants(opts: { courseId?: string | null
   const { data, error } = await q
   if (error) throw new Error(error.message)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayBerlinIso()
   const stamp = new Date().toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
 
   for (const p of (data ?? []) as any[]) {

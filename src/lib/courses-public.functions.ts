@@ -1,5 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { todayBerlinIso } from '@/lib/format'
+import { meetsMinAge, withinMaxAge } from '@/lib/waitlist-age'
 
 
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
@@ -33,6 +35,7 @@ export interface CourseProgram {
   target_group: string | null
   age_range: string | null
   min_age_years: number | null
+  max_age_years: number | null
   description: string | null
   requirements: string | null
   duration: string | null
@@ -53,7 +56,7 @@ export interface CourseProgram {
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  return todayBerlinIso()
 }
 
 async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
@@ -122,7 +125,8 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
     for (const c of relevant) {
       const arr = sessMap.get(c.id) ?? []
       const breaks = Array.isArray((c as any).session_breaks) ? ((c as any).session_breaks as any[]) : []
-      for (const b of breaks) if (b?.date) arr.push({ date: String(b.date), start: null, end: null, index: null, note: b.note ? String(b.note) : 'kein Termin' })
+      const sessionDates = new Set(arr.map((s) => s.date))
+      for (const b of breaks) if (b?.date && !sessionDates.has(String(b.date))) arr.push({ date: String(b.date), start: null, end: null, index: null, note: b.note ? String(b.note) : 'kein Termin' })
       arr.sort((a, b) => a.date.localeCompare(b.date))
       sessMap.set(c.id, arr)
     }
@@ -179,6 +183,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
       target_group: p.target_group,
       age_range: p.age_range,
       min_age_years: p.min_age_years,
+      max_age_years: (p as any).max_age_years ?? null,
       description: p.description,
       requirements: p.requirements,
       duration: p.duration,
@@ -239,15 +244,6 @@ function healthConsentNote(healthInfo: string | undefined): string {
   return healthInfo
     ? ` · Einwilligung zu Gesundheitsangaben (Art. 9 Abs. 2 lit. a DSGVO) erteilt am ${new Date().toISOString()}`
     : ''
-}
-
-function ageOn(dob: string, reference: string | null): number {
-  const ref = reference ? new Date(reference) : new Date()
-  const birth = new Date(dob)
-  let age = ref.getFullYear() - birth.getFullYear()
-  const m = ref.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && ref.getDate() < birth.getDate())) age -= 1
-  return age
 }
 
 export const bookCourseTerm = createServerFn({ method: 'POST' })
@@ -344,6 +340,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
           id: string
           name: string
           min_age_years: number | null
+          max_age_years: number | null
           age_range: string | null
           target_group: string | null
           duration: string | null
@@ -355,14 +352,18 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         }
       | null
 
+    // Alter zu Kursbeginn (gleiche Rechenregel wie bei der Warteliste, siehe waitlist-age.ts)
     const minAge = program?.min_age_years ?? null
-    if (minAge != null) {
-      const age = ageOn(data.childDob, course.starts_on)
-      if (age < Number(minAge)) {
-        throw new Error(
-          `Für diesen Kurs ist ein Mindestalter von ${minAge} Jahren zu Kursbeginn erforderlich. Bitte stellen Sie stattdessen eine Kursanfrage.`,
-        )
-      }
+    if (minAge != null && !meetsMinAge(data.childDob, course.starts_on, minAge)) {
+      throw new Error(
+        `Für diesen Kurs ist ein Mindestalter von ${minAge} Jahren zu Kursbeginn erforderlich. Bitte stellen Sie stattdessen eine Kursanfrage.`,
+      )
+    }
+    const maxAge = program?.max_age_years ?? null
+    if (maxAge != null && !withinMaxAge(data.childDob, course.starts_on, maxAge)) {
+      throw new Error(
+        `Dieser Kurs ist für Kinder bis ${maxAge} Jahre zu Kursbeginn. Bitte stellen Sie stattdessen eine Kursanfrage.`,
+      )
     }
 
     // Bestehende aktive Mitgliedschaft hat Vorrang vor der Angabe im Formular

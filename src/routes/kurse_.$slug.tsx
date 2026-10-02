@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +51,8 @@ import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm }
 export const Route = createFileRoute("/kurse_/$slug")({
   loader: async ({ params }) => {
     const program = await getCourseProgram({ data: { slug: params.slug } });
+    // Alte Adresse des Schwimmstarters (Links aus früheren E-Mails)
+    if (!program && params.slug === "s") throw redirect({ to: "/kurse/$slug", params: { slug: "schwimmstarter" } });
     if (!program) throw notFound();
     return program;
   },
@@ -350,12 +352,13 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
 
           {/* Infos als Akkordeon */}
           <Accordion type="multiple" className="space-y-3">
-            {(requirements.length > 0 || program.min_age_years != null) && (
+            {(requirements.length > 0 || program.min_age_years != null || program.max_age_years != null) && (
               <InfoItem value="req" icon={Users} title="Voraussetzungen & Mindestalter" subtitle="Was sollte Ihr Kind mitbringen?">
                 {requirements.length > 1 ? (
                   <ul className="list-disc pl-5 space-y-1">{requirements.map((r, i) => <li key={i}>{r}</li>)}</ul>
                 ) : requirements[0] ? <p>{requirements[0]}</p> : null}
                 {program.min_age_years != null && <p className="mt-2 text-xs">Mindestalter zu Kursbeginn: {program.min_age_years} Jahre.</p>}
+                {program.max_age_years != null && <p className="mt-2 text-xs">Höchstalter zu Kursbeginn: {program.max_age_years} Jahre.</p>}
               </InfoItem>
             )}
             {program.course_info && (

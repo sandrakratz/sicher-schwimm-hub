@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { todayBerlinIso } from '@/lib/format'
 
 /**
  * Versendet Zahlungserinnerungen an alle bestätigten, unbezahlten Teilnehmer,
@@ -30,7 +31,7 @@ export const sendPaymentReminders = createServerFn({ method: 'POST' })
     const { data: rows, error } = await query
     if (error) throw new Error(error.message)
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayBerlinIso()
     const sent: Array<{ name: string; email: string; kind: string }> = []
     const skipped: Array<{ name: string; reason: string }> = []
 

@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+import { todayBerlinIso } from '@/lib/format'
 
 const SITE_BASE_URL = 'https://sicher-schwimmen.com'
 const tokenSchema = z.string().regex(/^[a-f0-9]{20,80}$/)
@@ -107,7 +108,7 @@ export const sendPushInvites = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { newPushToken } = await import('@/lib/push.server')
     const { queueTemplateEmail } = await import('@/lib/email-send.server')
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayBerlinIso()
     const { data: parts } = await supabaseAdmin.from('course_participants')
       .select('id,participant_name,participant_email,push_token,courses!course_participants_course_id_fkey(name,ends_on,archived_at)')
       .eq('status', 'confirmed')
