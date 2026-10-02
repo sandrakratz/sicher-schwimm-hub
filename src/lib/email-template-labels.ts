@@ -5,6 +5,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   'course-request': 'Kursanfrage (Benachrichtigung an den Verein)',
   'course-assignment': 'Kurszuteilung (Benachrichtigung an Eltern)',
   'course-start-reminder': 'Erinnerung 3 Tage vor Kursstart',
+  'course-transfer': 'Kursumbuchung – Bitte um Zustimmung (Eltern)',
+  'course-transfer-reminder': 'Erinnerung: Zustimmung zur Kursumbuchung (Eltern, nach 3 Tagen)',
   'course-rescheduled': 'Kursstart verschoben',
   'course-cancelled': 'Kurs abgesagt',
   'partial-certificate': 'Teilleistungsnachweis',

@@ -22,6 +22,7 @@ import { template as courseStartReminder } from './course-start-reminder'
 import { rescheduleTemplate, cancelTemplate } from './course-lifecycle'
 import { template as partialCertificate } from './partial-certificate'
 import { template as courseTransfer } from './course-transfer'
+import { template as courseTransferReminder } from './course-transfer-reminder'
 import { template as courseBroadcast } from './course-broadcast'
 import { template as accountActivated } from './account-activated'
 import { template as majorityNotice } from './majority-notice'
@@ -65,6 +66,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'course-rescheduled': rescheduleTemplate,
   'course-cancelled': cancelTemplate,
   'course-transfer': courseTransfer,
+  'course-transfer-reminder': courseTransferReminder,
   'course-broadcast': courseBroadcast,
   'account-activated': accountActivated,
   'majority-notice': majorityNotice,
