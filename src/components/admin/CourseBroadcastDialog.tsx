@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
 import { broadcastCourseMessage } from "@/lib/course-lifecycle.functions";
 import { countCoursePush } from "@/lib/push.functions";
 
@@ -29,12 +28,10 @@ export function CourseBroadcastDialog({ course, onClose }: { course: { id: strin
   useEffect(() => {
     if (!course) return;
     setSubject(""); setMessage(""); setCount(null); setPushCount(null);
-    countPush({ data: { courseId: course.id } }).then((r) => setPushCount(r.families)).catch(() => setPushCount(null));
-    supabase.from("course_participants").select("participant_email").eq("course_id", course.id).eq("status", "confirmed")
-      .then(({ data }) => {
-        const set = new Set((data || []).map((d: any) => d.participant_email?.trim().toLowerCase()).filter(Boolean));
-        setCount(set.size);
-      });
+    // Zählung serverseitig: Trainer:innen dürfen die Teilnehmertabelle nicht direkt lesen
+    countPush({ data: { courseId: course.id } })
+      .then((r) => { setPushCount(r.families); setCount(r.recipients); })
+      .catch(() => { setPushCount(null); setCount(null); });
   }, [course]);
 
   async function submit() {

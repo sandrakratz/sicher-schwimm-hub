@@ -92,11 +92,12 @@ export const countCoursePush = createServerFn({ method: 'GET' })
     const { data: parts } = await supabaseAdmin.from('course_participants')
       .select('id,participant_email').eq('course_id', data.courseId).eq('status', 'confirmed')
     const ids = (parts ?? []).map((p) => p.id)
-    if (!ids.length) return { families: 0 }
+    if (!ids.length) return { families: 0, recipients: 0 }
     const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('participant_id').in('participant_id', ids)
     const withSub = new Set((subs ?? []).map((s) => s.participant_id))
     const emails = new Set((parts ?? []).filter((p) => withSub.has(p.id)).map((p) => p.participant_email?.trim().toLowerCase()))
-    return { families: emails.size }
+    const recipients = new Set((parts ?? []).map((p) => p.participant_email?.trim().toLowerCase()).filter(Boolean)).size
+    return { families: emails.size, recipients }
   })
 
 /** Vorstand: Info-Mail zu Push-Mitteilungen an alle bereits gebuchten Familien (einmalig je Buchung). */

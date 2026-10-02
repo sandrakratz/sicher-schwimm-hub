@@ -6,6 +6,7 @@ Stand: 30.09.2026.
 | Name | Verwendung |
 |---|---|
 | VAPID_SEED | Grundlage für die VAPID-Schlüssel der Web-Push-Mitteilungen (`src/lib/push.server.ts`). Beim Umzug unbedingt übernehmen, sonst werden alle bestehenden Handy-Abos ungültig. |
+| CRON_SECRET | Geheimnis für die Cron-Endpunkte (`/api/public/hooks/*`), wird vom Datenbank-Cron im Header `x-cron-secret` mitgeschickt (`src/lib/cron-auth.server.ts`). Umstellung: `docs/migration/cron-jobs.md`. |
 | LOVABLE_API_KEY | Von Lovable verwaltet. Authentifiziert den E-Mail-Versand über die Lovable-E-Mail-Schnittstelle und ggf. KI-Aufrufe. Auf eigener Infrastruktur nicht übertragbar – muss durch einen eigenen E-Mail-Anbieter ersetzt werden. |
 | GOOGLE_SEARCH_CONSOLE_API_KEY | Von einem Connector verwaltet (Google Search Console). Wird vom App-Code nicht verwendet. |
 

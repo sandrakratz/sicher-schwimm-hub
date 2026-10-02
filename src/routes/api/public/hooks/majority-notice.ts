@@ -15,9 +15,8 @@ export const Route = createFileRoute('/api/public/hooks/majority-notice')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get('apikey') ?? ''
-        const accepted = [process.env['SUPABASE_ANON_KEY'], process.env['SUPABASE_PUBLISHABLE_KEY']].filter(Boolean) as string[]
-        if (!apiKey || !accepted.includes(apiKey)) return new Response('unauthorized', { status: 401 })
+        const { cronUnauthorized, isCronAuthorized } = await import('@/lib/cron-auth.server')
+        if (!isCronAuthorized(request)) return cronUnauthorized()
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
         const { queueTemplateEmail } = await import('@/lib/email-send.server')

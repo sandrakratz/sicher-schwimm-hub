@@ -40,6 +40,11 @@ async function rolesOf(supabase: any, userId: string): Promise<string[]> {
   return ((data || []) as { role: string }[]).map(r => r.role);
 }
 
+async function assertTrainerOfCourse(supabase: any, userId: string, courseId: string) {
+  const { data } = await supabase.rpc("is_trainer_of_course", { _trainer_id: userId, _course_id: courseId });
+  if (!data) throw new Error("Forbidden");
+}
+
 /** Termine eines Kurses inkl. Trainer-Anwesenheitseinträgen. */
 export const listCourseTrainerAttendance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -51,6 +56,8 @@ export const listCourseTrainerAttendance = createServerFn({ method: "GET" })
     const roles = await rolesOf(context.supabase, context.userId);
     if (!roles.some(r => ["admin", "board", "trainer"].includes(r))) throw new Error("Forbidden");
     const isStaff = roles.some(r => ["admin", "board"].includes(r));
+    // Trainer:innen sehen nur die Einträge ihrer eigenen Kurse
+    if (!isStaff) await assertTrainerOfCourse(context.supabase, context.userId, data.courseId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: sessions } = await supabaseAdmin
@@ -97,6 +104,12 @@ export const setOwnTrainerAttendance = createServerFn({ method: "POST" })
     if (!roles.some(r => ["admin", "board", "trainer"].includes(r))) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Eintragen darf nur, wer zum Kurs des Termins gehört (Vorstand/Admin immer)
+    const { data: sess } = await supabaseAdmin.from("course_sessions").select("course_id").eq("id", data.sessionId).maybeSingle();
+    if (!sess) throw new Error("Kurstermin nicht gefunden");
+    if (!roles.some(r => ["admin", "board"].includes(r))) {
+      await assertTrainerOfCourse(context.supabase, context.userId, sess.course_id as string);
+    }
     const { data: existing } = await supabaseAdmin
       .from("trainer_session_attendance")
       .select("id,confirmed_at")

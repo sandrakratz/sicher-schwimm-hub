@@ -62,3 +62,28 @@ select net.http_post(
 ```
 
 Die zugehörigen Endpunkte liegen im Code unter `src/routes/api/public/hooks/`.
+
+## Eigenes Cron-Geheimnis (`CRON_SECRET`)
+
+Bisher prüften die Endpunkte nur den `apikey`-Header gegen den **öffentlichen** Supabase-Publishable-Key – der steht im Browser-Code, jeder konnte die Jobs auslösen. Jetzt gilt ein eigenes Geheimnis im Header `x-cron-secret` (Code: `src/lib/cron-auth.server.ts`). Solange `CRON_SECRET` in Cloudflare **nicht** gesetzt ist, gilt übergangsweise noch die alte Prüfung (Warnung im Log).
+
+**Umstellung in dieser Reihenfolge (kein Ausfall):**
+
+1. Code mit `cron-auth.server.ts` deployen (alter Schlüssel funktioniert noch).
+2. Ein langes Zufallsgeheimnis erzeugen (z. B. 48 Zeichen) – nirgends committen.
+3. Im Supabase-SQL-Editor **alle sechs Jobs** auf beide Header umstellen (`SECRET` ersetzen, `apikey` bleibt unverändert). Beispiel für einen Job, die anderen analog mit ihrem Endpunkt:
+   ```sql
+   select cron.alter_job(
+     job_id := (select jobid from cron.job where jobname = 'waitlist-sweep-hourly'),
+     command := $$select net.http_post(
+       url:='https://sicher-schwimmen.com/api/public/hooks/waitlist-sweep',
+       headers:='{"Content-Type": "application/json", "x-cron-secret": "SECRET"}'::jsonb,
+       body:='{}'::jsonb, timeout_milliseconds:=30000
+     ) as request_id;$$
+   );
+   ```
+   Die Jobnamen stehen in der Tabelle oben. Den bestehenden `apikey`-Header kannst du im Befehl lassen oder weglassen.
+4. In Cloudflare (Worker → Einstellungen → Variablen und Secrets) das Secret `CRON_SECRET` mit demselben Wert anlegen. Ab jetzt wird nur noch `x-cron-secret` akzeptiert.
+5. Prüfen: In Supabase unter `cron.job_run_details` bzw. `net._http_response` sollte nach dem nächsten Lauf Status 200 stehen (401 = Geheimnis stimmt nicht).
+
+Der Wert gehört wie die anderen Geheimnisse nur in Cloudflare und die Cron-Jobs (siehe `docs/migration/secrets.md`).
