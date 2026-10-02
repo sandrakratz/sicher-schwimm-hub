@@ -739,6 +739,27 @@ function Page() {
     if (!partCourse) return;
     if (!newPart.name.trim()) return toast.error("Name erforderlich");
     if (!newPart.date_of_birth) return toast.error("Geburtsdatum erforderlich");
+    if (newPart.status === "waiting" && !wlPick) {
+      // Es gibt nur eine Warteliste: Eintrag dort anlegen, damit automatische Angebote greifen
+      const { error: wlError } = await supabase.from("waitlist_entries").insert({
+        program_id: partCourse.program_id ?? null,
+        course_id: partCourse.id,
+        child_name: newPart.name.trim(),
+        child_dob: newPart.date_of_birth,
+        parent_name: newPart.name.trim(),
+        parent_email: newPart.email.trim(),
+        parent_phone: newPart.phone.trim() || null,
+        notes: newPart.notes.trim() || null,
+        gdpr_consent: true,
+        status: "waiting",
+      });
+      if (wlError) return toast.error(wlError.message);
+      toast.success("Auf die Warteliste gesetzt");
+      setNewPart({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
+      await openParticipants(partCourse);
+      await load();
+      return;
+    }
     const { error } = await supabase.from("course_participants").insert({
       course_id: partCourse.id,
       participant_name: newPart.name.trim(),
