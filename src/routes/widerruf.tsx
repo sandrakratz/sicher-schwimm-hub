@@ -16,10 +16,18 @@ export const Route = createFileRoute("/widerruf")({
   head: () => ({
     meta: [
       { title: "Vertrag widerrufen – Sicher Schwimmen e.V." },
-      { name: "description", content: "Online-Widerrufsformular für Schwimmkurs-Verträge beim Sicher Schwimmen e.V. Widerrufsbelehrung, Muster-Widerrufsformular und Eingangsbestätigung." },
+      {
+        name: "description",
+        content:
+          "Online-Widerrufsformular für Schwimmkurs-Verträge beim Sicher Schwimmen e.V. Widerrufsbelehrung, Muster-Widerrufsformular und Eingangsbestätigung.",
+      },
       { name: "robots", content: "index,follow" },
       { property: "og:title", content: "Vertrag widerrufen – Sicher Schwimmen e.V." },
-      { property: "og:description", content: "Rechtssicherer Widerruf eines Schwimmkurs-Vertrags inkl. Belehrung und Online-Formular." },
+      {
+        property: "og:description",
+        content:
+          "Rechtssicherer Widerruf eines Schwimmkurs-Vertrags inkl. Belehrung und Online-Formular.",
+      },
       { property: "og:url", content: "https://sicher-schwimmen.com/widerruf" },
     ],
     links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/widerruf" }],
@@ -135,15 +143,12 @@ function Page() {
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="flex items-center gap-3 mb-3">
             <FileX2 className="h-8 w-8 text-accent" aria-hidden="true" />
-            <h1 className="font-display text-3xl md:text-4xl font-bold">
-              Vertrag widerrufen
-            </h1>
+            <h1 className="font-display text-3xl md:text-4xl font-bold">Vertrag widerrufen</h1>
           </div>
           <p className="max-w-2xl text-white/85">
-            Hier können Sie als Verbraucher einen abgeschlossenen
-            Schwimmkurs-Vertrag mit Sicher Schwimmen e.V. rechtssicher
-            widerrufen. Lesen Sie zunächst die Widerrufsbelehrung und füllen Sie
-            anschließend das Formular aus.
+            Hier können Sie als Verbraucher einen abgeschlossenen Schwimmkurs-Vertrag mit Sicher
+            Schwimmen e.V. rechtssicher widerrufen. Lesen Sie zunächst die Widerrufsbelehrung und
+            füllen Sie anschließend das Formular aus.
           </p>
         </div>
       </section>
@@ -163,9 +168,8 @@ function Page() {
                 <span className="font-mono">{success.reference}</span>
               </p>
               <p>
-                Eine Eingangsbestätigung wurde an Ihre E-Mail-Adresse versendet.
-                Bitte bewahren Sie die Referenznummer für eventuelle Rückfragen
-                auf.
+                Eine Eingangsbestätigung wurde an Ihre E-Mail-Adresse versendet. Bitte bewahren Sie
+                die Referenznummer für eventuelle Rückfragen auf.
               </p>
               <div className="pt-2">
                 <Button asChild variant="outline">
@@ -185,57 +189,48 @@ function Page() {
                 <div>
                   <h3 className="font-semibold mb-1">Widerrufsrecht</h3>
                   <p>
-                    Sie haben das Recht, binnen <strong>vierzehn Tagen</strong>{" "}
-                    ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die
-                    Widerrufsfrist beträgt vierzehn Tage ab dem Tag des
-                    Vertragsabschlusses bzw. der Zuteilungsbestätigung des
+                    Sie haben das Recht, binnen <strong>vierzehn Tagen</strong> ohne Angabe von
+                    Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage
+                    ab dem Tag des Vertragsabschlusses bzw. der Zuteilungsbestätigung des
                     Schwimmkurses.
                   </p>
                   <p className="mt-2">
-                    Um Ihr Widerrufsrecht auszuüben, müssen Sie uns – Sicher
-                    Schwimmen e.V., c/o Michael Kratz, Bergstr. 67a, 53773
-                    Hennef, Telefon 0178 / 1142945, E-Mail{" "}
+                    Um Ihr Widerrufsrecht auszuüben, müssen Sie uns – Sicher Schwimmen e.V., c/o
+                    Michael Kratz, Bergstr. 67a, 53773 Hennef, Telefon 0178 / 1142945, E-Mail{" "}
                     <a
                       className="text-primary-deep underline"
                       href="mailto:widerruf@sicher-schwimmen.com"
                     >
                       widerruf@sicher-schwimmen.com
                     </a>{" "}
-                    – mittels einer eindeutigen Erklärung (z. B. ein mit der
-                    Post versandter Brief oder E-Mail) über Ihren Entschluss,
-                    diesen Vertrag zu widerrufen, informieren. Sie können dafür
-                    das nachfolgende Online-Formular oder das beigefügte
-                    Muster-Widerrufsformular verwenden, das jedoch nicht
-                    vorgeschrieben ist.
+                    – mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief
+                    oder E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren.
+                    Sie können dafür das nachfolgende Online-Formular oder das beigefügte
+                    Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
                   </p>
                   <p className="mt-2">
-                    Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die
-                    Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf
-                    der Widerrufsfrist absenden.
+                    Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die
+                    Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-semibold mb-1">Folgen des Widerrufs</h3>
                   <p>
-                    Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle
-                    Zahlungen, die wir von Ihnen erhalten haben, unverzüglich
-                    und spätestens binnen vierzehn Tagen ab dem Tag
-                    zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf
-                    bei uns eingegangen ist. Für diese Rückzahlung verwenden
-                    wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen
-                    Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde
-                    ausdrücklich etwas anderes vereinbart; in keinem Fall
-                    werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.
+                    Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von
+                    Ihnen erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem
+                    Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf bei uns
+                    eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel,
+                    das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit
+                    Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen
+                    wegen dieser Rückzahlung Entgelte berechnet.
                   </p>
                   <p className="mt-2">
-                    Haben Sie verlangt, dass die Dienstleistung während der
-                    Widerrufsfrist beginnen soll, so haben Sie uns einen
-                    angemessenen Betrag zu zahlen, der dem Anteil der bis zu
-                    dem Zeitpunkt, zu dem Sie uns von der Ausübung des
-                    Widerrufsrechts unterrichten, bereits erbrachten
-                    Dienstleistungen im Vergleich zum Gesamtumfang der im
-                    Vertrag vorgesehenen Dienstleistungen entspricht.
+                    Haben Sie verlangt, dass die Dienstleistung während der Widerrufsfrist beginnen
+                    soll, so haben Sie uns einen angemessenen Betrag zu zahlen, der dem Anteil der
+                    bis zu dem Zeitpunkt, zu dem Sie uns von der Ausübung des Widerrufsrechts
+                    unterrichten, bereits erbrachten Dienstleistungen im Vergleich zum Gesamtumfang
+                    der im Vertrag vorgesehenen Dienstleistungen entspricht.
                   </p>
                 </div>
 
@@ -256,10 +251,9 @@ function Page() {
                   <ShieldCheck className="h-4 w-4" />
                   <AlertTitle>Hinweis zur Online-Übermittlung</AlertTitle>
                   <AlertDescription>
-                    Wenn Sie Ihren Widerruf über das unten stehende Online-
-                    Formular übermitteln, werden wir Ihnen unverzüglich eine
-                    Bestätigung des Zugangs per E-Mail zusenden. Alternativ
-                    können Sie den Widerruf auch formlos an die oben genannte
+                    Wenn Sie Ihren Widerruf über das unten stehende Online- Formular übermitteln,
+                    werden wir Ihnen unverzüglich eine Bestätigung des Zugangs per E-Mail zusenden.
+                    Alternativ können Sie den Widerruf auch formlos an die oben genannte
                     E-Mail-Adresse senden.
                   </AlertDescription>
                 </Alert>
@@ -291,53 +285,110 @@ function Page() {
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
-                    <Field id="parent_first_name" label="Vorname (Erziehungsberechtigte:r) *" error={errors.parent_first_name}>
-                      <Input id="parent_first_name" autoComplete="given-name" required
+                    <Field
+                      id="parent_first_name"
+                      label="Vorname (Erziehungsberechtigte:r) *"
+                      error={errors.parent_first_name}
+                    >
+                      <Input
+                        id="parent_first_name"
+                        autoComplete="given-name"
+                        required
                         value={form.parent_first_name}
-                        onChange={(e) => set("parent_first_name", e.target.value)} />
+                        onChange={(e) => set("parent_first_name", e.target.value)}
+                      />
                     </Field>
-                    <Field id="parent_last_name" label="Nachname (Erziehungsberechtigte:r) *" error={errors.parent_last_name}>
-                      <Input id="parent_last_name" autoComplete="family-name" required
+                    <Field
+                      id="parent_last_name"
+                      label="Nachname (Erziehungsberechtigte:r) *"
+                      error={errors.parent_last_name}
+                    >
+                      <Input
+                        id="parent_last_name"
+                        autoComplete="family-name"
+                        required
                         value={form.parent_last_name}
-                        onChange={(e) => set("parent_last_name", e.target.value)} />
+                        onChange={(e) => set("parent_last_name", e.target.value)}
+                      />
                     </Field>
                     <Field id="email" label="E-Mail-Adresse *" error={errors.email}>
-                      <Input id="email" type="email" autoComplete="email" required
+                      <Input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        required
                         value={form.email}
-                        onChange={(e) => set("email", e.target.value)} />
+                        onChange={(e) => set("email", e.target.value)}
+                      />
                     </Field>
                     <Field id="phone" label="Telefonnummer *" error={errors.phone}>
-                      <Input id="phone" type="tel" autoComplete="tel" required
+                      <Input
+                        id="phone"
+                        type="tel"
+                        autoComplete="tel"
+                        required
                         value={form.phone}
-                        onChange={(e) => set("phone", e.target.value)} />
+                        onChange={(e) => set("phone", e.target.value)}
+                      />
                     </Field>
                     <Field id="child_name" label="Name des Kindes *" error={errors.child_name}>
-                      <Input id="child_name" required
+                      <Input
+                        id="child_name"
+                        required
                         value={form.child_name}
-                        onChange={(e) => set("child_name", e.target.value)} />
+                        onChange={(e) => set("child_name", e.target.value)}
+                      />
                     </Field>
-                    <Field id="course_name" label="Gebuchter Schwimmkurs *" error={errors.course_name}>
-                      <Input id="course_name" required
+                    <Field
+                      id="course_name"
+                      label="Gebuchter Schwimmkurs *"
+                      error={errors.course_name}
+                    >
+                      <Input
+                        id="course_name"
+                        required
                         value={form.course_name}
-                        onChange={(e) => set("course_name", e.target.value)} />
+                        onChange={(e) => set("course_name", e.target.value)}
+                      />
                     </Field>
-                    <Field id="booking_date" label="Datum der Kurszuteilung / Buchungsbestätigung *" error={errors.booking_date}>
-                      <Input id="booking_date" type="date" required
+                    <Field
+                      id="booking_date"
+                      label="Datum der Kurszuteilung / Buchungsbestätigung *"
+                      error={errors.booking_date}
+                    >
+                      <Input
+                        id="booking_date"
+                        type="date"
+                        required
                         value={form.booking_date}
-                        onChange={(e) => set("booking_date", e.target.value)} />
+                        onChange={(e) => set("booking_date", e.target.value)}
+                      />
                     </Field>
                   </div>
 
                   <Field id="notes" label="Bemerkungen (freiwillig)" error={errors.notes}>
-                    <Textarea id="notes" rows={3} maxLength={2000}
+                    <Textarea
+                      id="notes"
+                      rows={3}
+                      maxLength={2000}
                       value={form.notes}
-                      onChange={(e) => set("notes", e.target.value)} />
+                      onChange={(e) => set("notes", e.target.value)}
+                    />
                   </Field>
 
-                  <Field id="revocation_text" label="Widerrufserklärung *" error={errors.revocation_text}>
-                    <Textarea id="revocation_text" rows={4} required maxLength={2000}
+                  <Field
+                    id="revocation_text"
+                    label="Widerrufserklärung *"
+                    error={errors.revocation_text}
+                  >
+                    <Textarea
+                      id="revocation_text"
+                      rows={4}
+                      required
+                      maxLength={2000}
                       value={form.revocation_text}
-                      onChange={(e) => set("revocation_text", e.target.value)} />
+                      onChange={(e) => set("revocation_text", e.target.value)}
+                    />
                   </Field>
 
                   <div className="flex items-start gap-3 rounded-md border p-4 bg-secondary/40">
@@ -348,8 +399,7 @@ function Page() {
                     />
                     <div className="flex-1">
                       <Label htmlFor="confirm" className="font-medium leading-snug">
-                        Ich erkläre hiermit den Widerruf des oben genannten
-                        Vertrages. *
+                        Ich erkläre hiermit den Widerruf des oben genannten Vertrages. *
                       </Label>
                       {errors.confirm && (
                         <p className="text-sm text-destructive mt-1">{errors.confirm}</p>
@@ -359,18 +409,15 @@ function Page() {
 
                   <div className="text-xs text-muted-foreground space-y-2 rounded-md border p-4 bg-muted/40">
                     <p>
-                      <strong>Datenschutzhinweis:</strong> Die in diesem
-                      Formular erhobenen Daten verarbeiten wir ausschließlich
-                      zur Bearbeitung Ihres Widerrufs (Art. 6 Abs. 1 lit. b und
-                      c DSGVO). Zur Nachvollziehbarkeit speichern wir
-                      zusätzlich Ihre IP-Adresse und den Zeitpunkt der
-                      Übermittlung.
+                      <strong>Datenschutzhinweis:</strong> Die in diesem Formular erhobenen Daten
+                      verarbeiten wir ausschließlich zur Bearbeitung Ihres Widerrufs (Art. 6 Abs. 1
+                      lit. b und c DSGVO). Zur Nachvollziehbarkeit speichern wir zusätzlich Ihre
+                      IP-Adresse und den Zeitpunkt der Übermittlung.
                     </p>
                     <p>
-                      <strong>Aufbewahrungsdauer:</strong> Wir speichern die
-                      Widerrufsdaten gemäß gesetzlichen Aufbewahrungs- und
-                      Verjährungsfristen (in der Regel 3 Jahre, §195 BGB) und
-                      löschen sie danach.
+                      <strong>Aufbewahrungsdauer:</strong> Wir speichern die Widerrufsdaten gemäß
+                      gesetzlichen Aufbewahrungs- und Verjährungsfristen (in der Regel 3 Jahre, §195
+                      BGB) und löschen sie danach.
                     </p>
                     <p>
                       Weitere Informationen finden Sie in unserer{" "}
@@ -397,8 +444,16 @@ function Page() {
 }
 
 function Field({
-  id, label, error, children,
-}: { id: string; label: string; error?: string; children: React.ReactNode }) {
+  id,
+  label,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>

@@ -32,10 +32,12 @@ async function assertCourseAccess(
 ): Promise<void> {
   const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
   if (isStaff) return;
-  const isTrainer = (await supabase.rpc("is_trainer_of_course", {
-    _trainer_id: userId,
-    _course_id: courseId,
-  })).data;
+  const isTrainer = (
+    await supabase.rpc("is_trainer_of_course", {
+      _trainer_id: userId,
+      _course_id: courseId,
+    })
+  ).data;
   if (!isTrainer) throw new Error("Forbidden");
 }
 
@@ -58,7 +60,7 @@ export const listCourseAttendance = createServerFn({ method: "POST" })
       .select("id,session_index,session_date,start_time,end_time")
       .eq("course_id", data.courseId)
       .order("session_index", { ascending: true });
-    const sessions = (sessRows || []).map(s => ({
+    const sessions = (sessRows || []).map((s) => ({
       id: s.id as string,
       session_index: s.session_index as number,
       session_date: s.session_date as string,
@@ -71,10 +73,15 @@ export const listCourseAttendance = createServerFn({ method: "POST" })
     const { data: attRows } = await supabaseAdmin
       .from("course_attendance")
       .select("session_id,participant_id,status,note,updated_at,recorded_by")
-      .in("session_id", sessions.map(s => s.id));
+      .in(
+        "session_id",
+        sessions.map((s) => s.id),
+      );
 
     const recorderIds = Array.from(
-      new Set((attRows || []).map(r => r.recorded_by as string | null).filter(Boolean) as string[]),
+      new Set(
+        (attRows || []).map((r) => r.recorded_by as string | null).filter(Boolean) as string[],
+      ),
     );
     const nameById = new Map<string, string>();
     if (recorderIds.length > 0) {
@@ -82,7 +89,7 @@ export const listCourseAttendance = createServerFn({ method: "POST" })
         .from("profiles")
         .select("id,first_name,last_name,email")
         .in("id", recorderIds);
-      (profs || []).forEach(p => {
+      (profs || []).forEach((p) => {
         const name =
           [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || (p.email as string) || "";
         nameById.set(p.id as string, name);
@@ -91,13 +98,13 @@ export const listCourseAttendance = createServerFn({ method: "POST" })
 
     return {
       sessions,
-      records: (attRows || []).map(r => ({
+      records: (attRows || []).map((r) => ({
         session_id: r.session_id as string,
         participant_id: r.participant_id as string,
         status: r.status as AttendanceStatus,
         note: (r.note ?? null) as string | null,
         updated_at: r.updated_at as string,
-        recorded_by_name: r.recorded_by ? nameById.get(r.recorded_by as string) ?? null : null,
+        recorded_by_name: r.recorded_by ? (nameById.get(r.recorded_by as string) ?? null) : null,
       })),
     };
   });
@@ -150,19 +157,17 @@ export const setAttendance = createServerFn({ method: "POST" })
         .eq("participant_id", data.participantId);
       if (error) throw error;
     } else {
-      const { error } = await supabaseAdmin
-        .from("course_attendance")
-        .upsert(
-          {
-            session_id: data.sessionId,
-            participant_id: data.participantId,
-            status: data.status,
-            note: data.note?.trim() ? data.note.trim() : null,
-            recorded_by: userId,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "session_id,participant_id" },
-        );
+      const { error } = await supabaseAdmin.from("course_attendance").upsert(
+        {
+          session_id: data.sessionId,
+          participant_id: data.participantId,
+          status: data.status,
+          note: data.note?.trim() ? data.note.trim() : null,
+          recorded_by: userId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "session_id,participant_id" },
+      );
       if (error) throw error;
     }
 

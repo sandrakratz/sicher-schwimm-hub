@@ -77,7 +77,12 @@ export const listDeliveryEvents = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { escapeLike } = await import("@/lib/like");
-    const empty = { events: [] as DeliveryEvent[], historyStartsAt: null as string | null, counts: { sent: 0, failed: 0, bounced: 0 } as DeliveryCounts, total: 0 };
+    const empty = {
+      events: [] as DeliveryEvent[],
+      historyStartsAt: null as string | null,
+      counts: { sent: 0, failed: 0, bounced: 0 } as DeliveryCounts,
+      total: 0,
+    };
 
     // gemeinsame Filter (Zeitraum, Empfänger-Typ, Suchtext)
     const common = <Q extends { gte: any; ilike: any; eq: any; neq: any }>(q: Q): Q => {
@@ -85,11 +90,15 @@ export const listDeliveryEvents = createServerFn({ method: "POST" })
       if (data.since) r = r.gte("created_at", data.since);
       if (data.recipient) r = r.ilike("recipient_email", `%${escapeLike(data.recipient)}%`);
       if (data.recipientType === "admin") r = r.ilike("recipient_email", escapeLike(ADMIN_EMAIL));
-      if (data.recipientType === "external") r = r.not("recipient_email", "ilike", escapeLike(ADMIN_EMAIL));
+      if (data.recipientType === "external")
+        r = r.not("recipient_email", "ilike", escapeLike(ADMIN_EMAIL));
       return r;
     };
     const count = (statuses: string[]) =>
-      common(supabaseAdmin.from("email_send_log").select("id", { count: "exact", head: true })).in("status", statuses);
+      common(supabaseAdmin.from("email_send_log").select("id", { count: "exact", head: true })).in(
+        "status",
+        statuses,
+      );
 
     // Auswahl für die Liste: Gruppe oder einzelner Ereignistyp
     let listStatuses: string[] | null = null;
@@ -126,7 +135,11 @@ export const listDeliveryEvents = createServerFn({ method: "POST" })
         message_id: r.message_id ?? undefined,
       })) as DeliveryEvent[],
       historyStartsAt: null as string | null,
-      counts: { sent: sent.count ?? 0, failed: failed.count ?? 0, bounced: bounced.count ?? 0 } as DeliveryCounts,
+      counts: {
+        sent: sent.count ?? 0,
+        failed: failed.count ?? 0,
+        bounced: bounced.count ?? 0,
+      } as DeliveryCounts,
       total: list.count ?? 0,
       error: null as string | null,
     };

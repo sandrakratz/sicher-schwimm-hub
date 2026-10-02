@@ -33,13 +33,7 @@ export function ReweSfvBanner({ variant = "inline", className = "" }: Props) {
       title={REWE_SFV_TITLE}
       className="inline-block rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
-      <img
-        src={REWE_SFV_IMAGE}
-        alt={REWE_SFV_ALT}
-        width={240}
-        height={45}
-        loading="lazy"
-      />
+      <img src={REWE_SFV_IMAGE} alt={REWE_SFV_ALT} width={240} height={45} loading="lazy" />
     </a>
   );
 
@@ -56,9 +50,8 @@ export function ReweSfvBanner({ variant = "inline", className = "" }: Props) {
           Unterstützen Sie uns mit Ihren REWE-Scheinen
         </div>
         <p className="text-sm text-muted-foreground">
-          Wir nehmen an der Aktion „Scheine für Vereine“ teil. Ihre Scheine
-          helfen uns, Material für unsere Schwimmkurse anzuschaffen – noch bis
-          zum 11.10.2026 einlösbar.
+          Wir nehmen an der Aktion „Scheine für Vereine“ teil. Ihre Scheine helfen uns, Material für
+          unsere Schwimmkurse anzuschaffen – noch bis zum 11.10.2026 einlösbar.
         </p>
       </div>
       <div className="shrink-0">{link}</div>

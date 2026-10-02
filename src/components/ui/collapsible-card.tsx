@@ -43,7 +43,7 @@ export function CollapsibleCard({
   }, [storageKey]);
 
   function toggle() {
-    setOpen(prev => {
+    setOpen((prev) => {
       const next = !prev;
       if (storageKey) {
         try {
@@ -66,11 +66,16 @@ export function CollapsibleCard({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <ChevronDown
-            className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")}
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              !open && "-rotate-90",
+            )}
           />
           <span className="min-w-0">
             <span className="block truncate font-semibold text-primary-deep">{title}</span>
-            {subtitle ? <span className="block text-xs text-muted-foreground">{subtitle}</span> : null}
+            {subtitle ? (
+              <span className="block text-xs text-muted-foreground">{subtitle}</span>
+            ) : null}
           </span>
         </button>
         {meta ? <div className="flex flex-wrap items-center gap-2">{meta}</div> : null}

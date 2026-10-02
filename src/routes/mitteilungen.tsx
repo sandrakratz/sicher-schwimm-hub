@@ -14,7 +14,11 @@ export const Route = createFileRoute("/mitteilungen")({
   head: () => ({
     meta: [
       { title: "Mitteilungen aktivieren – Sicher Schwimmen e.V." },
-      { name: "description", content: "Eilnachrichten zu Ihrem Schwimmkurs kostenlos als Mitteilung aufs Handy erhalten." },
+      {
+        name: "description",
+        content:
+          "Eilnachrichten zu Ihrem Schwimmkurs kostenlos als Mitteilung aufs Handy erhalten.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -65,8 +69,13 @@ function Page() {
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token || !/^[a-f0-9]{20,80}$/.test(token)) { setInfo({ found: false, publicKey: "" }); return; }
-    load({ data: { token } }).then(setInfo).catch(() => setInfo({ found: false, publicKey: "" }));
+    if (!token || !/^[a-f0-9]{20,80}$/.test(token)) {
+      setInfo({ found: false, publicKey: "" });
+      return;
+    }
+    load({ data: { token } })
+      .then(setInfo)
+      .catch(() => setInfo({ found: false, publicKey: "" }));
   }, [token]);
 
   useEffect(() => {
@@ -82,10 +91,13 @@ function Page() {
     }
     if (canPush()) {
       if (Notification.permission === "denied") setBlocked(true);
-      navigator.serviceWorker.getRegistration("/").then(async (reg) => {
-        const sub = await reg?.pushManager.getSubscription();
-        setActive(!!sub);
-      }).catch(() => {});
+      navigator.serviceWorker
+        .getRegistration("/")
+        .then(async (reg) => {
+          const sub = await reg?.pushManager.getSubscription();
+          setActive(!!sub);
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -109,19 +121,23 @@ function Page() {
         });
       }
       const json = sub.toJSON();
-      const r = await subscribe({ data: {
-        token,
-        endpoint: sub.endpoint,
-        p256dh: json.keys?.p256dh || "",
-        auth: json.keys?.auth || "",
-        userAgent: navigator.userAgent.slice(0, 400),
-      } });
+      const r = await subscribe({
+        data: {
+          token,
+          endpoint: sub.endpoint,
+          p256dh: json.keys?.p256dh || "",
+          auth: json.keys?.auth || "",
+          userAgent: navigator.userAgent.slice(0, 400),
+        },
+      });
       if (!r.ok) throw new Error("Link ungültig");
       setActive(true);
       toast.success("Mitteilungen aktiviert – Sie erhalten gleich eine Testmitteilung.");
     } catch {
       toast.error("Die Aktivierung hat leider nicht geklappt. Bitte versuchen Sie es erneut.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function deactivate() {
@@ -138,7 +154,9 @@ function Page() {
       toast.success("Mitteilungen wurden abgestellt. Sie erhalten weiterhin E-Mails.");
     } catch {
       toast.error("Abmelden hat leider nicht geklappt.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   const iphoneNeedsInstall = device === "iphone" && !homeScreen;
@@ -149,90 +167,143 @@ function Page() {
       <div className="container mx-auto max-w-xl px-4 py-10">
         <h1 className="text-3xl font-bold text-primary-deep mb-2">Mitteilungen aktivieren</h1>
         <p className="text-muted-foreground mb-6">
-          Fällt ein Kurstermin kurzfristig aus, erfahren Sie es sofort auf Ihrem Handy – kostenlos, ohne Konto und ohne dass jemand Ihre Handynummer sieht.
+          Fällt ein Kurstermin kurzfristig aus, erfahren Sie es sofort auf Ihrem Handy – kostenlos,
+          ohne Konto und ohne dass jemand Ihre Handynummer sieht.
         </p>
 
         {!info && <p className="text-muted-foreground">Wird geladen …</p>}
 
         {info && !info.found && (
-          <Card><CardContent className="p-6">
-            Dieser Link ist ungültig. Bitte melden Sie sich unter info@sicher-schwimmen.com.
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-6">
+              Dieser Link ist ungültig. Bitte melden Sie sich unter info@sicher-schwimmen.com.
+            </CardContent>
+          </Card>
         )}
 
         {info?.found && device === "pc" && (
-          <Card><CardContent className="p-6 space-y-4 text-center">
-            <Smartphone className="mx-auto h-8 w-8 text-primary" />
-            <p className="font-semibold">Bitte mit dem Handy scannen</p>
-            <p className="text-sm text-muted-foreground">
-              Mitteilungen werden auf dem Handy eingerichtet. Richten Sie die Kamera Ihres Handys auf diesen Code und öffnen Sie den Link.
-            </p>
-            {qr && <img src={qr} alt="QR-Code zum Öffnen dieser Seite auf dem Handy" className="mx-auto h-64 w-64" />}
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-6 space-y-4 text-center">
+              <Smartphone className="mx-auto h-8 w-8 text-primary" />
+              <p className="font-semibold">Bitte mit dem Handy scannen</p>
+              <p className="text-sm text-muted-foreground">
+                Mitteilungen werden auf dem Handy eingerichtet. Richten Sie die Kamera Ihres Handys
+                auf diesen Code und öffnen Sie den Link.
+              </p>
+              {qr && (
+                <img
+                  src={qr}
+                  alt="QR-Code zum Öffnen dieser Seite auf dem Handy"
+                  className="mx-auto h-64 w-64"
+                />
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {info?.found && iphoneNeedsInstall && (
-          <Card><CardContent className="p-6 space-y-4">
-            <p className="font-semibold">Auf dem iPhone sind zuerst drei kleine Schritte nötig</p>
-            <p className="text-sm text-muted-foreground">
-              Apple erlaubt Mitteilungen nur für Seiten, die auf dem Home-Bildschirm liegen (ab iOS 16.4).
-            </p>
-            <ol className="space-y-4 text-sm">
-              <li className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">1</span>
-                <span>Öffnen Sie diesen Link in <strong>Safari</strong> (dem blauen Kompass-Symbol).</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">2</span>
-                <span>Tippen Sie unten auf das <strong>Teilen-Symbol</strong> <Share className="inline h-4 w-4 align-text-bottom" /> und wählen Sie <strong>„Zum Home-Bildschirm“</strong> <SquarePlus className="inline h-4 w-4 align-text-bottom" />. Bestätigen Sie mit „Hinzufügen“.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">3</span>
-                <span>Öffnen Sie die Seite über das <strong>neue Symbol auf Ihrem Home-Bildschirm</strong> und tippen Sie dort auf „Mitteilungen aktivieren“.</span>
-              </li>
-            </ol>
-            <p className="text-xs text-muted-foreground">
-              Wichtig: Führen Sie Schritt 2 auf genau dieser Seite durch (mit dem Link aus Ihrer E-Mail), damit das Symbol Ihren persönlichen Link mitnimmt.
-            </p>
-            <p className="text-xs text-muted-foreground">Ohne diese Schritte erhalten Sie Eilnachrichten nur per E-Mail.</p>
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              <p className="font-semibold">Auf dem iPhone sind zuerst drei kleine Schritte nötig</p>
+              <p className="text-sm text-muted-foreground">
+                Apple erlaubt Mitteilungen nur für Seiten, die auf dem Home-Bildschirm liegen (ab
+                iOS 16.4).
+              </p>
+              <ol className="space-y-4 text-sm">
+                <li className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">
+                    1
+                  </span>
+                  <span>
+                    Öffnen Sie diesen Link in <strong>Safari</strong> (dem blauen Kompass-Symbol).
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">
+                    2
+                  </span>
+                  <span>
+                    Tippen Sie unten auf das <strong>Teilen-Symbol</strong>{" "}
+                    <Share className="inline h-4 w-4 align-text-bottom" /> und wählen Sie{" "}
+                    <strong>„Zum Home-Bildschirm“</strong>{" "}
+                    <SquarePlus className="inline h-4 w-4 align-text-bottom" />. Bestätigen Sie mit
+                    „Hinzufügen“.
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">
+                    3
+                  </span>
+                  <span>
+                    Öffnen Sie die Seite über das{" "}
+                    <strong>neue Symbol auf Ihrem Home-Bildschirm</strong> und tippen Sie dort auf
+                    „Mitteilungen aktivieren“.
+                  </span>
+                </li>
+              </ol>
+              <p className="text-xs text-muted-foreground">
+                Wichtig: Führen Sie Schritt 2 auf genau dieser Seite durch (mit dem Link aus Ihrer
+                E-Mail), damit das Symbol Ihren persönlichen Link mitnimmt.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Ohne diese Schritte erhalten Sie Eilnachrichten nur per E-Mail.
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {info?.found && unsupported && (
-          <Card><CardContent className="p-6">
-            Dieses Gerät oder dieser Browser unterstützt leider keine Mitteilungen. Sie erhalten Eilnachrichten weiterhin per E-Mail.
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-6">
+              Dieses Gerät oder dieser Browser unterstützt leider keine Mitteilungen. Sie erhalten
+              Eilnachrichten weiterhin per E-Mail.
+            </CardContent>
+          </Card>
         )}
 
         {info?.found && device && device !== "pc" && !iphoneNeedsInstall && !unsupported && (
-          <Card><CardContent className="p-6 space-y-4">
-            {info.childName && (
-              <p className="text-sm text-muted-foreground">
-                Für: <strong className="text-foreground">{info.childName}</strong>{info.courseName ? ` · ${info.courseName}` : ""}
-              </p>
-            )}
-            {active ? (
-              <>
-                <p className="font-semibold flex items-center gap-2"><Bell className="h-5 w-5 text-primary" /> Mitteilungen sind auf diesem Handy aktiv.</p>
-                <p className="text-sm text-muted-foreground">Sie erhalten Eilnachrichten zusätzlich zur E-Mail. Das gilt für alle Kurse, die Sie mit dieser E-Mail-Adresse gebucht haben.</p>
-                <Button variant="outline" onClick={deactivate} disabled={busy}>
-                  <BellOff className="h-4 w-4" /> Mitteilungen abstellen
-                </Button>
-              </>
-            ) : (
-              <>
-                {blocked && (
-                  <p className="text-sm rounded-md border border-destructive/40 bg-destructive/5 p-3">
-                    Mitteilungen sind in Ihren Handy-Einstellungen für diese Seite blockiert. Bitte erlauben Sie sie dort und laden Sie die Seite neu.
+          <Card>
+            <CardContent className="p-6 space-y-4">
+              {info.childName && (
+                <p className="text-sm text-muted-foreground">
+                  Für: <strong className="text-foreground">{info.childName}</strong>
+                  {info.courseName ? ` · ${info.courseName}` : ""}
+                </p>
+              )}
+              {active ? (
+                <>
+                  <p className="font-semibold flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-primary" /> Mitteilungen sind auf diesem Handy
+                    aktiv.
                   </p>
-                )}
-                <Button size="lg" className="w-full" onClick={activate} disabled={busy}>
-                  <Bell className="h-5 w-5" /> {busy ? "Einen Moment …" : "Mitteilungen aktivieren"}
-                </Button>
-                <p className="text-xs text-muted-foreground">Ihr Handy fragt Sie anschließend um Erlaubnis. Danach senden wir eine kurze Testmitteilung.</p>
-              </>
-            )}
-          </CardContent></Card>
+                  <p className="text-sm text-muted-foreground">
+                    Sie erhalten Eilnachrichten zusätzlich zur E-Mail. Das gilt für alle Kurse, die
+                    Sie mit dieser E-Mail-Adresse gebucht haben.
+                  </p>
+                  <Button variant="outline" onClick={deactivate} disabled={busy}>
+                    <BellOff className="h-4 w-4" /> Mitteilungen abstellen
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {blocked && (
+                    <p className="text-sm rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                      Mitteilungen sind in Ihren Handy-Einstellungen für diese Seite blockiert.
+                      Bitte erlauben Sie sie dort und laden Sie die Seite neu.
+                    </p>
+                  )}
+                  <Button size="lg" className="w-full" onClick={activate} disabled={busy}>
+                    <Bell className="h-5 w-5" />{" "}
+                    {busy ? "Einen Moment …" : "Mitteilungen aktivieren"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Ihr Handy fragt Sie anschließend um Erlaubnis. Danach senden wir eine kurze
+                    Testmitteilung.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
         )}
       </div>
     </PublicLayout>

@@ -65,25 +65,68 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     // Alles seitenweise laden: Supabase liefert pro Abfrage höchstens 1000 Zeilen. Bei den aufsteigend sortierten
     // Terminen fielen sonst genau die neuesten (kommenden) Termine weg, bei den Profilen Namen (→ „Unbekannt“).
-    const [sessions, courses, profiles, assigns, events, groups, signups, avail] = await Promise.all([
-      fetchAll<any>((f, t) =>
-        supabaseAdmin
-          .from("course_sessions")
-          .select("id,course_id,session_index,session_date,start_time,end_time,note,assigned_trainer_id")
-          .order("session_date", { ascending: true })
-          .order("id")
-          .range(f, t),
-      ),
-      fetchAll<any>((f, t) => supabaseAdmin.from("courses").select("id,name,location,schedule,trainer_id,archived_at,trainers_needed").order("id").range(f, t)),
-      fetchAll<any>((f, t) => supabaseAdmin.from("profiles").select("id,first_name,last_name,email").order("id").range(f, t)),
-      fetchAll<any>((f, t) => supabaseAdmin.from("course_session_assignments").select("session_id,trainer_id").order("id").range(f, t)),
-      fetchAll<any>((f, t) => supabaseAdmin.from("events").select("id,title,location,starts_at,ends_at,signup_enabled").order("id").range(f, t)),
-      fetchAll<any>((f, t) => supabaseAdmin.from("event_helper_groups").select("id,event_id,name,needed_count,starts_at,ends_at").order("id").range(f, t)),
-      fetchAll<any>((f, t) =>
-        supabaseAdmin.from("event_shift_signups").select("event_id,group_id,trainer_id,helper_name,available,starts_at,ends_at").order("id").range(f, t),
-      ),
-      fetchAll<any>((f, t) => supabaseAdmin.from("course_session_availability").select("session_id,trainer_id,available").order("id").range(f, t)),
-    ]);
+    const [sessions, courses, profiles, assigns, events, groups, signups, avail] =
+      await Promise.all([
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("course_sessions")
+            .select(
+              "id,course_id,session_index,session_date,start_time,end_time,note,assigned_trainer_id",
+            )
+            .order("session_date", { ascending: true })
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("courses")
+            .select("id,name,location,schedule,trainer_id,archived_at,trainers_needed")
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("profiles")
+            .select("id,first_name,last_name,email")
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("course_session_assignments")
+            .select("session_id,trainer_id")
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("events")
+            .select("id,title,location,starts_at,ends_at,signup_enabled")
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("event_helper_groups")
+            .select("id,event_id,name,needed_count,starts_at,ends_at")
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("event_shift_signups")
+            .select("event_id,group_id,trainer_id,helper_name,available,starts_at,ends_at")
+            .order("id")
+            .range(f, t),
+        ),
+        fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("course_session_availability")
+            .select("session_id,trainer_id,available")
+            .order("id")
+            .range(f, t),
+        ),
+      ]);
     const availBySession = new Map<string, { id: string; available: boolean }[]>();
     avail.forEach((a) => {
       const l = availBySession.get(a.session_id as string) ?? [];
@@ -97,7 +140,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
       nameOf.set(p.id as string, n || (p.email as string) || "Unbekannt");
     });
 
-    const courseById = new Map<string, (typeof courses extends (infer T)[] ? T : never)>();
+    const courseById = new Map<string, typeof courses extends (infer T)[] ? T : never>();
     courses.forEach((c) => courseById.set(c.id as string, c as never));
 
     const perSession = new Map<string, Set<string>>();
@@ -111,7 +154,14 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     sessions.forEach((s) => {
       const c = courseById.get(s.course_id as string) as
-        | { name: string; location: string | null; schedule: string | null; trainer_id: string | null; archived_at: string | null; trainers_needed: number | null }
+        | {
+            name: string;
+            location: string | null;
+            schedule: string | null;
+            trainer_id: string | null;
+            archived_at: string | null;
+            trainers_needed: number | null;
+          }
         | undefined;
       if (!c || c.archived_at) return;
       const trainerIds = new Set<string>(perSession.get(s.id as string) ?? []);
@@ -144,7 +194,8 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
       const evGroups = groups.filter((g) => g.event_id === e.id);
       const evSignups = signups.filter((s) => s.event_id === e.id && s.available !== false);
       const helperNames = evSignups.map(
-        (s) => (s.helper_name as string | null) || nameOf.get(s.trainer_id as string) || "Helfer:in",
+        (s) =>
+          (s.helper_name as string | null) || nameOf.get(s.trainer_id as string) || "Helfer:in",
       );
       entries.push({
         kind: "event",
@@ -160,7 +211,8 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
         helperNeed: evGroups.map((g) => ({
           name: g.name as string,
           needed: (g.needed_count as number) ?? 0,
-          filled: new Set(evSignups.filter((s) => s.group_id === g.id).map((s) => helperKey(s))).size,
+          filled: new Set(evSignups.filter((s) => s.group_id === g.id).map((s) => helperKey(s)))
+            .size,
         })),
         eventId: e.id as string,
       });

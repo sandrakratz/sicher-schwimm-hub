@@ -1,4 +1,11 @@
-import { Outlet, Link, createFileRoute, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { LogOut, Waves, Menu } from "lucide-react";
@@ -37,16 +44,24 @@ function AuthLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id);
-      setRoles((r ?? []).map(x => x.role as Role));
-      const { data: profile } = await supabase.from("profiles").select("first_name,last_name").eq("id", u.user.id).maybeSingle();
-      setName([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || u.user.email || "");
+      setRoles((r ?? []).map((x) => x.role as Role));
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name,last_name")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      setName(
+        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || u.user.email || "",
+      );
     })();
   }, []);
 
@@ -62,42 +77,63 @@ function AuthLayout() {
   const navContent = (
     <>
       <Link to="/" className="flex flex-col items-center gap-2 p-4 border-b border-sidebar-border">
-        <img src={logo} alt="Sicher Schwimmen e.V." className="h-20 w-auto object-contain" height={80} />
+        <img
+          src={logo}
+          alt="Sicher Schwimmen e.V."
+          className="h-20 w-auto object-contain"
+          height={80}
+        />
         <div className="text-xs font-semibold opacity-90">Mitgliederportal</div>
       </Link>
       <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-        {portalNav.map(n => (
-          <Link key={n.to} to={n.to}
+        {portalNav.map((n) => (
+          <Link
+            key={n.to}
+            to={n.to}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
             activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-            activeOptions={{ exact: n.exact }}>
-            <n.icon className="h-4 w-4" />{n.label}
+            activeOptions={{ exact: n.exact }}
+          >
+            <n.icon className="h-4 w-4" />
+            {n.label}
           </Link>
         ))}
         {trainerItems.length > 0 && (
           <>
-            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">Trainer:innen</div>
-            {trainerItems.map(n => (
-              <Link key={n.to} to={n.to}
+            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">
+              Trainer:innen
+            </div>
+            {trainerItems.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
                 activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-                activeOptions={{ exact: n.exact }}>
-                <n.icon className="h-4 w-4" />{n.label}
+                activeOptions={{ exact: n.exact }}
+              >
+                <n.icon className="h-4 w-4" />
+                {n.label}
               </Link>
             ))}
           </>
         )}
         {adminItems.length > 0 && (
           <>
-            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">Verwaltung</div>
-            {adminItems.map(n => {
-              const groupActive = n.group?.some(p => pathname.startsWith(p));
+            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">
+              Verwaltung
+            </div>
+            {adminItems.map((n) => {
+              const groupActive = n.group?.some((p) => pathname.startsWith(p));
               return (
-                <Link key={n.to} to={n.to}
+                <Link
+                  key={n.to}
+                  to={n.to}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition ${groupActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : ""}`}
                   activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-                  activeOptions={{ exact: n.exact }}>
-                  <n.icon className="h-4 w-4" />{n.label}
+                  activeOptions={{ exact: n.exact }}
+                >
+                  <n.icon className="h-4 w-4" />
+                  {n.label}
                 </Link>
               );
             })}
@@ -106,8 +142,13 @@ function AuthLayout() {
       </nav>
       <div className="p-3 border-t border-sidebar-border">
         <div className="px-3 py-2 text-xs opacity-70 truncate">{name}</div>
-        <Button onClick={logout} variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent">
-          <LogOut className="h-4 w-4" />Abmelden
+        <Button
+          onClick={logout}
+          variant="ghost"
+          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+        >
+          <LogOut className="h-4 w-4" />
+          Abmelden
         </Button>
       </div>
     </>
@@ -123,17 +164,37 @@ function AuthLayout() {
         <header className="lg:hidden bg-sidebar text-sidebar-foreground p-4 flex items-center justify-between">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-sidebar-foreground" aria-label="Menü öffnen">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-sidebar-foreground"
+                aria-label="Menü öffnen"
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72 bg-sidebar text-sidebar-foreground border-sidebar-border flex flex-col">
-              <SheetHeader className="sr-only"><SheetTitle>Mitgliederportal Menü</SheetTitle></SheetHeader>
+            <SheetContent
+              side="left"
+              className="p-0 w-72 bg-sidebar text-sidebar-foreground border-sidebar-border flex flex-col"
+            >
+              <SheetHeader className="sr-only">
+                <SheetTitle>Mitgliederportal Menü</SheetTitle>
+              </SheetHeader>
               {navContent}
             </SheetContent>
           </Sheet>
-          <Link to="/portal" className="flex items-center gap-2 font-bold"><Waves className="h-5 w-5" /> Portal</Link>
-          <Button onClick={logout} variant="ghost" size="sm" className="text-sidebar-foreground" aria-label="Abmelden"><LogOut className="h-4 w-4" /></Button>
+          <Link to="/portal" className="flex items-center gap-2 font-bold">
+            <Waves className="h-5 w-5" /> Portal
+          </Link>
+          <Button
+            onClick={logout}
+            variant="ghost"
+            size="sm"
+            className="text-sidebar-foreground"
+            aria-label="Abmelden"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-10">
           <Outlet />

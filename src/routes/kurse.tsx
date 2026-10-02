@@ -12,43 +12,63 @@ import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { programAvailability } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
-import { NOT_BOOKABLE_NOTE, PROGRAM_CARD_SUMMARIES, parseRequirementLines } from "@/lib/upcoming-programs";
+import {
+  NOT_BOOKABLE_NOTE,
+  PROGRAM_CARD_SUMMARIES,
+  parseRequirementLines,
+} from "@/lib/upcoming-programs";
 
 export const Route = createFileRoute("/kurse")({
   loader: async () => await listCoursePrograms(),
   head: ({ loaderData }) => ({
     meta: [
-      { title: "Schwimmkurse Hennef – Seepferdchen, Bronze, Silber & Gold | Sicher Schwimmen e.V." },
-      { name: "description", content: "Alle Schwimmkurse in Hennef im Überblick: Wassergewöhnung, Anfängerschwimmen, Seepferdchen, Bronze, Silber, Gold sowie Ferien-Intensivkurse. Kleine Gruppen im Rhein-Sieg-Kreis." },
-      { name: "keywords", content: "Schwimmkurs Hennef, Seepferdchen Kurs, Bronze Silber Gold, Wassergewöhnung Kinder, Ferienkurs Schwimmen Rhein-Sieg-Kreis" },
+      {
+        title: "Schwimmkurse Hennef – Seepferdchen, Bronze, Silber & Gold | Sicher Schwimmen e.V.",
+      },
+      {
+        name: "description",
+        content:
+          "Alle Schwimmkurse in Hennef im Überblick: Wassergewöhnung, Anfängerschwimmen, Seepferdchen, Bronze, Silber, Gold sowie Ferien-Intensivkurse. Kleine Gruppen im Rhein-Sieg-Kreis.",
+      },
+      {
+        name: "keywords",
+        content:
+          "Schwimmkurs Hennef, Seepferdchen Kurs, Bronze Silber Gold, Wassergewöhnung Kinder, Ferienkurs Schwimmen Rhein-Sieg-Kreis",
+      },
       { property: "og:title", content: "Schwimmkurse in Hennef – Übersicht" },
-      { property: "og:description", content: "Vom ersten Plantschen bis zum Goldabzeichen – Schwimmkurse für Kinder, Familien und Erwachsene in Hennef." },
+      {
+        property: "og:description",
+        content:
+          "Vom ersten Plantschen bis zum Goldabzeichen – Schwimmkurse für Kinder, Familien und Erwachsene in Hennef.",
+      },
       { property: "og:url", content: "https://sicher-schwimmen.com/kurse" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "canonical", href: "https://sicher-schwimmen.com/kurse" }],
-    scripts: [{
-      type: "application/ld+json",
-      children: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "ItemList",
-        itemListElement: ((loaderData ?? []) as Array<CourseProgram>).map((c, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          item: {
-            "@type": "Course",
-            name: c.name,
-            description: c.description ?? undefined,
-            provider: {
-              "@type": "Organization",
-              name: "Sicher Schwimmen e.V.",
-              url: "https://sicher-schwimmen.com",
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          itemListElement: ((loaderData ?? []) as Array<CourseProgram>).map((c, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            item: {
+              "@type": "Course",
+              name: c.name,
+              description: c.description ?? undefined,
+              provider: {
+                "@type": "Organization",
+                name: "Sicher Schwimmen e.V.",
+                url: "https://sicher-schwimmen.com",
+              },
             },
-          },
-        })),
-      }),
-    }],
+          })),
+        }),
+      },
+    ],
   }),
   component: KursePage,
 });
@@ -62,11 +82,14 @@ function KursePage() {
         <div className="container mx-auto px-4 text-center">
           <h1 className="font-display text-5xl md:text-6xl font-bold mb-4">Unsere Schwimmkurse</h1>
           <p className="text-white/85 text-lg max-w-2xl mx-auto">
-            Vom ersten Plantschen bis zum Goldabzeichen – wir haben den richtigen
-            Kurs für jedes Alter und jedes Niveau.
+            Vom ersten Plantschen bis zum Goldabzeichen – wir haben den richtigen Kurs für jedes
+            Alter und jedes Niveau.
           </p>
           <p className="text-white/85 mt-4">
-            <Link to="/ratgeber/seepferdchen-anforderungen" className="underline underline-offset-4">
+            <Link
+              to="/ratgeber/seepferdchen-anforderungen"
+              className="underline underline-offset-4"
+            >
               Was muss mein Kind für das Seepferdchen können?
             </Link>
           </p>
@@ -75,7 +98,9 @@ function KursePage() {
 
       <section className="container mx-auto px-4 py-16">
         {programs.length === 0 ? (
-          <p className="text-center text-muted-foreground">Aktuell sind keine Kursangebote veröffentlicht.</p>
+          <p className="text-center text-muted-foreground">
+            Aktuell sind keine Kursangebote veröffentlicht.
+          </p>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {programs.map((c) => {
@@ -93,26 +118,51 @@ function KursePage() {
               const std = formatPrice(c.price_non_member);
               const mem = formatPrice(c.price_member);
               return (
-                <Card key={c.id} className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
+                <Card
+                  key={c.id}
+                  className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col"
+                >
                   <CardContent className="p-6 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3 gap-2">
                       {c.target_group && (
-                        <Badge variant="outline" className="bg-secondary text-primary-deep border-0 line-clamp-1">{c.target_group}</Badge>
+                        <Badge
+                          variant="outline"
+                          className="bg-secondary text-primary-deep border-0 line-clamp-1"
+                        >
+                          {c.target_group}
+                        </Badge>
                       )}
-                      <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold whitespace-nowrap ${statusClass}`}>{statusLabel}</span>
+                      <span
+                        className={`text-xs px-2.5 py-1 rounded-full border font-semibold whitespace-nowrap ${statusClass}`}
+                      >
+                        {statusLabel}
+                      </span>
                     </div>
-                    <h3 className="font-display text-xl font-bold text-primary-deep mb-1">{c.name}</h3>
-                    {c.age_range && <div className="text-sm font-semibold text-primary mb-1">{c.age_range}</div>}
+                    <h3 className="font-display text-xl font-bold text-primary-deep mb-1">
+                      {c.name}
+                    </h3>
+                    {c.age_range && (
+                      <div className="text-sm font-semibold text-primary mb-1">{c.age_range}</div>
+                    )}
                     {bookable && (
                       <div className="text-xs text-muted-foreground mb-3">{status.detail}</div>
                     )}
                     {(() => {
                       // Nur der erste Absatz der Beschreibung ist der Kurztext; weitere Absätze stehen auf der Detailseite.
-                      const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/).filter(Boolean).slice(0, 1) : []);
+                      const paras =
+                        PROGRAM_CARD_SUMMARIES[c.slug] ??
+                        (c.description
+                          ? c.description
+                              .split(/\n\s*\n/)
+                              .filter(Boolean)
+                              .slice(0, 1)
+                          : []);
                       if (paras.length === 0) return null;
                       return (
                         <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                          {paras.map((para, i) => <p key={i}>{para}</p>)}
+                          {paras.map((para, i) => (
+                            <p key={i}>{para}</p>
+                          ))}
                         </div>
                       );
                     })()}
@@ -121,47 +171,89 @@ function KursePage() {
                       if (reqLines.length === 0) return null;
                       return (
                         <div className="text-xs mb-4 flex-1">
-                          <span className="font-semibold text-primary-deep">{bookable ? "Voraussetzungen:" : "Rahmen:"}</span>
+                          <span className="font-semibold text-primary-deep">
+                            {bookable ? "Voraussetzungen:" : "Rahmen:"}
+                          </span>
                           {bookable && reqLines.length === 1 ? (
                             <span className="text-muted-foreground"> {reqLines[0]}</span>
                           ) : (
                             <ul className="mt-1 list-disc pl-5 space-y-0.5 text-muted-foreground">
-                              {reqLines.map((f, i) => <li key={i}>{f}</li>)}
+                              {reqLines.map((f, i) => (
+                                <li key={i}>{f}</li>
+                              ))}
                             </ul>
                           )}
                         </div>
                       );
                     })()}
                     <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
-                      {c.duration && <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>}
-                      {c.location && <div className="flex items-start gap-2"><MapPin className="h-3.5 w-3.5 mt-0.5" />{c.location}</div>}
-                      <div className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />Kleine Gruppen</div>
+                      {c.duration && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3.5 w-3.5" />
+                          {c.duration}
+                        </div>
+                      )}
+                      {c.location && (
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-3.5 w-3.5 mt-0.5" />
+                          {c.location}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3.5 w-3.5" />
+                        Kleine Gruppen
+                      </div>
                       {std || mem ? (
                         <div className="flex items-start gap-2 pt-1">
                           <Tag className="h-3.5 w-3.5 mt-0.5" />
                           <div>
                             <div>
-                              {std && <><span className="font-semibold text-foreground">{std}</span> Normalpreis</>}
+                              {std && (
+                                <>
+                                  <span className="font-semibold text-foreground">{std}</span>{" "}
+                                  Normalpreis
+                                </>
+                              )}
                               {std && mem && " · "}
-                              {mem && <><span className="font-semibold text-primary">{mem}</span> für Mitglieder</>}
+                              {mem && (
+                                <>
+                                  <span className="font-semibold text-primary">{mem}</span> für
+                                  Mitglieder
+                                </>
+                              )}
                             </div>
-                            <div className="text-[11px] opacity-80">Mitglieder werden bevorzugt aufgenommen</div>
+                            <div className="text-[11px] opacity-80">
+                              Mitglieder werden bevorzugt aufgenommen
+                            </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 pt-1"><Tag className="h-3.5 w-3.5" />Preis folgt nach Schwimmbadbuchung</div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <Tag className="h-3.5 w-3.5" />
+                          Preis folgt nach Schwimmbadbuchung
+                        </div>
                       )}
                     </div>
                     {bookable ? (
                       <div className="space-y-2">
-                        <Button asChild variant={openTerms > 0 ? "accent" : "outline"} className="w-full">
+                        <Button
+                          asChild
+                          variant={openTerms > 0 ? "accent" : "outline"}
+                          className="w-full"
+                        >
                           <Link to="/kurse/$slug" params={{ slug: c.slug }}>
-                            {openTerms > 0 ? "Termine ansehen & buchen" : hasTerms ? "Termine ansehen" : "Details & Anfrage"}
+                            {openTerms > 0
+                              ? "Termine ansehen & buchen"
+                              : hasTerms
+                                ? "Termine ansehen"
+                                : "Details & Anfrage"}
                           </Link>
                         </Button>
                         {openTerms === 0 && (c as any).waitlist_open !== false && (
                           <Button asChild variant="accent" className="w-full">
-                            <Link to="/warteliste" search={{ programm: c.slug }}>Auf die Warteliste</Link>
+                            <Link to="/warteliste" search={{ programm: c.slug }}>
+                              Auf die Warteliste
+                            </Link>
                           </Button>
                         )}
                       </div>
@@ -171,10 +263,11 @@ function KursePage() {
                           {NOT_BOOKABLE_NOTE}
                         </div>
                         <Button asChild variant="outline" className="w-full">
-                          <Link to="/kurse/$slug" params={{ slug: c.slug }}>Details &amp; Anfrage</Link>
+                          <Link to="/kurse/$slug" params={{ slug: c.slug }}>
+                            Details &amp; Anfrage
+                          </Link>
                         </Button>
                       </>
-
                     )}
                   </CardContent>
                 </Card>
@@ -183,13 +276,18 @@ function KursePage() {
 
             <Card className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
               <CardContent className="p-6 flex flex-col flex-1">
-                <h3 className="font-display text-xl font-bold text-primary-deep mb-2">Kein passender Platz dabei?</h3>
+                <h3 className="font-display text-xl font-bold text-primary-deep mb-2">
+                  Kein passender Platz dabei?
+                </h3>
                 <p className="text-sm text-muted-foreground mb-4 flex-1">
-                  Tragen Sie Ihr Kind unverbindlich auf die Warteliste ein. Sobald ein Platz frei wird, erhalten Sie
-                  automatisch ein Angebot per E-Mail – Vereinsmitglieder werden bevorzugt berücksichtigt.
+                  Tragen Sie Ihr Kind unverbindlich auf die Warteliste ein. Sobald ein Platz frei
+                  wird, erhalten Sie automatisch ein Angebot per E-Mail – Vereinsmitglieder werden
+                  bevorzugt berücksichtigt.
                 </p>
                 <Button asChild variant="accent" className="w-full">
-                  <Link to="/warteliste" search={{ programm: undefined }}>Auf die Warteliste setzen</Link>
+                  <Link to="/warteliste" search={{ programm: undefined }}>
+                    Auf die Warteliste setzen
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -202,36 +300,40 @@ function KursePage() {
           </div>
         )}
 
-
-
-
         <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
-          <h2 className="font-display text-xl font-bold text-primary-deep mb-2">Zahlung &amp; Bankverbindung</h2>
+          <h2 className="font-display text-xl font-bold text-primary-deep mb-2">
+            Zahlung &amp; Bankverbindung
+          </h2>
           <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>
           <BankDetails />
         </div>
 
-
         <p className="text-center text-sm text-muted-foreground mt-10">
           Mit der Anmeldung gelten unsere{" "}
-          <Link to="/kursbedingungen" className="text-primary underline font-semibold hover:text-primary-deep">
+          <Link
+            to="/kursbedingungen"
+            className="text-primary underline font-semibold hover:text-primary-deep"
+          >
             Kursteilnahmebedingungen
-          </Link>
-          {" "}(Zahlung, Rücktritt, Aufsicht, Haftung).
+          </Link>{" "}
+          (Zahlung, Rücktritt, Aufsicht, Haftung).
         </p>
         <div className="flex justify-center mt-6">
           <CancellationButton />
         </div>
         <div className="mt-10 max-w-2xl mx-auto rounded-xl border-2 border-primary/30 bg-primary/5 p-6 text-left text-base text-foreground">
-          <h2 className="text-lg font-semibold mb-2">📅 Unsere Kurse finden nur am Wochenende statt</h2>
+          <h2 className="text-lg font-semibold mb-2">
+            📅 Unsere Kurse finden nur am Wochenende statt
+          </h2>
           <p className="mb-3">
-            Wir leisten die gesamte Vereinsarbeit ehrenamtlich neben unseren Berufen. Deshalb bieten wir unsere
-            Kurse aktuell und auch in nächster Zeit <strong>ausschließlich am Wochenende</strong> an – Kurse unter
-            der Woche sind derzeit nicht geplant.
+            Wir leisten die gesamte Vereinsarbeit ehrenamtlich neben unseren Berufen. Deshalb bieten
+            wir unsere Kurse aktuell und auch in nächster Zeit{" "}
+            <strong>ausschließlich am Wochenende</strong> an – Kurse unter der Woche sind derzeit
+            nicht geplant.
           </p>
           <p className="mb-4">
-            Sie suchen einen Schwimmkurs unter der Woche? In Hennef bietet die Schwimmschule Sharky auch Termine
-            unter der Woche an.
+            Sie suchen einen Schwimmkurs unter der Woche? In Hennef bietet die Schwimmschule Sharky
+            auch Termine unter der Woche an.
           </p>
           <a
             href="https://www.sharky-hennef.de/"
@@ -243,7 +345,6 @@ function KursePage() {
           </a>
         </div>
         <AiImageNotice className="mt-8 text-center" />
-
       </section>
     </PublicLayout>
   );

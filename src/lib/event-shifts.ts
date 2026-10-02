@@ -20,11 +20,18 @@ export function berlinParts(iso: string): { date: string; time: string } | null 
   if (isNaN(d.getTime())) return null;
   const p = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Berlin",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   })
     .formatToParts(d)
-    .reduce<Record<string, string>>((acc, x) => { acc[x.type] = x.value; return acc; }, {});
+    .reduce<Record<string, string>>((acc, x) => {
+      acc[x.type] = x.value;
+      return acc;
+    }, {});
   const hour = p.hour === "24" ? "00" : p.hour;
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${hour}:${p.minute}` };
 }
@@ -49,12 +56,20 @@ export function fromBerlinInput(value: string): string | null {
   if (isNaN(naive)) return null;
   const probe = new Date(naive);
   const p = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Berlin", hour12: false,
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    timeZone: "Europe/Berlin",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   })
     .formatToParts(probe)
-    .reduce<Record<string, string>>((acc, x) => { acc[x.type] = x.value; return acc; }, {});
+    .reduce<Record<string, string>>((acc, x) => {
+      acc[x.type] = x.value;
+      return acc;
+    }, {});
   const hour = p.hour === "24" ? "00" : p.hour;
   const asUtc = Date.parse(`${p.year}-${p.month}-${p.day}T${hour}:${p.minute}:${p.second}Z`);
   return new Date(naive - (asUtc - naive)).toISOString();
@@ -76,7 +91,11 @@ export function signupInterval(
 }
 
 /** Nicht besetzte Abschnitte innerhalb des Terminzeitraums. */
-export function coverageGaps(intervals: Interval[], eventStart: number, eventEnd: number): Interval[] {
+export function coverageGaps(
+  intervals: Interval[],
+  eventStart: number,
+  eventEnd: number,
+): Interval[] {
   if (eventEnd <= eventStart) return [];
   const sorted = intervals.slice().sort((a, b) => a.start - b.start);
   const gaps: Interval[] = [];
@@ -87,7 +106,7 @@ export function coverageGaps(intervals: Interval[], eventStart: number, eventEnd
     if (cursor >= eventEnd) break;
   }
   if (cursor < eventEnd) gaps.push({ start: cursor, end: eventEnd });
-  return gaps.filter(g => g.end > g.start);
+  return gaps.filter((g) => g.end > g.start);
 }
 
 /** Belegung je Zeitscheibe (Standard: 30 Minuten) für die Zeitleiste. */
@@ -102,7 +121,11 @@ export function coverageSlices(
   if (eventEnd <= eventStart) return out;
   for (let t = eventStart; t < eventEnd; t += step) {
     const end = Math.min(t + step, eventEnd);
-    out.push({ start: t, end, count: intervals.filter(iv => iv.start < end && iv.end > t).length });
+    out.push({
+      start: t,
+      end,
+      count: intervals.filter((iv) => iv.start < end && iv.end > t).length,
+    });
   }
   return out;
 }

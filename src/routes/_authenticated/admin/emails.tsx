@@ -6,8 +6,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Eye } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { useServerFn } from "@tanstack/react-start";
@@ -18,13 +30,15 @@ import { toast } from "sonner";
 import { fetchAll } from "@/lib/fetch-all";
 import { getMyAdminRoles } from "@/lib/role-guard";
 
-
 export const Route = createFileRoute("/_authenticated/admin/emails")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/admin/benutzer" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/admin/benutzer" });
+    }
   },
   component: Page,
 });
@@ -88,7 +102,9 @@ function Page() {
   // „Inhalte rekonstruieren“ darf nur der Administrator (Server prüft das ebenfalls)
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    getMyAdminRoles().then(r => setIsAdmin(r.roles.includes("admin"))).catch(() => setIsAdmin(false));
+    getMyAdminRoles()
+      .then((r) => setIsAdmin(r.roles.includes("admin")))
+      .catch(() => setIsAdmin(false));
   }, []);
 
   useEffect(() => {
@@ -101,35 +117,55 @@ function Page() {
     fetchAll<LogRow>((f, t) => {
       let q = supabase
         .from("email_send_log")
-        .select("id,message_id,template_name,recipient_email,status,error_message,subject,created_at")
+        .select(
+          "id,message_id,template_name,recipient_email,status,error_message,subject,created_at",
+        )
         .order("created_at", { ascending: false })
         .order("id");
       if (start) q = q.gte("created_at", start.toISOString());
       return q.range(f, t);
     }, MAX_ROWS)
-      .then(data => {
+      .then((data) => {
         if (cancelled) return;
-        setRows(data.map(r => ({ ...r, body_text: null, body_html: null })));
+        setRows(data.map((r) => ({ ...r, body_text: null, body_html: null })));
         setTruncated(data.length >= MAX_ROWS);
       })
-      .catch(e => { if (!cancelled) setLoadError(e?.message || "Die E-Mail-Liste konnte nicht geladen werden."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .catch((e) => {
+        if (!cancelled) setLoadError(e?.message || "Die E-Mail-Liste konnte nicht geladen werden.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [range, reloadKey]);
 
   // Inhalt einer E-Mail nachladen (alle Protokollzeilen derselben Nachricht zusammenführen, wie bei der Liste)
   async function openRow(r: LogRow) {
     setSelected(r);
     setBodyLoading(true);
-    let q = supabase.from("email_send_log").select("created_at,subject,body_html,body_text,error_message");
+    let q = supabase
+      .from("email_send_log")
+      .select("created_at,subject,body_html,body_text,error_message");
     q = r.message_id ? q.eq("message_id", r.message_id) : q.eq("id", r.id);
     const { data } = await q.order("created_at", { ascending: false });
     setBodyLoading(false);
-    const list = (data as Array<Pick<LogRow, "subject" | "body_html" | "body_text" | "error_message">>) || [];
-    const pick = <K extends "subject" | "body_html" | "body_text" | "error_message">(k: K) => list.find(x => x[k])?.[k] ?? null;
-    setSelected(cur => (cur && cur.id === r.id
-      ? { ...cur, subject: cur.subject ?? pick("subject"), body_html: pick("body_html"), body_text: pick("body_text"), error_message: cur.error_message ?? pick("error_message") }
-      : cur));
+    const list =
+      (data as Array<Pick<LogRow, "subject" | "body_html" | "body_text" | "error_message">>) || [];
+    const pick = <K extends "subject" | "body_html" | "body_text" | "error_message">(k: K) =>
+      list.find((x) => x[k])?.[k] ?? null;
+    setSelected((cur) =>
+      cur && cur.id === r.id
+        ? {
+            ...cur,
+            subject: cur.subject ?? pick("subject"),
+            body_html: pick("body_html"),
+            body_text: pick("body_text"),
+            error_message: cur.error_message ?? pick("error_message"),
+          }
+        : cur,
+    );
   }
 
   // Dedupe by message_id — dabei Inhalte aus allen Einträgen derselben E-Mail
@@ -139,7 +175,10 @@ function Page() {
     for (const r of rows) {
       const key = r.message_id || r.id;
       const prev = map.get(key);
-      if (!prev) { map.set(key, { ...r }); continue; }
+      if (!prev) {
+        map.set(key, { ...r });
+        continue;
+      }
       const newer = new Date(r.created_at) > new Date(prev.created_at) ? r : prev;
       const older = newer === r ? prev : r;
       map.set(key, {
@@ -165,10 +204,11 @@ function Page() {
 
   const filtered = useMemo(() => {
     const rq = recipient.trim().toLowerCase();
-    return deduped.filter(r => {
+    return deduped.filter((r) => {
       if (templateFilter !== "all" && r.template_name !== templateFilter) return false;
       if (statusFilter !== "all") {
-        if (statusFilter === "failed" && !(r.status === "failed" || r.status === "dlq")) return false;
+        if (statusFilter === "failed" && !(r.status === "failed" || r.status === "dlq"))
+          return false;
         if (statusFilter !== "failed" && r.status !== statusFilter) return false;
       }
       if (rq && !(r.recipient_email || "").toLowerCase().includes(rq)) return false;
@@ -176,10 +216,14 @@ function Page() {
     });
   }, [deduped, templateFilter, statusFilter, recipient]);
 
-  useEffect(() => { setPage(0); }, [templateFilter, statusFilter, recipient, range]);
+  useEffect(() => {
+    setPage(0);
+  }, [templateFilter, statusFilter, recipient, range]);
 
   const stats = useMemo(() => {
-    let sent = 0, failed = 0, suppressed = 0;
+    let sent = 0,
+      failed = 0,
+      suppressed = 0;
     for (const r of filtered) {
       if (r.status === "sent") sent++;
       else if (r.status === "failed" || r.status === "dlq" || r.status === "bounced") failed++;
@@ -196,16 +240,20 @@ function Page() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-bold text-primary-deep">Gesendete E-Mails</h1>
         <div className="flex gap-2 flex-wrap items-center">
-          {(["24h", "7d", "30d", "all"] as RangeKey[]).map(k => (
-            <Button key={k} size="sm" variant={range === k ? "default" : "outline"} onClick={() => setRange(k)}>
+          {(["24h", "7d", "30d", "all"] as RangeKey[]).map((k) => (
+            <Button
+              key={k}
+              size="sm"
+              variant={range === k ? "default" : "outline"}
+              onClick={() => setRange(k)}
+            >
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
-          <TestSendDialog onDone={() => setReloadKey(k => k + 1)} />
+          <TestSendDialog onDone={() => setReloadKey((k) => k + 1)} />
           {isAdmin && <BackfillButton />}
         </div>
       </div>
-
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Gesamt" value={stats.total} />
@@ -219,17 +267,25 @@ function Page() {
           <div className="min-w-48">
             <label className="text-xs font-semibold text-muted-foreground">Art der E-Mail</label>
             <Select value={templateFilter} onValueChange={setTemplateFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
-                {templates.map(t => <SelectItem key={t} value={t}>{templateLabel(t)}</SelectItem>)}
+                {templates.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {templateLabel(t)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="min-w-40">
             <label className="text-xs font-semibold text-muted-foreground">Status</label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
                 <SelectItem value="sent">Gesendet</SelectItem>
@@ -241,75 +297,120 @@ function Page() {
           </div>
           <div className="flex-1 min-w-56">
             <label className="text-xs font-semibold text-muted-foreground">Empfänger</label>
-            <Input value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="E-Mail suchen …" />
+            <Input
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              placeholder="E-Mail suchen …"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {loadError && <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{loadError}</p>}
-      {truncated && <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">Es werden nur die neuesten {MAX_ROWS.toLocaleString("de-DE")} E-Mails des Zeitraums angezeigt. Bitte den Zeitraum verkleinern.</p>}
+      {loadError && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          {loadError}
+        </p>
+      )}
+      {truncated && (
+        <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+          Es werden nur die neuesten {MAX_ROWS.toLocaleString("de-DE")} E-Mails des Zeitraums
+          angezeigt. Bitte den Zeitraum verkleinern.
+        </p>
+      )}
 
       <CollapsibleCard title="Gesendete E-Mails" storageKey="admin-emails" contentClassName="px-0">
-          {loading ? (
-            <p className="text-center text-muted-foreground py-10">Lade …</p>
-          ) : paged.length === 0 ? (
-            <p className="text-center text-muted-foreground py-10">Keine E-Mails im gewählten Zeitraum.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-left">
-                  <tr>
-                    <th className="p-3">Zeitpunkt</th>
-                    <th className="p-3">Art der E-Mail</th>
-                    <th className="p-3">Empfänger</th>
-                    <th className="p-3">Betreff</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Aktion</th>
+        {loading ? (
+          <p className="text-center text-muted-foreground py-10">Lade …</p>
+        ) : paged.length === 0 ? (
+          <p className="text-center text-muted-foreground py-10">
+            Keine E-Mails im gewählten Zeitraum.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left">
+                <tr>
+                  <th className="p-3">Zeitpunkt</th>
+                  <th className="p-3">Art der E-Mail</th>
+                  <th className="p-3">Empfänger</th>
+                  <th className="p-3">Betreff</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="p-3 whitespace-nowrap text-xs">
+                      {formatDateTimeBerlin(r.created_at)}
+                    </td>
+                    <td className="p-3">{templateLabel(r.template_name)}</td>
+                    <td className="p-3">{r.recipient_email || "—"}</td>
+                    <td className="p-3 max-w-xs truncate">
+                      {r.subject || <span className="text-muted-foreground italic">—</span>}
+                    </td>
+                    <td className="p-3">
+                      <Badge variant={statusVariant(r.status)}>
+                        {STATUS_LABEL[r.status] || r.status}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-right">
+                      <Button size="sm" variant="outline" onClick={() => void openRow(r)}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ansehen
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {paged.map(r => (
-                    <tr key={r.id} className="border-t">
-                      <td className="p-3 whitespace-nowrap text-xs">{formatDateTimeBerlin(r.created_at)}</td>
-                      <td className="p-3">{templateLabel(r.template_name)}</td>
-                      <td className="p-3">{r.recipient_email || "—"}</td>
-                      <td className="p-3 max-w-xs truncate">{r.subject || <span className="text-muted-foreground italic">—</span>}</td>
-                      <td className="p-3"><Badge variant={statusVariant(r.status)}>{STATUS_LABEL[r.status] || r.status}</Badge></td>
-                      <td className="p-3 text-right">
-                        <Button size="sm" variant="outline" onClick={() => void openRow(r)}>
-                          <Eye className="h-4 w-4 mr-1" />Ansehen
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-3 border-t">
+            <div className="text-xs text-muted-foreground">
+              Seite {page + 1} von {totalPages}
             </div>
-          )}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between p-3 border-t">
-              <div className="text-xs text-muted-foreground">Seite {page + 1} von {totalPages}</div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Zurück</Button>
-                <Button size="sm" variant="outline" disabled={page + 1 >= totalPages} onClick={() => setPage(p => p + 1)}>Weiter</Button>
-              </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                Zurück
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page + 1 >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Weiter
+              </Button>
             </div>
-          )}
+          </div>
+        )}
       </CollapsibleCard>
 
-      <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selected?.subject || "E-Mail-Detail"}</DialogTitle>
             <DialogDescription>
-              An {selected?.recipient_email} · {selected && formatDateTimeBerlin(selected.created_at)}
+              An {selected?.recipient_email} ·{" "}
+              {selected && formatDateTimeBerlin(selected.created_at)}
             </DialogDescription>
           </DialogHeader>
           {selected && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant={statusVariant(selected.status)}>{STATUS_LABEL[selected.status] || selected.status}</Badge>
-                {selected.template_name && <Badge variant="outline">{templateLabel(selected.template_name)}</Badge>}
+                <Badge variant={statusVariant(selected.status)}>
+                  {STATUS_LABEL[selected.status] || selected.status}
+                </Badge>
+                {selected.template_name && (
+                  <Badge variant="outline">{templateLabel(selected.template_name)}</Badge>
+                )}
               </div>
               {selected.error_message && (
                 <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
@@ -318,7 +419,9 @@ function Page() {
               )}
               {selected.body_html ? (
                 <div>
-                  <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">HTML-Vorschau</div>
+                  <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+                    HTML-Vorschau
+                  </div>
                   <iframe
                     title="E-Mail-Inhalt"
                     sandbox=""
@@ -329,13 +432,22 @@ function Page() {
               ) : null}
               {selected.body_text ? (
                 <div>
-                  <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">Text-Version</div>
-                  <pre className="whitespace-pre-wrap text-sm bg-muted/40 rounded-md p-3">{selected.body_text}</pre>
+                  <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+                    Text-Version
+                  </div>
+                  <pre className="whitespace-pre-wrap text-sm bg-muted/40 rounded-md p-3">
+                    {selected.body_text}
+                  </pre>
                 </div>
               ) : null}
-              {bodyLoading && <p className="text-sm text-muted-foreground">Inhalt wird geladen …</p>}
+              {bodyLoading && (
+                <p className="text-sm text-muted-foreground">Inhalt wird geladen …</p>
+              )}
               {!bodyLoading && !selected.body_html && !selected.body_text && (
-                <p className="text-sm text-muted-foreground">Für diese E-Mail wurde kein Inhalt gespeichert (z.&nbsp;B. automatische System- oder Auth-Mail). Betreff, Empfänger und Status sind oben ersichtlich.</p>
+                <p className="text-sm text-muted-foreground">
+                  Für diese E-Mail wurde kein Inhalt gespeichert (z.&nbsp;B. automatische System-
+                  oder Auth-Mail). Betreff, Empfänger und Status sind oben ersichtlich.
+                </p>
               )}
             </div>
           )}
@@ -345,12 +457,23 @@ function Page() {
   );
 }
 
-function StatCard({ label, value, tone }: { label: string; value: number; tone?: "success" | "danger" | "muted" }) {
+function StatCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone?: "success" | "danger" | "muted";
+}) {
   const color =
-    tone === "success" ? "text-emerald-600" :
-    tone === "danger" ? "text-destructive" :
-    tone === "muted" ? "text-muted-foreground" :
-    "text-primary-deep";
+    tone === "success"
+      ? "text-emerald-600"
+      : tone === "danger"
+        ? "text-destructive"
+        : tone === "muted"
+          ? "text-muted-foreground"
+          : "text-primary-deep";
   return (
     <Card className="border-0 shadow-soft">
       <CardContent className="p-4">
@@ -367,7 +490,10 @@ function BackfillButton() {
   const go = async () => {
     setBusy(true);
     try {
-      let totalUpdated = 0, totalSkipped = 0, remaining = 0, iterations = 0;
+      let totalUpdated = 0,
+        totalSkipped = 0,
+        remaining = 0,
+        iterations = 0;
       while (iterations < 20) {
         const res: any = await run({});
         totalUpdated += res.updated || 0;
@@ -376,7 +502,9 @@ function BackfillButton() {
         iterations++;
         if ((res.updated || 0) + (res.skipped || 0) === 0) break;
       }
-      toast.success(`Rekonstruktion abgeschlossen: ${totalUpdated} aktualisiert, ${totalSkipped} übersprungen, ${remaining} verbleibend`);
+      toast.success(
+        `Rekonstruktion abgeschlossen: ${totalUpdated} aktualisiert, ${totalSkipped} übersprungen, ${remaining} verbleibend`,
+      );
       window.location.reload();
     } catch (e: any) {
       toast.error(e?.message || "Rekonstruktion fehlgeschlagen");
@@ -390,4 +518,3 @@ function BackfillButton() {
     </Button>
   );
 }
-

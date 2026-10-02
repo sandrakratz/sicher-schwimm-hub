@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ChevronDown, ChevronRight, ExternalLink, Reply } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
@@ -92,7 +99,11 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
     <Card className={`border-0 shadow-soft ${unread ? "border-l-4 border-l-accent" : ""}`}>
       <CardContent className="space-y-4 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <button type="button" onClick={toggle} className="flex min-w-0 flex-1 items-start gap-2 text-left">
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex min-w-0 flex-1 items-start gap-2 text-left"
+          >
             {open ? (
               <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
             ) : (
@@ -103,9 +114,13 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
                 <Badge variant="secondary">{SOURCE_LABEL[item.source]}</Badge>
                 <Badge variant="outline">{item.statusLabel}</Badge>
                 {unread && <Badge>Ungelesen</Badge>}
-                <span className="text-xs text-muted-foreground">{formatDateTimeBerlin(item.created_at)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {formatDateTimeBerlin(item.created_at)}
+                </span>
               </div>
-              <div className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}>
+              <div
+                className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}
+              >
                 {item.subject}
               </div>
               <div className="truncate text-sm text-muted-foreground">
@@ -147,7 +162,9 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Antwort an {item.name}</DialogTitle>
-              <DialogDescription>Die Antwort wird direkt per E-Mail an {item.email} gesendet.</DialogDescription>
+              <DialogDescription>
+                Die Antwort wird direkt per E-Mail an {item.email} gesendet.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div>

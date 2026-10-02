@@ -15,8 +15,14 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     // Kursliste: Vorstand/Admin oder Trainer:in dieses Kurses (nicht jeder Trainer für jeden Kurs)
     const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
     if (!isStaff) {
-      const isTrainer = (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
-      const ofCourse = (await supabase.rpc("is_trainer_of_course", { _trainer_id: userId, _course_id: data.courseId })).data;
+      const isTrainer = (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" }))
+        .data;
+      const ofCourse = (
+        await supabase.rpc("is_trainer_of_course", {
+          _trainer_id: userId,
+          _course_id: data.courseId,
+        })
+      ).data;
       if (!isTrainer || !ofCourse) throw new Error("Forbidden");
     }
 
@@ -42,9 +48,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       .select("id,participant_name,participant_phone,date_of_birth,notes,status")
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
-    const participants = (partsData || []).slice().sort((a, b) =>
-      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
-    );
+    const participants = (partsData || [])
+      .slice()
+      .sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || "", "de"));
 
     // Online erfasste Anwesenheiten (x = anwesend, e = entschuldigt, f = gefehlt)
     const attendanceMark = new Map<string, string>(); // `${sessionId}:${participantId}`
@@ -52,16 +58,15 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       const { data: attRows } = await supabase
         .from("course_attendance")
         .select("session_id,participant_id,status")
-        .in("session_id", sessions.map((s) => s.id));
+        .in(
+          "session_id",
+          sessions.map((s) => s.id),
+        );
       const symbol: Record<string, string> = { present: "x", excused: "e", absent: "f" };
       (attRows || []).forEach((r) => {
-        attendanceMark.set(
-          `${r.session_id}:${r.participant_id}`,
-          symbol[r.status as string] || "",
-        );
+        attendanceMark.set(`${r.session_id}:${r.participant_id}`, symbol[r.status as string] || "");
       });
     }
-
 
     const firstSessionDate =
       sessions.find((s) => s.session_index === 1)?.session_date ||
@@ -104,7 +109,12 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         fitToWidth: 1,
         fitToHeight: 0,
         margins: {
-          left: 0.3, right: 0.3, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2,
+          left: 0.3,
+          right: 0.3,
+          top: 0.4,
+          bottom: 0.4,
+          header: 0.2,
+          footer: 0.2,
         },
       },
     });
@@ -119,7 +129,11 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     ws.mergeCells(titleRow.number, 1, titleRow.number, totalColsAll);
 
     const metaRow = ws.addRow([
-      [period && `Zeitraum: ${period}`, course.location && `Ort: ${course.location}`, course.schedule && `Zeitplan: ${course.schedule}`]
+      [
+        period && `Zeitraum: ${period}`,
+        course.location && `Ort: ${course.location}`,
+        course.schedule && `Zeitplan: ${course.schedule}`,
+      ]
         .filter(Boolean)
         .join("    ·    "),
     ]);
@@ -156,10 +170,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     // Data rows
     const dataRowsStart = headerRow.number + 1;
     const formatName = (n: string | null): string =>
-      (n || "")
-        .replace(/[,;]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+      (n || "").replace(/[,;]+/g, " ").replace(/\s+/g, " ").trim();
     participants.forEach((p, idx) => {
       const sessionCells = Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
@@ -182,7 +193,6 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
       }
     });
-
 
     // Ensure at least a few blank rows for printing if no participants
     if (participants.length === 0) {
@@ -216,7 +226,10 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         const { data: tAtt } = await supabaseAdmin
           .from("trainer_session_attendance")
           .select("session_id,trainer_id,present,confirmed_at")
-          .in("session_id", sessions.map((s) => s.id));
+          .in(
+            "session_id",
+            sessions.map((s) => s.id),
+          );
         (tAtt || []).forEach((r: any) => {
           if (!r.present) return;
           trainerMark.set(`${r.session_id}:${r.trainer_id}`, r.confirmed_at ? "x" : "(x)");
@@ -253,7 +266,15 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     const trainerRowsStart = trainerHeaderRow.number + 1;
     const rowsForTrainers: { id: string; name: string }[] =
-      trainerList.length > 0 ? trainerList : [{ id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }, { id: "", name: "" }];
+      trainerList.length > 0
+        ? trainerList
+        : [
+            { id: "", name: "" },
+            { id: "", name: "" },
+            { id: "", name: "" },
+            { id: "", name: "" },
+            { id: "", name: "" },
+          ];
     for (const t of rowsForTrainers) {
       const marks = Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
@@ -273,14 +294,18 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     for (let r = trainerHeaderRow.number; r <= trainerRowsEnd; r++) {
       for (let c = 1; c <= lastSessionCol; c++) {
         ws.getCell(r, c).border = {
-          top: { style: "thin" }, left: { style: "thin" },
-          bottom: { style: "thin" }, right: { style: "thin" },
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
         };
       }
     }
     for (let c = 1; c <= lastSessionCol; c++) {
       ws.getCell(trainerHeaderRow.number, c).fill = {
-        type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF7EC" },
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFEFF7EC" },
       };
     }
     for (let r = trainerRowsStart; r <= trainerRowsEnd; r++) {
@@ -289,7 +314,8 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     }
     ws.mergeCells(trainerHeaderRow.number, 1, trainerHeaderRow.number, 4);
 
-    const lastRow = headerRow.number + Math.max(participants.length, participants.length === 0 ? 5 : 0);
+    const lastRow =
+      headerRow.number + Math.max(participants.length, participants.length === 0 ? 5 : 0);
 
     const totalCols = headers.length;
 
@@ -302,15 +328,19 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       for (let c = 1; c <= totalCols; c++) {
         const cell = ws.getCell(r, c);
         cell.border = {
-          top: { style: "thin" }, left: { style: "thin" },
-          bottom: { style: "thin" }, right: { style: "thin" },
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
         };
       }
     }
     // Light fill on header
     for (let c = 1; c <= totalCols; c++) {
       ws.getCell(headerRow.number, c).fill = {
-        type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F1FA" },
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE8F1FA" },
       };
     }
 
@@ -368,17 +398,24 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
         "participant_name,participant_email,participant_phone,date_of_birth,status,is_member,online_booking,price_amount,paid,paid_at,payment_note,created_at,notes,request_id",
       )
       .eq("course_id", data.courseId);
-    const participants = (partsData || []).slice().sort((a, b) =>
-      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
-    );
+    const participants = (partsData || [])
+      .slice()
+      .sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || "", "de"));
 
     // Elternname (Zahler:in) aus der zugehörigen Kursanfrage
     const parentByRequest = new Map<string, string>();
     const requestIds = participants.map((p) => p.request_id).filter(Boolean) as Array<string>;
     if (requestIds.length > 0) {
       const { fetchIn } = await import("@/lib/fetch-all");
-      const reqs = await fetchIn<{ id: string; parent_name: string | null }>(requestIds, (chunk, from, to) =>
-        supabase.from("course_requests").select("id,parent_name").in("id", chunk).order("id").range(from, to),
+      const reqs = await fetchIn<{ id: string; parent_name: string | null }>(
+        requestIds,
+        (chunk, from, to) =>
+          supabase
+            .from("course_requests")
+            .select("id,parent_name")
+            .in("id", chunk)
+            .order("id")
+            .range(from, to),
       );
       for (const r of reqs) if (r.parent_name) parentByRequest.set(r.id, r.parent_name);
     }
@@ -423,7 +460,13 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     wb.creator = "sicher-schwimmen.com";
     wb.created = new Date();
     const ws = wb.addWorksheet("Teilnehmerliste", {
-      pageSetup: { orientation: "landscape", paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+      pageSetup: {
+        orientation: "landscape",
+        paperSize: 9,
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+      },
     });
 
     const period =
@@ -501,9 +544,12 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     if (participants.length > 0) {
       const sumRow = ws.addRow([]);
       sumRowNumber = sumRow.number;
-      sumRow.getCell(1).value = `Summe bestätigter Buchungen (${confirmedCount} von ${participants.length} Einträgen; stornierte/wartende nicht eingerechnet)`;
+      sumRow.getCell(1).value =
+        `Summe bestätigter Buchungen (${confirmedCount} von ${participants.length} Einträgen; stornierte/wartende nicht eingerechnet)`;
       ws.mergeCells(sumRowNumber, 1, sumRowNumber, 10);
-      sumRow.getCell(11).value = { formula: `SUMIFS(K${firstDataRow}:K${lastDataRow},I${firstDataRow}:I${lastDataRow},"${STATUS["confirmed"]}")` } as never;
+      sumRow.getCell(11).value = {
+        formula: `SUMIFS(K${firstDataRow}:K${lastDataRow},I${firstDataRow}:I${lastDataRow},"${STATUS["confirmed"]}")`,
+      } as never;
       sumRow.getCell(11).numFmt = '#,##0.00 "€"';
       sumRow.getCell(12).value = "bezahlt:";
       sumRow.getCell(13).value = {
@@ -525,14 +571,18 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     for (let r = headerRow.number; r <= lastRow; r++) {
       for (let c = 1; c <= totalCols; c++) {
         ws.getCell(r, c).border = {
-          top: { style: "thin" }, left: { style: "thin" },
-          bottom: { style: "thin" }, right: { style: "thin" },
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
         };
       }
     }
     for (let c = 1; c <= totalCols; c++) {
       ws.getCell(headerRow.number, c).fill = {
-        type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F1FA" },
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE8F1FA" },
       };
     }
     ws.views = [{ state: "frozen", ySplit: headerRow.number }];
@@ -576,13 +626,18 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
 
     const { data: course, error: cErr } = await supabase
       .from("courses")
-      .select("id,name,location,starts_on,ends_on,schedule,unit_count,payment_due_days,program_id,course_programs(name,location)")
+      .select(
+        "id,name,location,starts_on,ends_on,schedule,unit_count,payment_due_days,program_id,course_programs(name,location)",
+      )
       .eq("id", data.courseId)
       .maybeSingle();
     if (cErr) throw cErr;
     if (!course) throw new Error("Kurs nicht gefunden");
 
-    const program = (course as any).course_programs as { name: string; location: string | null } | null;
+    const program = (course as any).course_programs as {
+      name: string;
+      location: string | null;
+    } | null;
 
     const { data: partsData } = await supabase
       .from("course_participants")
@@ -592,10 +647,11 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
 
-    const participants = (partsData || []).slice().sort((a, b) =>
-      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
-    );
-    if (participants.length === 0) throw new Error("Keine bestätigten Teilnehmer in diesem Zeitraum.");
+    const participants = (partsData || [])
+      .slice()
+      .sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || "", "de"));
+    if (participants.length === 0)
+      throw new Error("Keine bestätigten Teilnehmer in diesem Zeitraum.");
 
     const requestIds = participants.map((p) => p.request_id).filter(Boolean) as Array<string>;
     const payerByRequest = new Map<string, string>();
@@ -629,9 +685,8 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
     const safe = (s: string) => s.replace(/[^\p{L}\p{N}\-_]+/gu, "_").slice(0, 60);
     const base = `Kursbestaetigungen_${safe(course.name)}_${course.starts_on || new Date().toISOString().slice(0, 10)}`;
 
-    const { renderConfirmationPdf, renderConfirmationsPdf } = await import(
-      "@/lib/course-confirmation-pdf.server"
-    );
+    const { renderConfirmationPdf, renderConfirmationsPdf } =
+      await import("@/lib/course-confirmation-pdf.server");
 
     let bytes: Uint8Array;
     let filename: string;
@@ -699,10 +754,11 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
       .eq("course_id", data.courseId)
       .eq("status", "confirmed");
 
-    const participants = (partsData || []).slice().sort((a, b) =>
-      (a.participant_name || "").localeCompare(b.participant_name || "", "de"),
-    );
-    if (participants.length === 0) throw new Error("Keine bestätigten Buchungen in diesem Zeitraum.");
+    const participants = (partsData || [])
+      .slice()
+      .sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || "", "de"));
+    if (participants.length === 0)
+      throw new Error("Keine bestätigten Buchungen in diesem Zeitraum.");
 
     const requestIds = participants.map((p) => p.request_id).filter(Boolean) as Array<string>;
     const payerByRequest = new Map<string, string>();
@@ -719,9 +775,15 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
       if (!d) return "";
       const dt = typeof d === "string" ? new Date(d) : d;
       if (isNaN(dt.getTime())) return "";
-      return dt.toLocaleDateString("de-DE", { timeZone: "Europe/Berlin", day: "2-digit", month: "2-digit", year: "numeric" });
+      return dt.toLocaleDateString("de-DE", {
+        timeZone: "Europe/Berlin",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
     };
-    const deAmount = (v: number | null) => (v == null ? "" : Number(v).toFixed(2).replace(".", ","));
+    const deAmount = (v: number | null) =>
+      v == null ? "" : Number(v).toFixed(2).replace(".", ",");
     const splitName = (full: string) => {
       const parts = (full || "").trim().split(/\s+/);
       if (parts.length < 2) return { first: "", last: full || "" };
@@ -761,7 +823,8 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
     for (const p of participants) {
       const issuedAt = p.document_issued_at || p.created_at;
       const due = computeDueDate(issuedAt, dueDays, course.starts_on);
-      const payerFull = (p.request_id && payerByRequest.get(p.request_id)) || p.participant_name || "";
+      const payerFull =
+        (p.request_id && payerByRequest.get(p.request_id)) || p.participant_name || "";
       const { first, last } = splitName(payerFull);
       const amount = p.price_amount != null ? Number(p.price_amount) : null;
       if (!p.document_no) missingDocNo++;
@@ -835,7 +898,9 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     const list = await fetchAll<any>((f, t) =>
       supabaseAdmin
         .from("course_sessions")
-        .select("id,session_index,session_date,start_time,end_time,course_id,courses(name,location)")
+        .select(
+          "id,session_index,session_date,start_time,end_time,course_id,courses(name,location)",
+        )
         .gte("session_date", from)
         .lte("session_date", to)
         .order("session_date", { ascending: true })
@@ -856,15 +921,26 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     );
 
     const ids = Array.from(
-      new Set([...rows.map((r) => r.trainer_id), ...rows.map((r) => r.confirmed_by).filter(Boolean)]),
+      new Set([
+        ...rows.map((r) => r.trainer_id),
+        ...rows.map((r) => r.confirmed_by).filter(Boolean),
+      ]),
     ) as string[];
     const nameOf = new Map<string, string>();
     if (ids.length > 0) {
       const profs = await fetchIn<any>(ids, (chunk, f, t) =>
-        supabaseAdmin.from("profiles").select("id,first_name,last_name,email").in("id", chunk).order("id").range(f, t),
+        supabaseAdmin
+          .from("profiles")
+          .select("id,first_name,last_name,email")
+          .in("id", chunk)
+          .order("id")
+          .range(f, t),
       );
       profs.forEach((p: any) => {
-        nameOf.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—");
+        nameOf.set(
+          p.id,
+          [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—",
+        );
       });
     }
 
@@ -887,11 +963,13 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     wb.created = new Date();
 
     const byTrainer = new Map<string, any[]>();
-    rows.filter((r) => r.present).forEach((r) => {
-      const arr = byTrainer.get(r.trainer_id) || [];
-      arr.push(r);
-      byTrainer.set(r.trainer_id, arr);
-    });
+    rows
+      .filter((r) => r.present)
+      .forEach((r) => {
+        const arr = byTrainer.get(r.trainer_id) || [];
+        arr.push(r);
+        byTrainer.set(r.trainer_id, arr);
+      });
 
     const sortedTrainers = Array.from(byTrainer.keys()).sort((a, b) =>
       (nameOf.get(a) || "").localeCompare(nameOf.get(b) || "", "de"),
@@ -907,16 +985,28 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     const usedSheetNames = new Set<string>();
     for (const tid of sortedTrainers) {
       sheetNo++;
-      let label = (nameOf.get(tid) || "Trainer").replace(/[\\/*?:[\]]/g, " ").slice(0, 28) || `Trainer ${sheetNo}`;
+      let label =
+        (nameOf.get(tid) || "Trainer").replace(/[\\/*?:[\]]/g, " ").slice(0, 28) ||
+        `Trainer ${sheetNo}`;
       // Blattnamen müssen eindeutig sein (zwei Personen mit gleichem Namen würden sonst den Export abbrechen)
       if (usedSheetNames.has(label.toLowerCase())) label = `${label.slice(0, 25)} ${sheetNo}`;
       usedSheetNames.add(label.toLowerCase());
       const ws = wb.addWorksheet(label);
-      const title = ws.addRow([`Anwesenheitsnachweis ${data.year} – ${nameOf.get(tid) || "Trainer"}`]);
+      const title = ws.addRow([
+        `Anwesenheitsnachweis ${data.year} – ${nameOf.get(tid) || "Trainer"}`,
+      ]);
       title.font = { bold: true, size: 14 };
       ws.mergeCells(title.number, 1, title.number, 7);
       ws.addRow([]);
-      const head = ws.addRow(["Datum", "Kurs", "Ort", "Beginn", "Ende", "Stunden", "Bestätigt am / durch"]);
+      const head = ws.addRow([
+        "Datum",
+        "Kurs",
+        "Ort",
+        "Beginn",
+        "Ende",
+        "Stunden",
+        "Bestätigt am / durch",
+      ]);
       head.font = { bold: true };
       head.alignment = { vertical: "middle", wrapText: true };
 
@@ -959,14 +1049,18 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
       for (let r = head.number; r <= sumRow.number; r++) {
         for (let c = 1; c <= 7; c++) {
           ws.getCell(r, c).border = {
-            top: { style: "thin" }, left: { style: "thin" },
-            bottom: { style: "thin" }, right: { style: "thin" },
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
           };
         }
       }
       for (let c = 1; c <= 7; c++) {
         ws.getCell(head.number, c).fill = {
-          type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F1FA" },
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE8F1FA" },
         };
       }
       ws.addRow([]);

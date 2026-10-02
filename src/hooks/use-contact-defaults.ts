@@ -46,12 +46,16 @@ export function useContactDefaults() {
       const [{ data: profile }, { data: membership }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("email,first_name,last_name,phone,address_street,address_zip,address_city,date_of_birth")
+          .select(
+            "email,first_name,last_name,phone,address_street,address_zip,address_city,date_of_birth",
+          )
           .eq("id", user.id)
           .maybeSingle(),
         supabase
           .from("memberships")
-          .select("status,phone,address_street,address_zip,address_city,date_of_birth,first_name,last_name")
+          .select(
+            "status,phone,address_street,address_zip,address_city,date_of_birth,first_name,last_name",
+          )
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(1)

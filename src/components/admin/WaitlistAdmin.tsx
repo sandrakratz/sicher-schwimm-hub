@@ -8,10 +8,27 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, Copy, FileText, Loader2, Pencil, RefreshCw, Send, ShieldBan, Trash2, Undo2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Copy,
+  FileText,
+  Loader2,
+  Pencil,
+  RefreshCw,
+  Send,
+  ShieldBan,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
@@ -37,7 +54,12 @@ const PAYMENT_LABEL: Record<string, { label: string; className: string }> = {
 function PaymentCell({ entry }: { entry: Record<string, unknown> }) {
   const status = (entry["payment_status"] as string) ?? "none";
   const booking = entry["booking"] as
-    | { paid_at?: string | null; price_amount?: number | null; payment_due_date?: string | null; booked_at?: string | null }
+    | {
+        paid_at?: string | null;
+        price_amount?: number | null;
+        payment_due_date?: string | null;
+        booked_at?: string | null;
+      }
     | null
     | undefined;
   const p = PAYMENT_LABEL[status] ?? PAYMENT_LABEL["none"]!;
@@ -52,9 +74,13 @@ function PaymentCell({ entry }: { entry: Record<string, unknown> }) {
         </div>
       )}
       {booking?.paid_at ? (
-        <div className="text-xs text-muted-foreground">bezahlt am {formatDateBerlin(booking.paid_at)}</div>
+        <div className="text-xs text-muted-foreground">
+          bezahlt am {formatDateBerlin(booking.paid_at)}
+        </div>
       ) : booking?.payment_due_date ? (
-        <div className="text-xs text-muted-foreground">fällig {formatDateBerlin(booking.payment_due_date)}</div>
+        <div className="text-xs text-muted-foreground">
+          fällig {formatDateBerlin(booking.payment_due_date)}
+        </div>
       ) : null}
     </div>
   );
@@ -77,8 +103,7 @@ type WaitlistEntry = Record<string, unknown> & {
 
 function Row({ label, value }: { label: string; value: unknown }) {
   if (value === null || value === undefined || value === "") return null;
-  const text =
-    typeof value === "boolean" ? (value ? "Ja" : "Nein") : String(value);
+  const text = typeof value === "boolean" ? (value ? "Ja" : "Nein") : String(value);
   return (
     <div className="grid grid-cols-[11rem_1fr] gap-2 border-b py-1.5 text-sm last:border-0">
       <span className="text-muted-foreground">{label}</span>
@@ -202,30 +227,49 @@ function OriginalRequestDialog({
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-sm">
                   Kind
-                  <Input value={form.childName} onChange={(e) => setForm((f) => ({ ...f, childName: e.target.value }))} />
+                  <Input
+                    value={form.childName}
+                    onChange={(e) => setForm((f) => ({ ...f, childName: e.target.value }))}
+                  />
                 </label>
                 <label className="text-sm">
                   Geburtsdatum
-                  <Input type="date" value={form.childDob} onChange={(e) => setForm((f) => ({ ...f, childDob: e.target.value }))} />
+                  <Input
+                    type="date"
+                    value={form.childDob}
+                    onChange={(e) => setForm((f) => ({ ...f, childDob: e.target.value }))}
+                  />
                 </label>
                 <label className="text-sm">
                   Eltern
-                  <Input value={form.parentName} onChange={(e) => setForm((f) => ({ ...f, parentName: e.target.value }))} />
+                  <Input
+                    value={form.parentName}
+                    onChange={(e) => setForm((f) => ({ ...f, parentName: e.target.value }))}
+                  />
                 </label>
                 <label className="text-sm">
                   E-Mail
-                  <Input type="email" value={form.parentEmail} onChange={(e) => setForm((f) => ({ ...f, parentEmail: e.target.value }))} />
+                  <Input
+                    type="email"
+                    value={form.parentEmail}
+                    onChange={(e) => setForm((f) => ({ ...f, parentEmail: e.target.value }))}
+                  />
                 </label>
                 <label className="text-sm">
                   Telefon
-                  <Input value={form.parentPhone} onChange={(e) => setForm((f) => ({ ...f, parentPhone: e.target.value }))} />
+                  <Input
+                    value={form.parentPhone}
+                    onChange={(e) => setForm((f) => ({ ...f, parentPhone: e.target.value }))}
+                  />
                 </label>
                 <label className="text-sm">
                   Mitglied
                   <select
                     className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                     value={form.isMember}
-                    onChange={(e) => setForm((f) => ({ ...f, isMember: e.target.value as "" | "yes" | "no" }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, isMember: e.target.value as "" | "yes" | "no" }))
+                    }
                   >
                     <option value="">Unbekannt</option>
                     <option value="yes">Ja</option>
@@ -234,16 +278,31 @@ function OriginalRequestDialog({
                 </label>
                 <label className="text-sm">
                   Erst zuteilen ab (Zurückstellung)
-                  <Input type="date" value={form.availableFrom} onChange={(e) => setForm((f) => ({ ...f, availableFrom: e.target.value }))} />
-                  <span className="text-xs text-muted-foreground">Leer = sofort. Nur Kurse ab diesem Datum werden angeboten.</span>
+                  <Input
+                    type="date"
+                    value={form.availableFrom}
+                    onChange={(e) => setForm((f) => ({ ...f, availableFrom: e.target.value }))}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Leer = sofort. Nur Kurse ab diesem Datum werden angeboten.
+                  </span>
                 </label>
                 <label className="text-sm sm:col-span-2">
                   Angaben der Eltern / Gesundheitshinweise
-                  <Textarea rows={3} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                  <Textarea
+                    rows={3}
+                    value={form.notes}
+                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  />
                 </label>
                 <label className="text-sm sm:col-span-2">
                   Neue interne Notiz (wird mit Datum ergänzt)
-                  <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="z. B. Eltern telefonisch erreicht…" />
+                  <Textarea
+                    rows={2}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="z. B. Eltern telefonisch erreicht…"
+                  />
                 </label>
                 <div className="flex gap-2 sm:col-span-2">
                   <Button size="sm" onClick={save} disabled={saving}>
@@ -272,8 +331,18 @@ function OriginalRequestDialog({
                   <Row label="Gesundheitliche Hinweise" value={g("health_info")} />
                   <Row label="Angaben der Eltern" value={entry["notes"] ?? g("message")} />
                   <Row label="Mitglied" value={entry["is_member"]} />
-                  <Row label="Erst zuteilen ab" value={entry["available_from"] ? formatDateBerlin(String(entry["available_from"])) : null} />
-                  <Row label="Datenschutz zugestimmt" value={entry["gdpr_consent"] ?? g("gdpr_consent")} />
+                  <Row
+                    label="Erst zuteilen ab"
+                    value={
+                      entry["available_from"]
+                        ? formatDateBerlin(String(entry["available_from"]))
+                        : null
+                    }
+                  />
+                  <Row
+                    label="Datenschutz zugestimmt"
+                    value={entry["gdpr_consent"] ?? g("gdpr_consent")}
+                  />
                   <Row label="Kontaktaufnahme erlaubt" value={g("contact_permission")} />
                   <Row label="Interne Notizen" value={entry["admin_notes"]} />
                   {r && <Row label="Anfrage-ID" value={r["id"]} />}
@@ -299,7 +368,8 @@ function OriginalRequestDialog({
             <div className="space-y-2 rounded-md border p-3">
               <h3 className="font-semibold">Rückfrage an die Familie senden</h3>
               <p className="text-xs text-muted-foreground">
-                Die E-Mail geht an {String(entry["parent_email"] ?? "—")} und erscheint anschließend im Verlauf.
+                Die E-Mail geht an {String(entry["parent_email"] ?? "—")} und erscheint anschließend
+                im Verlauf.
               </p>
               <label className="block text-sm">
                 Betreff (optional)
@@ -339,7 +409,11 @@ function OriginalRequestDialog({
                   }
                 }}
               >
-                {replyBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                {replyBusy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
                 E-Mail senden
               </Button>
             </div>
@@ -349,8 +423,6 @@ function OriginalRequestDialog({
     </Dialog>
   );
 }
-
-
 
 function NotesCell({
   entryId,
@@ -380,7 +452,12 @@ function NotesCell({
         className="min-h-[3rem] text-xs"
       />
       {dirty && (
-        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onSave({ entryId, adminNotes: value })}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs"
+          onClick={() => onSave({ entryId, adminNotes: value })}
+        >
           Notiz speichern
         </Button>
       )}
@@ -398,8 +475,11 @@ export function WaitlistAdmin() {
   const [declineReason, setDeclineReason] = useState("");
   const migratedOnce = useRef(false);
 
-
-  const { data, isLoading, error: loadError } = useQuery({
+  const {
+    data,
+    isLoading,
+    error: loadError,
+  } = useQuery({
     queryKey: ["admin-waitlist"],
     queryFn: () => listWaitlist(),
   });
@@ -425,9 +505,12 @@ export function WaitlistAdmin() {
   }, []);
 
   const allocate = useMutation({
-    mutationFn: (courseId?: string | null) => runWaitlistAllocation({ data: { courseId: courseId ?? null } }),
+    mutationFn: (courseId?: string | null) =>
+      runWaitlistAllocation({ data: { courseId: courseId ?? null } }),
     onSuccess: (res) => {
-      toast.success(`${res.offers} Platzangebot(e) verschickt, ${res.expired} abgelaufene Angebote geschlossen.`);
+      toast.success(
+        `${res.offers} Platzangebot(e) verschickt, ${res.expired} abgelaufene Angebote geschlossen.`,
+      );
       invalidate();
     },
     onError: () => toast.error("Platzvergabe fehlgeschlagen"),
@@ -456,8 +539,12 @@ export function WaitlistAdmin() {
   });
 
   const recordDecline = useMutation({
-    mutationFn: (v: { entryId: string; stay: boolean; availableFrom: string | null; reason: string | null }) =>
-      recordWaitlistDecline({ data: v }),
+    mutationFn: (v: {
+      entryId: string;
+      stay: boolean;
+      availableFrom: string | null;
+      reason: string | null;
+    }) => recordWaitlistDecline({ data: v }),
     onSuccess: (res) => {
       toast.success(
         res.deactivated
@@ -505,9 +592,11 @@ export function WaitlistAdmin() {
   });
 
   const programs = data?.programs ?? [];
-  const programName = (id: string | null) => programs.find((p) => p.id === id)?.name ?? "Ohne Zuordnung";
+  const programName = (id: string | null) =>
+    programs.find((p) => p.id === id)?.name ?? "Ohne Zuordnung";
   const programById = (id: string | null) => programs.find((p) => p.id === id) ?? null;
-  const courseName = (id: unknown) => (data?.courses ?? []).find((c) => c.id === id)?.name ?? "Kurs";
+  const courseName = (id: unknown) =>
+    (data?.courses ?? []).find((c) => c.id === id)?.name ?? "Kurs";
 
   const allEntries = data?.entries ?? [];
   const tabCounts = {
@@ -518,7 +607,11 @@ export function WaitlistAdmin() {
 
   const grouped = useMemo(() => {
     const entries = allEntries.filter((e) =>
-      view === "waiting" ? e.status === "waiting" : view === "offered" ? e.status === "offered" : !["waiting", "offered"].includes(e.status),
+      view === "waiting"
+        ? e.status === "waiting"
+        : view === "offered"
+          ? e.status === "offered"
+          : !["waiting", "offered"].includes(e.status),
     );
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
@@ -542,7 +635,8 @@ export function WaitlistAdmin() {
       <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
         <p className="font-semibold">Die Warteliste konnte nicht geladen werden.</p>
         <p className="text-muted-foreground">
-          Das ist ein technischer Fehler, die Einträge sind nicht gelöscht. Meldung: {loadError.message}
+          Das ist ein technischer Fehler, die Einträge sind nicht gelöscht. Meldung:{" "}
+          {loadError.message}
         </p>
       </div>
     );
@@ -554,13 +648,18 @@ export function WaitlistAdmin() {
         <div>
           <h2 className="font-display text-2xl font-bold text-primary-deep">Warteliste</h2>
           <p className="text-sm text-muted-foreground">
-            Automatische Platzvergabe: Mitglieder zuerst, danach nach Eingangsdatum. Angeboten wird nur, wenn das Kind
-            zum Kursbeginn das Mindestalter erreicht. Angebote laufen nach der im Programm hinterlegten Frist ab.
+            Automatische Platzvergabe: Mitglieder zuerst, danach nach Eingangsdatum. Angeboten wird
+            nur, wenn das Kind zum Kursbeginn das Mindestalter erreicht. Angebote laufen nach der im
+            Programm hinterlegten Frist ab.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => allocate.mutate(null)} disabled={allocate.isPending}>
-            {allocate.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            {allocate.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
             Plätze jetzt vergeben
           </Button>
         </div>
@@ -585,18 +684,33 @@ export function WaitlistAdmin() {
           <div>
             <p className="font-semibold">2. Platzangebot</p>
             <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Eltern erhalten eine E-Mail mit Zusage-/Absage-Link. Frist: laut Programm (Standard 3 Tage).</li>
+              <li>
+                Eltern erhalten eine E-Mail mit Zusage-/Absage-Link. Frist: laut Programm (Standard
+                3 Tage).
+              </li>
               <li>Offene Angebote zählen als reservierte Plätze.</li>
-              <li>Zusage = verbindliche Buchung mit Zahlungsfrist; der Absage-Zähler wird auf 0 gesetzt.</li>
+              <li>
+                Zusage = verbindliche Buchung mit Zahlungsfrist; der Absage-Zähler wird auf 0
+                gesetzt.
+              </li>
             </ul>
           </div>
           <div>
             <p className="font-semibold">3. Absage durch die Eltern</p>
             <ul className="ml-5 list-disc text-muted-foreground">
               <li>Der Platz wird frei und geht sofort an das nächste passende Kind.</li>
-              <li>Eltern entscheiden direkt: auf der Warteliste bleiben oder abmelden. Wer bleibt, fällt auf die Warteliste zurück und wird frühestens für den nächsten Kurs (Start nach dem abgelehnten Kurs) wieder berücksichtigt, ggf. erst ab einem Wunschdatum.</li>
-              <li>Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.</li>
-              <li>Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage erfassen“ klicken – der Platz wird dann freigegeben.</li>
+              <li>
+                Eltern entscheiden direkt: auf der Warteliste bleiben oder abmelden. Wer bleibt,
+                fällt auf die Warteliste zurück und wird frühestens für den nächsten Kurs (Start
+                nach dem abgelehnten Kurs) wieder berücksichtigt, ggf. erst ab einem Wunschdatum.
+              </li>
+              <li>
+                Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.
+              </li>
+              <li>
+                Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage
+                erfassen“ klicken – der Platz wird dann freigegeben.
+              </li>
             </ul>
           </div>
           <div>
@@ -604,35 +718,57 @@ export function WaitlistAdmin() {
             <ul className="ml-5 list-disc text-muted-foreground">
               <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
               <li>Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist.</li>
-              <li>Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Status „Entfernt“). Keine automatische Sperrliste.</li>
+              <li>
+                Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Status
+                „Entfernt“). Keine automatische Sperrliste.
+              </li>
             </ul>
           </div>
           <div>
             <p className="font-semibold">5. Die 3-Absagen-Regel</p>
             <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Beim 3. abgesagten oder unbeantworteten Angebot wird der Wartelistenplatz automatisch deaktiviert.</li>
-              <li>Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.</li>
+              <li>
+                Beim 3. abgesagten oder unbeantworteten Angebot wird der Wartelistenplatz
+                automatisch deaktiviert.
+              </li>
+              <li>
+                Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.
+              </li>
               <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
             </ul>
           </div>
           <div>
             <p className="font-semibold">6. Was der Vorstand jederzeit tun kann</p>
             <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Zähler zurücksetzen (z. B. bei Krankheit) über den Button „Zähler zurücksetzen“.</li>
-              <li>Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.</li>
-              <li>Familien, die Angebote wiederholt ablaufen lassen, bewusst manuell auf die Sperrliste setzen.</li>
+              <li>
+                Zähler zurücksetzen (z. B. bei Krankheit) über den Button „Zähler zurücksetzen“.
+              </li>
+              <li>
+                Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.
+              </li>
+              <li>
+                Familien, die Angebote wiederholt ablaufen lassen, bewusst manuell auf die
+                Sperrliste setzen.
+              </li>
             </ul>
           </div>
         </div>
       </CollapsibleCard>
 
       <div className="flex flex-wrap gap-2 border-b pb-2">
-        {([
-          ["waiting", "Wartend auf Platz"],
-          ["offered", "Laufende Angebote"],
-          ["done", "Erledigt / Archiv"],
-        ] as const).map(([key, label]) => (
-          <Button key={key} size="sm" variant={view === key ? "default" : "outline"} onClick={() => setView(key)}>
+        {(
+          [
+            ["waiting", "Wartend auf Platz"],
+            ["offered", "Laufende Angebote"],
+            ["done", "Erledigt / Archiv"],
+          ] as const
+        ).map(([key, label]) => (
+          <Button
+            key={key}
+            size="sm"
+            variant={view === key ? "default" : "outline"}
+            onClick={() => setView(key)}
+          >
             {label} ({tabCounts[key]})
           </Button>
         ))}
@@ -644,157 +780,185 @@ export function WaitlistAdmin() {
             .filter((c) => c.max_participants != null)
             .map((c) => (
               <span key={c.id} className="rounded-md border bg-muted/40 px-2 py-1">
-                <strong>{c.name}</strong>: {c.confirmed} gebucht · {c.held} angeboten · {c.free} frei
+                <strong>{c.name}</strong>: {c.confirmed} gebucht · {c.held} angeboten · {c.free}{" "}
+                frei
               </span>
             ))}
         </div>
       )}
 
-      {grouped.length === 0 && <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>}
+      {grouped.length === 0 && (
+        <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>
+      )}
 
       {grouped.map(([programId, entries]) => (
         <CollapsibleCard
           key={programId}
           storageKey={`waitlist-${programId}`}
           title={programName(programId === "none" ? null : programId)}
-          meta={<span className="text-sm text-muted-foreground">{entries.length} {view === "waiting" ? "wartend" : view === "offered" ? "Angebote aktiv" : "Einträge"}</span>}
-          contentClassName="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-2 pr-3">Kind</th>
-                  <th className="py-2 pr-3">Eltern</th>
-                  <th className="py-2 pr-3 w-56">Wunschkurs</th>
-                  <th className="py-2 pr-3 w-64">Notiz</th>
-                  <th className="py-2 pr-3">Eingang</th>
-                  <th className="py-2 pr-3">Mitglied</th>
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2 pr-3">Zahlung</th>
-                  <th className="py-2 pr-3">Aktion</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e) => {
-                  const st = STATUS_LABEL[e.status] ?? { label: e.status, className: "" };
-                  const program = programById(e.program_id);
-                  const wish = (e as { desired_course?: string | null }).desired_course ?? null;
-                  const suggestion = !e.program_id ? matchProgram(wish ?? e.notes, programs) : null;
-                  const minAge = program?.min_age_years ?? null;
-                  const readyOn = minAgeReachedOn(e.child_dob, minAge);
-                  const fits = (c: { program_id: string | null }) =>
-                    !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
-                  const courses = (data?.courses ?? [])
-                    .filter((c) => c.free !== 0)
-                    .map((c) => ({ ...c, fits: fits(c) }))
-                    .sort((a, b) => Number(b.fits) - Number(a.fits));
-                  // Direktbuchung: der Vorstand darf auch volle Kurse überbuchen (Platzangebote nur für freie Plätze)
-                  const bookCourses = (data?.courses ?? [])
-                    .map((c) => ({ ...c, fits: fits(c) }))
-                    .sort((a, b) => Number(b.fits) - Number(a.fits));
-                  const tooYoungEverywhere =
-                    !!e.child_dob &&
-                    minAge != null &&
-                    courses.length > 0 &&
-                    courses.every((c) => !meetsMinAge(e.child_dob, c.starts_on, minAge));
+          meta={
+            <span className="text-sm text-muted-foreground">
+              {entries.length}{" "}
+              {view === "waiting" ? "wartend" : view === "offered" ? "Angebote aktiv" : "Einträge"}
+            </span>
+          }
+          contentClassName="overflow-x-auto"
+        >
+          <table className="w-full min-w-[1100px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="py-2 pr-3">Kind</th>
+                <th className="py-2 pr-3">Eltern</th>
+                <th className="py-2 pr-3 w-56">Wunschkurs</th>
+                <th className="py-2 pr-3 w-64">Notiz</th>
+                <th className="py-2 pr-3">Eingang</th>
+                <th className="py-2 pr-3">Mitglied</th>
+                <th className="py-2 pr-3">Status</th>
+                <th className="py-2 pr-3">Zahlung</th>
+                <th className="py-2 pr-3">Aktion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => {
+                const st = STATUS_LABEL[e.status] ?? { label: e.status, className: "" };
+                const program = programById(e.program_id);
+                const wish = (e as { desired_course?: string | null }).desired_course ?? null;
+                const suggestion = !e.program_id ? matchProgram(wish ?? e.notes, programs) : null;
+                const minAge = program?.min_age_years ?? null;
+                const readyOn = minAgeReachedOn(e.child_dob, minAge);
+                const fits = (c: { program_id: string | null }) =>
+                  !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
+                const courses = (data?.courses ?? [])
+                  .filter((c) => c.free !== 0)
+                  .map((c) => ({ ...c, fits: fits(c) }))
+                  .sort((a, b) => Number(b.fits) - Number(a.fits));
+                // Direktbuchung: der Vorstand darf auch volle Kurse überbuchen (Platzangebote nur für freie Plätze)
+                const bookCourses = (data?.courses ?? [])
+                  .map((c) => ({ ...c, fits: fits(c) }))
+                  .sort((a, b) => Number(b.fits) - Number(a.fits));
+                const tooYoungEverywhere =
+                  !!e.child_dob &&
+                  minAge != null &&
+                  courses.length > 0 &&
+                  courses.every((c) => !meetsMinAge(e.child_dob, c.starts_on, minAge));
 
-                  return (
-                    <tr key={e.id} className="border-b align-top">
-                      <td className="py-2 pr-3 font-medium">
+                return (
+                  <tr key={e.id} className="border-b align-top">
+                    <td className="py-2 pr-3 font-medium">
+                      <button
+                        type="button"
+                        className="text-left text-primary underline underline-offset-2"
+                        title="Originalanfrage anzeigen"
+                        onClick={() => setDetail(e as unknown as WaitlistEntry)}
+                      >
+                        {e.child_name}
+                      </button>
+                      {e.child_dob && (
+                        <div className="text-xs text-muted-foreground">
+                          {formatDateBerlin(e.child_dob)}
+                        </div>
+                      )}
+                      {(e as Record<string, unknown>)["blocked_reason"] ? (
+                        <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                          <ShieldBan className="h-3 w-3" /> Sperrliste
+                        </div>
+                      ) : null}
+                      {(e as Record<string, unknown>)["available_from"] ? (
+                        <div className="mt-1 text-xs font-medium text-blue-700">
+                          ⏸ Zurückgestellt – erst Kurse ab{" "}
+                          {formatDateBerlin(
+                            String((e as Record<string, unknown>)["available_from"]),
+                          )}
+                        </div>
+                      ) : null}
+                      {(e as Record<string, unknown>)["duplicate"] ? (
+                        <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                          <Copy className="h-3 w-3" /> mögliche Dublette
+                        </div>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                        onClick={() => setDetail(e as unknown as WaitlistEntry)}
+                      >
+                        <FileText className="h-3 w-3" /> Details
+                      </button>
+                    </td>
+
+                    <td className="py-2 pr-3">
+                      {e.parent_name}
+                      <div className="text-xs text-muted-foreground">{e.parent_email}</div>
+                      {e.parent_phone && (
+                        <div className="text-xs text-muted-foreground">{e.parent_phone}</div>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <select
+                        className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                        value={e.program_id ?? ""}
+                        onChange={(ev) =>
+                          update.mutate({ entryId: e.id, programId: ev.target.value || null })
+                        }
+                      >
+                        <option value="">Kein Wunschkurs</option>
+                        {programs.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      {wish && (
+                        <div className="mt-1 text-xs text-muted-foreground">Wunsch: {wish}</div>
+                      )}
+                      {suggestion && (
                         <button
                           type="button"
-                          className="text-left text-primary underline underline-offset-2"
-                          title="Originalanfrage anzeigen"
-                          onClick={() => setDetail(e as unknown as WaitlistEntry)}
+                          className="mt-1 text-xs text-primary underline"
+                          onClick={() => update.mutate({ entryId: e.id, programId: suggestion.id })}
                         >
-                          {e.child_name}
+                          Vorschlag übernehmen: {suggestion.name}
                         </button>
-                        {e.child_dob && (
-                          <div className="text-xs text-muted-foreground">{formatDateBerlin(e.child_dob)}</div>
-                        )}
-                        {(e as Record<string, unknown>)["blocked_reason"] ? (
-                          <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
-                            <ShieldBan className="h-3 w-3" /> Sperrliste
-                          </div>
-                        ) : null}
-                        {(e as Record<string, unknown>)["available_from"] ? (
-                          <div className="mt-1 text-xs font-medium text-blue-700">
-                            ⏸ Zurückgestellt – erst Kurse ab {formatDateBerlin(String((e as Record<string, unknown>)["available_from"]))}
-                          </div>
-                        ) : null}
-                        {(e as Record<string, unknown>)["duplicate"] ? (
-                          <div className="mt-1 flex items-center gap-1 text-xs text-amber-600">
-                            <Copy className="h-3 w-3" /> mögliche Dublette
-                          </div>
-                        ) : null}
-
-                        <button
-                          type="button"
-                          className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-                          onClick={() => setDetail(e as unknown as WaitlistEntry)}
-                        >
-                          <FileText className="h-3 w-3" /> Details
-                        </button>
-                      </td>
-
-                      <td className="py-2 pr-3">
-                        {e.parent_name}
-                        <div className="text-xs text-muted-foreground">{e.parent_email}</div>
-                        {e.parent_phone && <div className="text-xs text-muted-foreground">{e.parent_phone}</div>}
-                      </td>
-                      <td className="py-2 pr-3">
-                        <select
-                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                          value={e.program_id ?? ""}
-                          onChange={(ev) =>
-                            update.mutate({ entryId: e.id, programId: ev.target.value || null })
-                          }
-                        >
-                          <option value="">Kein Wunschkurs</option>
-                          {programs.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                        {wish && <div className="mt-1 text-xs text-muted-foreground">Wunsch: {wish}</div>}
-                        {suggestion && (
-                          <button
-                            type="button"
-                            className="mt-1 text-xs text-primary underline"
-                            onClick={() => update.mutate({ entryId: e.id, programId: suggestion.id })}
-                          >
-                            Vorschlag übernehmen: {suggestion.name}
-                          </button>
-                        )}
-                        {readyOn && (
-                          <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
-                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
-                            <span>
-                              Mindestalter erreicht ab {formatDateBerlin(readyOn)}
-                              {tooYoungEverywhere ? " – aktuell kein passender Kursstart" : ""}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2 pr-3">
-                        <NotesCell
-                          entryId={e.id}
-                          parentNote={e.notes}
-                          adminNote={e.admin_notes}
-                          onSave={(v) => {
-                            update.mutate(v, { onSuccess: () => toast.success("Notiz gespeichert") });
-                          }}
-                        />
-                      </td>
-                      <td className="py-2 pr-3 whitespace-nowrap">{formatDateBerlin(e.created_at)}</td>
-                      <td className="py-2 pr-3">{e.is_member ? "Ja" : e.is_member === false ? "Nein" : "–"}</td>
-                      <td className="py-2 pr-3">
-                        <Badge className={st.className} variant="secondary">
-                          {st.label}
-                        </Badge>
-                        {Number((e as Record<string, unknown>)["decline_count"] ?? 0) > 0 && (() => {
+                      )}
+                      {readyOn && (
+                        <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
+                          <span>
+                            Mindestalter erreicht ab {formatDateBerlin(readyOn)}
+                            {tooYoungEverywhere ? " – aktuell kein passender Kursstart" : ""}
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <NotesCell
+                        entryId={e.id}
+                        parentNote={e.notes}
+                        adminNote={e.admin_notes}
+                        onSave={(v) => {
+                          update.mutate(v, { onSuccess: () => toast.success("Notiz gespeichert") });
+                        }}
+                      />
+                    </td>
+                    <td className="py-2 pr-3 whitespace-nowrap">
+                      {formatDateBerlin(e.created_at)}
+                    </td>
+                    <td className="py-2 pr-3">
+                      {e.is_member ? "Ja" : e.is_member === false ? "Nein" : "–"}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <Badge className={st.className} variant="secondary">
+                        {st.label}
+                      </Badge>
+                      {Number((e as Record<string, unknown>)["decline_count"] ?? 0) > 0 &&
+                        (() => {
                           const n = Number((e as Record<string, unknown>)["decline_count"]);
-                          const cls = n >= 3 ? "bg-red-100 text-red-900" : n === 2 ? "bg-amber-100 text-amber-900" : "bg-slate-100 text-slate-700";
+                          const cls =
+                            n >= 3
+                              ? "bg-red-100 text-red-900"
+                              : n === 2
+                                ? "bg-amber-100 text-amber-900"
+                                : "bg-slate-100 text-slate-700";
                           return (
                             <div className="mt-1 flex flex-wrap items-center gap-1">
                               <Badge variant="secondary" className={cls}>
@@ -804,8 +968,17 @@ export function WaitlistAdmin() {
                                 type="button"
                                 className="text-xs text-primary underline"
                                 onClick={() => {
-                                  if (!confirm(`Absage-Zähler für ${e.child_name} auf 0 zurücksetzen?`)) return;
-                                  update.mutate({ entryId: e.id, declineCount: 0, appendNote: "Absage-Zähler vom Vorstand zurückgesetzt." });
+                                  if (
+                                    !confirm(
+                                      `Absage-Zähler für ${e.child_name} auf 0 zurücksetzen?`,
+                                    )
+                                  )
+                                    return;
+                                  update.mutate({
+                                    entryId: e.id,
+                                    declineCount: 0,
+                                    appendNote: "Absage-Zähler vom Vorstand zurückgesetzt.",
+                                  });
                                 }}
                               >
                                 Zähler zurücksetzen
@@ -813,153 +986,182 @@ export function WaitlistAdmin() {
                             </div>
                           );
                         })()}
-                        {!!(e as Record<string, unknown>)["followup_expires_at"] && ["declined", "expired"].includes(e.status) && (
+                      {!!(e as Record<string, unknown>)["followup_expires_at"] &&
+                        ["declined", "expired"].includes(e.status) && (
                           <div className="mt-1 text-xs text-muted-foreground">
-                            Rückfrage läuft bis {formatDateBerlin(String((e as Record<string, unknown>)["followup_expires_at"]))}
+                            Rückfrage läuft bis{" "}
+                            {formatDateBerlin(
+                              String((e as Record<string, unknown>)["followup_expires_at"]),
+                            )}
                           </div>
                         )}
-                        {e.status === "offered" && e.offer_expires_at && (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {courseName(e.offer_course_id)} · Frist: {formatDateBerlin(e.offer_expires_at)}
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-2 pr-3">
-                        <PaymentCell entry={e as unknown as WaitlistEntry} />
-                      </td>
-                      <td className="py-2 pr-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {e.status === "waiting" && courses.length > 0 && (
-                            <select
-                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                              defaultValue=""
-                              onChange={(ev) => {
-                                const courseId = ev.target.value;
-                                ev.target.value = "";
-                                if (!courseId) return;
-                                const c = courses.find((x) => x.id === courseId);
-                                if (c && !meetsMinAge(e.child_dob, c.starts_on, minAge)) {
-                                  if (
-                                    !confirm(
-                                      `${e.child_name} erreicht zum Kursbeginn das Mindestalter noch nicht. Trotzdem anbieten?`,
-                                    )
-                                  )
-                                    return;
-                                }
-                                const af = (e as Record<string, unknown>)["available_from"] as string | null;
-                                if (c && af && (!c.starts_on || c.starts_on < af)) {
-                                  if (!confirm(`${e.child_name} ist zurückgestellt bis ${formatDateBerlin(af)}. Trotzdem anbieten?`))
-                                    return;
-                                }
-                                offer.mutate({ entryId: e.id, courseId });
-                              }}
-                            >
-                              <option value="">Platz anbieten…</option>
-                              {courses.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.fits ? "" : "(anderes Angebot) "}{c.name}
-                                  {c.free != null ? ` (${c.free} frei)` : ""}
-                                  {!meetsMinAge(e.child_dob, c.starts_on, minAge) ? " – zu jung" : ""}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                          {e.status !== "accepted" && bookCourses.length > 0 && (
-                            <select
-                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                              defaultValue=""
-                              disabled={bookDirect.isPending}
-                              onChange={(ev) => {
-                                const courseId = ev.target.value;
-                                ev.target.value = "";
-                                if (!courseId) return;
-                                const c = bookCourses.find((x) => x.id === courseId);
+                      {e.status === "offered" && e.offer_expires_at && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {courseName(e.offer_course_id)} · Frist:{" "}
+                          {formatDateBerlin(e.offer_expires_at)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3">
+                      <PaymentCell entry={e as unknown as WaitlistEntry} />
+                    </td>
+                    <td className="py-2 pr-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {e.status === "waiting" && courses.length > 0 && (
+                          <select
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                            defaultValue=""
+                            onChange={(ev) => {
+                              const courseId = ev.target.value;
+                              ev.target.value = "";
+                              if (!courseId) return;
+                              const c = courses.find((x) => x.id === courseId);
+                              if (c && !meetsMinAge(e.child_dob, c.starts_on, minAge)) {
                                 if (
                                   !confirm(
-                                    `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen${c?.free === 0 ? " (Kurs ist voll – Überbuchung)" : ""}? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
+                                    `${e.child_name} erreicht zum Kursbeginn das Mindestalter noch nicht. Trotzdem anbieten?`,
                                   )
                                 )
                                   return;
-                                bookDirect.mutate({ entryId: e.id, courseId });
-                              }}
-                            >
-                              <option value="">Direkt buchen…</option>
-                              {bookCourses.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                  {c.fits ? "" : "(anderes Angebot) "}{c.name}
-                                  {c.free != null ? (c.free > 0 ? ` (${c.free} frei)` : " (voll – überbuchen)") : ""}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                          {e.status === "offered" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Eltern haben das Angebot telefonisch oder per E-Mail abgelehnt"
-                              onClick={() => {
-                                setDeclineStay(true);
-                                setDeclineFrom("");
-                                setDeclineReason("");
-                                setDeclineFor(e as unknown as WaitlistEntry);
-                              }}
-                            >
-                              Absage erfassen
-                            </Button>
-                          )}
-                          {e.status === "waiting" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              title="Als abgemeldet markieren"
-                              onClick={() => {
-                                if (!confirm(`${e.child_name} als abgemeldet markieren?`)) return;
-                                const block = confirm(
-                                  "Zusätzlich auf die Sperrliste setzen? (OK = ja, Abbrechen = nein)",
-                                );
-                                update.mutate(
-                                  {
-                                    entryId: e.id,
-                                    status: "removed",
-                                    ...(block
-                                      ? { blocklist: true, blocklistReason: "Von der Warteliste abgemeldet" }
-                                      : {}),
-                                  },
-                                  { onSuccess: () => toast.success(block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert") },
-                                );
-                              }}
-                            >
-                              <Send className="h-4 w-4 rotate-180" />
-                            </Button>
-                          )}
-
-                          {e.status !== "waiting" && e.status !== "accepted" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              title={e.status === "offered" ? "Angebot zurückziehen: Platz wird frei, Familie wartet erst wieder ab dem nächsten Kurs (zählt nicht als Absage)" : "Zurück auf wartend"}
-                              onClick={() => update.mutate({ entryId: e.id, status: "waiting" })}
-                            >
-                              <Undo2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                              }
+                              const af = (e as Record<string, unknown>)["available_from"] as
+                                string | null;
+                              if (c && af && (!c.starts_on || c.starts_on < af)) {
+                                if (
+                                  !confirm(
+                                    `${e.child_name} ist zurückgestellt bis ${formatDateBerlin(af)}. Trotzdem anbieten?`,
+                                  )
+                                )
+                                  return;
+                              }
+                              offer.mutate({ entryId: e.id, courseId });
+                            }}
+                          >
+                            <option value="">Platz anbieten…</option>
+                            {courses.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.fits ? "" : "(anderes Angebot) "}
+                                {c.name}
+                                {c.free != null ? ` (${c.free} frei)` : ""}
+                                {!meetsMinAge(e.child_dob, c.starts_on, minAge) ? " – zu jung" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {e.status !== "accepted" && bookCourses.length > 0 && (
+                          <select
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                            defaultValue=""
+                            disabled={bookDirect.isPending}
+                            onChange={(ev) => {
+                              const courseId = ev.target.value;
+                              ev.target.value = "";
+                              if (!courseId) return;
+                              const c = bookCourses.find((x) => x.id === courseId);
+                              if (
+                                !confirm(
+                                  `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen${c?.free === 0 ? " (Kurs ist voll – Überbuchung)" : ""}? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
+                                )
+                              )
+                                return;
+                              bookDirect.mutate({ entryId: e.id, courseId });
+                            }}
+                          >
+                            <option value="">Direkt buchen…</option>
+                            {bookCourses.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.fits ? "" : "(anderes Angebot) "}
+                                {c.name}
+                                {c.free != null
+                                  ? c.free > 0
+                                    ? ` (${c.free} frei)`
+                                    : " (voll – überbuchen)"
+                                  : ""}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        {e.status === "offered" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            title="Eltern haben das Angebot telefonisch oder per E-Mail abgelehnt"
+                            onClick={() => {
+                              setDeclineStay(true);
+                              setDeclineFrom("");
+                              setDeclineReason("");
+                              setDeclineFor(e as unknown as WaitlistEntry);
+                            }}
+                          >
+                            Absage erfassen
+                          </Button>
+                        )}
+                        {e.status === "waiting" && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            title="Eintrag löschen"
+                            title="Als abgemeldet markieren"
                             onClick={() => {
-                              if (confirm(`Eintrag für ${e.child_name} wirklich löschen?`)) remove.mutate(e.id);
+                              if (!confirm(`${e.child_name} als abgemeldet markieren?`)) return;
+                              const block = confirm(
+                                "Zusätzlich auf die Sperrliste setzen? (OK = ja, Abbrechen = nein)",
+                              );
+                              update.mutate(
+                                {
+                                  entryId: e.id,
+                                  status: "removed",
+                                  ...(block
+                                    ? {
+                                        blocklist: true,
+                                        blocklistReason: "Von der Warteliste abgemeldet",
+                                      }
+                                    : {}),
+                                },
+                                {
+                                  onSuccess: () =>
+                                    toast.success(
+                                      block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert",
+                                    ),
+                                },
+                              );
                             }}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Send className="h-4 w-4 rotate-180" />
                           </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        )}
+
+                        {e.status !== "waiting" && e.status !== "accepted" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            title={
+                              e.status === "offered"
+                                ? "Angebot zurückziehen: Platz wird frei, Familie wartet erst wieder ab dem nächsten Kurs (zählt nicht als Absage)"
+                                : "Zurück auf wartend"
+                            }
+                            onClick={() => update.mutate({ entryId: e.id, status: "waiting" })}
+                          >
+                            <Undo2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Eintrag löschen"
+                          onClick={() => {
+                            if (confirm(`Eintrag für ${e.child_name} wirklich löschen?`))
+                              remove.mutate(e.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </CollapsibleCard>
       ))}
 
@@ -983,28 +1185,48 @@ export function WaitlistAdmin() {
           <DialogHeader>
             <DialogTitle>Absage erfassen – {String(declineFor?.child_name ?? "")}</DialogTitle>
             <DialogDescription>
-              Der reservierte Platz wird freigegeben, die Absage zählt mit und der Platz geht an das nächste Kind.
-              Es wird keine Rückfrage-Mail verschickt.
+              Der reservierte Platz wird freigegeben, die Absage zählt mit und der Platz geht an das
+              nächste Kind. Es wird keine Rückfrage-Mail verschickt.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <label className="flex items-start gap-2">
-              <input type="radio" checked={declineStay} onChange={() => setDeclineStay(true)} className="mt-1" />
+              <input
+                type="radio"
+                checked={declineStay}
+                onChange={() => setDeclineStay(true)}
+                className="mt-1"
+              />
               <span>Bleibt auf der Warteliste</span>
             </label>
             {declineStay && (
               <div className="ml-6 space-y-1">
-                <label className="text-xs text-muted-foreground">Erst für Kurse ab (optional – sonst nächster Kurs nach dem Angebot)</label>
-                <Input type="date" value={declineFrom} onChange={(ev) => setDeclineFrom(ev.target.value)} />
+                <label className="text-xs text-muted-foreground">
+                  Erst für Kurse ab (optional – sonst nächster Kurs nach dem Angebot)
+                </label>
+                <Input
+                  type="date"
+                  value={declineFrom}
+                  onChange={(ev) => setDeclineFrom(ev.target.value)}
+                />
               </div>
             )}
             <label className="flex items-start gap-2">
-              <input type="radio" checked={!declineStay} onChange={() => setDeclineStay(false)} className="mt-1" />
+              <input
+                type="radio"
+                checked={!declineStay}
+                onChange={() => setDeclineStay(false)}
+                className="mt-1"
+              />
               <span>Möchte nicht mehr auf der Warteliste stehen</span>
             </label>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Grund (optional)</label>
-              <Input value={declineReason} onChange={(ev) => setDeclineReason(ev.target.value)} maxLength={500} />
+              <Input
+                value={declineReason}
+                onChange={(ev) => setDeclineReason(ev.target.value)}
+                maxLength={500}
+              />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

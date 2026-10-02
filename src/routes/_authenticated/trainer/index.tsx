@@ -13,13 +13,19 @@ export const Route = createFileRoute("/_authenticated/trainer/")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
-    catch { throw redirect({ to: "/portal" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } });
+    } catch {
+      throw redirect({ to: "/portal" });
+    }
   },
   head: () => ({
     meta: [
       { title: "Trainerbereich | Sicher Schwimmen e.V." },
-      { name: "description", content: "Eigene Kurstermine, Einteilungen und Helfer-Einsätze auf einen Blick." },
+      {
+        name: "description",
+        content: "Eigene Kurstermine, Einteilungen und Helfer-Einsätze auf einen Blick.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -42,22 +48,50 @@ function TrainerHome() {
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
       const me = userData.user?.id;
-      if (!me) { setLoading(false); return; }
+      if (!me) {
+        setLoading(false);
+        return;
+      }
 
       // Nur die eigenen Einsätze laden (nicht alle Termine des Vereins; Supabase liefert pro Abfrage höchstens
       // 1000 Zeilen). Wie unter „Meine Kurse“ zählen auch Kurse, in denen man als Kurstrainer:in eingetragen ist.
-      const SELECT = "id,course_id,session_date,session_index,assigned_trainer_id,courses(name,location,schedule)";
+      const SELECT =
+        "id,course_id,session_date,session_index,assigned_trainer_id,courses(name,location,schedule)";
       const assignments = await fetchAll<{ session_id: string }>((f, t) =>
-        supabase.from("course_session_assignments").select("session_id").eq("trainer_id", me).order("id").range(f, t));
+        supabase
+          .from("course_session_assignments")
+          .select("session_id")
+          .eq("trainer_id", me)
+          .order("id")
+          .range(f, t),
+      );
       const ownCourses = await fetchAll<{ id: string }>((f, t) =>
-        supabase.from("courses").select("id").eq("trainer_id", me).order("id").range(f, t));
+        supabase.from("courses").select("id").eq("trainer_id", me).order("id").range(f, t),
+      );
       const [byAssignment, byTerm, byCourse] = await Promise.all([
-        fetchIn<any>(assignments.map((a) => a.session_id), (chunk, f, t) =>
-          supabase.from("course_sessions").select(SELECT).in("id", chunk).order("id").range(f, t)),
+        fetchIn<any>(
+          assignments.map((a) => a.session_id),
+          (chunk, f, t) =>
+            supabase.from("course_sessions").select(SELECT).in("id", chunk).order("id").range(f, t),
+        ),
         fetchAll<any>((f, t) =>
-          supabase.from("course_sessions").select(SELECT).eq("assigned_trainer_id", me).order("id").range(f, t)),
-        fetchIn<any>(ownCourses.map((c) => c.id), (chunk, f, t) =>
-          supabase.from("course_sessions").select(SELECT).in("course_id", chunk).order("id").range(f, t)),
+          supabase
+            .from("course_sessions")
+            .select(SELECT)
+            .eq("assigned_trainer_id", me)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(
+          ownCourses.map((c) => c.id),
+          (chunk, f, t) =>
+            supabase
+              .from("course_sessions")
+              .select(SELECT)
+              .in("course_id", chunk)
+              .order("id")
+              .range(f, t),
+        ),
       ]);
       const byId = new Map<string, any>();
       for (const s of [...byAssignment, ...byTerm, ...byCourse]) byId.set(s.id, s);
@@ -78,10 +112,13 @@ function TrainerHome() {
   }, []);
 
   const today = todayBerlinIso();
-  const upcoming = useMemo(() => rows.filter(r => r.session_date >= today), [rows, today]);
-  const past = useMemo(() => rows.filter(r => r.session_date < today), [rows, today]);
+  const upcoming = useMemo(() => rows.filter((r) => r.session_date >= today), [rows, today]);
+  const past = useMemo(() => rows.filter((r) => r.session_date < today), [rows, today]);
   const currentYear = String(new Date().getFullYear());
-  const thisYear = useMemo(() => rows.filter(r => r.session_date.startsWith(currentYear)), [rows, currentYear]);
+  const thisYear = useMemo(
+    () => rows.filter((r) => r.session_date.startsWith(currentYear)),
+    [rows, currentYear],
+  );
 
   const groups = useMemo(() => {
     const map = new Map<string, { name: string; rows: Row[] }>();
@@ -98,18 +135,32 @@ function TrainerHome() {
 
   return (
     <div className="max-w-4xl space-y-4">
-      <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">Trainerbereich</h1>
+      <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">
+        Trainerbereich
+      </h1>
 
       <OpenAvailabilityNotice />
 
       {next && (
         <Card className="border-0 shadow-soft bg-primary/5">
           <CardContent className="p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nächster Einsatz</div>
-            <div className="mt-1 text-base font-bold text-primary-deep">{next.course?.name ?? "Kurs"}</div>
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Nächster Einsatz
+            </div>
+            <div className="mt-1 text-base font-bold text-primary-deep">
+              {next.course?.name ?? "Kurs"}
+            </div>
             <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{formatDateBerlin(next.session_date)}</span>
-              {next.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{next.course.location}</span>}
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                {formatDateBerlin(next.session_date)}
+              </span>
+              {next.course?.location && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {next.course.location}
+                </span>
+              )}
             </div>
             <Link
               to="/trainer/kurse"
@@ -148,11 +199,21 @@ function TrainerHome() {
         <CalendarCheck className="h-4 w-4" /> Verfügbarkeit eintragen
       </Link>
 
-      <h2 className="font-display text-xl font-bold text-primary-deep sm:text-2xl">Meine nächsten Einsätze</h2>
+      <h2 className="font-display text-xl font-bold text-primary-deep sm:text-2xl">
+        Meine nächsten Einsätze
+      </h2>
       {loading ? (
-        <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Wird geladen …</CardContent></Card>
+        <Card className="border-0 shadow-soft">
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Wird geladen …
+          </CardContent>
+        </Card>
       ) : groups.length === 0 ? (
-        <Card className="border-0 shadow-soft"><CardContent className="py-10 text-center text-muted-foreground">Aktuell bist du für keine kommenden Termine eingeteilt.</CardContent></Card>
+        <Card className="border-0 shadow-soft">
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Aktuell bist du für keine kommenden Termine eingeteilt.
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
           {groups.map(([courseId, g], i) => (
@@ -171,11 +232,21 @@ function TrainerHome() {
                     <div>
                       <div className="text-sm font-medium">{r.session_index}. Termin</div>
                       <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{formatDateBerlin(r.session_date)}</span>
-                        {r.course?.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.course.location}</span>}
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          {formatDateBerlin(r.session_date)}
+                        </span>
+                        {r.course?.location && (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {r.course.location}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <Badge className="border-transparent bg-primary text-primary-foreground">Eingeteilt</Badge>
+                    <Badge className="border-transparent bg-primary text-primary-foreground">
+                      Eingeteilt
+                    </Badge>
                   </div>
                 ))}
               </div>

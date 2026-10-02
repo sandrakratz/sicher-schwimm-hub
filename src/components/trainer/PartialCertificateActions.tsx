@@ -3,7 +3,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FileText, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { exportPartialCertificate, sendPartialCertificateNow } from "@/lib/trainer-courses.functions";
+import {
+  exportPartialCertificate,
+  sendPartialCertificateNow,
+} from "@/lib/trainer-courses.functions";
 
 const STATUS_TEXT: Record<string, string> = {
   sent: "Nachweis wurde an die Eltern geschickt.",
@@ -55,10 +58,23 @@ export function PartialCertificateActions({ participantId }: { participantId: st
 
   return (
     <div className="flex flex-wrap gap-2">
-      <Button type="button" variant="outline" className="min-h-11" onClick={download} disabled={busy !== null}>
-        <FileText className="mr-2 h-4 w-4" /> {busy === "pdf" ? "Erstelle…" : "Teilleistungsnachweis (PDF)"}
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11"
+        onClick={download}
+        disabled={busy !== null}
+      >
+        <FileText className="mr-2 h-4 w-4" />{" "}
+        {busy === "pdf" ? "Erstelle…" : "Teilleistungsnachweis (PDF)"}
       </Button>
-      <Button type="button" variant="ghost" className="min-h-11" onClick={send} disabled={busy !== null}>
+      <Button
+        type="button"
+        variant="ghost"
+        className="min-h-11"
+        onClick={send}
+        disabled={busy !== null}
+      >
         <Send className="mr-2 h-4 w-4" /> {busy === "mail" ? "Sende…" : "An Eltern senden"}
       </Button>
     </div>

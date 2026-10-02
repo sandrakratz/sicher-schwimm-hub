@@ -15,7 +15,10 @@ function sanitize(value: string, max: number): string {
  * Erzeugt den EPC069-12 Datensatz (GiroCode). Empfänger und IBAN stammen immer
  * aus der zentralen Vereinskonfiguration.
  */
-export function buildEpcPayload(opts: { amount?: number | null; reference?: string | null }): string | null {
+export function buildEpcPayload(opts: {
+  amount?: number | null;
+  reference?: string | null;
+}): string | null {
   const iban = BILLING.iban.replace(/\s+/g, "");
   if (!iban) return null;
   const amount = opts.amount != null && Number(opts.amount) > 0 ? Number(opts.amount) : null;
@@ -36,10 +39,14 @@ export function buildEpcPayload(opts: { amount?: number | null; reference?: stri
 }
 
 /** Absolute URL zum PNG-QR-Code (für E-Mails nutzbar). */
-export function buildPayQrUrl(opts: { amount?: number | null; reference?: string | null }): string | null {
+export function buildPayQrUrl(opts: {
+  amount?: number | null;
+  reference?: string | null;
+}): string | null {
   if (!buildEpcPayload(opts)) return null;
   const params = new URLSearchParams();
-  if (opts.amount != null && Number(opts.amount) > 0) params.set("amount", Number(opts.amount).toFixed(2));
+  if (opts.amount != null && Number(opts.amount) > 0)
+    params.set("amount", Number(opts.amount).toFixed(2));
   if (opts.reference) params.set("reference", sanitize(opts.reference, 140));
   return `${PAY_QR_BASE_URL}/api/public/pay-qr?${params.toString()}`;
 }

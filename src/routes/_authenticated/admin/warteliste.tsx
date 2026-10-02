@@ -10,8 +10,11 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/admin/benutzer" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/admin/benutzer" });
+    }
   },
   component: WaitlistPage,
 });
@@ -33,8 +36,8 @@ function WaitlistPage() {
         <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
           <p className="font-semibold">Archiv – nur noch zum Nachlesen</p>
           <p className="text-muted-foreground">
-            Neue Anmeldungen laufen ausschließlich über die Warteliste. Hier stehen die alten Kursanfragen sowie die
-            automatisch erzeugten Buchungsbelege.
+            Neue Anmeldungen laufen ausschließlich über die Warteliste. Hier stehen die alten
+            Kursanfragen sowie die automatisch erzeugten Buchungsbelege.
           </p>
         </div>
         <CourseRequestsAdmin mode="all" />

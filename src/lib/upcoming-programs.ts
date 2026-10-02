@@ -1,12 +1,12 @@
 export const NOT_BOOKABLE_NOTE =
-  'Dieses Angebot ist derzeit noch nicht buchbar. Die ersten Termine werden bekannt gegeben, sobald die Wasserzeiten feststehen.'
+  "Dieses Angebot ist derzeit noch nicht buchbar. Die ersten Termine werden bekannt gegeben, sobald die Wasserzeiten feststehen.";
 
 /** Zerlegt das Voraussetzungs-Feld in einzelne Zeilen und entfernt führende Aufzählungszeichen ("-", "•" …). */
 export function parseRequirementLines(text: string | null | undefined): string[] {
-  return (text ?? '')
-    .split('\n')
-    .map((l) => l.trim().replace(/^[-–•*]\s*/, ''))
-    .filter(Boolean)
+  return (text ?? "")
+    .split("\n")
+    .map((l) => l.trim().replace(/^[-–•*]\s*/, ""))
+    .filter(Boolean);
 }
 
 /**
@@ -14,12 +14,12 @@ export function parseRequirementLines(text: string | null | undefined): string[]
  * Die ausführlichen Texte bleiben in der Datenbank und auf den Detailseiten erhalten.
  */
 export const PROGRAM_CARD_SUMMARIES: Record<string, string[]> = {
-  'wasserzeit-babys-kleinkinder': [
-    'Wasser darf von Anfang an etwas Schönes sein.',
-    'Gemeinsam mit einem Elternteil entdecken die Kinder spielerisch das Wasser. Unsere Trainerinnen begleiten jede Familie individuell und geben Anregungen für Bewegung, Sicherheit und Vertrauen im Wasser – ganz ohne Leistungsdruck.',
+  "wasserzeit-babys-kleinkinder": [
+    "Wasser darf von Anfang an etwas Schönes sein.",
+    "Gemeinsam mit einem Elternteil entdecken die Kinder spielerisch das Wasser. Unsere Trainerinnen begleiten jede Familie individuell und geben Anregungen für Bewegung, Sicherheit und Vertrauen im Wasser – ganz ohne Leistungsdruck.",
   ],
-  'wasserzeit-kinder-eltern': [
-    'Mit Freude, Vertrauen und ganz viel Zeit zum Ausprobieren.',
-    'Gemeinsam mit einem Elternteil sammeln die Kinder vielfältige Erfahrungen im Wasser. Unsere Trainerinnen begleiten die Familien individuell und unterstützen jedes Kind dabei, Sicherheit, Vertrauen und Freude am Wasser zu entwickeln.',
+  "wasserzeit-kinder-eltern": [
+    "Mit Freude, Vertrauen und ganz viel Zeit zum Ausprobieren.",
+    "Gemeinsam mit einem Elternteil sammeln die Kinder vielfältige Erfahrungen im Wasser. Unsere Trainerinnen begleiten die Familien individuell und unterstützen jedes Kind dabei, Sicherheit, Vertrauen und Freude am Wasser zu entwickeln.",
   ],
-}
+};

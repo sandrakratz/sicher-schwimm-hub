@@ -1,11 +1,11 @@
 // Server-only: Versand über Resend (https://resend.com) und Prüfung signierter Webhooks.
 // Die Werte kommen aus den Cloudflare-Umgebungsvariablen – siehe docs/migration/neue-einrichtung.md.
 
-export const SITE_NAME = 'Sicher Schwimmen e.V.'
-export const SITE_URL = 'https://sicher-schwimmen.com'
+export const SITE_NAME = "Sicher Schwimmen e.V.";
+export const SITE_URL = "https://sicher-schwimmen.com";
 // Absenderdomain ist die Unteradresse `versand` (Resend-Einträge in der Cloudflare-DNS-Zone).
-export const FROM_DOMAIN = 'versand.sicher-schwimmen.com'
-export const FROM_ADDRESS = `${SITE_NAME} <noreply@${FROM_DOMAIN}>`
+export const FROM_DOMAIN = "versand.sicher-schwimmen.com";
+export const FROM_ADDRESS = `${SITE_NAME} <noreply@${FROM_DOMAIN}>`;
 
 export class EmailSendError extends Error {
   constructor(
@@ -13,32 +13,32 @@ export class EmailSendError extends Error {
     readonly code: string,
     readonly status: number,
   ) {
-    super(message)
+    super(message);
   }
 }
 
 export interface ProviderEmail {
-  to: string
-  subject: string
-  html: string
-  text: string
-  replyTo?: string
-  idempotencyKey?: string
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+  idempotencyKey?: string;
 }
 
 /** Sendet eine E-Mail über Resend. Wirft `EmailSendError`, wenn Resend sie ablehnt. */
 export async function sendWithResend(mail: ProviderEmail): Promise<{ id: string | null }> {
-  const apiKey = process.env['RESEND_API_KEY']
-  if (!apiKey) throw new EmailSendError('RESEND_API_KEY is not configured', 'not_configured', 500)
+  const apiKey = process.env["RESEND_API_KEY"];
+  if (!apiKey) throw new EmailSendError("RESEND_API_KEY is not configured", "not_configured", 500);
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-  }
-  if (mail.idempotencyKey) headers['Idempotency-Key'] = mail.idempotencyKey.slice(0, 250)
+    "Content-Type": "application/json",
+  };
+  if (mail.idempotencyKey) headers["Idempotency-Key"] = mail.idempotencyKey.slice(0, 250);
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
     headers,
     body: JSON.stringify({
       from: FROM_ADDRESS,
@@ -48,31 +48,35 @@ export async function sendWithResend(mail: ProviderEmail): Promise<{ id: string 
       text: mail.text,
       ...(mail.replyTo ? { reply_to: mail.replyTo } : {}),
     }),
-  })
+  });
 
-  const body = (await res.json().catch(() => ({}))) as { id?: string; name?: string; message?: string }
+  const body = (await res.json().catch(() => ({}))) as {
+    id?: string;
+    name?: string;
+    message?: string;
+  };
   if (!res.ok) {
     throw new EmailSendError(
       body.message || `Resend antwortete mit Status ${res.status}`,
-      body.name || 'send_failed',
+      body.name || "send_failed",
       res.status,
-    )
+    );
   }
-  return { id: body.id ?? null }
+  return { id: body.id ?? null };
 }
 
 function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
-  const bin = atob(b64)
-  const out = new Uint8Array(new ArrayBuffer(bin.length))
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
-  return out
+  const bin = atob(b64);
+  const out = new Uint8Array(new ArrayBuffer(bin.length));
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  return diff === 0
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 /**
@@ -86,35 +90,39 @@ export async function verifyWebhookSignature(
   secret: string,
   toleranceSeconds = 300,
 ): Promise<boolean> {
-  const id = headers.get('webhook-id') ?? headers.get('svix-id')
-  const timestamp = headers.get('webhook-timestamp') ?? headers.get('svix-timestamp')
-  const signatureHeader = headers.get('webhook-signature') ?? headers.get('svix-signature')
-  if (!id || !timestamp || !signatureHeader) return false
+  const id = headers.get("webhook-id") ?? headers.get("svix-id");
+  const timestamp = headers.get("webhook-timestamp") ?? headers.get("svix-timestamp");
+  const signatureHeader = headers.get("webhook-signature") ?? headers.get("svix-signature");
+  if (!id || !timestamp || !signatureHeader) return false;
 
-  const ts = Number(timestamp)
-  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > toleranceSeconds) return false
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > toleranceSeconds) return false;
 
-  let keyBytes: Uint8Array<ArrayBuffer>
+  let keyBytes: Uint8Array<ArrayBuffer>;
   try {
-    keyBytes = base64ToBytes(secret.replace(/^v1,/, '').replace(/^whsec_/, ''))
+    keyBytes = base64ToBytes(secret.replace(/^v1,/, "").replace(/^whsec_/, ""));
   } catch {
-    return false
+    return false;
   }
 
   const key = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     keyBytes,
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ['sign'],
-  )
-  const signed = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${id}.${timestamp}.${rawBody}`))
-  let expected = ''
-  for (const b of new Uint8Array(signed)) expected += String.fromCharCode(b)
-  expected = btoa(expected)
+    ["sign"],
+  );
+  const signed = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${id}.${timestamp}.${rawBody}`),
+  );
+  let expected = "";
+  for (const b of new Uint8Array(signed)) expected += String.fromCharCode(b);
+  expected = btoa(expected);
 
   return signatureHeader
-    .split(' ')
-    .map((part) => part.split(',')[1] ?? '')
-    .some((sig) => timingSafeEqual(sig, expected))
+    .split(" ")
+    .map((part) => part.split(",")[1] ?? "")
+    .some((sig) => timingSafeEqual(sig, expected));
 }

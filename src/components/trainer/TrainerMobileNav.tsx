@@ -12,7 +12,7 @@ const SHORT_LABEL: Record<string, string> = {
  * Feste untere Navigationsleiste im Trainerbereich – nur auf kleinen Displays.
  */
 export function TrainerMobileNav() {
-  const pathname = useRouterState({ select: s => s.location.pathname });
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (!pathname.startsWith("/trainer")) return null;
 
   return (
@@ -23,7 +23,7 @@ export function TrainerMobileNav() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden"
       >
         <ul className="grid grid-cols-4">
-          {trainerNav.map(n => (
+          {trainerNav.map((n) => (
             <li key={n.to}>
               <Link
                 to={n.to}

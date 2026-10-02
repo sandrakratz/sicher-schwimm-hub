@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Passwort zurücksetzen" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "Passwort zurücksetzen" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
   component: ResetPage,
 });
 
@@ -20,11 +22,17 @@ function ResetPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const password = String(fd.get("password"));
-    if (password.length < 8) { toast.error("Mindestens 8 Zeichen"); return; }
+    if (password.length < 8) {
+      toast.error("Mindestens 8 Zeichen");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Passwort aktualisiert.");
     navigate({ to: "/portal" });
   }
@@ -32,10 +40,17 @@ function ResetPage() {
     <div className="min-h-screen bg-hero flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-0 shadow-card">
         <CardContent className="p-8">
-          <h1 className="font-display font-bold text-2xl text-primary-deep mb-4">Neues Passwort setzen</h1>
+          <h1 className="font-display font-bold text-2xl text-primary-deep mb-4">
+            Neues Passwort setzen
+          </h1>
           <form onSubmit={onSubmit} className="space-y-4">
-            <div><Label htmlFor="password">Neues Passwort</Label><Input id="password" type="password" name="password" required minLength={8} /></div>
-            <Button type="submit" variant="accent" className="w-full" disabled={loading}>Passwort speichern</Button>
+            <div>
+              <Label htmlFor="password">Neues Passwort</Label>
+              <Input id="password" type="password" name="password" required minLength={8} />
+            </div>
+            <Button type="submit" variant="accent" className="w-full" disabled={loading}>
+              Passwort speichern
+            </Button>
           </form>
         </CardContent>
       </Card>

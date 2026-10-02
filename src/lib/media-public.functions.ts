@@ -13,10 +13,23 @@ export const getPublicMediaUrl = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ url: string | null }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: news }, { data: events }] = await Promise.all([
-      supabaseAdmin.from("news").select("id").eq("image_url", data.path).eq("visibility", "public").eq("published", true).limit(1),
-      supabaseAdmin.from("events").select("id").eq("image_url", data.path).eq("visibility", "public").limit(1),
+      supabaseAdmin
+        .from("news")
+        .select("id")
+        .eq("image_url", data.path)
+        .eq("visibility", "public")
+        .eq("published", true)
+        .limit(1),
+      supabaseAdmin
+        .from("events")
+        .select("id")
+        .eq("image_url", data.path)
+        .eq("visibility", "public")
+        .limit(1),
     ]);
     if (!news?.length && !events?.length) return { url: null };
-    const { data: signed } = await supabaseAdmin.storage.from("media").createSignedUrl(data.path, 60 * 60);
+    const { data: signed } = await supabaseAdmin.storage
+      .from("media")
+      .createSignedUrl(data.path, 60 * 60);
     return { url: signed?.signedUrl ?? null };
   });

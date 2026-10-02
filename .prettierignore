@@ -6,3 +6,9 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+.claude
+docs
+roadmap.md
+public
+wrangler.jsonc
+src/integrations/supabase

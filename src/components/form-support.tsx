@@ -28,7 +28,12 @@ export function HoneypotField({
           name={name}
           tabIndex={-1}
           autoComplete="off"
-          {...(controlled ? { value, onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange!(e.target.value) } : { defaultValue: "" })}
+          {...(controlled
+            ? {
+                value,
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange!(e.target.value),
+              }
+            : { defaultValue: "" })}
         />
       </label>
     </div>

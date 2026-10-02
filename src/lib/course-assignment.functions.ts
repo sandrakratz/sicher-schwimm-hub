@@ -1,267 +1,310 @@
-import { createServerFn } from '@tanstack/react-start'
-import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
-import { BILLING } from '@/lib/billing-config'
-import { formatDateBerlin } from '@/lib/format'
-import { escapeLike } from '@/lib/like'
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { BILLING } from "@/lib/billing-config";
+import { formatDateBerlin } from "@/lib/format";
+import { escapeLike } from "@/lib/like";
 
-const SITE_NAME = 'Sicher Schwimmen e.V.'
-const SITE_BASE_URL = 'https://sicher-schwimmen.com'
-const DUPLICATE_CHILD_MESSAGE = 'Dieses Kind ist in diesem Kurs bereits eingetragen. Es wurde nichts geändert und keine E-Mail versendet.'
+const SITE_NAME = "Sicher Schwimmen e.V.";
+const SITE_BASE_URL = "https://sicher-schwimmen.com";
+const DUPLICATE_CHILD_MESSAGE =
+  "Dieses Kind ist in diesem Kurs bereits eingetragen. Es wurde nichts geändert und keine E-Mail versendet.";
 
 /**
  * Schlägt Mitgliedstatus und Eltern-Konto basierend auf einer E-Mail vor.
  * Wird vom Admin-Dialog "Einbuchen" verwendet, um Vorbelegungen zu liefern.
  */
-export const suggestMatchForRequest = createServerFn({ method: 'POST' })
+export const suggestMatchForRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { email: string; requestId?: string | null }) => input)
   .handler(async ({ data, context }) => {
-    const { userId } = context
-    const { data: isStaff } = await context.supabase.rpc('is_staff', { _user_id: userId })
-    if (!isStaff) throw new Error('Forbidden')
+    const { userId } = context;
+    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: userId });
+    if (!isStaff) throw new Error("Forbidden");
 
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const email = (data.email || '').trim().toLowerCase()
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = (data.email || "").trim().toLowerCase();
 
-    const { resolveMembership } = await import('@/lib/membership-lookup.server')
-    let childName: string | null = null
+    const { resolveMembership } = await import("@/lib/membership-lookup.server");
+    let childName: string | null = null;
 
     // Feste Verknüpfung der Anfrage bevorzugen
     if (data.requestId) {
       const { data: req } = await supabaseAdmin
-        .from('course_requests')
-        .select('profile_id,membership_id,child_name')
-        .eq('id', data.requestId)
-        .maybeSingle()
-      childName = ((req as any)?.child_name as string | null | undefined) ?? null
-      const linkedProfile = (req as any)?.profile_id as string | null | undefined
-      const linkedMembership = (req as any)?.membership_id as string | null | undefined
+        .from("course_requests")
+        .select("profile_id,membership_id,child_name")
+        .eq("id", data.requestId)
+        .maybeSingle();
+      childName = ((req as any)?.child_name as string | null | undefined) ?? null;
+      const linkedProfile = (req as any)?.profile_id as string | null | undefined;
+      const linkedMembership = (req as any)?.membership_id as string | null | undefined;
       if (linkedProfile || linkedMembership) {
         const [{ data: prof }, { data: mem }, found] = await Promise.all([
           linkedProfile
-            ? supabaseAdmin.from('profiles').select('id,email,first_name,last_name').eq('id', linkedProfile).maybeSingle()
+            ? supabaseAdmin
+                .from("profiles")
+                .select("id,email,first_name,last_name")
+                .eq("id", linkedProfile)
+                .maybeSingle()
             : Promise.resolve({ data: null }),
           linkedMembership
-            ? supabaseAdmin.from('memberships').select('status').eq('id', linkedMembership).maybeSingle()
+            ? supabaseAdmin
+                .from("memberships")
+                .select("status")
+                .eq("id", linkedMembership)
+                .maybeSingle()
             : Promise.resolve({ data: null }),
           resolveMembership({ email, childName }),
-        ])
-        const linkedActive = !!mem && (mem as { status: string }).status === 'active'
+        ]);
+        const linkedActive = !!mem && (mem as { status: string }).status === "active";
         return {
           // Verknüpfte Mitgliedschaft nur dann „Nein“, wenn auch sonst keine aktive gefunden wird
-          isMember: linkedActive ? true : found.isMember ?? (mem ? false : null),
+          isMember: linkedActive ? true : (found.isMember ?? (mem ? false : null)),
           parentUserId: (prof as any)?.id ?? null,
           parentLabel: prof
-            ? [(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(' ') || (prof as any).email
+            ? [(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(" ") ||
+              (prof as any).email
             : null,
-        }
+        };
       }
     }
 
-    if (!email) return { isMember: null, parentUserId: null, parentLabel: null }
-
+    if (!email) return { isMember: null, parentUserId: null, parentLabel: null };
 
     const [found, profRes] = await Promise.all([
       resolveMembership({ email, childName }),
-      supabaseAdmin.from('profiles').select('id,email,first_name,last_name').ilike('email', escapeLike(email)).limit(1).maybeSingle(),
-    ])
+      supabaseAdmin
+        .from("profiles")
+        .select("id,email,first_name,last_name")
+        .ilike("email", escapeLike(email))
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
-    const isMember = found.isMember
-    const parentUserId = profRes.data?.id ?? null
+    const isMember = found.isMember;
+    const parentUserId = profRes.data?.id ?? null;
     const parentLabel = profRes.data
-      ? [profRes.data.first_name, profRes.data.last_name].filter(Boolean).join(' ') || profRes.data.email
-      : null
+      ? [profRes.data.first_name, profRes.data.last_name].filter(Boolean).join(" ") ||
+        profRes.data.email
+      : null;
 
-    return { isMember, parentUserId, parentLabel }
-  })
+    return { isMember, parentUserId, parentLabel };
+  });
 
 /**
  * Hebt die Kurszuweisung einer Anfrage auf: Teilnehmer-Eintrag wird storniert,
  * die Anfrage wandert zurück in die aktuellen Anfragen (Warteliste oder Neu).
  */
-export const unassignRequestFromCourse = createServerFn({ method: 'POST' })
+export const unassignRequestFromCourse = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { requestId: string; newStatus?: 'waiting_list' | 'new' }) => input)
+  .inputValidator((input: { requestId: string; newStatus?: "waiting_list" | "new" }) => input)
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context
-    const { data: isStaff } = await supabase.rpc('is_staff', { _user_id: userId })
-    if (!isStaff) throw new Error('Forbidden')
+    const { supabase, userId } = context;
+    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
+    if (!isStaff) throw new Error("Forbidden");
 
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: req, error: reqErr } = await supabaseAdmin
-      .from('course_requests').select('id, assigned_course_id').eq('id', data.requestId).maybeSingle()
-    if (reqErr || !req) throw new Error('Anfrage nicht gefunden')
+      .from("course_requests")
+      .select("id, assigned_course_id")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (reqErr || !req) throw new Error("Anfrage nicht gefunden");
 
-    const previousCourseId = req.assigned_course_id ?? null
-    const newStatus = data.newStatus === 'new' ? 'new' : 'waiting_list'
+    const previousCourseId = req.assigned_course_id ?? null;
+    const newStatus = data.newStatus === "new" ? "new" : "waiting_list";
 
     const { error: partErr } = await supabaseAdmin
-      .from('course_participants')
-      .update({ status: 'cancelled' })
-      .eq('request_id', req.id)
-      .neq('status', 'cancelled')
-    if (partErr) throw new Error(partErr.message)
+      .from("course_participants")
+      .update({ status: "cancelled" })
+      .eq("request_id", req.id)
+      .neq("status", "cancelled");
+    if (partErr) throw new Error(partErr.message);
 
     const { error: updErr } = await supabaseAdmin
-      .from('course_requests')
+      .from("course_requests")
       .update({ assigned_course_id: null, status: newStatus })
-      .eq('id', req.id)
-    if (updErr) throw new Error(updErr.message)
+      .eq("id", req.id);
+    if (updErr) throw new Error(updErr.message);
 
-    const { logAudit } = await import('@/lib/audit.server')
+    const { logAudit } = await import("@/lib/audit.server");
     await logAudit(supabase, userId, {
-      action: 'course.participant.unassigned',
-      entity: 'course_requests',
+      action: "course.participant.unassigned",
+      entity: "course_requests",
       entity_id: req.id,
       metadata: { previous_course_id: previousCourseId, new_status: newStatus },
-    })
+    });
     // Frei gewordenen Platz automatisch an die Warteliste vergeben
     if (previousCourseId) {
       try {
-        const { allocateWaitlist } = await import('@/lib/waitlist.server')
-        await allocateWaitlist(previousCourseId)
+        const { allocateWaitlist } = await import("@/lib/waitlist.server");
+        await allocateWaitlist(previousCourseId);
       } catch (err) {
-        console.error('waitlist allocation after unassign failed', err)
+        console.error("waitlist allocation after unassign failed", err);
       }
     }
 
+    return { ok: true, newStatus };
+  });
 
-    return { ok: true, newStatus }
-  })
-
-export const assignRequestToCourse = createServerFn({ method: 'POST' })
+export const assignRequestToCourse = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: {
-    requestId: string
-    courseId: string
-    status: 'confirmed' | 'waiting'
-    sendEmail: boolean
-    adminNotes?: string
-    isMember?: boolean | null
-    parentUserId?: string | null
-    priceAmount?: number | null
-  }) => input)
+  .inputValidator(
+    (input: {
+      requestId: string;
+      courseId: string;
+      status: "confirmed" | "waiting";
+      sendEmail: boolean;
+      adminNotes?: string;
+      isMember?: boolean | null;
+      parentUserId?: string | null;
+      priceAmount?: number | null;
+    }) => input,
+  )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context
+    const { supabase, userId } = context;
 
-    const { data: isStaff } = await supabase.rpc('is_staff', { _user_id: userId })
-    if (!isStaff) throw new Error('Forbidden')
+    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
+    if (!isStaff) throw new Error("Forbidden");
 
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: req, error: reqErr } = await supabaseAdmin
-      .from('course_requests').select('*').eq('id', data.requestId).maybeSingle()
-    if (reqErr || !req) throw new Error('Anfrage nicht gefunden')
+      .from("course_requests")
+      .select("*")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (reqErr || !req) throw new Error("Anfrage nicht gefunden");
 
     const { data: course, error: courseErr } = await supabaseAdmin
-      .from('courses').select('*').eq('id', data.courseId).maybeSingle()
-    if (courseErr || !course) throw new Error('Kurs nicht gefunden')
+      .from("courses")
+      .select("*")
+      .eq("id", data.courseId)
+      .maybeSingle();
+    if (courseErr || !course) throw new Error("Kurs nicht gefunden");
 
-    const participantName = req.child_name || req.parent_name
+    const participantName = req.child_name || req.parent_name;
 
     // Kontoverknüpfung: fest hinterlegte Verknüpfung bevorzugen, sonst E-Mail-Abgleich
-    let parentUserId = data.parentUserId ?? (req as any).profile_id ?? null
+    let parentUserId = data.parentUserId ?? (req as any).profile_id ?? null;
     if (!parentUserId && req.parent_email) {
       const { data: prof } = await supabaseAdmin
-        .from('profiles').select('id').ilike('email', escapeLike(req.parent_email)).limit(1).maybeSingle()
-      parentUserId = prof?.id ?? null
+        .from("profiles")
+        .select("id")
+        .ilike("email", escapeLike(req.parent_email))
+        .limit(1)
+        .maybeSingle();
+      parentUserId = prof?.id ?? null;
     }
 
     // Mitgliedstatus: fest verknüpfte Mitgliedschaft bevorzugen
-    let isMember: boolean | null = data.isMember ?? null
+    let isMember: boolean | null = data.isMember ?? null;
     if (isMember == null) {
-      const membershipId = (req as any).membership_id as string | null
+      const membershipId = (req as any).membership_id as string | null;
       if (membershipId) {
         const { data: mem } = await supabaseAdmin
-          .from('memberships').select('status').eq('id', membershipId).maybeSingle()
-        if (mem) isMember = mem.status === 'active'
+          .from("memberships")
+          .select("status")
+          .eq("id", membershipId)
+          .maybeSingle();
+        if (mem) isMember = mem.status === "active";
       }
       // Nicht nur die verknüpfte Mitgliedschaft: auch E-Mail, Erziehungsberechtigte, Familie, Kindname
       if (isMember !== true) {
-        const { resolveMembership } = await import('@/lib/membership-lookup.server')
-        const found = await resolveMembership({ email: req.parent_email, childName: req.child_name })
-        if (found.isMember != null) isMember = found.isMember
+        const { resolveMembership } = await import("@/lib/membership-lookup.server");
+        const found = await resolveMembership({
+          email: req.parent_email,
+          childName: req.child_name,
+        });
+        if (found.isMember != null) isMember = found.isMember;
       }
     }
 
     // Preis bestimmen: explizit übergebener Preis ODER aus Kurs ableiten
-    let priceAmount: number | null = data.priceAmount ?? null
+    let priceAmount: number | null = data.priceAmount ?? null;
     if (priceAmount == null) {
-      if (isMember === true && course.price_member != null) priceAmount = Number(course.price_member)
-      else if (isMember === false && course.price_non_member != null) priceAmount = Number(course.price_non_member)
+      if (isMember === true && course.price_member != null)
+        priceAmount = Number(course.price_member);
+      else if (isMember === false && course.price_non_member != null)
+        priceAmount = Number(course.price_non_member);
     }
 
     // Dasselbe Kind (Name + Geburtsdatum) darf im Kurs nur einmal aktiv stehen. Vor der Belegnummer prüfen,
     // damit bei einem Duplikat weder eine Nummer verbraucht noch eine Bestätigung verschickt wird.
-    if (data.status === 'confirmed' && req.child_dob) {
-      const norm = (v: string | null | undefined) => (v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+    if (data.status === "confirmed" && req.child_dob) {
+      const norm = (v: string | null | undefined) =>
+        (v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
       const { data: sameDob, error: dupErr } = await supabaseAdmin
-        .from('course_participants')
-        .select('participant_name')
-        .eq('course_id', course.id)
-        .neq('status', 'cancelled')
-        .eq('date_of_birth', req.child_dob)
-      if (dupErr) throw new Error(dupErr.message)
+        .from("course_participants")
+        .select("participant_name")
+        .eq("course_id", course.id)
+        .neq("status", "cancelled")
+        .eq("date_of_birth", req.child_dob);
+      if (dupErr) throw new Error(dupErr.message);
       if ((sameDob ?? []).some((p) => norm(p.participant_name) === norm(participantName))) {
-        throw new Error(DUPLICATE_CHILD_MESSAGE)
+        throw new Error(DUPLICATE_CHILD_MESSAGE);
       }
     }
 
-    const issuedAt = new Date().toISOString()
-    let documentNo: string | null = null
-    if (data.status === 'confirmed') {
-      const { data: docNo } = await supabaseAdmin.rpc('generate_course_document_no')
-      documentNo = (docNo as string | null) ?? null
+    const issuedAt = new Date().toISOString();
+    let documentNo: string | null = null;
+    if (data.status === "confirmed") {
+      const { data: docNo } = await supabaseAdmin.rpc("generate_course_document_no");
+      documentNo = (docNo as string | null) ?? null;
     }
 
     // Serverseitig berechnete Zahlungsbedingungen (manipulationssicher)
-    const { paymentTerms } = await import('@/lib/payment-status')
-    const dueDays = course.payment_due_days ?? 14
-    const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
-    const paymentMethod = data.status === 'confirmed' ? (terms.immediate ? 'immediate' : 'transfer') : null
-    const paymentDueDate = data.status === 'confirmed' ? terms.dueDateIso : null
+    const { paymentTerms } = await import("@/lib/payment-status");
+    const dueDays = course.payment_due_days ?? 14;
+    const terms = paymentTerms({
+      bookedAt: issuedAt,
+      startsOn: course.starts_on,
+      paymentDueDays: dueDays,
+    });
+    const paymentMethod =
+      data.status === "confirmed" ? (terms.immediate ? "immediate" : "transfer") : null;
+    const paymentDueDate = data.status === "confirmed" ? terms.dueDateIso : null;
 
-    if (data.status === 'waiting') {
+    if (data.status === "waiting") {
       // Es gibt nur eine Warteliste (waitlist_entries): Nur dort greifen automatische Angebote,
       // Mitglieder-Vorrang und Altersprüfung. Kein Teilnehmer mit Status „waiting“ mehr.
-      const emailLower = (req.parent_email ?? '').toLowerCase().trim()
-      const childLower = participantName.toLowerCase().trim()
+      const emailLower = (req.parent_email ?? "").toLowerCase().trim();
+      const childLower = participantName.toLowerCase().trim();
       const { data: openEntries } = await supabaseAdmin
-        .from('waitlist_entries')
-        .select('id,request_id,parent_email,child_name')
-        .in('status', ['waiting', 'offered'])
+        .from("waitlist_entries")
+        .select("id,request_id,parent_email,child_name")
+        .in("status", ["waiting", "offered"]);
       const alreadyListed = (openEntries ?? []).some(
         (e) =>
           e.request_id === req.id ||
-          (emailLower !== '' &&
-            (e.parent_email ?? '').toLowerCase().trim() === emailLower &&
-            (e.child_name ?? '').toLowerCase().trim() === childLower),
-      )
+          (emailLower !== "" &&
+            (e.parent_email ?? "").toLowerCase().trim() === emailLower &&
+            (e.child_name ?? "").toLowerCase().trim() === childLower),
+      );
       if (!alreadyListed) {
-        const { error: wlErr } = await supabaseAdmin.from('waitlist_entries').insert({
+        const { error: wlErr } = await supabaseAdmin.from("waitlist_entries").insert({
           program_id: course.program_id ?? null,
           course_id: course.id,
           request_id: req.id,
           child_name: participantName,
           child_dob: req.child_dob || null,
           parent_name: req.parent_name,
-          parent_email: req.parent_email ?? '',
+          parent_email: req.parent_email ?? "",
           parent_phone: req.parent_phone ?? null,
           parent_user_id: parentUserId,
           is_member: isMember,
-          notes: [req.message, req.health_info].filter(Boolean).join('\n') || null,
+          notes: [req.message, req.health_info].filter(Boolean).join("\n") || null,
           admin_notes: data.adminNotes ?? req.admin_notes ?? null,
           gdpr_consent: true,
-          status: 'waiting',
+          status: "waiting",
           // Originales Eingangsdatum der Anfrage behalten (Reihenfolge auf der Warteliste)
           created_at: req.created_at,
-        } as never)
-        if (wlErr) throw new Error(wlErr.message)
+        } as never);
+        if (wlErr) throw new Error(wlErr.message);
       }
     } else {
       // Insert participant
-      const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
+      const { error: partErr } = await supabaseAdmin.from("course_participants").insert({
         course_id: course.id,
         payment_method: paymentMethod,
         payment_due_date: paymentDueDate,
@@ -277,29 +320,32 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         price_amount: priceAmount,
         document_no: documentNo,
         document_issued_at: documentNo ? issuedAt : null,
-      })
+      });
 
       if (partErr) {
         // 23505 = Unique-Index „ein Kind pro Kurs“ (z. B. bei gleichzeitigem Einbuchen)
-        throw new Error(partErr.code === '23505' ? DUPLICATE_CHILD_MESSAGE : partErr.message)
+        throw new Error(partErr.code === "23505" ? DUPLICATE_CHILD_MESSAGE : partErr.message);
       }
     }
 
     // Update request
-    await supabaseAdmin.from('course_requests').update({
-      status: data.status === 'waiting' ? 'waiting_list' : 'accepted',
-      assigned_course_id: data.status === 'waiting' ? null : course.id,
-      admin_notes: data.adminNotes ?? req.admin_notes,
-    }).eq('id', req.id)
+    await supabaseAdmin
+      .from("course_requests")
+      .update({
+        status: data.status === "waiting" ? "waiting_list" : "accepted",
+        assigned_course_id: data.status === "waiting" ? null : course.id,
+        admin_notes: data.adminNotes ?? req.admin_notes,
+      })
+      .eq("id", req.id);
 
-    let emailQueued = false
+    let emailQueued = false;
     if (data.sendEmail && req.parent_email) {
-      const { render } = await import('@react-email/components')
-      const React = await import('react')
-      const { TEMPLATES } = await import('@/lib/email-templates/registry')
-      const tpl = TEMPLATES['course-assignment']
-      const statusLabel = data.status === 'waiting' ? 'Warteliste' : 'Bestätigt'
-      const childPart = req.child_name || req.parent_name || ''
+      const { render } = await import("@react-email/components");
+      const React = await import("react");
+      const { TEMPLATES } = await import("@/lib/email-templates/registry");
+      const tpl = TEMPLATES["course-assignment"];
+      const statusLabel = data.status === "waiting" ? "Warteliste" : "Bestätigt";
+      const childPart = req.child_name || req.parent_name || "";
       const templateData = {
         parent_name: req.parent_name,
         child_name: req.child_name,
@@ -324,40 +370,40 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
         bank_bic: BILLING.bic,
         bank_name: BILLING.bankName,
         payment_reference: documentNo
-          ? `${documentNo}${childPart ? ' / ' + childPart : ''}`
-          : `${course.name}${childPart ? ' – ' + childPart : ''}${
-              course.starts_on ? ' – Start ' + formatDateBerlin(course.starts_on) : ''
+          ? `${documentNo}${childPart ? " / " + childPart : ""}`
+          : `${course.name}${childPart ? " – " + childPart : ""}${
+              course.starts_on ? " – Start " + formatDateBerlin(course.starts_on) : ""
             }`,
         site_base_url: SITE_BASE_URL,
-      }
-      const element = React.createElement(tpl.component, templateData)
-      const html = await render(element)
-      const text = await render(element, { plainText: true })
-      const subject = typeof tpl.subject === 'function' ? tpl.subject(templateData) : tpl.subject
-      const { sendRawEmail } = await import('@/lib/email-send.server')
+      };
+      const element = React.createElement(tpl.component, templateData);
+      const html = await render(element);
+      const text = await render(element, { plainText: true });
+      const subject = typeof tpl.subject === "function" ? tpl.subject(templateData) : tpl.subject;
+      const { sendRawEmail } = await import("@/lib/email-send.server");
       const result = await sendRawEmail({
-        templateName: 'course-assignment',
+        templateName: "course-assignment",
         recipientEmail: req.parent_email,
         subject,
         html,
         text,
         senderUserId: userId,
         idempotencyKey: `course-assign-${req.id}-${course.id}-${Date.now()}`,
-      })
-      emailQueued = result.sent
+      });
+      emailQueued = result.sent;
     }
 
     // Sofortzahlung: interne Warnung an Admins/Trainer
-    if (paymentMethod === 'immediate') {
-      const { queueTemplateEmail } = await import('@/lib/email-send.server')
+    if (paymentMethod === "immediate") {
+      const { queueTemplateEmail } = await import("@/lib/email-send.server");
       await queueTemplateEmail({
-        templateName: 'immediate-payment-alert',
+        templateName: "immediate-payment-alert",
         idempotencyKey: `immediate-payment-assign-${req.id}-${course.id}`,
         templateData: {
           child_name: req.child_name || participantName,
           parent_name: req.parent_name,
           parent_email: req.parent_email,
-          parent_phone: req.parent_phone || '',
+          parent_phone: req.parent_phone || "",
           program_name: course.name,
           course_name: course.name,
           course_starts_on: course.starts_on,
@@ -365,144 +411,168 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
           due_date: paymentDueDate,
           price_amount: priceAmount,
           document_no: documentNo,
-          payment_reference: documentNo ? `${documentNo} / ${participantName}` : `${course.name} – ${participantName}`,
+          payment_reference: documentNo
+            ? `${documentNo} / ${participantName}`
+            : `${course.name} – ${participantName}`,
         },
-      })
+      });
     }
 
-    const { logAudit } = await import('@/lib/audit.server')
+    const { logAudit } = await import("@/lib/audit.server");
     await logAudit(supabase, userId, {
-      action: 'course.participant.assigned',
-      entity: 'course_participants',
+      action: "course.participant.assigned",
+      entity: "course_participants",
       entity_id: req.id,
       metadata: { course_id: course.id, status: data.status, request_id: req.id },
-    })
+    });
 
-    return { ok: true, emailQueued }
-  })
+    return { ok: true, emailQueued };
+  });
 
 /**
  * Setzt einen bereits zugeteilten Teilnehmer zurück auf die Warteliste:
  * Kursplatz wird storniert, ein Wartelisteneintrag wird (dedupliziert) angelegt
  * und die ursprüngliche Anfrage wieder auf "Warteliste" gesetzt.
  */
-export const moveParticipantToWaitlist = createServerFn({ method: 'POST' })
+export const moveParticipantToWaitlist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { participantId: string; note?: string }) => input)
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context
-    const { data: isStaff } = await supabase.rpc('is_staff', { _user_id: userId })
-    if (!isStaff) throw new Error('Forbidden')
+    const { supabase, userId } = context;
+    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
+    if (!isStaff) throw new Error("Forbidden");
 
-    const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: part, error: partErr } = await supabaseAdmin
-      .from('course_participants')
-      .select('*')
-      .eq('id', data.participantId)
-      .maybeSingle()
-    if (partErr || !part) throw new Error('Teilnehmer nicht gefunden')
+      .from("course_participants")
+      .select("*")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (partErr || !part) throw new Error("Teilnehmer nicht gefunden");
 
-    const courseId = part.course_id as string
+    const courseId = part.course_id as string;
 
     const { data: course } = await supabaseAdmin
-      .from('courses').select('id,name,program_id').eq('id', courseId).maybeSingle()
+      .from("courses")
+      .select("id,name,program_id")
+      .eq("id", courseId)
+      .maybeSingle();
 
     const req = part.request_id
-      ? (await supabaseAdmin.from('course_requests').select('*').eq('id', part.request_id).maybeSingle()).data
-      : null
+      ? (
+          await supabaseAdmin
+            .from("course_requests")
+            .select("*")
+            .eq("id", part.request_id)
+            .maybeSingle()
+        ).data
+      : null;
 
     // 1) Kursplatz freigeben
     const { error: cancelErr } = await supabaseAdmin
-      .from('course_participants')
-      .update({ status: 'cancelled' })
-      .eq('id', part.id)
-    if (cancelErr) throw new Error(cancelErr.message)
+      .from("course_participants")
+      .update({ status: "cancelled" })
+      .eq("id", part.id);
+    if (cancelErr) throw new Error(cancelErr.message);
 
     // 2) Wartelisteneintrag anlegen (Duplikate vermeiden)
-    const email = ((req?.parent_email ?? part.participant_email) ?? '').toLowerCase().trim()
-    const childName = (req?.child_name ?? part.participant_name ?? 'Unbekannt') as string
+    const email = (req?.parent_email ?? part.participant_email ?? "").toLowerCase().trim();
+    const childName = (req?.child_name ?? part.participant_name ?? "Unbekannt") as string;
 
     // Nur gezielt suchen (Anfrage bzw. E-Mail), nicht die ganze Tabelle laden: Supabase liefert pro Abfrage höchstens 1000 Zeilen
-    const cols = 'id,status,request_id,parent_email,child_name,admin_notes'
-    let existing: Array<{ id: string; status: string; request_id: string | null; parent_email: string | null; child_name: string | null; admin_notes: string | null }> = []
+    const cols = "id,status,request_id,parent_email,child_name,admin_notes";
+    let existing: Array<{
+      id: string;
+      status: string;
+      request_id: string | null;
+      parent_email: string | null;
+      child_name: string | null;
+      admin_notes: string | null;
+    }> = [];
     if (req?.id) {
-      const { data: byReq } = await supabaseAdmin.from('waitlist_entries').select(cols).eq('request_id', req.id)
-      existing = byReq ?? []
+      const { data: byReq } = await supabaseAdmin
+        .from("waitlist_entries")
+        .select(cols)
+        .eq("request_id", req.id);
+      existing = byReq ?? [];
     }
     if (existing.length === 0 && email) {
-      const { data: byMail } = await supabaseAdmin.from('waitlist_entries').select(cols).ilike('parent_email', escapeLike(email))
-      existing = byMail ?? []
+      const { data: byMail } = await supabaseAdmin
+        .from("waitlist_entries")
+        .select(cols)
+        .ilike("parent_email", escapeLike(email));
+      existing = byMail ?? [];
     }
 
     const dup = existing.find((e) => {
-      if (req?.id && e.request_id === req.id) return true
+      if (req?.id && e.request_id === req.id) return true;
       return (
-        (e.parent_email ?? '').toLowerCase().trim() === email &&
-        (e.child_name ?? '').toLowerCase().trim() === childName.toLowerCase().trim() &&
-        email !== ''
-      )
-    })
+        (e.parent_email ?? "").toLowerCase().trim() === email &&
+        (e.child_name ?? "").toLowerCase().trim() === childName.toLowerCase().trim() &&
+        email !== ""
+      );
+    });
 
     const noteLine = data.note?.trim()
       ? data.note.trim()
-      : `Zurück auf die Warteliste gesetzt (vorher Kurs: ${course?.name ?? courseId}).`
+      : `Zurück auf die Warteliste gesetzt (vorher Kurs: ${course?.name ?? courseId}).`;
 
-    let entryId = dup?.id ?? null
+    let entryId = dup?.id ?? null;
     if (dup) {
       await supabaseAdmin
-        .from('waitlist_entries')
+        .from("waitlist_entries")
         .update({
-          status: 'waiting',
+          status: "waiting",
           course_id: null,
           // Der verlassene Kurs gilt als „bereits angeboten“ und wird nicht sofort erneut vergeben
           offer_course_id: courseId,
           offer_token: null,
           offered_at: null,
           offer_expires_at: null,
-          admin_notes: [dup.admin_notes, noteLine].filter(Boolean).join('\n'),
+          admin_notes: [dup.admin_notes, noteLine].filter(Boolean).join("\n"),
         } as never)
-        .eq('id', dup.id)
+        .eq("id", dup.id);
     } else {
       const { data: inserted, error: insErr } = await supabaseAdmin
-        .from('waitlist_entries')
+        .from("waitlist_entries")
         .insert({
           program_id: course?.program_id ?? null,
           offer_course_id: courseId,
           request_id: req?.id ?? null,
           child_name: childName,
-          child_dob: (req?.child_dob ?? part.date_of_birth) ?? null,
+          child_dob: req?.child_dob ?? part.date_of_birth ?? null,
           parent_name: req?.parent_name ?? part.participant_name ?? childName,
-          parent_email: req?.parent_email ?? part.participant_email ?? '',
+          parent_email: req?.parent_email ?? part.participant_email ?? "",
           parent_phone: req?.parent_phone ?? part.participant_phone ?? null,
           parent_user_id: part.parent_user_id ?? null,
           is_member: part.is_member ?? null,
-          notes: [req?.message, req?.health_info, part.notes].filter(Boolean).join('\n') || null,
+          notes: [req?.message, req?.health_info, part.notes].filter(Boolean).join("\n") || null,
           admin_notes: noteLine,
           gdpr_consent: true,
-          status: 'waiting',
+          status: "waiting",
         } as never)
-        .select('id')
-        .maybeSingle()
-      if (insErr) throw new Error(insErr.message)
-      entryId = inserted?.id ?? null
+        .select("id")
+        .maybeSingle();
+      if (insErr) throw new Error(insErr.message);
+      entryId = inserted?.id ?? null;
     }
 
     // 3) Ursprüngliche Anfrage zurücksetzen
     if (req?.id) {
       await supabaseAdmin
-        .from('course_requests')
-        .update({ assigned_course_id: null, status: 'waiting_list' })
-        .eq('id', req.id)
+        .from("course_requests")
+        .update({ assigned_course_id: null, status: "waiting_list" })
+        .eq("id", req.id);
     }
 
-    const { logAudit } = await import('@/lib/audit.server')
+    const { logAudit } = await import("@/lib/audit.server");
     await logAudit(supabase, userId, {
-      action: 'course.participant.moved_to_waitlist',
-      entity: 'course_participants',
+      action: "course.participant.moved_to_waitlist",
+      entity: "course_participants",
       entity_id: part.id,
       metadata: { course_id: courseId, waitlist_entry_id: entryId, request_id: req?.id ?? null },
-    })
+    });
 
-    return { ok: true, waitlistEntryId: entryId }
-  })
+    return { ok: true, waitlistEntryId: entryId };
+  });

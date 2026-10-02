@@ -34,7 +34,7 @@ export function MemberCard({ m }: { m: MemberCardData }) {
     <div className="border-b last:border-b-0">
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
@@ -45,7 +45,12 @@ export function MemberCard({ m }: { m: MemberCardData }) {
             {extra > 0 ? ` · +${extra} Familienmitglied${extra === 1 ? "" : "er"}` : ""}
           </div>
         </div>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
       </button>
 
       {open && (
@@ -56,7 +61,10 @@ export function MemberCard({ m }: { m: MemberCardData }) {
             </a>
           )}
           {m.email && (
-            <a href={`mailto:${m.email}`} className="flex min-h-11 items-center gap-2 break-all text-primary">
+            <a
+              href={`mailto:${m.email}`}
+              className="flex min-h-11 items-center gap-2 break-all text-primary"
+            >
               <Mail className="h-4 w-4 shrink-0" /> {m.email}
             </a>
           )}
@@ -72,7 +80,9 @@ export function MemberCard({ m }: { m: MemberCardData }) {
                 <span className="text-sm">{m.partner.name}</span>
               </div>
               {m.partner.date_of_birth && (
-                <div className="mt-1 text-xs text-muted-foreground">geb. {formatDateBerlin(m.partner.date_of_birth)}</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  geb. {formatDateBerlin(m.partner.date_of_birth)}
+                </div>
               )}
             </div>
           )}
@@ -84,7 +94,9 @@ export function MemberCard({ m }: { m: MemberCardData }) {
                 <span className="text-sm">{c.name}</span>
               </div>
               {c.date_of_birth && (
-                <div className="mt-1 text-xs text-muted-foreground">geb. {formatDateBerlin(c.date_of_birth)}</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  geb. {formatDateBerlin(c.date_of_birth)}
+                </div>
               )}
             </div>
           ))}

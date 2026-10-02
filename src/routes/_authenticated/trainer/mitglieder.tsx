@@ -3,7 +3,14 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useServerFn } from "@tanstack/react-start";
 import { listActiveMembers, type ActiveMember } from "@/lib/members-list.functions";
 import { formatDateBerlin } from "@/lib/format";
@@ -14,14 +21,20 @@ export const Route = createFileRoute("/_authenticated/trainer/mitglieder")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
-    catch { throw redirect({ to: "/portal" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } });
+    } catch {
+      throw redirect({ to: "/portal" });
+    }
   },
   component: Page,
   head: () => ({
     meta: [
       { title: "Vereinsmitglieder – Trainerbereich | Sicher Schwimmen e.V." },
-      { name: "description", content: "Interne Übersicht aller aktiven Vereinsmitglieder inklusive Familienmitgliedern." },
+      {
+        name: "description",
+        content: "Interne Übersicht aller aktiven Vereinsmitglieder inklusive Familienmitgliedern.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -56,8 +69,8 @@ function Page() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter(r =>
-      [r.name, r.email ?? "", r.partner?.name ?? "", ...r.children.map(c => c.name)]
+    return rows.filter((r) =>
+      [r.name, r.email ?? "", r.partner?.name ?? "", ...r.children.map((c) => c.name)]
         .join(" ")
         .toLowerCase()
         .includes(q),
@@ -87,7 +100,10 @@ function Page() {
       <Input
         placeholder="Nach Name oder E-Mail suchen…"
         value={query}
-        onChange={e => { setQuery(e.target.value); setVisible(20); }}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setVisible(20);
+        }}
         className="h-11 max-w-sm"
       />
 
@@ -97,26 +113,28 @@ function Page() {
         storageKey="trainer-mitglieder"
         contentClassName="px-0"
       >
-          <div className="md:hidden">
-            {loading && <p className="px-4 py-3 text-sm text-muted-foreground">Lädt…</p>}
-            {!loading && filtered.length === 0 && (
-              <p className="px-4 py-3 text-sm text-muted-foreground">Keine aktiven Mitglieder gefunden.</p>
-            )}
-            {filtered.slice(0, visible).map(m => (
-              <MemberCard key={m.id} m={m as any} />
-            ))}
-            {filtered.length > visible && (
-              <button
-                type="button"
-                onClick={() => setVisible(v => v + 20)}
-                className="min-h-12 w-full text-sm font-semibold text-primary"
-              >
-                Mehr anzeigen ({filtered.length - visible})
-              </button>
-            )}
-          </div>
+        <div className="md:hidden">
+          {loading && <p className="px-4 py-3 text-sm text-muted-foreground">Lädt…</p>}
+          {!loading && filtered.length === 0 && (
+            <p className="px-4 py-3 text-sm text-muted-foreground">
+              Keine aktiven Mitglieder gefunden.
+            </p>
+          )}
+          {filtered.slice(0, visible).map((m) => (
+            <MemberCard key={m.id} m={m as any} />
+          ))}
+          {filtered.length > visible && (
+            <button
+              type="button"
+              onClick={() => setVisible((v) => v + 20)}
+              className="min-h-12 w-full text-sm font-semibold text-primary"
+            >
+              Mehr anzeigen ({filtered.length - visible})
+            </button>
+          )}
+        </div>
 
-          <div className="hidden md:block">
+        <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -131,17 +149,29 @@ function Page() {
             </TableHeader>
             <TableBody>
               {loading && (
-                <TableRow><TableCell colSpan={7} className="text-muted-foreground">Lädt…</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={7} className="text-muted-foreground">
+                    Lädt…
+                  </TableCell>
+                </TableRow>
               )}
               {!loading && filtered.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-muted-foreground">Keine aktiven Mitglieder gefunden.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={7} className="text-muted-foreground">
+                    Keine aktiven Mitglieder gefunden.
+                  </TableCell>
+                </TableRow>
               )}
-              {filtered.map(m => (
+              {filtered.map((m) => (
                 <Fragment key={m.id}>
                   <TableRow>
                     <TableCell className="font-medium">{m.name || "—"}</TableCell>
-                    <TableCell><Badge variant="secondary">Hauptmitglied</Badge></TableCell>
-                    <TableCell>{m.date_of_birth ? formatDateBerlin(m.date_of_birth) : "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">Hauptmitglied</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {m.date_of_birth ? formatDateBerlin(m.date_of_birth) : "—"}
+                    </TableCell>
                     <TableCell>{m.phone || "—"}</TableCell>
                     <TableCell>{m.email || "—"}</TableCell>
                     <TableCell>{TYPE_LABEL[m.membership_type] || m.membership_type}</TableCell>
@@ -150,28 +180,40 @@ function Page() {
                   {m.partner && (
                     <TableRow key={`${m.id}-partner`} className="bg-muted/30">
                       <TableCell className="pl-8">{m.partner.name}</TableCell>
-                      <TableCell><Badge variant="outline">Partner:in</Badge></TableCell>
-                      <TableCell>{m.partner.date_of_birth ? formatDateBerlin(m.partner.date_of_birth) : "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Partner:in</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {m.partner.date_of_birth ? formatDateBerlin(m.partner.date_of_birth) : "—"}
+                      </TableCell>
                       <TableCell>{m.phone || "—"}</TableCell>
                       <TableCell>{m.email || "—"}</TableCell>
-                      <TableCell colSpan={2} className="text-xs text-muted-foreground">über {m.name}</TableCell>
+                      <TableCell colSpan={2} className="text-xs text-muted-foreground">
+                        über {m.name}
+                      </TableCell>
                     </TableRow>
                   )}
                   {m.children.map((c, i) => (
                     <TableRow key={`${m.id}-child-${i}`} className="bg-muted/30">
                       <TableCell className="pl-8">{c.name}</TableCell>
-                      <TableCell><Badge variant="outline">Kind</Badge></TableCell>
-                      <TableCell>{c.date_of_birth ? formatDateBerlin(c.date_of_birth) : "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Kind</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {c.date_of_birth ? formatDateBerlin(c.date_of_birth) : "—"}
+                      </TableCell>
                       <TableCell>{m.phone || "—"}</TableCell>
                       <TableCell>{m.email || "—"}</TableCell>
-                      <TableCell colSpan={2} className="text-xs text-muted-foreground">über {m.name}</TableCell>
+                      <TableCell colSpan={2} className="text-xs text-muted-foreground">
+                        über {m.name}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </Fragment>
               ))}
             </TableBody>
           </Table>
-          </div>
+        </div>
       </CollapsibleCard>
     </div>
   );

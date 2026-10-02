@@ -49,7 +49,13 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     );
     const assignments = await fetchIn<any>(
       sessions.map((s) => s.id as string),
-      (chunk, f, t) => supabaseAdmin.from("course_session_assignments").select("session_id,trainer_id").in("session_id", chunk).order("id").range(f, t),
+      (chunk, f, t) =>
+        supabaseAdmin
+          .from("course_session_assignments")
+          .select("session_id,trainer_id")
+          .in("session_id", chunk)
+          .order("id")
+          .range(f, t),
     );
 
     const [overdue, offers, memberships, messages, requests] = await Promise.all([

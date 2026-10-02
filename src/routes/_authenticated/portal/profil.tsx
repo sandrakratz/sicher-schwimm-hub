@@ -14,21 +14,34 @@ export const Route = createFileRoute("/_authenticated/portal/profil")({
 function Profile() {
   const [p, setP] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [family, setFamily] = useState<Array<{ name?: string; date_of_birth?: string; role?: string }>>([]);
+  const [family, setFamily] = useState<
+    Array<{ name?: string; date_of_birth?: string; role?: string }>
+  >([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).maybeSingle();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .maybeSingle();
       setP(profile);
-      const { data: ms } = await supabase.from("memberships").select("family_members,status").eq("user_id", data.user.id).order("created_at", { ascending: false });
+      const { data: ms } = await supabase
+        .from("memberships")
+        .select("family_members,status")
+        .eq("user_id", data.user.id)
+        .order("created_at", { ascending: false });
       const fm = (ms || []).flatMap((m: any) => {
         const f = m.family_members;
         if (!f) return [];
         if (Array.isArray(f)) return f.map((x: any) => ({ ...x, role: "Familienmitglied" }));
         const out: any[] = [];
         if (f.partner?.name) out.push({ ...f.partner, role: "Partner:in" });
-        if (Array.isArray(f.children)) f.children.filter((c: any) => c?.name).forEach((c: any) => out.push({ ...c, role: "Kind" }));
+        if (Array.isArray(f.children))
+          f.children
+            .filter((c: any) => c?.name)
+            .forEach((c: any) => out.push({ ...c, role: "Kind" }));
         return out;
       });
       setFamily(fm);
@@ -50,7 +63,8 @@ function Profile() {
     };
     const { error } = await supabase.from("profiles").update(payload).eq("id", p.id);
     setLoading(false);
-    if (error) toast.error(error.message); else toast.success("Profil gespeichert");
+    if (error) toast.error(error.message);
+    else toast.success("Profil gespeichert");
   }
 
   if (!p) return <div>Lädt...</div>;
@@ -62,33 +76,69 @@ function Profile() {
         <CardContent className="p-6">
           <form onSubmit={save} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
-              <div><Label htmlFor="first_name">Vorname</Label><Input id="first_name" name="first_name" defaultValue={p.first_name || ""} /></div>
-              <div><Label htmlFor="last_name">Nachname</Label><Input id="last_name" name="last_name" defaultValue={p.last_name || ""} /></div>
-              <div className="sm:col-span-2"><Label>E-Mail</Label><Input value={p.email} disabled /></div>
-              <div><Label htmlFor="phone">Telefon</Label><Input id="phone" name="phone" defaultValue={p.phone || ""} /></div>
-              <div><Label htmlFor="address_street">Straße</Label><Input id="address_street" name="address_street" defaultValue={p.address_street || ""} /></div>
-              <div><Label htmlFor="address_zip">PLZ</Label><Input id="address_zip" name="address_zip" defaultValue={p.address_zip || ""} /></div>
-              <div><Label htmlFor="address_city">Ort</Label><Input id="address_city" name="address_city" defaultValue={p.address_city || ""} /></div>
+              <div>
+                <Label htmlFor="first_name">Vorname</Label>
+                <Input id="first_name" name="first_name" defaultValue={p.first_name || ""} />
+              </div>
+              <div>
+                <Label htmlFor="last_name">Nachname</Label>
+                <Input id="last_name" name="last_name" defaultValue={p.last_name || ""} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>E-Mail</Label>
+                <Input value={p.email} disabled />
+              </div>
+              <div>
+                <Label htmlFor="phone">Telefon</Label>
+                <Input id="phone" name="phone" defaultValue={p.phone || ""} />
+              </div>
+              <div>
+                <Label htmlFor="address_street">Straße</Label>
+                <Input
+                  id="address_street"
+                  name="address_street"
+                  defaultValue={p.address_street || ""}
+                />
+              </div>
+              <div>
+                <Label htmlFor="address_zip">PLZ</Label>
+                <Input id="address_zip" name="address_zip" defaultValue={p.address_zip || ""} />
+              </div>
+              <div>
+                <Label htmlFor="address_city">Ort</Label>
+                <Input id="address_city" name="address_city" defaultValue={p.address_city || ""} />
+              </div>
             </div>
-            <Button type="submit" variant="accent" disabled={loading}>Speichern</Button>
+            <Button type="submit" variant="accent" disabled={loading}>
+              Speichern
+            </Button>
           </form>
         </CardContent>
       </Card>
       {family.length > 0 && (
         <Card className="border-0 shadow-soft mt-6">
           <CardContent className="p-6">
-            <h2 className="font-display text-xl font-semibold text-primary-deep mb-3">Familienmitglieder</h2>
+            <h2 className="font-display text-xl font-semibold text-primary-deep mb-3">
+              Familienmitglieder
+            </h2>
             <ul className="divide-y">
               {family.map((f, i) => (
                 <li key={i} className="py-2 flex justify-between text-sm">
-                  <span className="font-medium">{f.name || "Ohne Namen"} <span className="text-xs text-muted-foreground font-normal">({(f as any).role})</span></span>
+                  <span className="font-medium">
+                    {f.name || "Ohne Namen"}{" "}
+                    <span className="text-xs text-muted-foreground font-normal">
+                      ({(f as any).role})
+                    </span>
+                  </span>
                   <span className="text-muted-foreground">
                     {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground mt-3">Änderungen bitte an info@sicher-schwimmen.com melden.</p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Änderungen bitte an info@sicher-schwimmen.com melden.
+            </p>
           </CardContent>
         </Card>
       )}

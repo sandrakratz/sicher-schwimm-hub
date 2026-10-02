@@ -1,73 +1,74 @@
-import type { ComponentType } from 'react'
-import { template as membershipApplication } from './membership-application'
-import { template as courseRequest } from './course-request'
-import { template as courseAssignment } from './course-assignment'
-import { template as contactMessage } from './contact-message'
-import { template as newRegistration } from './new-registration'
-import { template as cancellationInternal } from './cancellation-internal'
-import { template as cancellationConfirmation } from './cancellation-confirmation'
-import { template as courseBooking, waitlistTemplate as courseWaitlist } from './course-booking-confirmation'
-import { template as paymentCheckReminder } from './payment-check-reminder'
-import { template as immediatePaymentAlert } from './immediate-payment-alert'
-import { template as paymentReminder } from './payment-reminder'
-import { template as paymentDueFriendly } from './payment-due-friendly'
-import { template as paymentDueFinal } from './payment-due-final'
-import { template as waitlistOffer } from './waitlist-offer'
-import { template as waitlistSignup } from './waitlist-signup'
-import { template as waitlistFollowup } from './waitlist-followup'
-import { template as waitlistDeactivated } from './waitlist-deactivated'
-import { template as courseRemovalUnpaid } from './course-removal-unpaid'
-import { template as courseRemovalAgreed } from './course-removal-agreed'
-import { template as courseStartReminder } from './course-start-reminder'
-import { rescheduleTemplate, cancelTemplate } from './course-lifecycle'
-import { template as partialCertificate } from './partial-certificate'
-import { template as courseTransfer } from './course-transfer'
-import { template as courseTransferReminder } from './course-transfer-reminder'
-import { template as courseBroadcast } from './course-broadcast'
-import { template as accountActivated } from './account-activated'
-import { template as majorityNotice } from './majority-notice'
-import { template as pushInvite } from './push-invite'
-
-
+import type { ComponentType } from "react";
+import { template as membershipApplication } from "./membership-application";
+import { template as courseRequest } from "./course-request";
+import { template as courseAssignment } from "./course-assignment";
+import { template as contactMessage } from "./contact-message";
+import { template as newRegistration } from "./new-registration";
+import { template as cancellationInternal } from "./cancellation-internal";
+import { template as cancellationConfirmation } from "./cancellation-confirmation";
+import {
+  template as courseBooking,
+  waitlistTemplate as courseWaitlist,
+} from "./course-booking-confirmation";
+import { template as paymentCheckReminder } from "./payment-check-reminder";
+import { template as immediatePaymentAlert } from "./immediate-payment-alert";
+import { template as paymentReminder } from "./payment-reminder";
+import { template as paymentDueFriendly } from "./payment-due-friendly";
+import { template as paymentDueFinal } from "./payment-due-final";
+import { template as waitlistOffer } from "./waitlist-offer";
+import { template as waitlistSignup } from "./waitlist-signup";
+import { template as waitlistFollowup } from "./waitlist-followup";
+import { template as waitlistDeactivated } from "./waitlist-deactivated";
+import { template as courseRemovalUnpaid } from "./course-removal-unpaid";
+import { template as courseRemovalAgreed } from "./course-removal-agreed";
+import { template as courseStartReminder } from "./course-start-reminder";
+import { rescheduleTemplate, cancelTemplate } from "./course-lifecycle";
+import { template as partialCertificate } from "./partial-certificate";
+import { template as courseTransfer } from "./course-transfer";
+import { template as courseTransferReminder } from "./course-transfer-reminder";
+import { template as courseBroadcast } from "./course-broadcast";
+import { template as accountActivated } from "./account-activated";
+import { template as majorityNotice } from "./majority-notice";
+import { template as pushInvite } from "./push-invite";
 
 export interface TemplateEntry {
-  component: ComponentType<any>
-  subject: string | ((data: Record<string, any>) => string)
-  displayName?: string
-  previewData?: Record<string, any>
+  component: ComponentType<any>;
+  subject: string | ((data: Record<string, any>) => string);
+  displayName?: string;
+  previewData?: Record<string, any>;
   /** Fixed recipient — overrides caller-provided recipientEmail when set. */
-  to?: string
+  to?: string;
 }
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
-  'membership-application': membershipApplication,
-  'push-invite': pushInvite,
-  'course-request': courseRequest,
-  'course-assignment': courseAssignment,
-  'contact-message': contactMessage,
-  'new-registration': newRegistration,
-  'cancellation-internal': cancellationInternal,
-  'cancellation-confirmation': cancellationConfirmation,
-  'course-booking-confirmation': courseBooking,
-  'course-waitlist-confirmation': courseWaitlist,
-  'payment-check-reminder': paymentCheckReminder,
-  'immediate-payment-alert': immediatePaymentAlert,
-  'payment-reminder': paymentReminder,
-  'payment-due-friendly': paymentDueFriendly,
-  'payment-due-final': paymentDueFinal,
-  'waitlist-offer': waitlistOffer,
-  'waitlist-signup': waitlistSignup,
-  'waitlist-followup': waitlistFollowup,
-  'waitlist-deactivated': waitlistDeactivated,
-  'course-removal-unpaid': courseRemovalUnpaid,
-  'course-removal-agreed': courseRemovalAgreed,
-  'course-start-reminder': courseStartReminder,
-  'partial-certificate': partialCertificate,
-  'course-rescheduled': rescheduleTemplate,
-  'course-cancelled': cancelTemplate,
-  'course-transfer': courseTransfer,
-  'course-transfer-reminder': courseTransferReminder,
-  'course-broadcast': courseBroadcast,
-  'account-activated': accountActivated,
-  'majority-notice': majorityNotice,
-}
+  "membership-application": membershipApplication,
+  "push-invite": pushInvite,
+  "course-request": courseRequest,
+  "course-assignment": courseAssignment,
+  "contact-message": contactMessage,
+  "new-registration": newRegistration,
+  "cancellation-internal": cancellationInternal,
+  "cancellation-confirmation": cancellationConfirmation,
+  "course-booking-confirmation": courseBooking,
+  "course-waitlist-confirmation": courseWaitlist,
+  "payment-check-reminder": paymentCheckReminder,
+  "immediate-payment-alert": immediatePaymentAlert,
+  "payment-reminder": paymentReminder,
+  "payment-due-friendly": paymentDueFriendly,
+  "payment-due-final": paymentDueFinal,
+  "waitlist-offer": waitlistOffer,
+  "waitlist-signup": waitlistSignup,
+  "waitlist-followup": waitlistFollowup,
+  "waitlist-deactivated": waitlistDeactivated,
+  "course-removal-unpaid": courseRemovalUnpaid,
+  "course-removal-agreed": courseRemovalAgreed,
+  "course-start-reminder": courseStartReminder,
+  "partial-certificate": partialCertificate,
+  "course-rescheduled": rescheduleTemplate,
+  "course-cancelled": cancelTemplate,
+  "course-transfer": courseTransfer,
+  "course-transfer-reminder": courseTransferReminder,
+  "course-broadcast": courseBroadcast,
+  "account-activated": accountActivated,
+  "majority-notice": majorityNotice,
+};

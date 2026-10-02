@@ -59,10 +59,16 @@ export const Route = createFileRoute("/ratgeber/seepferdchen-anforderungen")({
           "Alle vier Prüfungsteile des Seepferdchens verständlich erklärt – mit Tipps zur Vorbereitung und dem Weg zum nächsten Abzeichen.",
       },
       { property: "og:type", content: "article" },
-      { property: "og:url", content: "https://sicher-schwimmen.com/ratgeber/seepferdchen-anforderungen" },
+      {
+        property: "og:url",
+        content: "https://sicher-schwimmen.com/ratgeber/seepferdchen-anforderungen",
+      },
     ],
     links: [
-      { rel: "canonical", href: "https://sicher-schwimmen.com/ratgeber/seepferdchen-anforderungen" },
+      {
+        rel: "canonical",
+        href: "https://sicher-schwimmen.com/ratgeber/seepferdchen-anforderungen",
+      },
     ],
     scripts: [
       {
@@ -88,7 +94,12 @@ export const Route = createFileRoute("/ratgeber/seepferdchen-anforderungen")({
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Startseite", item: "https://sicher-schwimmen.com/" },
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "Startseite",
+              item: "https://sicher-schwimmen.com/",
+            },
             {
               "@type": "ListItem",
               position: 2,
@@ -111,22 +122,30 @@ function Page() {
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur px-4 py-1.5 text-sm font-semibold">
             <Waves className="h-4 w-4 text-accent" /> Ratgeber
           </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold">Seepferdchen: Diese Anforderungen muss Ihr Kind erfüllen</h1>
+          <h1 className="font-display text-4xl md:text-5xl font-bold">
+            Seepferdchen: Diese Anforderungen muss Ihr Kind erfüllen
+          </h1>
           <p className="text-white/85 text-lg">
-            Das Seepferdchen ist das erste Schwimmabzeichen und besteht aus vier Prüfungsteilen. Hier erfahren Sie,
-            was Ihr Kind können muss, wie lange die Vorbereitung dauert und wie Sie zu Hause üben können.
+            Das Seepferdchen ist das erste Schwimmabzeichen und besteht aus vier Prüfungsteilen.
+            Hier erfahren Sie, was Ihr Kind können muss, wie lange die Vorbereitung dauert und wie
+            Sie zu Hause üben können.
           </p>
         </div>
       </section>
 
       <section className="container mx-auto px-4 py-16 max-w-3xl space-y-10">
         <div className="space-y-4">
-          <h2 className="font-display text-2xl font-bold text-primary-deep">Die vier Prüfungsteile</h2>
+          <h2 className="font-display text-2xl font-bold text-primary-deep">
+            Die vier Prüfungsteile
+          </h2>
           <div className="grid gap-4">
             {REQUIREMENTS.map((r) => (
               <Card key={r.title} className="shadow-soft">
                 <CardContent className="p-6 flex gap-4">
-                  <CheckCircle2 className="h-6 w-6 text-accent shrink-0 mt-0.5" aria-hidden="true" />
+                  <CheckCircle2
+                    className="h-6 w-6 text-accent shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  />
                   <div>
                     <h3 className="font-display font-bold text-primary-deep mb-1">{r.title}</h3>
                     <p className="text-muted-foreground">{r.text}</p>
@@ -136,19 +155,27 @@ function Page() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
-            Alle vier Teile werden in einer Prüfung abgenommen. Erst danach erhält das Kind Abzeichen und Urkunde.
+            Alle vier Teile werden in einer Prüfung abgenommen. Erst danach erhält das Kind
+            Abzeichen und Urkunde.
           </p>
         </div>
 
         <div className="space-y-4">
           <h2 className="font-display text-2xl font-bold text-primary-deep flex items-center gap-2">
-            <Timer className="h-5 w-5 text-accent" aria-hidden="true" /> So bereiten Sie Ihr Kind vor
+            <Timer className="h-5 w-5 text-accent" aria-hidden="true" /> So bereiten Sie Ihr Kind
+            vor
           </h2>
           <ul className="space-y-2 text-muted-foreground list-disc pl-5">
             <li>Regelmäßig ins Wasser: Lieber einmal pro Woche kurz als selten und lang.</li>
-            <li>Kopf unter Wasser und ins Wasser ausatmen üben – das ist die Grundlage für alles Weitere.</li>
+            <li>
+              Kopf unter Wasser und ins Wasser ausatmen üben – das ist die Grundlage für alles
+              Weitere.
+            </li>
             <li>Gleiten üben: vom Beckenrand abstoßen und sich lang machen, ohne zu paddeln.</li>
-            <li>Springen vom Beckenrand spielerisch üben, damit der Sprung in der Prüfung keine Hürde ist.</li>
+            <li>
+              Springen vom Beckenrand spielerisch üben, damit der Sprung in der Prüfung keine Hürde
+              ist.
+            </li>
             <li>Tauchringe holen macht Spaß und trainiert genau die geforderte Übung.</li>
             <li>Die Baderegeln zu Hause gemeinsam durchgehen und erklären lassen.</li>
           </ul>
@@ -163,7 +190,8 @@ function Page() {
 
         <div className="space-y-4">
           <h2 className="font-display text-2xl font-bold text-primary-deep flex items-center gap-2">
-            <LifeBuoy className="h-5 w-5 text-accent" aria-hidden="true" /> Häufige Fragen zum Seepferdchen
+            <LifeBuoy className="h-5 w-5 text-accent" aria-hidden="true" /> Häufige Fragen zum
+            Seepferdchen
           </h2>
           <div className="space-y-4">
             {FAQS.map((f) => (
@@ -177,10 +205,12 @@ function Page() {
 
         <Card className="bg-muted/40 shadow-soft">
           <CardContent className="p-8 text-center space-y-4">
-            <h2 className="font-display text-2xl font-bold text-primary-deep">Seepferdchen-Kurs in Hennef</h2>
+            <h2 className="font-display text-2xl font-bold text-primary-deep">
+              Seepferdchen-Kurs in Hennef
+            </h2>
             <p className="text-muted-foreground">
-              In unseren Kursen im {COURSE_LOCATION} lernen Kinder in kleinen Gruppen genau diese vier Übungen –
-              Schritt für Schritt und ohne Druck.
+              In unseren Kursen im {COURSE_LOCATION} lernen Kinder in kleinen Gruppen genau diese
+              vier Übungen – Schritt für Schritt und ohne Druck.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Button asChild size="lg">
@@ -189,7 +219,9 @@ function Page() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link to="/warteliste" search={{ programm: undefined }}>Platz auf der Warteliste sichern</Link>
+                <Link to="/warteliste" search={{ programm: undefined }}>
+                  Platz auf der Warteliste sichern
+                </Link>
               </Button>
             </div>
           </CardContent>

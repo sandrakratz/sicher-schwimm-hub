@@ -19,7 +19,13 @@ export const Route = createFileRoute("/_authenticated/portal/")({
   component: Dashboard,
 });
 
-type NewsItem = { id: string; title: string; slug: string; published_at: string | null; excerpt: string | null };
+type NewsItem = {
+  id: string;
+  title: string;
+  slug: string;
+  published_at: string | null;
+  excerpt: string | null;
+};
 type EventItem = { id: string; title: string; starts_at: string; location: string | null };
 
 function Dashboard() {
@@ -36,7 +42,11 @@ function Dashboard() {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
-      const { data: p } = await supabase.from("profiles").select("first_name").eq("id", u.user.id).maybeSingle();
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("first_name")
+        .eq("id", u.user.id)
+        .maybeSingle();
       setName(p?.first_name || u.user.email?.split("@")[0] || "");
 
       const nowIso = new Date().toISOString();
@@ -44,18 +54,41 @@ function Dashboard() {
 
       const [mem, newsRecent, newsList, evCount, evList, docs] = await Promise.all([
         getMyMembership().catch(() => null),
-        supabase.from("news").select("id", { count: "exact", head: true }).eq("published", true).gte("published_at", thirtyDaysAgo),
-        supabase.from("news").select("id,title,slug,published_at,excerpt").eq("published", true).order("published_at", { ascending: false }).limit(3),
-        supabase.from("events").select("id", { count: "exact", head: true }).gte("starts_at", nowIso),
-        supabase.from("events").select("id,title,starts_at,location").gte("starts_at", nowIso).order("starts_at", { ascending: true }).limit(3),
+        supabase
+          .from("news")
+          .select("id", { count: "exact", head: true })
+          .eq("published", true)
+          .gte("published_at", thirtyDaysAgo),
+        supabase
+          .from("news")
+          .select("id,title,slug,published_at,excerpt")
+          .eq("published", true)
+          .order("published_at", { ascending: false })
+          .limit(3),
+        supabase
+          .from("events")
+          .select("id", { count: "exact", head: true })
+          .gte("starts_at", nowIso),
+        supabase
+          .from("events")
+          .select("id,title,starts_at,location")
+          .gte("starts_at", nowIso)
+          .order("starts_at", { ascending: true })
+          .limit(3),
         supabase.from("documents").select("id", { count: "exact", head: true }),
       ]);
       const today = new Date().toISOString().slice(0, 10);
-      const { data: cp } = await supabase.from("course_participants").select("id,courses!course_participants_course_id_fkey(ends_on)")
-        .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`).neq("status", "cancelled");
-      setCoursesCount(((cp as any[]) ?? []).filter((r) => !r.courses?.ends_on || r.courses.ends_on >= today).length);
+      const { data: cp } = await supabase
+        .from("course_participants")
+        .select("id,courses!course_participants_course_id_fkey(ends_on)")
+        .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`)
+        .neq("status", "cancelled");
+      setCoursesCount(
+        ((cp as any[]) ?? []).filter((r) => !r.courses?.ends_on || r.courses.ends_on >= today)
+          .length,
+      );
 
-      setMembership(mem?.status ? (MEMBERSHIP_STATUS_LABEL[mem.status] || mem.status) : "Keine");
+      setMembership(mem?.status ? MEMBERSHIP_STATUS_LABEL[mem.status] || mem.status : "Keine");
       setNewsCount(newsRecent.count ?? 0);
       setEventsCount(evCount.count ?? 0);
       setDocsCount(docs.count ?? 0);
@@ -63,7 +96,6 @@ function Dashboard() {
       setEvents((evList.data as EventItem[]) ?? []);
     })();
   }, []);
-
 
   const fmtDate = formatDateBerlin;
   const fmtDateTime = formatDateTimeBerlin;
@@ -73,24 +105,57 @@ function Dashboard() {
       <div>
         <div className="text-accent font-semibold text-sm uppercase tracking-wider">Willkommen</div>
         <h1 className="font-display text-4xl font-bold text-primary-deep">Hallo {name}! 👋</h1>
-        <p className="text-muted-foreground mt-2">Schön, dass Sie da sind. Hier finden Sie Ihre wichtigsten Vereinsinfos.</p>
+        <p className="text-muted-foreground mt-2">
+          Schön, dass Sie da sind. Hier finden Sie Ihre wichtigsten Vereinsinfos.
+        </p>
       </div>
 
       <OpenAvailabilityNotice />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {([
-          { icon: Waves, label: "Kurse meiner Kinder", value: coursesCount === null ? "…" : String(coursesCount), to: "/portal/kurse" as const },
-          { icon: UserIcon, label: "Mitgliedschaft", value: membership, to: "/portal/profil" as const },
-          { icon: Newspaper, label: "Neue Beiträge", value: newsCount === null ? "…" : String(newsCount), to: "/portal/news" as const },
-          { icon: Calendar, label: "Kommende Termine", value: eventsCount === null ? "…" : String(eventsCount), to: "/portal/events" as const },
-          { icon: FileText, label: "Dokumente", value: docsCount === null ? "…" : String(docsCount), to: "/portal/dokumente" as const },
-        ]).map(s => (
-          <Link key={s.label} to={s.to} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl">
+        {[
+          {
+            icon: Waves,
+            label: "Kurse meiner Kinder",
+            value: coursesCount === null ? "…" : String(coursesCount),
+            to: "/portal/kurse" as const,
+          },
+          {
+            icon: UserIcon,
+            label: "Mitgliedschaft",
+            value: membership,
+            to: "/portal/profil" as const,
+          },
+          {
+            icon: Newspaper,
+            label: "Neue Beiträge",
+            value: newsCount === null ? "…" : String(newsCount),
+            to: "/portal/news" as const,
+          },
+          {
+            icon: Calendar,
+            label: "Kommende Termine",
+            value: eventsCount === null ? "…" : String(eventsCount),
+            to: "/portal/events" as const,
+          },
+          {
+            icon: FileText,
+            label: "Dokumente",
+            value: docsCount === null ? "…" : String(docsCount),
+            to: "/portal/dokumente" as const,
+          },
+        ].map((s) => (
+          <Link
+            key={s.label}
+            to={s.to}
+            className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
+          >
             <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
               <CardContent className="p-5">
                 <s.icon className="h-7 w-7 text-accent mb-3" />
-                <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">{s.label}</div>
+                <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                  {s.label}
+                </div>
                 <div className="text-2xl font-bold text-primary-deep">{s.value}</div>
               </CardContent>
             </Card>
@@ -98,24 +163,35 @@ function Dashboard() {
         ))}
       </div>
 
-
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-0 shadow-soft">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-display text-xl font-bold text-primary-deep">Vereinsnews</h2>
-              <Link to="/portal/news" className="text-sm font-semibold text-accent hover:underline">Alle ansehen</Link>
+              <Link to="/portal/news" className="text-sm font-semibold text-accent hover:underline">
+                Alle ansehen
+              </Link>
             </div>
             {news.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aktuell liegen keine Beiträge vor.</p>
             ) : (
               <ul className="space-y-3">
-                {news.map(n => (
+                {news.map((n) => (
                   <li key={n.id} className="border-b last:border-0 pb-3 last:pb-0">
                     <Link to="/portal/news" className="block group">
-                      <div className="font-semibold text-primary-deep group-hover:text-accent">{n.title}</div>
-                      {n.published_at && <div className="text-xs text-muted-foreground">{fmtDate(n.published_at)}</div>}
-                      {n.excerpt && <div className="text-sm text-muted-foreground line-clamp-2 mt-1">{n.excerpt}</div>}
+                      <div className="font-semibold text-primary-deep group-hover:text-accent">
+                        {n.title}
+                      </div>
+                      {n.published_at && (
+                        <div className="text-xs text-muted-foreground">
+                          {fmtDate(n.published_at)}
+                        </div>
+                      )}
+                      {n.excerpt && (
+                        <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {n.excerpt}
+                        </div>
+                      )}
                     </Link>
                   </li>
                 ))}
@@ -127,22 +203,31 @@ function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-display text-xl font-bold text-primary-deep">Kommende Termine</h2>
-              <Link to="/portal/events" className="text-sm font-semibold text-accent hover:underline">Alle ansehen</Link>
+              <Link
+                to="/portal/events"
+                className="text-sm font-semibold text-accent hover:underline"
+              >
+                Alle ansehen
+              </Link>
             </div>
             {events.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aktuell sind keine Termine geplant.</p>
             ) : (
               <ul className="space-y-3">
-                {events.map(e => (
+                {events.map((e) => (
                   <li key={e.id} className="border-b last:border-0 pb-3 last:pb-0">
                     <Link to="/portal/events" className="block group">
-                      <div className="font-semibold text-primary-deep group-hover:text-accent">{e.title}</div>
-                      <div className="text-xs text-muted-foreground">{fmtDateTime(e.starts_at)}{e.location ? ` · ${e.location}` : ""}</div>
+                      <div className="font-semibold text-primary-deep group-hover:text-accent">
+                        {e.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {fmtDateTime(e.starts_at)}
+                        {e.location ? ` · ${e.location}` : ""}
+                      </div>
                     </Link>
                   </li>
                 ))}
               </ul>
-
             )}
           </CardContent>
         </Card>

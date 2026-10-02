@@ -3,8 +3,7 @@
 export const REWE_SFV_URL =
   "https://scheinefuervereine.rewe.de#verein-10000091620?ecid=cop_widget_Q3-26-SFV_toolkit_widget_nn_nn_nn";
 
-export const REWE_SFV_IMAGE =
-  "https://scheinefuervereine.rewe.de/widget/sfv_widget_240x45px.png";
+export const REWE_SFV_IMAGE = "https://scheinefuervereine.rewe.de/widget/sfv_widget_240x45px.png";
 
 export const REWE_SFV_TITLE =
   "Zum Profil des Vereins Sicher Schwimmen e.V. auf der Scheine für Vereine Aktionswebsite";

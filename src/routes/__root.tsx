@@ -78,7 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: THEME_COLOR },
       { title: "Sicher Schwimmen e.V. – Schwimmkurse in Hennef" },
-      { name: "description", content: "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis." },
+      {
+        name: "description",
+        content:
+          "Sicher Schwimmen e.V. bietet Schwimmkurse, Wassergewöhnung und Vereinsaktivitäten für Kinder, Familien und Erwachsene in Hennef und im Rhein-Sieg-Kreis.",
+      },
       { name: "author", content: "Sicher Schwimmen e.V." },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -92,8 +96,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/icon-180.png" },
-      { rel: "preload", href: "/fonts/nunito-latin.woff2", as: "font", type: "font/woff2", crossOrigin: "anonymous" },
-      { rel: "preload", href: "/fonts/fraunces-latin.woff2", as: "font", type: "font/woff2", crossOrigin: "anonymous" },
+      {
+        rel: "preload",
+        href: "/fonts/nunito-latin.woff2",
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        href: "/fonts/fraunces-latin.woff2",
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
+      },
     ],
     scripts: [
       {

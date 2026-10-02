@@ -6,10 +6,7 @@ const ROLES = ["admin", "board", "trainer", "member", "parent"] as const;
 type Role = (typeof ROLES)[number];
 
 async function fetchRoles(supabase: any, userId: string): Promise<Role[]> {
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId);
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
   if (error) throw new Response("Forbidden", { status: 403 });
   return (data || []).map((r: any) => r.role as Role);
 }

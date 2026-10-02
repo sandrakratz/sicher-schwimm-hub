@@ -50,7 +50,10 @@ export function withinMaxAge(
 }
 
 /** Datum, ab dem ein Kind das Mindestalter erreicht (ISO, YYYY-MM-DD). */
-export function minAgeReachedOn(childDob: string | null, minAgeYears: number | null): string | null {
+export function minAgeReachedOn(
+  childDob: string | null,
+  minAgeYears: number | null,
+): string | null {
   const dob = parseIso(childDob);
   if (!dob || minAgeYears == null) return null;
   return reachedOn(dob, minAgeYears);
@@ -63,7 +66,11 @@ export function matchProgram<T extends { id: string; name: string; slug?: string
 ): T | null {
   const text = (wish ?? "").toLowerCase().trim();
   if (!text) return null;
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-zäöüß0-9]+/g, " ").trim();
+  const norm = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-zäöüß0-9]+/g, " ")
+      .trim();
   const hay = norm(text);
   let best: { p: T; score: number } | null = null;
   for (const p of programs) {

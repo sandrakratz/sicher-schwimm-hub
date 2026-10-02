@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertTriangle, ChevronDown, Pencil, } from "lucide-react";
+import { AlertTriangle, ChevronDown, Pencil } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { updateParticipantHint } from "@/lib/trainer-courses.functions";
 import { cn } from "@/lib/utils";
@@ -14,12 +14,31 @@ import {
 } from "@/lib/attendance.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { toast } from "sonner";
 
-export type AttendanceParticipant = { id: string; name: string; no?: number | null; hint?: string | null; paid?: boolean | null };
+export type AttendanceParticipant = {
+  id: string;
+  name: string;
+  no?: number | null;
+  hint?: string | null;
+  paid?: boolean | null;
+};
 
 /** Nur unbezahlte Kinder werden markiert – bezahlt ist der Normalfall. */
 function PaidBadge({ paid }: { paid?: boolean | null }) {
@@ -33,8 +52,18 @@ function PaidBadge({ paid }: { paid?: boolean | null }) {
 
 /** Hinweis mit Stift zum Bearbeiten. */
 function HintEditor({
-  id, hint, editable, onSaved, className,
-}: { id: string; hint?: string | null; editable: boolean; onSaved: (id: string, hint: string | null) => void; className?: string }) {
+  id,
+  hint,
+  editable,
+  onSaved,
+  className,
+}: {
+  id: string;
+  hint?: string | null;
+  editable: boolean;
+  onSaved: (id: string, hint: string | null) => void;
+  className?: string;
+}) {
   const saveHint = useServerFn(updateParticipantHint);
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(hint ?? "");
@@ -42,30 +71,67 @@ function HintEditor({
   if (editing) {
     return (
       <div className={cn("space-y-2", className)}>
-        <Textarea rows={3} value={text} onChange={e => setText(e.target.value)} placeholder="z. B. Asthma, Hörgeräte, Angst vor tiefem Wasser …" />
+        <Textarea
+          rows={3}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="z. B. Asthma, Hörgeräte, Angst vor tiefem Wasser …"
+        />
         <div className="flex gap-2">
-          <Button size="sm" className="min-h-10" disabled={saving} onClick={async () => {
-            setSaving(true);
-            try {
-              const r = await saveHint({ data: { participantId: id, hint: text } });
-              onSaved(id, r.hint);
+          <Button
+            size="sm"
+            className="min-h-10"
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                const r = await saveHint({ data: { participantId: id, hint: text } });
+                onSaved(id, r.hint);
+                setEditing(false);
+                toast.success("Hinweis gespeichert");
+              } catch (e) {
+                toast.error((e as Error)?.message || "Speichern fehlgeschlagen");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Speichern
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="min-h-10"
+            onClick={() => {
+              setText(hint ?? "");
               setEditing(false);
-              toast.success("Hinweis gespeichert");
-            } catch (e) { toast.error((e as Error)?.message || "Speichern fehlgeschlagen"); }
-            finally { setSaving(false); }
-          }}>Speichern</Button>
-          <Button size="sm" variant="outline" className="min-h-10" onClick={() => { setText(hint ?? ""); setEditing(false); }}>Abbrechen</Button>
+            }}
+          >
+            Abbrechen
+          </Button>
         </div>
       </div>
     );
   }
   return (
     <div className={cn("flex items-start gap-1", className)}>
-      <div className="min-w-0 flex-1"><ChildHint hint={hint} /></div>
+      <div className="min-w-0 flex-1">
+        <ChildHint hint={hint} />
+      </div>
       {editable && (
-        <Button type="button" size="sm" variant="ghost" className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
-          onClick={() => { setText(hint ?? ""); setEditing(true); }} aria-label="Hinweis bearbeiten">
-          <Pencil className="h-3.5 w-3.5" />{hint?.trim() ? "" : <span className="ml-1">Hinweis</span>}
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
+          onClick={() => {
+            setText(hint ?? "");
+            setEditing(true);
+          }}
+          aria-label="Hinweis bearbeiten"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          {hint?.trim() ? "" : <span className="ml-1">Hinweis</span>}
         </Button>
       )}
     </div>
@@ -100,7 +166,11 @@ function BeltNo({ no }: { no?: number | null }) {
 
 const STATUS_OPTIONS: { value: AttendanceStatus; label: string; className: string }[] = [
   { value: "present", label: "Anwesend", className: "bg-green-600 text-white border-transparent" },
-  { value: "excused", label: "Entschuldigt", className: "bg-amber-100 text-amber-900 border-transparent" },
+  {
+    value: "excused",
+    label: "Entschuldigt",
+    className: "bg-amber-100 text-amber-900 border-transparent",
+  },
   { value: "absent", label: "Gefehlt", className: "bg-red-100 text-red-900 border-transparent" },
 ];
 
@@ -127,7 +197,7 @@ export function AttendanceBoard({
   onHintSaved?: (participantId: string, hint: string | null) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const toggleOpen = (id: string) => setOpenId(v => (v === id ? null : id));
+  const toggleOpen = (id: string) => setOpenId((v) => (v === id ? null : id));
   const load = useServerFn(listCourseAttendance);
   const save = useServerFn(setAttendance);
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
@@ -137,11 +207,18 @@ export function AttendanceBoard({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const applyHint = (id: string, hint: string | null) => {
-    setPeople(ps => ps.map(p => (p.id === id ? { ...p, hint } : p)));
+    setPeople((ps) => ps.map((p) => (p.id === id ? { ...p, hint } : p)));
     onHintSaved?.(id, hint);
   };
   const hintEl = (p: AttendanceParticipant, className?: string) => (
-    <HintEditor key={`${p.id}-${p.hint ?? ""}`} id={p.id} hint={p.hint} editable={editableHints && !readOnly} onSaved={applyHint} className={className} />
+    <HintEditor
+      key={`${p.id}-${p.hint ?? ""}`}
+      id={p.id}
+      hint={p.hint}
+      editable={editableHints && !readOnly}
+      onSaved={applyHint}
+      className={className}
+    />
   );
 
   useEffect(() => {
@@ -155,11 +232,12 @@ export function AttendanceBoard({
         setRecords(res.records);
         const today = todayBerlinIso();
         const next =
-          res.sessions.find(s => s.session_date >= today) ||
+          res.sessions.find((s) => s.session_date >= today) ||
           res.sessions[res.sessions.length - 1];
         setSessionId(next?.id || "");
       } catch (e: unknown) {
-        if (!cancelled) toast.error((e as Error)?.message || "Anwesenheit konnte nicht geladen werden");
+        if (!cancelled)
+          toast.error((e as Error)?.message || "Anwesenheit konnte nicht geladen werden");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -183,8 +261,15 @@ export function AttendanceBoard({
         .neq("status", "cancelled");
       if (cancelled) return;
       setPeople(
-        ((data as { id: string; participant_name: string | null; notes: string | null; paid: boolean }[]) || [])
-          .map(p => ({ id: p.id, name: p.participant_name || "—", hint: p.notes, paid: p.paid }))
+        (
+          (data as {
+            id: string;
+            participant_name: string | null;
+            notes: string | null;
+            paid: boolean;
+          }[]) || []
+        )
+          .map((p) => ({ id: p.id, name: p.participant_name || "—", hint: p.notes, paid: p.paid }))
           .sort((a, b) => a.name.localeCompare(b.name, "de"))
           .map((p, i) => ({ ...p, no: i + 1 })),
       );
@@ -196,18 +281,24 @@ export function AttendanceBoard({
 
   const byParticipant = useMemo(() => {
     const m = new Map<string, AttendanceRecord>();
-    records.filter(r => r.session_id === sessionId).forEach(r => m.set(r.participant_id, r));
+    records.filter((r) => r.session_id === sessionId).forEach((r) => m.set(r.participant_id, r));
     return m;
   }, [records, sessionId]);
 
-  async function update(participantId: string, status: AttendanceStatus | null, note?: string | null) {
+  async function update(
+    participantId: string,
+    status: AttendanceStatus | null,
+    note?: string | null,
+  ) {
     if (!sessionId || readOnly) return;
     setBusy(participantId);
     const prev = records;
     try {
       await save({ data: { sessionId, participantId, status, note: note ?? null } });
-      setRecords(rs => {
-        const rest = rs.filter(r => !(r.session_id === sessionId && r.participant_id === participantId));
+      setRecords((rs) => {
+        const rest = rs.filter(
+          (r) => !(r.session_id === sessionId && r.participant_id === participantId),
+        );
         if (status === null) return rest;
         return [
           ...rest,
@@ -235,11 +326,13 @@ export function AttendanceBoard({
     return (
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Für diesen Kurs sind noch keine Termine angelegt. Sobald Termine eingetragen sind, kann hier die
-          Anwesenheit erfasst werden.
+          Für diesen Kurs sind noch keine Termine angelegt. Sobald Termine eingetragen sind, kann
+          hier die Anwesenheit erfasst werden.
         </p>
-        {people.length === 0 && <p className="text-sm text-muted-foreground">Keine Teilnehmenden.</p>}
-        {people.map(p => (
+        {people.length === 0 && (
+          <p className="text-sm text-muted-foreground">Keine Teilnehmenden.</p>
+        )}
+        {people.map((p) => (
           <div key={p.id} className="rounded-lg border p-3">
             {renderDetails ? (
               <button
@@ -249,7 +342,14 @@ export function AttendanceBoard({
                 className="flex min-h-11 w-full items-center text-left text-sm font-semibold"
               >
                 <BeltNo no={p.no} />
-                <span className={cn("truncate", p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
+                <span
+                  className={cn(
+                    "truncate",
+                    p.paid === false && "rounded bg-destructive/10 px-1 text-destructive",
+                  )}
+                >
+                  {p.name}
+                </span>
                 <PaidBadge paid={p.paid} />
                 <ChevronDown
                   className={cn(
@@ -259,7 +359,17 @@ export function AttendanceBoard({
                 />
               </button>
             ) : (
-              <span className="flex items-center text-sm font-semibold"><BeltNo no={p.no} /><span className={cn(p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span><PaidBadge paid={p.paid} /></span>
+              <span className="flex items-center text-sm font-semibold">
+                <BeltNo no={p.no} />
+                <span
+                  className={cn(
+                    p.paid === false && "rounded bg-destructive/10 px-1 text-destructive",
+                  )}
+                >
+                  {p.name}
+                </span>
+                <PaidBadge paid={p.paid} />
+              </span>
             )}
             {hintEl(p, "mt-2")}
             {renderDetails && openId === p.id && (
@@ -271,9 +381,9 @@ export function AttendanceBoard({
     );
   }
 
-  const counts = STATUS_OPTIONS.map(o => ({
+  const counts = STATUS_OPTIONS.map((o) => ({
     ...o,
-    count: Array.from(byParticipant.values()).filter(r => r.status === o.value).length,
+    count: Array.from(byParticipant.values()).filter((r) => r.status === o.value).length,
   }));
 
   return (
@@ -284,13 +394,17 @@ export function AttendanceBoard({
             <SelectValue placeholder="Termin wählen" />
           </SelectTrigger>
           <SelectContent>
-            {sessions.map(s => (
-              <SelectItem key={s.id} value={s.id}>{sessionLabel(s)}</SelectItem>
+            {sessions.map((s) => (
+              <SelectItem key={s.id} value={s.id}>
+                {sessionLabel(s)}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {counts.map(c => (
-          <Badge key={c.value} className={c.className}>{c.label}: {c.count}</Badge>
+        {counts.map((c) => (
+          <Badge key={c.value} className={c.className}>
+            {c.label}: {c.count}
+          </Badge>
         ))}
         <span className="text-xs text-muted-foreground">
           Offen: {Math.max(people.length - byParticipant.size, 0)}
@@ -299,8 +413,10 @@ export function AttendanceBoard({
 
       {/* Mobile: große Tipp-Flächen pro Kind */}
       <div className="space-y-2 md:hidden">
-        {people.length === 0 && <p className="text-sm text-muted-foreground">Keine Teilnehmenden.</p>}
-        {people.map(p => {
+        {people.length === 0 && (
+          <p className="text-sm text-muted-foreground">Keine Teilnehmenden.</p>
+        )}
+        {people.map((p) => {
           const rec = byParticipant.get(p.id);
           return (
             <div key={p.id} className="rounded-lg border p-3">
@@ -313,7 +429,14 @@ export function AttendanceBoard({
                     className="flex min-h-11 min-w-0 flex-1 items-center text-left text-sm font-semibold"
                   >
                     <BeltNo no={p.no} />
-                    <span className={cn("truncate", p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
+                    <span
+                      className={cn(
+                        "truncate",
+                        p.paid === false && "rounded bg-destructive/10 px-1 text-destructive",
+                      )}
+                    >
+                      {p.name}
+                    </span>
                     <PaidBadge paid={p.paid} />
                     <ChevronDown
                       className={cn(
@@ -325,7 +448,14 @@ export function AttendanceBoard({
                 ) : (
                   <span className="flex min-w-0 items-center truncate text-sm font-semibold">
                     <BeltNo no={p.no} />
-                    <span className={cn("truncate", p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
+                    <span
+                      className={cn(
+                        "truncate",
+                        p.paid === false && "rounded bg-destructive/10 px-1 text-destructive",
+                      )}
+                    >
+                      {p.name}
+                    </span>
                     <PaidBadge paid={p.paid} />
                   </span>
                 )}
@@ -338,7 +468,7 @@ export function AttendanceBoard({
               </div>
               {hintEl(p, "mt-2")}
               <div className="mt-2 grid grid-cols-3 gap-2">
-                {STATUS_OPTIONS.map(o => (
+                {STATUS_OPTIONS.map((o) => (
                   <Button
                     key={o.value}
                     type="button"
@@ -360,88 +490,114 @@ export function AttendanceBoard({
       </div>
 
       <div className="hidden md:block">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Kind</TableHead>
-            <TableHead>Anwesenheit</TableHead>
-            <TableHead>Wichtiger Hinweis</TableHead>
-            <TableHead>Zuletzt gespeichert</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {people.length === 0 && (
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={4} className="text-muted-foreground">Keine Teilnehmenden.</TableCell>
+              <TableHead>Kind</TableHead>
+              <TableHead>Anwesenheit</TableHead>
+              <TableHead>Wichtiger Hinweis</TableHead>
+              <TableHead>Zuletzt gespeichert</TableHead>
             </TableRow>
-          )}
-          {people.map(p => {
-            const rec = byParticipant.get(p.id);
-            return (
-              <Fragment key={p.id}>
+          </TableHeader>
+          <TableBody>
+            {people.length === 0 && (
               <TableRow>
-                <TableCell className="font-medium">
-                  {renderDetails ? (
-                    <button
-                      type="button"
-                      onClick={() => toggleOpen(p.id)}
-                      aria-expanded={openId === p.id}
-                      className="flex items-center text-left hover:underline"
-                    >
-                      <BeltNo no={p.no} />
-                      <span className={cn(p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span>
-                      <PaidBadge paid={p.paid} />
-                      <ChevronDown
-                        className={cn(
-                          "ml-1 h-4 w-4 text-muted-foreground transition-transform",
-                          openId === p.id && "rotate-180",
-                        )}
-                      />
-                    </button>
-                  ) : (
-                    <span className="flex items-center"><BeltNo no={p.no} /><span className={cn(p.paid === false && "rounded bg-destructive/10 px-1 text-destructive")}>{p.name}</span><PaidBadge paid={p.paid} /></span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {STATUS_OPTIONS.map(o => (
-                      <Button
-                        key={o.value}
-                        type="button"
-                        size="sm"
-                        variant={rec?.status === o.value ? "default" : "outline"}
-                        disabled={readOnly || busy === p.id}
-                        onClick={() => update(p.id, rec?.status === o.value ? null : o.value, null)}
-                      >
-                        {o.label}
-                      </Button>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell className="max-w-xs">
-                  {p.hint?.trim() || editableHints ? hintEl(p) : <span className="text-xs text-muted-foreground">—</span>}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {rec ? (
-                    <>
-                      {formatDateTimeBerlin(rec.updated_at)}
-                      {rec.recorded_by_name ? ` · ${rec.recorded_by_name}` : ""}
-                    </>
-                  ) : (
-                    "—"
-                  )}
+                <TableCell colSpan={4} className="text-muted-foreground">
+                  Keine Teilnehmenden.
                 </TableCell>
               </TableRow>
-              {renderDetails && openId === p.id && (
-                <TableRow>
-                  <TableCell colSpan={4} className="bg-muted/30">{renderDetails(p.id)}</TableCell>
-                </TableRow>
-              )}
-              </Fragment>
-            );
-          })}
-        </TableBody>
-      </Table>
+            )}
+            {people.map((p) => {
+              const rec = byParticipant.get(p.id);
+              return (
+                <Fragment key={p.id}>
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      {renderDetails ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleOpen(p.id)}
+                          aria-expanded={openId === p.id}
+                          className="flex items-center text-left hover:underline"
+                        >
+                          <BeltNo no={p.no} />
+                          <span
+                            className={cn(
+                              p.paid === false && "rounded bg-destructive/10 px-1 text-destructive",
+                            )}
+                          >
+                            {p.name}
+                          </span>
+                          <PaidBadge paid={p.paid} />
+                          <ChevronDown
+                            className={cn(
+                              "ml-1 h-4 w-4 text-muted-foreground transition-transform",
+                              openId === p.id && "rotate-180",
+                            )}
+                          />
+                        </button>
+                      ) : (
+                        <span className="flex items-center">
+                          <BeltNo no={p.no} />
+                          <span
+                            className={cn(
+                              p.paid === false && "rounded bg-destructive/10 px-1 text-destructive",
+                            )}
+                          >
+                            {p.name}
+                          </span>
+                          <PaidBadge paid={p.paid} />
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {STATUS_OPTIONS.map((o) => (
+                          <Button
+                            key={o.value}
+                            type="button"
+                            size="sm"
+                            variant={rec?.status === o.value ? "default" : "outline"}
+                            disabled={readOnly || busy === p.id}
+                            onClick={() =>
+                              update(p.id, rec?.status === o.value ? null : o.value, null)
+                            }
+                          >
+                            {o.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      {p.hint?.trim() || editableHints ? (
+                        hintEl(p)
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {rec ? (
+                        <>
+                          {formatDateTimeBerlin(rec.updated_at)}
+                          {rec.recorded_by_name ? ` · ${rec.recorded_by_name}` : ""}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                  {renderDetails && openId === p.id && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="bg-muted/30">
+                        {renderDetails(p.id)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

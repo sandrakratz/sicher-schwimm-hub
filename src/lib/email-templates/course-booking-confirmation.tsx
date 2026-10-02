@@ -1,36 +1,48 @@
-import * as React from 'react'
-import { Body, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text } from '@react-email/components'
-import type { TemplateEntry } from './registry'
-import { buildConfirmationDoc } from '@/lib/course-confirmation'
-import { PushHint } from './push-hint'
+import * as React from "react";
+import {
+  Body,
+  Container,
+  Head,
+  Heading,
+  Hr,
+  Html,
+  Img,
+  Link,
+  Preview,
+  Section,
+  Text,
+} from "@react-email/components";
+import type { TemplateEntry } from "./registry";
+import { buildConfirmationDoc } from "@/lib/course-confirmation";
+import { PushHint } from "./push-hint";
 
 interface Props {
-  parent_name?: string
-  child_name?: string
-  course_name?: string
-  program_name?: string
-  course_location?: string
-  course_schedule?: string
-  course_starts_on?: string
-  course_ends_on?: string
-  course_description?: string
-  course_info?: string
-  unit_count?: number | null
-  waitlist?: boolean
-  is_member?: boolean | null
-  price_amount?: number | null
-  payment_due_days?: number | null
-  document_no?: string
-  issued_at?: string
-  payer_street?: string
-  payer_zip?: string
-  payer_city?: string
-  site_base_url?: string
-  push_url?: string
+  parent_name?: string;
+  child_name?: string;
+  course_name?: string;
+  program_name?: string;
+  course_location?: string;
+  course_schedule?: string;
+  course_starts_on?: string;
+  course_ends_on?: string;
+  course_description?: string;
+  course_info?: string;
+  unit_count?: number | null;
+  waitlist?: boolean;
+  is_member?: boolean | null;
+  price_amount?: number | null;
+  payment_due_days?: number | null;
+  document_no?: string;
+  issued_at?: string;
+  payer_street?: string;
+  payer_zip?: string;
+  payer_city?: string;
+  site_base_url?: string;
+  push_url?: string;
 }
 
-const row = { margin: '3px 0' as const }
-const labelStyle = { display: 'inline-block', minWidth: '170px' } as const
+const row = { margin: "3px 0" as const };
+const labelStyle = { display: "inline-block", minWidth: "170px" } as const;
 
 function Line({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -38,12 +50,12 @@ function Line({ label, value }: { label: string; value: React.ReactNode }) {
       <strong style={labelStyle}>{label}</strong>
       {value}
     </Text>
-  )
+  );
 }
 
 const Email = (p: Props) => {
-  const base = p.site_base_url || 'https://sicher-schwimmen.com'
-  const waitlist = Boolean(p.waitlist)
+  const base = p.site_base_url || "https://sicher-schwimmen.com";
+  const waitlist = Boolean(p.waitlist);
 
   const d = buildConfirmationDoc({
     documentNo: p.document_no,
@@ -62,23 +74,26 @@ const Email = (p: Props) => {
     unitCount: p.unit_count ?? null,
     priceAmount: p.price_amount ?? null,
     paymentDueDays: p.payment_due_days ?? null,
-  })
+  });
 
   if (waitlist) {
     return (
       <Html lang="de">
         <Head />
         <Preview>Wartelisten-Bestätigung: {d.courseTitle}</Preview>
-        <Body style={{ backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif', color: '#0f172a' }}>
-          <Container style={{ padding: '24px', maxWidth: '640px' }}>
-            <Heading style={{ color: '#0c4a6e' }}>Ihre Anmeldung auf der Warteliste</Heading>
-            <Text>Hallo {p.parent_name || ''},</Text>
+        <Body
+          style={{ backgroundColor: "#ffffff", fontFamily: "Arial, sans-serif", color: "#0f172a" }}
+        >
+          <Container style={{ padding: "24px", maxWidth: "640px" }}>
+            <Heading style={{ color: "#0c4a6e" }}>Ihre Anmeldung auf der Warteliste</Heading>
+            <Text>Hallo {p.parent_name || ""},</Text>
             <Text>
-              vielen Dank für Ihre Anmeldung. Der gewünschte Kurszeitraum ist aktuell ausgebucht – wir haben{' '}
-              {p.child_name ? <strong>{p.child_name}</strong> : 'die Anmeldung'} auf die Warteliste gesetzt und melden
-              uns, sobald ein Platz frei wird. Eine Zahlung ist zum jetzigen Zeitpunkt nicht erforderlich.
+              vielen Dank für Ihre Anmeldung. Der gewünschte Kurszeitraum ist aktuell ausgebucht –
+              wir haben {p.child_name ? <strong>{p.child_name}</strong> : "die Anmeldung"} auf die
+              Warteliste gesetzt und melden uns, sobald ein Platz frei wird. Eine Zahlung ist zum
+              jetzigen Zeitpunkt nicht erforderlich.
             </Text>
-            <Section style={{ backgroundColor: '#f0f9ff', padding: '16px', borderRadius: '8px' }}>
+            <Section style={{ backgroundColor: "#f0f9ff", padding: "16px", borderRadius: "8px" }}>
               <Line label="Kurs:" value={d.courseTitle} />
               <Line label="Kurszeitraum:" value={d.periodLabel} />
               <Line label="Kurstage:" value={d.scheduleLabel} />
@@ -86,45 +101,55 @@ const Email = (p: Props) => {
             </Section>
             <Hr />
             <Text>Bei Fragen antworten Sie einfach auf diese E-Mail.</Text>
-            <Text>Mit besten Grüßen,<br />Ihr Team von Sicher-Schwimmen</Text>
+            <Text>
+              Mit besten Grüßen,
+              <br />
+              Ihr Team von Sicher-Schwimmen
+            </Text>
           </Container>
         </Body>
       </Html>
-    )
+    );
   }
 
   return (
     <Html lang="de">
       <Head />
       <Preview>Kursbestätigung und Zahlungsaufforderung – {d.documentNo}</Preview>
-      <Body style={{ backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif', color: '#0f172a' }}>
-        <Container style={{ padding: '24px', maxWidth: '640px' }}>
-          <Section style={{ paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
-            <Text style={{ ...row, fontWeight: 'bold', fontSize: '16px' }}>{d.org.name}</Text>
-            <Text style={{ ...row, fontSize: '12px', color: '#475569' }}>{d.org.street}</Text>
-            <Text style={{ ...row, fontSize: '12px', color: '#475569' }}>{d.org.zipCity}</Text>
-            <Text style={{ ...row, fontSize: '12px', color: '#475569' }}>{d.org.register}</Text>
+      <Body
+        style={{ backgroundColor: "#ffffff", fontFamily: "Arial, sans-serif", color: "#0f172a" }}
+      >
+        <Container style={{ padding: "24px", maxWidth: "640px" }}>
+          <Section style={{ paddingBottom: "8px", borderBottom: "1px solid #e2e8f0" }}>
+            <Text style={{ ...row, fontWeight: "bold", fontSize: "16px" }}>{d.org.name}</Text>
+            <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.street}</Text>
+            <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.zipCity}</Text>
+            <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.register}</Text>
           </Section>
 
-          <Heading style={{ color: '#0c4a6e', fontSize: '20px', marginTop: '20px' }}>
+          <Heading style={{ color: "#0c4a6e", fontSize: "20px", marginTop: "20px" }}>
             Kursbestätigung und Zahlungsaufforderung
           </Heading>
           <Line label="Dokument-Nr.:" value={d.documentNo} />
           <Line label="Ausstellungsdatum:" value={d.issuedAtLabel} />
 
-          <Text style={{ marginTop: '18px', marginBottom: '2px' }}><strong>Zahlungspflichtige/r:</strong></Text>
+          <Text style={{ marginTop: "18px", marginBottom: "2px" }}>
+            <strong>Zahlungspflichtige/r:</strong>
+          </Text>
           <Text style={row}>{d.payerName}</Text>
           {d.payerLines.map((l) => (
-            <Text key={l} style={row}>{l}</Text>
+            <Text key={l} style={row}>
+              {l}
+            </Text>
           ))}
 
-          <Text style={{ marginTop: '12px' }}>
+          <Text style={{ marginTop: "12px" }}>
             <strong style={labelStyle}>Teilnehmer/in:</strong>
             {d.childName}
           </Text>
 
           <Hr />
-          <Heading as="h2" style={{ color: '#0c4a6e', fontSize: '17px', margin: '8px 0' }}>
+          <Heading as="h2" style={{ color: "#0c4a6e", fontSize: "17px", margin: "8px 0" }}>
             Gebuchter Schwimmkurs
           </Heading>
           <Line label="Kurs:" value={d.courseTitle} />
@@ -133,32 +158,54 @@ const Email = (p: Props) => {
           <Line label="Kursort:" value={d.locationLabel} />
           <Line label="Anzahl der Einheiten:" value={d.unitLabel} />
 
-          <Text style={{ marginTop: '12px', fontSize: '16px' }}>
+          <Text style={{ marginTop: "12px", fontSize: "16px" }}>
             <strong style={labelStyle}>Kursgebühr:</strong>
-            <strong style={{ color: '#0c4a6e' }}>{d.priceLabel}</strong>
+            <strong style={{ color: "#0c4a6e" }}>{d.priceLabel}</strong>
           </Text>
 
-          <Section style={{ backgroundColor: d.immediatePayment ? '#fff7ed' : '#f0f9ff', padding: '12px 16px', borderRadius: '8px', marginTop: '14px', border: '1px solid #e2e8f0' }}>
+          <Section
+            style={{
+              backgroundColor: d.immediatePayment ? "#fff7ed" : "#f0f9ff",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              marginTop: "14px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
             <Line label="Zahlungsart:" value={<strong>{d.paymentMethodLabel}</strong>} />
-            <Line label="Fällig bis:" value={<strong>{d.immediatePayment ? `sofort (${d.dueDateLabel})` : d.dueDateLabel}</strong>} />
+            <Line
+              label="Fällig bis:"
+              value={
+                <strong>
+                  {d.immediatePayment ? `sofort (${d.dueDateLabel})` : d.dueDateLabel}
+                </strong>
+              }
+            />
             <Line label="Zahlungsziel:" value={d.paymentTermsLabel} />
           </Section>
 
-          <Text style={{ marginTop: '16px' }}>
+          <Text style={{ marginTop: "16px" }}>
             {d.immediatePayment ? (
               <>
-                Da die Buchung innerhalb der letzten 10 Tage vor Kursbeginn erfolgt ist, ist die Kursgebühr{' '}
-                <strong>sofort per Echtzeit-/Sofortüberweisung</strong> unter Angabe der Dokument-Nr. {d.documentNo} auf
-                folgendes Vereinskonto zu zahlen:
+                Da die Buchung innerhalb der letzten 10 Tage vor Kursbeginn erfolgt ist, ist die
+                Kursgebühr <strong>sofort per Echtzeit-/Sofortüberweisung</strong> unter Angabe der
+                Dokument-Nr. {d.documentNo} auf folgendes Vereinskonto zu zahlen:
               </>
             ) : (
               <>
-                Bitte überweisen Sie die Kursgebühr bis zum <strong>{d.dueDateLabel}</strong> unter Angabe der
-                Dokument-Nr. {d.documentNo} auf folgendes Vereinskonto:
+                Bitte überweisen Sie die Kursgebühr bis zum <strong>{d.dueDateLabel}</strong> unter
+                Angabe der Dokument-Nr. {d.documentNo} auf folgendes Vereinskonto:
               </>
             )}
           </Text>
-          <Section style={{ backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <Section
+            style={{
+              backgroundColor: "#f8fafc",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
             <Line label="Kontoinhaber:" value={d.bank.recipient} />
             <Line label="IBAN:" value={d.bank.iban} />
             <Line label="BIC:" value={d.bank.bic} />
@@ -166,21 +213,39 @@ const Email = (p: Props) => {
           </Section>
 
           {d.payQrUrl && (
-            <Section style={{ backgroundColor: '#fff7ed', padding: '14px 16px', borderRadius: '8px', border: '1px solid #fed7aa', marginTop: '14px', textAlign: 'center' as const }}>
-              <Text style={{ margin: '0 0 8px', fontWeight: 'bold', color: '#9a3412' }}>
+            <Section
+              style={{
+                backgroundColor: "#fff7ed",
+                padding: "14px 16px",
+                borderRadius: "8px",
+                border: "1px solid #fed7aa",
+                marginTop: "14px",
+                textAlign: "center" as const,
+              }}
+            >
+              <Text style={{ margin: "0 0 8px", fontWeight: "bold", color: "#9a3412" }}>
                 QR-Code für die Echtzeit-/Sofortüberweisung
               </Text>
-              <Img src={d.payQrUrl} alt="QR-Code für die Überweisung" width="180" height="180" style={{ margin: '0 auto', display: 'block' }} />
-              <Text style={{ margin: '8px 0 0', fontSize: '12px', color: '#7c2d12' }}>
-                Einfach mit Ihrer Banking-App scannen – Empfänger, IBAN, Betrag und Verwendungszweck werden automatisch übernommen.
+              <Img
+                src={d.payQrUrl}
+                alt="QR-Code für die Überweisung"
+                width="180"
+                height="180"
+                style={{ margin: "0 auto", display: "block" }}
+              />
+              <Text style={{ margin: "8px 0 0", fontSize: "12px", color: "#7c2d12" }}>
+                Einfach mit Ihrer Banking-App scannen – Empfänger, IBAN, Betrag und Verwendungszweck
+                werden automatisch übernommen.
               </Text>
-              <Text style={{ margin: '6px 0 0', fontSize: '12px' }}>
+              <Text style={{ margin: "6px 0 0", fontSize: "12px" }}>
                 <Link href={d.payQrUrl}>QR-Code im Browser öffnen</Link>
               </Text>
             </Section>
           )}
 
-          <Text style={{ marginTop: '16px' }}><strong>Hinweis zur Umsatzsteuer:</strong></Text>
+          <Text style={{ marginTop: "16px" }}>
+            <strong>Hinweis zur Umsatzsteuer:</strong>
+          </Text>
           <Text style={row}>{d.org.vatNote}</Text>
 
           {p.course_description && (
@@ -193,65 +258,81 @@ const Email = (p: Props) => {
           {p.course_info && (
             <>
               <Hr />
-              <Text style={{ marginTop: '16px' }}><strong>Ablauf &amp; Wichtiges für den Kurstag</strong></Text>
-              <Text style={{ whiteSpace: 'pre-line' }}>{p.course_info}</Text>
+              <Text style={{ marginTop: "16px" }}>
+                <strong>Ablauf &amp; Wichtiges für den Kurstag</strong>
+              </Text>
+              <Text style={{ whiteSpace: "pre-line" }}>{p.course_info}</Text>
             </>
           )}
 
           {!waitlist && p.push_url && <PushHint url={p.push_url} />}
 
-          <Text style={{ marginTop: '16px' }}>
+          <Text style={{ marginTop: "16px" }}>
             Vielen Dank für Ihre Anmeldung. Wir freuen uns auf die Teilnahme am Schwimmkurs.
           </Text>
 
-          <Text style={{ marginTop: '18px' }}>{d.org.city}, {d.issuedAtLabel}</Text>
+          <Text style={{ marginTop: "18px" }}>
+            {d.org.city}, {d.issuedAtLabel}
+          </Text>
           <Text style={row}>{d.org.signatory}</Text>
-          <Text style={{ ...row, fontSize: '12px', color: '#475569' }}>{d.org.email} · {d.org.phone}</Text>
+          <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>
+            {d.org.email} · {d.org.phone}
+          </Text>
 
           <Hr />
-          <Text style={{ ...row, fontSize: '12px', color: '#475569' }}>
-            Es gelten unsere <Link href={`${base}/kursbedingungen`} style={{ color: '#0c4a6e' }}>Kursteilnahmebedingungen</Link>{' '}
-            sowie unsere <Link href={`${base}/datenschutz`} style={{ color: '#0c4a6e' }}>Datenschutzerklärung</Link>.
-            Widerrufsrecht: Sie können den Vertrag innerhalb von 14 Tagen ohne Angabe von Gründen widerrufen.{' '}
-            <Link href={`${base}/widerruf`} style={{ color: '#0c4a6e' }}>Zum Widerrufsformular</Link>
+          <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>
+            Es gelten unsere{" "}
+            <Link href={`${base}/kursbedingungen`} style={{ color: "#0c4a6e" }}>
+              Kursteilnahmebedingungen
+            </Link>{" "}
+            sowie unsere{" "}
+            <Link href={`${base}/datenschutz`} style={{ color: "#0c4a6e" }}>
+              Datenschutzerklärung
+            </Link>
+            . Widerrufsrecht: Sie können den Vertrag innerhalb von 14 Tagen ohne Angabe von Gründen
+            widerrufen.{" "}
+            <Link href={`${base}/widerruf`} style={{ color: "#0c4a6e" }}>
+              Zum Widerrufsformular
+            </Link>
           </Text>
         </Container>
       </Body>
     </Html>
-  )
-}
+  );
+};
 
 const previewData = {
-  parent_name: 'Erika Beispiel',
-  payer_street: 'Musterweg 5',
-  payer_zip: '53773',
-  payer_city: 'Hennef',
-  child_name: 'Max Beispiel',
-  program_name: 'Seepferdchen im Kurhaus',
-  course_name: 'Seepferdchen Kurhaus Oktober 2026',
-  course_starts_on: '2026-10-11',
-  course_ends_on: '2026-11-08',
-  course_schedule: 'montags, 16:00–17:00 Uhr',
-  course_location: 'Kurshausstr. 27, 53773 Hennef',
+  parent_name: "Erika Beispiel",
+  payer_street: "Musterweg 5",
+  payer_zip: "53773",
+  payer_city: "Hennef",
+  child_name: "Max Beispiel",
+  program_name: "Seepferdchen im Kurhaus",
+  course_name: "Seepferdchen Kurhaus Oktober 2026",
+  course_starts_on: "2026-10-11",
+  course_ends_on: "2026-11-08",
+  course_schedule: "montags, 16:00–17:00 Uhr",
+  course_location: "Kurshausstr. 27, 53773 Hennef",
   unit_count: 12,
   is_member: false,
   price_amount: 200,
   payment_due_days: 14,
-  document_no: 'SK-2026-00123',
-  issued_at: '2026-08-09',
-}
+  document_no: "SK-2026-00123",
+  issued_at: "2026-08-09",
+};
 
 export const template = {
   component: Email,
   subject: (d: Record<string, any>) =>
-    `Kursbestätigung ${d.document_no ? `${d.document_no} ` : ''}– ${d.program_name || d.course_name || 'Schwimmkurs'}`,
-  displayName: 'Kursbuchung – Bestätigung & Zahlungsaufforderung',
+    `Kursbestätigung ${d.document_no ? `${d.document_no} ` : ""}– ${d.program_name || d.course_name || "Schwimmkurs"}`,
+  displayName: "Kursbuchung – Bestätigung & Zahlungsaufforderung",
   previewData,
-} satisfies TemplateEntry
+} satisfies TemplateEntry;
 
 export const waitlistTemplate = {
   component: Email,
-  subject: (d: Record<string, any>) => `Warteliste: ${d.program_name || d.course_name || 'Schwimmkurs'}`,
-  displayName: 'Kursbuchung – Wartelisten-Bestätigung',
+  subject: (d: Record<string, any>) =>
+    `Warteliste: ${d.program_name || d.course_name || "Schwimmkurs"}`,
+  displayName: "Kursbuchung – Wartelisten-Bestätigung",
   previewData: { ...previewData, waitlist: true },
-} satisfies TemplateEntry
+} satisfies TemplateEntry;

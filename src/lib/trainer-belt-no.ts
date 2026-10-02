@@ -7,7 +7,7 @@ export function buildBeltNumbers(
 ): Map<string, number> {
   const map = new Map<string, number>();
   participants
-    .filter(p => p.status === "confirmed")
+    .filter((p) => p.status === "confirmed")
     .slice()
     .sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"))
     .forEach((p, i) => map.set(p.id, i + 1));

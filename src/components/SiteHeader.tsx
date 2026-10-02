@@ -28,7 +28,12 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container mx-auto flex h-20 items-center justify-between px-4">
         <Link to="/" className="flex items-center">
-          <img src={logo} alt="Sicher Schwimmen e.V. – Hennef" className="h-16 w-auto object-contain" height={64} />
+          <img
+            src={logo}
+            alt="Sicher Schwimmen e.V. – Hennef"
+            className="h-16 w-auto object-contain"
+            height={64}
+          />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
@@ -53,11 +58,17 @@ export function SiteHeader() {
             </Link>
           </Button>
           <Button asChild variant="accent" size="sm">
-            <Link to="/warteliste" search={{ programm: undefined }}>Auf die Warteliste</Link>
+            <Link to="/warteliste" search={{ programm: undefined }}>
+              Auf die Warteliste
+            </Link>
           </Button>
         </div>
 
-        <button className="lg:hidden rounded-md p-2" onClick={() => setOpen(!open)} aria-label="Menü">
+        <button
+          className="lg:hidden rounded-md p-2"
+          onClick={() => setOpen(!open)}
+          aria-label="Menü"
+        >
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
@@ -66,8 +77,12 @@ export function SiteHeader() {
         <div className="lg:hidden border-t border-border bg-background">
           <nav className="container mx-auto flex flex-col p-4 gap-1">
             {nav.map((n) => (
-              <Link key={n.to} to={n.to} onClick={() => setOpen(false)}
-                className="rounded-lg px-4 py-3 font-semibold hover:bg-secondary">
+              <Link
+                key={n.to}
+                to={n.to}
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-4 py-3 font-semibold hover:bg-secondary"
+              >
                 {n.label}
               </Link>
             ))}
@@ -78,7 +93,13 @@ export function SiteHeader() {
                 </Link>
               </Button>
               <Button asChild variant="accent" className="flex-1">
-                <Link to="/warteliste" search={{ programm: undefined }} onClick={() => setOpen(false)}>Auf die Warteliste</Link>
+                <Link
+                  to="/warteliste"
+                  search={{ programm: undefined }}
+                  onClick={() => setOpen(false)}
+                >
+                  Auf die Warteliste
+                </Link>
               </Button>
             </div>
           </nav>

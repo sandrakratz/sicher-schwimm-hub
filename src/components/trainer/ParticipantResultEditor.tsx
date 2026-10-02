@@ -4,7 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useServerFn } from "@tanstack/react-start";
 import { updateParticipantResult } from "@/lib/trainer-courses.functions";
 import {
@@ -56,10 +62,17 @@ export function ParticipantResultEditor({
   const doneCount = countCriteriaDone(level, criteria);
   const complete = allCriteriaDone(level, criteria);
 
-  function setCriterion(key: string, patch: { done?: boolean; value?: string; total?: string; date?: string | null }) {
-    setCriteria(prev => {
+  function setCriterion(
+    key: string,
+    patch: { done?: boolean; value?: string; total?: string; date?: string | null },
+  ) {
+    setCriteria((prev) => {
       const extra =
-        patch.done === true && !prev[key]?.date ? { date: todayIso() } : patch.done === false ? { date: null, by_name: null, by_id: null } : {};
+        patch.done === true && !prev[key]?.date
+          ? { date: todayIso() }
+          : patch.done === false
+            ? { date: null, by_name: null, by_id: null }
+            : {};
       const next = { ...prev, [key]: { ...prev[key], ...extra, ...patch } };
       // Sobald alle Teile erfüllt sind, das Gesamtergebnis vorschlagen.
       if (patch.done && allCriteriaDone(level, next)) {
@@ -112,12 +125,16 @@ export function ParticipantResultEditor({
     <div className="space-y-3">
       <div>
         <Label className="text-xs">Abzeichen / Prüfungsstufe</Label>
-        <Select value={level || "none"} onValueChange={v => chooseLevel(v === "none" ? "" : v)}>
-          <SelectTrigger className="h-9"><SelectValue placeholder="Bitte wählen" /></SelectTrigger>
+        <Select value={level || "none"} onValueChange={(v) => chooseLevel(v === "none" ? "" : v)}>
+          <SelectTrigger className="h-9">
+            <SelectValue placeholder="Bitte wählen" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">— Keine Prüfung —</SelectItem>
-            {EXAM_LEVELS.map(l => (
-              <SelectItem key={l.key} value={l.key}>{l.label}</SelectItem>
+            {EXAM_LEVELS.map((l) => (
+              <SelectItem key={l.key} value={l.key}>
+                {l.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -129,7 +146,7 @@ export function ParticipantResultEditor({
             Prüfungsteile ({doneCount} von {levelDef.criteria.length} erfüllt)
           </p>
           <div className="space-y-2">
-            {levelDef.criteria.map(c => {
+            {levelDef.criteria.map((c) => {
               const state = criteria[c.key] || {};
               return (
                 <div key={c.key} className="space-y-1">
@@ -137,7 +154,7 @@ export function ParticipantResultEditor({
                     <Checkbox
                       className="mt-0.5"
                       checked={state.done === true}
-                      onCheckedChange={v => setCriterion(c.key, { done: v === true })}
+                      onCheckedChange={(v) => setCriterion(c.key, { done: v === true })}
                     />
                     <span>{c.label}</span>
                   </label>
@@ -148,10 +165,13 @@ export function ParticipantResultEditor({
                         aria-label="Datum der Teilprüfung"
                         className="h-8 w-40"
                         value={state.date || ""}
-                        onChange={e => setCriterion(c.key, { date: e.target.value || null })}
+                        onChange={(e) => setCriterion(c.key, { date: e.target.value || null })}
                       />
                       <span>
-                        Abgenommen von: <span className="font-medium text-foreground">{state.by_name || "dir (beim Speichern)"}</span>
+                        Abgenommen von:{" "}
+                        <span className="font-medium text-foreground">
+                          {state.by_name || "dir (beim Speichern)"}
+                        </span>
                       </span>
                     </div>
                   )}
@@ -163,17 +183,19 @@ export function ParticipantResultEditor({
                           className="h-8 w-40"
                           placeholder={c.valuePlaceholder || c.valueLabel}
                           value={state.value || ""}
-                          onChange={e => setCriterion(c.key, { value: e.target.value })}
+                          onChange={(e) => setCriterion(c.key, { value: e.target.value })}
                         />
                       </div>
                       {c.totalLabel && (
                         <div>
-                          <Label className="text-[11px] text-muted-foreground">{c.totalLabel}</Label>
+                          <Label className="text-[11px] text-muted-foreground">
+                            {c.totalLabel}
+                          </Label>
                           <Input
                             className="h-8 w-52"
                             placeholder={c.totalPlaceholder || c.totalLabel}
                             value={state.total || ""}
-                            onChange={e => setCriterion(c.key, { total: e.target.value })}
+                            onChange={(e) => setCriterion(c.key, { total: e.target.value })}
                           />
                         </div>
                       )}
@@ -184,7 +206,9 @@ export function ParticipantResultEditor({
             })}
           </div>
           {complete && (
-            <p className="mt-2 text-xs font-medium text-green-700">Alle Teile erfüllt – Prüfung bestanden.</p>
+            <p className="mt-2 text-xs font-medium text-green-700">
+              Alle Teile erfüllt – Prüfung bestanden.
+            </p>
           )}
         </div>
       )}
@@ -192,11 +216,16 @@ export function ParticipantResultEditor({
       <div className="grid gap-2 sm:grid-cols-2">
         <div>
           <Label className="text-xs">Prüfungsdatum</Label>
-          <Input type="date" className="h-9" value={examDate} onChange={e => setExamDate(e.target.value)} />
+          <Input
+            type="date"
+            className="h-9"
+            value={examDate}
+            onChange={(e) => setExamDate(e.target.value)}
+          />
         </div>
         <div>
           <Label className="text-xs">Schwimmpass-Nr. (optional)</Label>
-          <Input className="h-9" value={passNo} onChange={e => setPassNo(e.target.value)} />
+          <Input className="h-9" value={passNo} onChange={(e) => setPassNo(e.target.value)} />
         </div>
       </div>
 
@@ -205,9 +234,11 @@ export function ParticipantResultEditor({
           <Label className="text-xs">Gesamtergebnis</Label>
           <Select
             value={goal == null ? "unset" : goal ? "yes" : "no"}
-            onValueChange={v => setGoal(v === "unset" ? null : v === "yes")}
+            onValueChange={(v) => setGoal(v === "unset" ? null : v === "yes")}
           >
-            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="unset">— Offen —</SelectItem>
               <SelectItem value="yes">Bestanden</SelectItem>
@@ -221,7 +252,7 @@ export function ParticipantResultEditor({
             className="h-9"
             placeholder="z. B. Seepferdchen"
             value={badge}
-            onChange={e => setBadge(e.target.value)}
+            onChange={(e) => setBadge(e.target.value)}
           />
         </div>
       </div>
@@ -232,7 +263,7 @@ export function ParticipantResultEditor({
           rows={2}
           placeholder="z. B. Sprung noch unsicher, Baderegeln sehr gut"
           value={achievement}
-          onChange={e => setAchievement(e.target.value)}
+          onChange={(e) => setAchievement(e.target.value)}
         />
       </div>
 

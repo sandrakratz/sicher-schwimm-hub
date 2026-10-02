@@ -5,12 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import { Trash2, ShieldBan } from "lucide-react";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import {
-  listBlocklist, addBlocklistEntry, setBlocklistActive, deleteBlocklistEntry,
+  listBlocklist,
+  addBlocklistEntry,
+  setBlocklistActive,
+  deleteBlocklistEntry,
   type BlocklistEntry,
 } from "@/lib/blocklist.functions";
 
@@ -19,14 +29,20 @@ export const Route = createFileRoute("/_authenticated/admin/sperrliste")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
-    catch { throw redirect({ to: "/portal" }); }
+    try {
+      await assertHasAnyRole({ data: { roles: ["admin", "board"] } });
+    } catch {
+      throw redirect({ to: "/portal" });
+    }
   },
   component: Page,
   head: () => ({
     meta: [
       { title: "Sperrliste – Adminbereich | Sicher Schwimmen e.V." },
-      { name: "description", content: "Verwaltung gesperrter Teilnehmer, die keine Kurse direkt online buchen können." },
+      {
+        name: "description",
+        content: "Verwaltung gesperrter Teilnehmer, die keine Kurse direkt online buchen können.",
+      },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -50,7 +66,9 @@ function Page() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function add() {
     setSaving(true);
@@ -92,41 +110,66 @@ function Page() {
           <ShieldBan className="h-7 w-7" /> Sperrliste
         </h1>
         <p className="text-muted-foreground mt-1">
-          Gesperrte Teilnehmer können keinen Kurs direkt online buchen. Ihre Angaben landen stattdessen als Kursanfrage
-          zur Einzelfallprüfung im Bereich „Kursanfragen“. Abgelehnte Kursanfragen werden automatisch übernommen.
+          Gesperrte Teilnehmer können keinen Kurs direkt online buchen. Ihre Angaben landen
+          stattdessen als Kursanfrage zur Einzelfallprüfung im Bereich „Kursanfragen“. Abgelehnte
+          Kursanfragen werden automatisch übernommen.
         </p>
       </div>
 
       <Card className="border-0 shadow-soft">
-        <CardHeader><CardTitle className="text-lg">Eintrag hinzufügen</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-lg">Eintrag hinzufügen</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label htmlFor="bl-child">Name des Kindes</Label>
-              <Input id="bl-child" value={form.childName} onChange={(e) => setForm(f => ({ ...f, childName: e.target.value }))} />
+              <Input
+                id="bl-child"
+                value={form.childName}
+                onChange={(e) => setForm((f) => ({ ...f, childName: e.target.value }))}
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="bl-dob">Geburtsdatum</Label>
-              <Input id="bl-dob" type="date" value={form.childDob} onChange={(e) => setForm(f => ({ ...f, childDob: e.target.value }))} />
+              <Input
+                id="bl-dob"
+                type="date"
+                value={form.childDob}
+                onChange={(e) => setForm((f) => ({ ...f, childDob: e.target.value }))}
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="bl-email">E-Mail der Eltern</Label>
-              <Input id="bl-email" type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} />
+              <Input
+                id="bl-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="bl-reason">Grund</Label>
-              <Input id="bl-reason" value={form.reason} onChange={(e) => setForm(f => ({ ...f, reason: e.target.value }))} />
+              <Input
+                id="bl-reason"
+                value={form.reason}
+                onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+              />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
             Es genügt entweder eine E-Mail-Adresse oder Kindname zusammen mit dem Geburtsdatum.
           </p>
-          <Button onClick={add} disabled={saving}>{saving ? "Wird gespeichert…" : "Hinzufügen"}</Button>
+          <Button onClick={add} disabled={saving}>
+            {saving ? "Wird gespeichert…" : "Hinzufügen"}
+          </Button>
         </CardContent>
       </Card>
 
       <Card className="border-0 shadow-soft">
-        <CardHeader><CardTitle className="text-lg">Einträge ({entries.length})</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-lg">Einträge ({entries.length})</CardTitle>
+        </CardHeader>
         <CardContent>
           {loading ? (
             <div className="text-muted-foreground py-6 text-center">Wird geladen…</div>
@@ -161,25 +204,44 @@ function Page() {
                     <TableCell className="text-xs">
                       {e.request ? (
                         <div className="space-y-0.5">
-                          <div className="font-medium">{e.request.child_name || e.request.parent_name || "Anfrage"}</div>
-                          <div className="text-muted-foreground">{e.request.parent_email || "—"}</div>
+                          <div className="font-medium">
+                            {e.request.child_name || e.request.parent_name || "Anfrage"}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {e.request.parent_email || "—"}
+                          </div>
                           {e.request.desired_course && (
-                            <div className="text-muted-foreground">Wunsch: {e.request.desired_course}</div>
+                            <div className="text-muted-foreground">
+                              Wunsch: {e.request.desired_course}
+                            </div>
                           )}
                           {e.request.created_at && (
-                            <div className="text-muted-foreground">vom {formatDateBerlin(e.request.created_at)}</div>
+                            <div className="text-muted-foreground">
+                              vom {formatDateBerlin(e.request.created_at)}
+                            </div>
                           )}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{formatDateTimeBerlin(e.created_at)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {formatDateTimeBerlin(e.created_at)}
+                    </TableCell>
                     <TableCell className="text-right space-x-2 whitespace-nowrap">
-                      <Button size="sm" variant={e.active ? "outline" : "default"} onClick={() => toggle(e)}>
+                      <Button
+                        size="sm"
+                        variant={e.active ? "outline" : "default"}
+                        onClick={() => toggle(e)}
+                      >
                         {e.active ? "Deaktivieren" : "Aktivieren"}
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => remove(e)} aria-label="Eintrag löschen">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => remove(e)}
+                        aria-label="Eintrag löschen"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

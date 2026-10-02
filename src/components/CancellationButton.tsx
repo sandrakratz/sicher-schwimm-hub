@@ -19,12 +19,7 @@ export function CancellationButton({
   label?: string;
 }) {
   return (
-    <Button
-      asChild
-      variant={variant}
-      size={size}
-      className={className}
-    >
+    <Button asChild variant={variant} size={size} className={className}>
       <Link to="/widerruf" aria-label="Schwimmkurs-Vertrag widerrufen">
         <FileX2 className="mr-2 h-4 w-4" aria-hidden="true" />
         {label}
