@@ -1,3 +1,5 @@
+import { escapeLike } from '@/lib/like'
+
 type EmailLogRow = {
   id: string
   message_id: string | null
@@ -71,7 +73,7 @@ async function loadReplies(
     .from('email_send_log')
     .select('id, message_id, created_at, status, subject, body_html, body_text, error_message')
     .in('template_name', names)
-    .ilike('recipient_email', recipientEmail)
+    .ilike('recipient_email', escapeLike(recipientEmail))
     .gte('created_at', createdAt)
     .order('created_at', { ascending: false })
     .limit(200)

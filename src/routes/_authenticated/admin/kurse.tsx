@@ -70,6 +70,8 @@ type Participant = {
   is_member: boolean | null;
   member_confirmed: boolean;
   member_confirmed_at: string | null;
+  paid_by?: string | null;
+  member_confirmed_by?: string | null;
   price_amount: number | null;
   created_at?: string | null;
   payment_method?: string | null;
@@ -127,6 +129,12 @@ import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/fo
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { parseSessionList } from "@/lib/session-list";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
+
+function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
@@ -376,22 +384,34 @@ function Page() {
     if (!sessCourse) return;
     if (sessions.length >= 30) return toast.error("Maximal 30 Termine");
     const nextIndex = (sessions.reduce((m, s) => Math.max(m, s.session_index), 0) || 0) + 1;
-    const today = new Date().toISOString().slice(0, 10);
     const last = sessions[sessions.length - 1];
+    // Vorschlag: eine Woche nach dem letzten Termin (sonst heute), anschließend im Dialog anpassen
+    const proposed = last ? addDaysIso(last.session_date, 7) : todayBerlinIso();
     const { error } = await supabase.from("course_sessions").insert({
       course_id: sessCourse.id,
       session_index: nextIndex,
-      session_date: today,
+      session_date: proposed,
       start_time: last?.start_time ?? null,
       end_time: last?.end_time ?? null,
     });
     if (error) return toast.error(error.message);
+    await syncCourseDates(sessCourse.id);
     await openSessions(sessCourse);
   }
+  /** Kursbeginn/-ende folgen den Terminen (Zahlungsfristen und Erinnerungen hängen am Kursstart). */
+  async function syncCourseDates(courseId: string) {
+    const { data } = await supabase.from("course_sessions").select("session_date").eq("course_id", courseId).order("session_date", { ascending: true });
+    const dates = ((data as { session_date: string }[]) || []).map(d => d.session_date);
+    if (dates.length === 0) return;
+    const { error } = await supabase.from("courses").update({ starts_on: dates[0], ends_on: dates[dates.length - 1] }).eq("id", courseId);
+    if (error) { toast.error(`Kursbeginn/-ende konnten nicht angepasst werden: ${error.message}`); return; }
+    await load();
+  }
   async function updateSessionDate(id: string, date: string) {
+    if (!date) return; // Feld wurde geleert: nichts speichern
     const { error } = await supabase.from("course_sessions").update({ session_date: date }).eq("id", id);
     if (error) return toast.error(error.message);
-    if (sessCourse) await openSessions(sessCourse);
+    if (sessCourse) { await syncCourseDates(sessCourse.id); await openSessions(sessCourse); }
   }
   async function updateSessionTime(id: string, field: "start_time" | "end_time", value: string) {
     const next = value ? `${value}:00` : null;
@@ -401,9 +421,11 @@ function Page() {
     if (error) toast.error(error.message);
   }
   async function removeSession(id: string) {
+    const s = sessions.find(x => x.id === id);
+    if (!window.confirm(`${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} wirklich löschen? Anwesenheiten und Trainer-Nachweise zu diesem Termin gehen verloren.`)) return;
     const { error } = await supabase.from("course_sessions").delete().eq("id", id);
     if (error) return toast.error(error.message);
-    if (sessCourse) await openSessions(sessCourse);
+    if (sessCourse) { await syncCourseDates(sessCourse.id); await openSessions(sessCourse); }
   }
 
   async function exportCourseList(c: Course) {
@@ -539,8 +561,7 @@ function Page() {
   function hasStarted(c: Course) {
     if (c.archived_at) return true;
     if (!c.starts_on) return false;
-    const today = new Date().toISOString().slice(0, 10);
-    return c.starts_on <= today;
+    return c.starts_on <= todayBerlinIso();
   }
 
   async function load() {
@@ -752,6 +773,10 @@ function Page() {
     if (!partCourse) return;
     if (!newPart.name.trim()) return toast.error("Name erforderlich");
     if (!newPart.date_of_birth) return toast.error("Geburtsdatum erforderlich");
+    if (newPart.status === "waiting" && wlPick) {
+      // Der Eintrag steht bereits auf der (einzigen) Warteliste – kein Teilnehmer mit Status „Warteliste“ anlegen
+      return toast.info("Dieses Kind steht bereits auf der Warteliste. Zum Einbuchen den Status „Bestätigt“ wählen.");
+    }
     if (newPart.status === "waiting" && !wlPick) {
       // Es gibt nur eine Warteliste: Eintrag dort anlegen, damit automatische Angebote greifen
       const { error: wlError } = await supabase.from("waitlist_entries").insert({
@@ -889,12 +914,13 @@ function Page() {
       internal_notes: editPart.internal_notes?.trim() || null,
       paid: editPart.paid,
       paid_at: editPart.paid ? (editPart.paid_at || new Date().toISOString()) : null,
-      paid_by: editPart.paid ? userId : null,
+      // „bezahlt von“ / „Mitgliedschaft bestätigt von“ bleiben erhalten, solange sich der Wert nicht ändert
+      paid_by: editPart.paid ? (editPart.paid_by ?? userId) : null,
       payment_note: editPart.payment_note?.trim() || null,
       is_member: editPart.is_member,
       member_confirmed: editPart.member_confirmed,
       member_confirmed_at: editPart.member_confirmed ? (editPart.member_confirmed_at || (memberConfirmedChanged ? new Date().toISOString() : null)) : null,
-      member_confirmed_by: editPart.member_confirmed ? userId : null,
+      member_confirmed_by: editPart.member_confirmed ? (editPart.member_confirmed_by ?? userId) : null,
       price_amount: editPart.price_amount,
       parent_user_id: editPart.parent_user_id || null,
     }).eq("id", editPart.id);
@@ -1767,7 +1793,8 @@ function Page() {
                   <Label>Status</Label>
                   <Select value={editPart.status} onValueChange={(v: any) => setEditPart(p => p && { ...p, status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>{ENROLL_STATUS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    {/* „Warteliste“ gibt es nur über die Wartelisten-Funktionen (Status-Auswahl in der Teilnehmerliste) */}
+                    <SelectContent>{ENROLL_STATUS.filter(o => o.value !== "waiting" || editPart.status === "waiting").map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>

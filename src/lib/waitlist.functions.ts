@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { todayBerlinIso } from '@/lib/format'
 import { fetchAll, fetchIn } from '@/lib/fetch-all'
+import { escapeLike } from '@/lib/like'
 import type { Database } from '@/integrations/supabase/types'
 
 type WaitlistRow = Database['public']['Tables']['waitlist_entries']['Row']
@@ -49,8 +50,8 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
     const { data: existing } = await supabaseAdmin
       .from('waitlist_entries')
       .select('id')
-      .ilike('parent_email', emailNorm)
-      .ilike('child_name', data.childName.trim())
+      .ilike('parent_email', escapeLike(emailNorm))
+      .ilike('child_name', escapeLike(data.childName.trim()))
       .in('status', ['waiting', 'offered'])
       .limit(1)
       .maybeSingle()
@@ -59,7 +60,7 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
     const { data: mem } = await supabaseAdmin
       .from('memberships')
       .select('status')
-      .ilike('email', emailNorm)
+      .ilike('email', escapeLike(emailNorm))
       .limit(1)
       .maybeSingle()
 
@@ -626,7 +627,7 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
     if (data.blocklist) {
       const email = (entry.parent_email ?? '').trim().toLowerCase() || null
       const child = (entry.child_name ?? '').trim().replace(/\s+/g, ' ').toLowerCase() || null
-      await supabaseAdmin.from('booking_blocklist').insert({
+      const { error: blErr } = await supabaseAdmin.from('booking_blocklist').insert({
         child_name_norm: child,
         child_dob: entry.child_dob,
         email_norm: email,
@@ -635,6 +636,7 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
         active: true,
         created_by: context.userId,
       })
+      if (blErr) throw new Error(`Der Eintrag wurde geändert, aber der Sperrlisteneintrag konnte nicht angelegt werden: ${blErr.message}`)
     }
 
     return { ok: true }

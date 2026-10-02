@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { escapeLike } from '@/lib/like'
 import { todayBerlinIso } from '@/lib/format'
 import { meetsMinAge, withinMaxAge } from '@/lib/waitlist-age'
 
@@ -409,7 +410,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
         price_amount: price,
         online_booking: true,
         payment_method: terms.immediate ? 'immediate' : 'transfer',
-        payment_due_date: terms.dueDate.toISOString().slice(0, 10),
+        payment_due_date: terms.dueDateIso,
         push_token: pushToken,
         document_issued_at: issuedAt,
       },
@@ -430,7 +431,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     }
     const documentNo = seat.result === 'booked' ? seat.documentNo : null
     const paymentMethod = isFull ? null : terms.immediate ? 'immediate' : 'transfer'
-    const paymentDueDate = isFull ? null : terms.dueDate.toISOString().slice(0, 10)
+    const paymentDueDate = isFull ? null : terms.dueDateIso
 
     // Anfrage-Datensatz für die Admin-Übersicht anlegen
     const { data: request } = await supabaseAdmin
@@ -462,7 +463,7 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
       const { data: existingEntry } = await supabaseAdmin
         .from('waitlist_entries')
         .select('id')
-        .ilike('parent_email', emailNorm)
+        .ilike('parent_email', escapeLike(emailNorm))
         .ilike('child_name', escaped)
         .in('status', ['waiting', 'offered'])
         .limit(1)

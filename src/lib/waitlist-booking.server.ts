@@ -69,7 +69,7 @@ export async function bookWaitlistEntry(
   const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14
   const terms = paymentTerms({ bookedAt: issuedAt, startsOn: course.starts_on, paymentDueDays: dueDays })
   const paymentMethod = terms.immediate ? 'immediate' : 'transfer'
-  const paymentDueDate = terms.dueDate.toISOString().slice(0, 10)
+  const paymentDueDate = terms.dueDateIso
 
   const label = source === 'admin' ? 'Direkt aus der Warteliste gebucht' : 'Zusage über die Warteliste'
 

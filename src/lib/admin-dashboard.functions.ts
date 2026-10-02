@@ -8,6 +8,8 @@ export type AdminTask = {
   count: number;
   /** Zielseite im Adminbereich */
   to: string;
+  /** Optionaler Reiter der Zielseite (z. B. { tab: "archive" }) */
+  search?: { tab: "archive" };
   tone: "urgent" | "attention" | "info";
   hint?: string;
 };
@@ -122,6 +124,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         label: "Neue Kursanfragen",
         count: requests.count ?? 0,
         to: "/admin/warteliste",
+        search: { tab: "archive" },
         tone: "attention",
       },
       {

@@ -14,6 +14,8 @@ export type InboxItem = {
   statusLabel: string;
   /** Ziel im Adminbereich, an dem der Vorgang vollständig bearbeitet werden kann */
   contextTo: string;
+  /** Optionaler Reiter/Parameter der Zielseite */
+  contextSearch?: { tab: "archive" };
 };
 
 const REQUEST_STATUS: Record<string, string> = {
@@ -49,6 +51,8 @@ export const listInbox = createServerFn({ method: "POST" })
     // Nur offene Vorgänge gehören in den Posteingang – erledigte bleiben in der Warteliste sichtbar.
     const OPEN_REQUEST = ["new", "under_review"] as const;
     const OPEN_WAITLIST = ["waiting", "offered"] as const;
+    // Wartelisten-Einträge nur als „neu“ zeigen (letzte 30 Tage), nicht die gesamte Warteliste
+    const waitlistSince = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const [requests, waitlist] = await Promise.all([
       supabaseAdmin
@@ -62,6 +66,7 @@ export const listInbox = createServerFn({ method: "POST" })
         .from("waitlist_entries")
         .select("id,parent_name,parent_email,child_name,notes,status,created_at")
         .in("status", OPEN_WAITLIST)
+        .gte("created_at", waitlistSince)
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
@@ -81,7 +86,9 @@ export const listInbox = createServerFn({ method: "POST" })
         body: parts || "(keine Nachricht hinterlegt)",
         created_at: r.created_at as string,
         statusLabel: REQUEST_STATUS[r.status as string] ?? (r.status as string),
+        // Kursanfragen stehen im Reiter „Frühere Kursanfragen“, nicht in der Warteliste
         contextTo: "/admin/warteliste",
+        contextSearch: { tab: "archive" },
       });
     }
 
