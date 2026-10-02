@@ -149,10 +149,11 @@ export function TransferParticipantDialog({
 
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={notify} disabled={!participant?.participant_email} onCheckedChange={v => setNotify(!!v)} />
-            Eltern per E-Mail informieren (neue Termine{finalDue > 0 ? ", Restbetrag mit Bankverbindung" : ""})
+            Eltern per E-Mail informieren und um Zustimmung bitten (neue Termine{finalDue > 0 ? ", Restbetrag mit Bankverbindung" : ""}, Zustimmungs-Button)
           </label>
           <p className="text-xs text-muted-foreground">
             Die bisherige Buchung bleibt mit Anwesenheit als „Abgesagt (umgebucht)“ erhalten. Prüfungsfortschritt wird übernommen.
+            Die Zustimmung der Eltern wird mit Zeitstempel gespeichert und in der Teilnehmerliste angezeigt.
           </p>
         </div>
         <DialogFooter>
