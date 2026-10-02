@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { listCancellations, setCancellationStatus } from "@/lib/cancellation.functions";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { csvCell } from "@/lib/csv-safe";
 
 export const Route = createFileRoute("/_authenticated/admin/widerrufe")({
   beforeLoad: async () => {
@@ -106,7 +107,7 @@ function Page() {
         r.parent_first_name, r.parent_last_name, r.email, r.phone, r.child_name,
         r.course_name, r.booking_date, (r.notes || "").replace(/[\r\n;]/g, " "),
         r.revocation_text.replace(/[\r\n;]/g, " "), r.ip_address || "",
-      ].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")),
+      ].map((c) => csvCell(c)).join(";")),
     ).join("\n");
     return "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csv);
   }, [rows]);

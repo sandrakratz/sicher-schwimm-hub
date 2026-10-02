@@ -12,11 +12,13 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const isStaff =
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
-    if (!isStaff) throw new Error("Forbidden");
+    // Kursliste: Vorstand/Admin oder Trainer:in dieses Kurses (nicht jeder Trainer für jeden Kurs)
+    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
+    if (!isStaff) {
+      const isTrainer = (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+      const ofCourse = (await supabase.rpc("is_trainer_of_course", { _trainer_id: userId, _course_id: data.courseId })).data;
+      if (!isTrainer || !ofCourse) throw new Error("Forbidden");
+    }
 
     const { data: course, error: cErr } = await supabase
       .from("courses")
@@ -33,7 +35,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       .order("session_index", { ascending: true });
     const sessions = sessionsData || [];
 
-    const { data: partsData } = await supabase
+    // Zugriff ist oben geprüft; Trainer:innen dürfen die Teilnehmertabelle nicht mehr direkt lesen
+    const { supabaseAdmin: adminDb } = await import("@/integrations/supabase/client.server");
+    const { data: partsData } = await adminDb
       .from("course_participants")
       .select("id,participant_name,participant_phone,date_of_birth,notes,status")
       .eq("course_id", data.courseId)
@@ -341,10 +345,8 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const isStaff =
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+    // Enthält Zahlungs-, Rechnungs- und Adressdaten: nur Vorstand/Admin, nicht Trainer:innen
+    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
     if (!isStaff) throw new Error("Forbidden");
 
     const { data: course, error: cErr } = await supabase
@@ -563,10 +565,8 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const isStaff =
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+    // Enthält Zahlungs-, Rechnungs- und Adressdaten: nur Vorstand/Admin, nicht Trainer:innen
+    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
     if (!isStaff) throw new Error("Forbidden");
 
     const { data: course, error: cErr } = await supabase
@@ -673,10 +673,8 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const isStaff =
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" })).data;
+    // Enthält Zahlungs-, Rechnungs- und Adressdaten: nur Vorstand/Admin, nicht Trainer:innen
+    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
     if (!isStaff) throw new Error("Forbidden");
 
     const { data: course, error: cErr } = await supabase
@@ -750,7 +748,8 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
       "Verwendungszweck",
     ];
 
-    const esc = (v: string) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const { csvCell } = await import("@/lib/csv-safe");
+    const esc = (v: string) => csvCell(v);
     const lines: Array<string> = [headers.map(esc).join(";")];
     let missingDocNo = 0;
 

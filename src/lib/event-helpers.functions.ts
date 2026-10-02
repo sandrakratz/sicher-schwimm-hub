@@ -86,7 +86,12 @@ export const deleteHelperGroup = createServerFn({ method: 'POST' })
 export const syncHelperGroupFill = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { eventId: string }) => z.object({ eventId: z.string().uuid() }).parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Nur Team-Rollen (Trainer:innen melden sich selbst für Helferstellen an, Vorstand pflegt sie)
+    const roles = await Promise.all(
+      (['admin', 'board', 'trainer'] as const).map((r) => context.supabase.rpc('has_role', { _user_id: context.userId, _role: r })),
+    )
+    if (!roles.some((r) => r.data)) throw new Error('Forbidden')
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const [{ data: groups }, { data: signups }] = await Promise.all([
       supabaseAdmin.from('event_helper_groups').select('*').eq('event_id', data.eventId),

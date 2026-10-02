@@ -74,6 +74,12 @@ function Page() {
   const { adminRoles } = Route.useRouteContext() as { adminRoles?: Role[] };
   const roles = (adminRoles ?? []) as Role[];
   const canManage = roles.includes("admin") || roles.includes("board");
+  // Administratoren (und das Löschen von Konten) bleiben Administratoren vorbehalten – der Server erzwingt das ebenfalls
+  const isAdmin = roles.includes("admin");
+  const [myId, setMyId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyId(data.user?.id ?? null)); }, []);
+  const isAdminRow = (id: string) => (rolesByUser[id] || []).includes("admin");
+  const locked = (id: string) => !isAdmin && isAdminRow(id);
 
   const [rows, setRows] = useState<Profile[]>([]);
   const [rolesByUser, setRolesByUser] = useState<Record<string, Role[]>>({});
@@ -196,9 +202,11 @@ function Page() {
                   {canManage && (
                     <TableCell className="text-right space-x-1" onClick={e => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>Details</Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {isAdmin && p.id !== myId && (
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setToDelete(p)} aria-label="Benutzer löschen">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
@@ -225,7 +233,7 @@ function Page() {
                     <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Status</div>
                     <div className="flex flex-wrap gap-2">
                       {STATUSES.map(s => (
-                        <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} onClick={() => setStatus(selected.id, s)}>{STATUS_LABEL[s]}</Button>
+                        <Button key={s} size="sm" variant={selected.status === s ? "default" : "outline"} disabled={locked(selected.id) || (selected.id === myId && s !== "active")} onClick={() => setStatus(selected.id, s)}>{STATUS_LABEL[s]}</Button>
                       ))}
                     </div>
                   </div>
@@ -235,9 +243,11 @@ function Page() {
                     <div className="grid grid-cols-2 gap-2">
                       {ROLES.map(r => {
                         const has = (rolesByUser[selected.id] || []).includes(r);
+                        // Nur Administratoren vergeben/entziehen „Administrator“; die eigene Admin-Rolle bleibt erhalten
+                        const disabled = locked(selected.id) || (r === "admin" && (!isAdmin || (has && selected.id === myId)));
                         return (
                           <label key={r} className="flex items-center gap-2 text-sm border rounded-md px-3 py-2 cursor-pointer hover:bg-muted/50">
-                            <Checkbox checked={has} onCheckedChange={() => toggleRole(selected.id, r, has)} />
+                            <Checkbox checked={has} disabled={disabled} onCheckedChange={() => toggleRole(selected.id, r, has)} />
                             <span>{ROLE_LABEL[r]}</span>
                           </label>
                         );
@@ -245,10 +255,13 @@ function Page() {
                     </div>
                   </div>
                 </div>
+                {locked(selected.id) && <p className="text-xs text-muted-foreground">Konten von Administratoren können nur Administratoren ändern.</p>}
                 <DialogFooter className="gap-2 sm:justify-between">
-                  <Button variant="destructive" onClick={() => setToDelete(selected)}>
-                    <Trash2 className="h-4 w-4" />Benutzer löschen
-                  </Button>
+                  {isAdmin && selected.id !== myId ? (
+                    <Button variant="destructive" onClick={() => setToDelete(selected)}>
+                      <Trash2 className="h-4 w-4" />Benutzer löschen
+                    </Button>
+                  ) : <span />}
                   <Button variant="outline" onClick={() => setSelected(null)}>Schließen</Button>
                 </DialogFooter>
               </>

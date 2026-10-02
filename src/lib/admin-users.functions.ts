@@ -26,6 +26,23 @@ async function assertStaff(supabase: any, userId: string) {
   if (!data) throw new Error("Nur Admin/Vorstand erlaubt.");
 }
 
+/**
+ * Administratoren verwalten sich gegenseitig; der Vorstand darf Konten und Rollen von Administratoren
+ * nicht ändern (sonst könnte sich der Vorstand selbst zum Administrator machen oder Admins entrechten).
+ */
+async function isAdminUser(supabase: any, userId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (error) throw new Error("Berechtigungsprüfung fehlgeschlagen");
+  return !!data;
+}
+
+async function assertMayManageTarget(supabase: any, actorId: string, targetId: string) {
+  if (await isAdminUser(supabase, actorId)) return;
+  if (await isAdminUser(supabase, targetId)) {
+    throw new Error("Konten und Rollen von Administratoren dürfen nur Administratoren ändern.");
+  }
+}
+
 export const deleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -60,6 +77,10 @@ export const setUserStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
+    if (data.userId === context.userId && data.status !== "active") {
+      throw new Error("Du kannst dein eigenes Konto nicht deaktivieren oder archivieren.");
+    }
+    await assertMayManageTarget(context.supabase, context.userId, data.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("profiles")
@@ -102,6 +123,23 @@ export const setUserRole = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertStaff(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const actorIsAdmin = await isAdminUser(context.supabase, context.userId);
+    if (data.role === "admin" && !actorIsAdmin) {
+      throw new Error("Die Rolle „Administrator“ dürfen nur Administratoren vergeben oder entziehen.");
+    }
+    await assertMayManageTarget(context.supabase, context.userId, data.userId);
+    if (!data.enabled && data.role === "admin") {
+      if (data.userId === context.userId) {
+        throw new Error("Du kannst dir die Administrator-Rolle nicht selbst entziehen.");
+      }
+      // Mindestens ein Administrator muss bleiben
+      const { count, error: cntErr } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("role", "admin");
+      if (cntErr) throw new Error("Berechtigungsprüfung fehlgeschlagen");
+      if ((count ?? 0) <= 1) throw new Error("Der letzte Administrator kann nicht entfernt werden.");
+    }
     if (data.enabled) {
       const { error } = await supabaseAdmin
         .from("user_roles")

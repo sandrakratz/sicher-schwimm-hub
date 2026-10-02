@@ -43,8 +43,9 @@ export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
-    try { await assertHasAnyRole({ data: { roles: ["admin", "board", "trainer"] } }); }
-    catch { throw redirect({ to: "/portal" }); }
+    // Trainer:innen arbeiten im Trainerbereich („Meine Kurse“); die Kursverwaltung ist Vorstand/Admin vorbehalten
+    try { await assertHasAnyRole({ data: { roles: ["admin", "board"] } }); }
+    catch { throw redirect({ to: "/trainer/kurse" }); }
   },
   component: Page,
 });

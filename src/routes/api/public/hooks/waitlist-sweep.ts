@@ -8,14 +8,8 @@ export const Route = createFileRoute('/api/public/hooks/waitlist-sweep')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get('apikey') ?? ''
-        const expected = process.env['SUPABASE_ANON_KEY'] ?? process.env['SUPABASE_PUBLISHABLE_KEY'] ?? ''
-        if (!expected || apiKey !== expected) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        }
+        const { cronUnauthorized, isCronAuthorized } = await import('@/lib/cron-auth.server')
+        if (!isCronAuthorized(request)) return cronUnauthorized()
 
         try {
           const { allocateWaitlist, expireFollowups, sendMissingFollowups } = await import('@/lib/waitlist.server')
