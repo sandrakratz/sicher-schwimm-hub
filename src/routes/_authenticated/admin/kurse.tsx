@@ -158,6 +158,7 @@ type Course = {
   course_info: string | null;
   min_participants?: number | null;
   lanes?: number | null;
+  trainers_needed?: number | null;
   start_tentative?: boolean;
   tentative_note?: string | null;
 };
@@ -595,13 +596,20 @@ function Page() {
     if (courseIds.length) {
       const sessList = await fetchIn<any>(courseIds, (chunk, f, t) => supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").in("course_id", chunk).order("id").range(f, t));
       const sessIds = sessList.map(s => s.id);
-      const assigned = new Set<string>();
-      const asgRows = await fetchIn<any>(sessIds, (chunk, f, t) => supabase.from("course_session_assignments").select("session_id").in("session_id", chunk).order("id").range(f, t));
-      asgRows.forEach(a => assigned.add(a.session_id));
+      const assigned = new Map<string, Set<string>>();
+      const asgRows = await fetchIn<any>(sessIds, (chunk, f, t) => supabase.from("course_session_assignments").select("session_id,trainer_id").in("session_id", chunk).order("id").range(f, t));
+      asgRows.forEach(a => {
+        const set = assigned.get(a.session_id) ?? new Set<string>();
+        set.add(a.trainer_id);
+        assigned.set(a.session_id, set);
+      });
+      const needed = new Map(list.map(c => [c.id, c.trainers_needed ?? 2] as const));
       sessList.forEach(s => {
         const m = map[s.course_id] = map[s.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
         m.sessions++;
-        if (s.assigned_trainer_id || assigned.has(s.id)) m.staffed++;
+        const team = new Set(assigned.get(s.id) ?? []);
+        if (s.assigned_trainer_id) team.add(s.assigned_trainer_id);
+        if (team.size >= (needed.get(s.course_id) ?? 2)) m.staffed++;
       });
     }
     setCounts(map);
@@ -960,6 +968,7 @@ function Page() {
       course_info: editing.course_info || null,
       min_participants: editing.min_participants ?? null,
       lanes: editing.lanes ?? null,
+      trainers_needed: Math.min(10, Math.max(1, Math.round(Number(editing.trainers_needed) || 2))),
       start_tentative: !!editing.start_tentative,
       tentative_note: editing.tentative_note || null,
     };
@@ -1039,7 +1048,7 @@ function Page() {
     const payLabel = cnt.confirmed === 0 ? "Keine Buchungen" : cnt.overdue > 0 ? `${cnt.overdue} überfällig · ${cnt.unpaid} offen` : cnt.unpaid > 0 ? `${cnt.unpaid} offen` : "Alle bezahlt";
     const payVariant: "destructive" | "secondary" | "outline" = cnt.overdue > 0 ? "destructive" : cnt.unpaid > 0 ? "secondary" : "outline";
     const openSess = cnt.sessions - cnt.staffed;
-    const rosterLabel = cnt.sessions === 0 ? "Keine Termine" : openSess === 0 ? `Vollständig besetzt (${cnt.staffed}/${cnt.sessions})` : `${openSess} Termine ohne Trainer`;
+    const rosterLabel = cnt.sessions === 0 ? "Keine Termine" : openSess === 0 ? `Vollständig besetzt (${cnt.staffed}/${cnt.sessions})` : `${openSess} ${openSess === 1 ? "Termin" : "Termine"} nicht voll besetzt (${c.trainers_needed ?? 2} Trainer:innen nötig)`;
     const rosterVariant: "destructive" | "outline" = cnt.sessions > 0 && openSess > 0 ? "destructive" : "outline";
     return (
       <div key={c.id} className={`rounded-lg border bg-card p-4 space-y-3 ${c.archived_at ? "opacity-70" : ""}`}>
@@ -1399,6 +1408,11 @@ function Page() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="none">Keine Angabe</SelectItem><SelectItem value="1">1 Bahn</SelectItem><SelectItem value="2">2 Bahnen</SelectItem></SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Benötigte Trainer:innen pro Termin</Label>
+                <Input type="number" min={1} max={10} value={editing.trainers_needed ?? 2} onChange={e => setEditing(p => ({ ...p, trainers_needed: e.target.value ? Number(e.target.value) : null }))} />
+                <Hint>Maßgeblich für Dienstplan und Kurskalender (Ampel „unterbesetzt“).</Hint>
               </div>
               <div><Label>Anzahl der Einheiten</Label><Input type="number" value={editing.unit_count ?? ""} onChange={e => setEditing(p => ({ ...p, unit_count: e.target.value ? Number(e.target.value) : null }))} placeholder="z.B. 12" /></div>
               <div>

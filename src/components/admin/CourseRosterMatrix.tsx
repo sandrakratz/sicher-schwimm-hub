@@ -62,10 +62,11 @@ export function CourseRosterMatrix({ sessions, trainers, onChanged }: {
               <th className="sticky left-0 bg-background p-1 text-left">Trainer:in</th>
               {sorted.map((s) => {
                 const n = (s.assignedIds ?? []).length;
+                const required = s.trainersNeeded ?? 2;
                 return (
                   <th key={s.id} className="p-1 text-center font-normal whitespace-nowrap">
                     <div>{shortDay(s.date)}</div>
-                    <Badge variant={n >= 2 ? "secondary" : "outline"} className={n >= 2 ? "" : "border-destructive text-destructive"}>{n}</Badge>
+                    <Badge variant={n >= required ? "secondary" : "outline"} className={n >= required ? "" : "border-destructive text-destructive"}>{n}/{required}</Badge>
                   </th>
                 );
               })}

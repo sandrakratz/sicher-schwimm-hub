@@ -57,6 +57,9 @@ function timeLabel(e: CalendarEntry): string {
   return e.endTime ? `${e.startTime}–${e.endTime} Uhr` : `${e.startTime} Uhr`;
 }
 
+/** Benötigte Trainer:innen pro Termin (Kurseinstellung, Vorgabe 2). */
+const need = (e: CalendarEntry) => e.trainersNeeded ?? 2;
+
 function Page() {
   const load = useServerFn(listAdminCalendar);
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
@@ -109,7 +112,7 @@ function Page() {
     return entries.filter((e) => {
       if (kind !== "all" && e.kind !== kind) return false;
       if (scope === "upcoming" && e.date < today) return false;
-      if (onlyOpen && !(e.kind === "session" && e.trainers.length < 2)) return false;
+      if (onlyOpen && !(e.kind === "session" && e.trainers.length < need(e))) return false;
       if (!needle) return true;
       const hay = [
         e.title, e.subtitle ?? "", e.location ?? "",
@@ -158,7 +161,7 @@ function Page() {
     0,
   );
   const withoutTrainer = filtered.filter((e) => e.kind === "session" && e.trainers.length === 0).length;
-  const oneTrainer = filtered.filter((e) => e.kind === "session" && e.trainers.length === 1).length;
+  const understaffed = filtered.filter((e) => e.kind === "session" && e.trainers.length > 0 && e.trainers.length < need(e)).length;
   const withoutTime = filtered.filter((e) => !e.startTime).length;
 
   return (
@@ -177,11 +180,11 @@ function Page() {
         </Button>
       </div>
 
-      {(withoutTrainer > 0 || oneTrainer > 0) && (
+      {(withoutTrainer > 0 || understaffed > 0) && (
         <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 p-3 text-sm">
           ⚠️ {withoutTrainer > 0 && <><b>{withoutTrainer}</b> Termin(e) ohne Trainer:in</>}
-          {withoutTrainer > 0 && oneTrainer > 0 && " · "}
-          {oneTrainer > 0 && <><b>{oneTrainer}</b> Termin(e) mit nur einer Person</>}
+          {withoutTrainer > 0 && understaffed > 0 && " · "}
+          {understaffed > 0 && <><b>{understaffed}</b> Termin(e) mit zu wenigen Trainer:innen</>}
           {!onlyOpen && <Button size="sm" variant="outline" className="ml-3" onClick={() => setOnlyOpen(true)}>Nur diese anzeigen</Button>}
         </div>
       )}
@@ -244,7 +247,7 @@ function Page() {
       )}
 
       {view === "course" && byCourse.map(([cid, list]) => {
-        const incomplete = list.filter((s) => (s.assignedIds ?? []).length < 2).length;
+        const incomplete = list.filter((s) => (s.assignedIds ?? []).length < need(s)).length;
         return (
           <CollapsibleCard
             key={cid}
@@ -321,7 +324,8 @@ function SessionRoster({ e, trainers, open, setOpen, onToggle }: {
   onToggle: (e: CalendarEntry, id: string, on: boolean) => void;
 }) {
   const n = e.trainers.length;
-  const light = n === 0 ? "🔴" : n === 1 ? "🟡" : "🟢";
+  const required = need(e);
+  const light = n === 0 ? "🔴" : n < required ? "🟡" : "🟢";
   const assigned = new Set(e.assignedIds ?? []);
   const av = new Map((e.availability ?? []).map((a) => [a.id, a.available]));
   const rank = (id: string) => (av.get(id) === true ? 0 : av.get(id) === false ? 2 : 1);
@@ -330,6 +334,7 @@ function SessionRoster({ e, trainers, open, setOpen, onToggle }: {
       <div className="flex flex-wrap items-center gap-2">
         <span title="Besetzung">{light}</span>
         <Users className="h-3.5 w-3.5" />
+        <span className={n < required ? "font-medium text-destructive" : "text-muted-foreground"}>{n} von {required}</span>
         {n === 0 && <span className="text-destructive">keine Trainer:in eingeteilt</span>}
         {e.trainers.map((t) => (
           <Badge key={t.id} variant="secondary" className="gap-1">
