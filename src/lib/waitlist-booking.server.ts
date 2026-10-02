@@ -134,8 +134,17 @@ export async function bookWaitlistEntry(
   await supabaseAdmin.from('course_participants').update({ request_id: requestId }).eq('id', seat.participantId)
   await supabaseAdmin.from('waitlist_entries').update({ request_id: requestId }).eq('id', entry.id)
 
+  // Ab hier ist der Platz gebucht: scheitert ein Mailversand, soll die Buchung nicht als Fehler erscheinen
+  // (sonst probieren Eltern es erneut und erhalten „bereits angenommen“). Die Mails stehen im Sendeprotokoll.
   const { queueTemplateEmail } = await import('@/lib/email-send.server')
-  await queueTemplateEmail({
+  const safeMail = async (label: string, send: () => Promise<unknown>) => {
+    try {
+      await send()
+    } catch (err) {
+      console.error(`booking mail failed (${label})`, err)
+    }
+  }
+  await safeMail('booking-confirmation', () => queueTemplateEmail({
     templateName: 'course-booking-confirmation',
     recipientEmail: entry.parent_email,
     idempotencyKey: `waitlist-accept-${entry.id}`,
@@ -166,9 +175,9 @@ export async function bookWaitlistEntry(
       push_url: `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
     },
     metadata: { waitlist_entry_id: entry.id, course_id: course.id },
-  })
+  }))
 
-  await queueTemplateEmail({
+  await safeMail('internal-copy', () => queueTemplateEmail({
     templateName: 'course-request',
     idempotencyKey: `waitlist-accept-admin-${entry.id}`,
     templateData: {
@@ -190,7 +199,7 @@ export async function bookWaitlistEntry(
       course_location: course.location ?? program?.location ?? null,
       booking_status: 'Warteliste – verbindlich gebucht',
     },
-  })
+  }))
 
   return {
     courseName: course.name,

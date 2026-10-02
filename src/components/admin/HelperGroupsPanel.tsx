@@ -149,14 +149,14 @@ export function HelperGroupsPanel({
                   type="datetime-local"
                   className="h-8 w-[13rem]"
                   defaultValue={toBerlinInput(g.starts_at)}
-                  onBlur={e => patch(g, { starts_at: fromBerlinInput(e.target.value) })}
+                  onBlur={e => { if (e.target.value !== toBerlinInput(g.starts_at)) patch(g, { starts_at: fromBerlinInput(e.target.value) }); }}
                 />
                 <span className="text-xs text-muted-foreground">bis</span>
                 <Input
                   type="datetime-local"
                   className="h-8 w-[13rem]"
                   defaultValue={toBerlinInput(g.ends_at)}
-                  onBlur={e => patch(g, { ends_at: fromBerlinInput(e.target.value) })}
+                  onBlur={e => { if (e.target.value !== toBerlinInput(g.ends_at)) patch(g, { ends_at: fromBerlinInput(e.target.value) }); }}
                 />
                 {full ? (
                   <Badge className="gap-1 border-transparent bg-green-600 text-white">
