@@ -223,6 +223,9 @@ select document_no from course_participants
 ## 8. Umsetzungsstand
 - Umgesetzt (PR „Atomare Buchung“): Funktion `book_course_seat`, `bookCourseTerm`, `bookWaitlistEntry`/`respondWaitlistOffer`,
   Online-Buchung im vollen Kurs → `waitlist_entries`.
-- **Noch offen (Folge-PR):** Vorstand-Wege `assignRequestToCourse` mit Status „Warteliste“ und `addParticipant`
-  („Warteliste“-Auswahl) auf die Warteliste umleiten; `offer_course_id` beim Zurücksetzen auf die Warteliste setzen;
-  eindeutiger Index (erst nach Abfrage B und Bereinigung).
+- Umgesetzt (Folge-PR „Admin-Wege“): Zuordnung mit Status „Warteliste“ (`assignRequestToCourse`) und „Teilnehmer hinzufügen →
+  Warteliste“ legen einen Wartelisteneintrag an statt eines `waiting`-Teilnehmers; beim Zurücksetzen auf die Warteliste
+  (`moveParticipantToWaitlist`, Kurs absagen) wird `offer_course_id` auf den verlassenen Kurs gesetzt; Kurs-Absage
+  ordnet Teilnehmer nur noch dem Eintrag derselben Anfrage zu (nicht irgendeinem Eintrag des Kurses).
+- **Noch offen:** eindeutiger Index auf aktive Teilnehmer (erst nach Abfrage B und Bereinigung); `unassignRequestFromCourse`
+  setzt keinen Wartelisteneintrag (Übernahme erfolgt beim Öffnen der Warteliste).

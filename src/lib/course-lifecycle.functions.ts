@@ -98,11 +98,11 @@ export const cancelCourse = createServerFn({ method: 'POST' })
       // Vorhandenen Wartelisten-Eintrag suchen (Original-Anmeldedatum bleibt erhalten)
       let entry: { id: string; admin_notes: string | null } | null = null
       {
-        const q = supabaseAdmin.from('waitlist_entries').select('id,admin_notes,created_at')
-        const { data: found } = await (p.request_id
-          ? q.or(`request_id.eq.${p.request_id},offer_course_id.eq.${course.id}`)
-          : q.eq('offer_course_id', course.id))
-        const match = (found ?? []).find(() => true) ?? null
+        // Nur der Eintrag dieser Anfrage – nicht irgendein Eintrag, der diesen Kurs angeboten bekam
+        const match = p.request_id
+          ? ((await supabaseAdmin.from('waitlist_entries').select('id,admin_notes,created_at')
+              .eq('request_id', p.request_id).limit(1)).data ?? [])[0] ?? null
+          : null
         if (!match && email) {
           const { data: byMail } = await supabaseAdmin.from('waitlist_entries').select('id,admin_notes,child_name')
             .ilike('parent_email', email)
@@ -112,12 +112,13 @@ export const cancelCourse = createServerFn({ method: 'POST' })
       const note = `Kurs „${course.name}“ abgesagt – zurück auf die Warteliste.`
       if (entry) {
         await supabaseAdmin.from('waitlist_entries').update({
-          status: 'waiting', offer_course_id: null, offer_token: null, offered_at: null, offer_expires_at: null,
+          status: 'waiting', offer_course_id: course.id, offer_token: null, offered_at: null, offer_expires_at: null,
           admin_notes: [entry.admin_notes, note].filter(Boolean).join('\n'),
         } as never).eq('id', entry.id)
       } else {
         await supabaseAdmin.from('waitlist_entries').insert({
           program_id: course.program_id ?? null,
+          offer_course_id: course.id,
           request_id: req?.id ?? null,
           child_name: p.participant_name ?? 'Unbekannt',
           child_dob: p.date_of_birth ?? req?.child_dob ?? null,

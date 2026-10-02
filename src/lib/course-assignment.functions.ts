@@ -204,33 +204,72 @@ export const assignRequestToCourse = createServerFn({ method: 'POST' })
     const paymentMethod = data.status === 'confirmed' ? (terms.immediate ? 'immediate' : 'transfer') : null
     const paymentDueDate = data.status === 'confirmed' ? terms.dueDate.toISOString().slice(0, 10) : null
 
-    // Insert participant
-    const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
-      course_id: course.id,
-      payment_method: paymentMethod,
-      payment_due_date: paymentDueDate,
-      participant_name: participantName,
-      participant_email: req.parent_email,
-      participant_phone: req.parent_phone,
-      status: data.status,
-      notes: req.health_info || null,
-      request_id: req.id,
-      date_of_birth: req.child_dob || null,
-      parent_user_id: parentUserId,
-      is_member: isMember,
-      price_amount: priceAmount,
-      document_no: documentNo,
-      document_issued_at: documentNo ? issuedAt : null,
-    })
+    if (data.status === 'waiting') {
+      // Es gibt nur eine Warteliste (waitlist_entries): Nur dort greifen automatische Angebote,
+      // Mitglieder-Vorrang und Altersprüfung. Kein Teilnehmer mit Status „waiting“ mehr.
+      const emailLower = (req.parent_email ?? '').toLowerCase().trim()
+      const childLower = participantName.toLowerCase().trim()
+      const { data: openEntries } = await supabaseAdmin
+        .from('waitlist_entries')
+        .select('id,request_id,parent_email,child_name')
+        .in('status', ['waiting', 'offered'])
+      const alreadyListed = (openEntries ?? []).some(
+        (e) =>
+          e.request_id === req.id ||
+          (emailLower !== '' &&
+            (e.parent_email ?? '').toLowerCase().trim() === emailLower &&
+            (e.child_name ?? '').toLowerCase().trim() === childLower),
+      )
+      if (!alreadyListed) {
+        const { error: wlErr } = await supabaseAdmin.from('waitlist_entries').insert({
+          program_id: course.program_id ?? null,
+          course_id: course.id,
+          request_id: req.id,
+          child_name: participantName,
+          child_dob: req.child_dob || null,
+          parent_name: req.parent_name,
+          parent_email: req.parent_email ?? '',
+          parent_phone: req.parent_phone ?? null,
+          parent_user_id: parentUserId,
+          is_member: isMember,
+          notes: [req.message, req.health_info].filter(Boolean).join('\n') || null,
+          admin_notes: data.adminNotes ?? req.admin_notes ?? null,
+          gdpr_consent: true,
+          status: 'waiting',
+          // Originales Eingangsdatum der Anfrage behalten (Reihenfolge auf der Warteliste)
+          created_at: req.created_at,
+        } as never)
+        if (wlErr) throw new Error(wlErr.message)
+      }
+    } else {
+      // Insert participant
+      const { error: partErr } = await supabaseAdmin.from('course_participants').insert({
+        course_id: course.id,
+        payment_method: paymentMethod,
+        payment_due_date: paymentDueDate,
+        participant_name: participantName,
+        participant_email: req.parent_email,
+        participant_phone: req.parent_phone,
+        status: data.status,
+        notes: req.health_info || null,
+        request_id: req.id,
+        date_of_birth: req.child_dob || null,
+        parent_user_id: parentUserId,
+        is_member: isMember,
+        price_amount: priceAmount,
+        document_no: documentNo,
+        document_issued_at: documentNo ? issuedAt : null,
+      })
 
-    if (partErr && !String(partErr.message).toLowerCase().includes('duplicate')) {
-      throw new Error(partErr.message)
+      if (partErr && !String(partErr.message).toLowerCase().includes('duplicate')) {
+        throw new Error(partErr.message)
+      }
     }
 
     // Update request
     await supabaseAdmin.from('course_requests').update({
       status: data.status === 'waiting' ? 'waiting_list' : 'accepted',
-      assigned_course_id: course.id,
+      assigned_course_id: data.status === 'waiting' ? null : course.id,
       admin_notes: data.adminNotes ?? req.admin_notes,
     }).eq('id', req.id)
 
@@ -389,7 +428,8 @@ export const moveParticipantToWaitlist = createServerFn({ method: 'POST' })
         .update({
           status: 'waiting',
           course_id: null,
-          offer_course_id: null,
+          // Der verlassene Kurs gilt als „bereits angeboten“ und wird nicht sofort erneut vergeben
+          offer_course_id: courseId,
           offer_token: null,
           offered_at: null,
           offer_expires_at: null,
@@ -401,6 +441,7 @@ export const moveParticipantToWaitlist = createServerFn({ method: 'POST' })
         .from('waitlist_entries')
         .insert({
           program_id: course?.program_id ?? null,
+          offer_course_id: courseId,
           request_id: req?.id ?? null,
           child_name: childName,
           child_dob: (req?.child_dob ?? part.date_of_birth) ?? null,
