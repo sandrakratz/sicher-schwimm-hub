@@ -696,6 +696,7 @@ export type Database = {
           target_group: string | null
           tentative_note: string | null
           trainer_id: string | null
+          trainers_needed: number
           unit_count: number | null
           updated_at: string
         }
@@ -727,6 +728,7 @@ export type Database = {
           target_group?: string | null
           tentative_note?: string | null
           trainer_id?: string | null
+          trainers_needed?: number
           unit_count?: number | null
           updated_at?: string
         }
@@ -758,6 +760,7 @@ export type Database = {
           target_group?: string | null
           tentative_note?: string | null
           trainer_id?: string | null
+          trainers_needed?: number
           unit_count?: number | null
           updated_at?: string
         }

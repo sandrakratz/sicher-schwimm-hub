@@ -21,7 +21,7 @@ type SessionRow = {
   assigned_trainer_id: string | null;
 };
 
-type CourseRow = { id: string; name: string; location: string | null; schedule: string | null; duration: string | null };
+type CourseRow = { id: string; name: string; location: string | null; schedule: string | null; duration: string | null; trainers_needed: number | null };
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
 
@@ -68,7 +68,7 @@ export function AvailabilityBoard() {
     const sessionRows = (ss as SessionRow[]) || [];
     setSessions(sessionRows);
 
-    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule,duration");
+    const { data: cs } = await supabase.from("courses").select("id,name,location,schedule,duration,trainers_needed");
     const map: Record<string, CourseRow> = {};
     for (const c of (cs as CourseRow[]) || []) map[c.id] = c;
     setCourses(map);
@@ -230,7 +230,8 @@ export function AvailabilityBoard() {
     ...avail.filter(a => a.session_id === id && a.available).map(a => a.trainer_id),
     ...assign.filter(a => a.session_id === id).map(a => a.trainer_id),
   ]).size;
-  const understaffed = sessions.filter(s => staffCount(s.id) < 2);
+  const neededFor = (s: SessionRow) => courses[s.course_id]?.trainers_needed ?? 2;
+  const understaffed = sessions.filter(s => staffCount(s.id) < neededFor(s));
   const visibleSessions = sessions.filter(isVisible);
   const byDate = new Map<string, SessionRow[]>();
   for (const s of visibleSessions) {
@@ -280,7 +281,7 @@ export function AvailabilityBoard() {
             {assignedToMe && <Badge className="border-transparent bg-primary text-primary-foreground">Du bist eingeteilt</Badge>}
             {others.length > 0 && <span>Eingeteilt: {others.join(", ")}</span>}
             {!opts.compact && <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>}
-            {count < 2 && <span className="font-medium text-destructive">{count} von 2 Trainern</span>}
+            {count < neededFor(s) && <span className="font-medium text-destructive">{count} von {neededFor(s)} Trainern</span>}
           </div>
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -339,7 +340,7 @@ export function AvailabilityBoard() {
           <CardContent className="py-4">
             <div className="mb-3 flex items-center gap-2 font-semibold text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Bei {understaffed.length} {understaffed.length === 1 ? "Termin fehlen" : "Terminen fehlen"} noch Trainer (weniger als 2 Zusagen)
+              Bei {understaffed.length} {understaffed.length === 1 ? "Termin fehlen" : "Terminen fehlen"} noch Trainer (weniger Zusagen als benötigt)
             </div>
             <div className="divide-y rounded-md border bg-background">
               {understaffed.slice(0, 6).map(s => renderSession(s, { compact: true }))}
@@ -439,9 +440,10 @@ export function AvailabilityBoard() {
                         <td className="sticky left-0 bg-background p-1 text-muted-foreground whitespace-nowrap">Besetzung</td>
                         {list.map(s => {
                           const n = staffCount(s.id);
+                          const required = neededFor(s);
                           return (
                             <td key={s.id} className="p-1 text-center">
-                              <Badge variant={n >= 2 ? "secondary" : "outline"} className={n >= 2 ? "" : "border-destructive text-destructive"}>{n}/2</Badge>
+                              <Badge variant={n >= required ? "secondary" : "outline"} className={n >= required ? "" : "border-destructive text-destructive"}>{n}/{required}</Badge>
                             </td>
                           );
                         })}

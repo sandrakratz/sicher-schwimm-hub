@@ -38,7 +38,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     const sessions = await fetchAll<any>((f, t) =>
       supabaseAdmin
         .from("course_sessions")
-        .select("id,assigned_trainer_id,courses!inner(archived_at,trainer_id)")
+        .select("id,assigned_trainer_id,courses!inner(archived_at,trainer_id,trainers_needed)")
         .is("courses.archived_at", null)
         .gte("session_date", today)
         .lte("session_date", in14d)
@@ -47,7 +47,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     );
     const assignments = await fetchIn<any>(
       sessions.map((s) => s.id as string),
-      (chunk, f, t) => supabaseAdmin.from("course_session_assignments").select("session_id").in("session_id", chunk).order("id").range(f, t),
+      (chunk, f, t) => supabaseAdmin.from("course_session_assignments").select("session_id,trainer_id").in("session_id", chunk).order("id").range(f, t),
     );
 
     const [overdue, offers, memberships, messages, requests] = await Promise.all([
@@ -78,11 +78,20 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         .eq("status", "new"),
     ]);
 
-    const assigned = new Set(assignments.map((a) => a.session_id as string));
-    // „Besetzt“ wie im Kurskalender: Dienstplan-Eintrag, Termin-Trainer:in oder Kurstrainer:in
-    const unstaffed = sessions.filter(
-      (s) => !s.assigned_trainer_id && !assigned.has(s.id as string) && !s.courses?.trainer_id,
-    ).length;
+    const teamBySession = new Map<string, Set<string>>();
+    assignments.forEach((a) => {
+      const set = teamBySession.get(a.session_id as string) ?? new Set<string>();
+      set.add(a.trainer_id as string);
+      teamBySession.set(a.session_id as string, set);
+    });
+    // „Besetzt“ wie im Kurskalender: Dienstplan-Einträge, Termin-Trainer:in und Kurstrainer:in zählen zusammen
+    // und müssen die beim Kurs hinterlegte Zahl benötigter Trainer:innen erreichen.
+    const unstaffed = sessions.filter((s) => {
+      const team = new Set(teamBySession.get(s.id as string) ?? []);
+      if (s.assigned_trainer_id) team.add(s.assigned_trainer_id as string);
+      if (s.courses?.trainer_id) team.add(s.courses.trainer_id as string);
+      return team.size < ((s.courses?.trainers_needed as number | null) ?? 2);
+    }).length;
 
     const tasks: AdminTask[] = [
       {
@@ -124,7 +133,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
       },
       {
         key: "unstaffed",
-        label: "Termine ohne Trainer:in",
+        label: "Termine nicht voll besetzt",
         count: unstaffed,
         to: "/admin/kalender",
         tone: "info",

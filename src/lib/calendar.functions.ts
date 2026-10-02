@@ -17,6 +17,8 @@ export type CalendarEntry = {
   helpers: string[];
   helperNeed: { name: string; needed: number; filled: number }[];
   courseId?: string;
+  /** Benötigte Trainer:innen pro Termin (Kurseinstellung, nur Kurstermine). */
+  trainersNeeded?: number;
   eventId?: string;
   /** Trainer:innen aus dem Dienstplan (entfernbar). */
   assignedIds?: string[];
@@ -71,7 +73,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
           .order("id")
           .range(f, t),
       ),
-      fetchAll<any>((f, t) => supabaseAdmin.from("courses").select("id,name,location,schedule,trainer_id,archived_at").order("id").range(f, t)),
+      fetchAll<any>((f, t) => supabaseAdmin.from("courses").select("id,name,location,schedule,trainer_id,archived_at,trainers_needed").order("id").range(f, t)),
       fetchAll<any>((f, t) => supabaseAdmin.from("profiles").select("id,first_name,last_name,email").order("id").range(f, t)),
       fetchAll<any>((f, t) => supabaseAdmin.from("course_session_assignments").select("session_id,trainer_id").order("id").range(f, t)),
       fetchAll<any>((f, t) => supabaseAdmin.from("events").select("id,title,location,starts_at,ends_at,signup_enabled").order("id").range(f, t)),
@@ -108,7 +110,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     sessions.forEach((s) => {
       const c = courseById.get(s.course_id as string) as
-        | { name: string; location: string | null; schedule: string | null; trainer_id: string | null; archived_at: string | null }
+        | { name: string; location: string | null; schedule: string | null; trainer_id: string | null; archived_at: string | null; trainers_needed: number | null }
         | undefined;
       if (!c || c.archived_at) return;
       const trainerIds = new Set<string>(perSession.get(s.id as string) ?? []);
@@ -129,6 +131,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
         helpers: [],
         helperNeed: [],
         courseId: s.course_id as string,
+        trainersNeeded: c.trainers_needed ?? 2,
         assignedIds: [...(perSession.get(s.id as string) ?? [])],
         availability: availBySession.get(s.id as string) ?? [],
       });
