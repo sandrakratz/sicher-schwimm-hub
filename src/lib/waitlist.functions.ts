@@ -240,13 +240,22 @@ export const respondWaitlistOffer = createServerFn({ method: 'POST' })
       bookingEntry = { ...entry, child_dob: dob }
     }
 
-    const { bookWaitlistEntry } = await import('@/lib/waitlist-booking.server')
-    const booking = await bookWaitlistEntry(
-      bookingEntry,
-      entry.offer_course_id!,
-      { street: data.street, zip: data.zip, city: data.city },
-      'parent',
-    )
+    const { bookWaitlistEntry, BookingRefused } = await import('@/lib/waitlist-booking.server')
+    let booking: Awaited<ReturnType<typeof bookWaitlistEntry>>
+    try {
+      booking = await bookWaitlistEntry(
+        bookingEntry,
+        entry.offer_course_id!,
+        { street: data.street, zip: data.zip, city: data.city },
+        'parent',
+      )
+    } catch (err) {
+      // Doppelklick / bereits gebucht / Angebot inzwischen ungültig
+      if (err instanceof BookingRefused) {
+        return { ok: false as const, reason: err.reason === 'offer_not_valid' ? ('not_found' as const) : err.reason }
+      }
+      throw err
+    }
     await supabaseAdmin.from('waitlist_entries').update({ decline_count: 0 }).eq('id', entry.id)
 
     return {
@@ -565,6 +574,24 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       const stamp = formatDateTimeBerlin(new Date().toISOString())
       const prev = (patch['admin_notes'] as string | null) ?? entry.admin_notes ?? ''
       patch['admin_notes'] = `${prev ? `${prev}\n` : ''}[${stamp}] ${data.appendNote}`
+    }
+    // Angebot zurückziehen / Absage nachtragen (Zurück auf wartend): Platz wird frei, die Familie wartet
+    // frühestens bis zum nächsten Kurs – sonst bekäme sie sofort wieder ein Angebot und würde erneut Plätze blockieren.
+    // Nicht bei einem Wechsel des Kursangebots (Fehlzuordnung) oder einem ausdrücklich gesetzten Datum.
+    if (
+      data.status === 'waiting' &&
+      ['offered', 'declined', 'expired'].includes(entry.status) &&
+      data.programId === undefined &&
+      data.availableFrom === undefined
+    ) {
+      const { earliestAfterOffer } = await import('@/lib/waitlist.server')
+      const { formatDateBerlin, formatDateTimeBerlin } = await import('@/lib/format')
+      const from = await earliestAfterOffer(entry, (entry.available_from as string | null) ?? null)
+      patch['available_from'] = from
+      const prevNotes = (patch['admin_notes'] as string | null | undefined) ?? entry.admin_notes ?? ''
+      const line = `[${formatDateTimeBerlin(new Date().toISOString())}] Zurück auf wartend – frühestens für Kurse ab ${from ? formatDateBerlin(from) : 'sofort'}.`
+      patch['admin_notes'] = `${prevNotes ? `${prevNotes}
+` : ''}${line}`
     }
     if (data.programId !== undefined) {
       patch['program_id'] = data.programId

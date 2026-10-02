@@ -69,10 +69,10 @@ export function StayChoice({
         <div className="space-y-2 rounded-md border p-4">
           <p className="font-medium">Ab wann soll Ihr Kind wieder berücksichtigt werden?</p>
           <label className="flex items-center gap-2 text-sm">
-            <input type="radio" checked={when === "now"} onChange={() => setWhen("now")} /> Sofort (beim nächsten freien Platz)
+            <input type="radio" checked={when === "now"} onChange={() => setWhen("now")} /> Beim nächsten Kurs (nach dem bisherigen Angebot)
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="radio" checked={when === "date"} onChange={() => setWhen("date")} /> Frühestens ab:
+            <input type="radio" checked={when === "date"} onChange={() => setWhen("date")} /> Erst für Kurse ab:
           </label>
           {when === "date" && (
             <div className="max-w-xs">
