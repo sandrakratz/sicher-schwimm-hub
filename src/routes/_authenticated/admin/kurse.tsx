@@ -777,7 +777,11 @@ function Page() {
       date_of_birth: newPart.date_of_birth || null,
       ...(wlPick ? { is_member: wlEntries.find(x => x.id === wlPick)?.is_member ?? null } : {}),
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      return toast.error(
+        error.code === "23505" ? "Dieses Kind ist in diesem Kurs bereits eingetragen." : error.message,
+      );
+    }
     if (wlPick) {
       await supabase.from("waitlist_entries").update({
         status: "accepted", offer_token: null, offer_course_id: partCourse.id, responded_at: new Date().toISOString(),
