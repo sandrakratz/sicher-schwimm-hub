@@ -593,8 +593,8 @@ export function WaitlistAdmin() {
           <div>
             <p className="font-semibold">3. Absage durch die Eltern</p>
             <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Der Platz geht sofort an das nächste passende Kind.</li>
-              <li>Eltern entscheiden direkt: auf der Warteliste bleiben (sofort oder ab Wunschdatum) oder abmelden.</li>
+              <li>Der Platz wird frei und geht sofort an das nächste passende Kind.</li>
+              <li>Eltern entscheiden direkt: auf der Warteliste bleiben oder abmelden. Wer bleibt, fällt auf die Warteliste zurück und wird frühestens für den nächsten Kurs (Start nach dem abgelehnten Kurs) wieder berücksichtigt, ggf. erst ab einem Wunschdatum.</li>
               <li>Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.</li>
               <li>Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage erfassen“ klicken – der Platz wird dann freigegeben.</li>
             </ul>
@@ -989,7 +989,7 @@ export function WaitlistAdmin() {
             </label>
             {declineStay && (
               <div className="ml-6 space-y-1">
-                <label className="text-xs text-muted-foreground">Frühestens verfügbar ab (optional)</label>
+                <label className="text-xs text-muted-foreground">Erst für Kurse ab (optional – sonst nächster Kurs nach dem Angebot)</label>
                 <Input type="date" value={declineFrom} onChange={(ev) => setDeclineFrom(ev.target.value)} />
               </div>
             )}

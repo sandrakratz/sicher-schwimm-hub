@@ -250,6 +250,22 @@ function newToken() {
   return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '')
 }
 
+/**
+ * Wer ein Angebot ablehnt (oder nicht beantwortet), wird frühestens für den nächsten Kurs wieder
+ * berücksichtigt: Kurse, die nicht nach dem abgelehnten Kurs starten, werden nicht mehr angeboten.
+ * Ein später gewünschtes Datum der Eltern bleibt erhalten.
+ */
+async function earliestAfterOffer(entry: any, requested: string | null): Promise<string | null> {
+  if (!entry.offer_course_id) return requested
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data: c } = await supabaseAdmin.from('courses').select('starts_on').eq('id', entry.offer_course_id).maybeSingle()
+  if (!c?.starts_on) return requested
+  const d = new Date(`${c.starts_on}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  const next = d.toISOString().slice(0, 10)
+  return !requested || requested < next ? next : requested
+}
+
 /** Deaktiviert einen Wartelistenplatz nach zu vielen Absagen und informiert die Eltern. */
 async function deactivateEntry(entry: any, count: number, note: string) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
@@ -324,8 +340,9 @@ export async function registerDecline(
     await deactivateEntry(entry, count, base)
     return { deactivated: true, count }
   }
+  const availableFrom = opts.stay ? await earliestAfterOffer(entry, opts.availableFrom) : null
   const stayNote = opts.stay
-    ? `bleibt auf der Warteliste${opts.availableFrom ? ` ab ${formatDateBerlin(opts.availableFrom)}` : ' (sofort)'}`
+    ? `bleibt auf der Warteliste, frühestens für Kurse ab ${availableFrom ? formatDateBerlin(availableFrom) : 'sofort'}`
     : 'möchte nicht auf der Warteliste bleiben'
   const { error } = await supabaseAdmin
     .from('waitlist_entries')
@@ -340,7 +357,7 @@ export async function registerDecline(
       followup_expires_at: null,
       responded_at: nowIso(),
       last_decline_reason: opts.reason,
-      ...(opts.stay ? { available_from: opts.availableFrom } : {}),
+      ...(opts.stay ? { available_from: availableFrom } : {}),
       admin_notes: stampNote(entry.admin_notes, `${base} → ${count}. Absage, ${stayNote}.`),
     })
     .eq('id', entry.id)
@@ -349,8 +366,9 @@ export async function registerDecline(
 }
 
 /** Antwort auf die Rückfrage-Mail. */
-export async function answerFollowup(entry: any, stay: boolean, availableFrom: string | null) {
+export async function answerFollowup(entry: any, stay: boolean, requestedFrom: string | null) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const availableFrom = stay ? await earliestAfterOffer(entry, requestedFrom) : null
   const { error } = await supabaseAdmin
     .from('waitlist_entries')
     .update({
@@ -364,7 +382,7 @@ export async function answerFollowup(entry: any, stay: boolean, availableFrom: s
       admin_notes: stampNote(
         entry.admin_notes,
         stay
-          ? `Rückfrage beantwortet: bleibt auf der Warteliste${availableFrom ? ` ab ${formatDateBerlin(availableFrom)}` : ' (sofort)'}.`
+          ? `Rückfrage beantwortet: bleibt auf der Warteliste, frühestens für Kurse ab ${availableFrom ? formatDateBerlin(availableFrom) : 'sofort'}.`
           : 'Rückfrage beantwortet: möchte nicht mehr auf der Warteliste stehen.',
       ),
     })
