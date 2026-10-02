@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fetchAll } from "@/lib/fetch-all";
 
 export type CalendarPerson = { id: string; name: string };
 
@@ -59,40 +60,45 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: sessions }, { data: courses }, { data: profiles }, { data: assigns }, { data: events }, { data: groups }, { data: signups }, { data: avail }] =
-      await Promise.all([
+    // Alles seitenweise laden: Supabase liefert pro Abfrage höchstens 1000 Zeilen. Bei den aufsteigend sortierten
+    // Terminen fielen sonst genau die neuesten (kommenden) Termine weg, bei den Profilen Namen (→ „Unbekannt“).
+    const [sessions, courses, profiles, assigns, events, groups, signups, avail] = await Promise.all([
+      fetchAll<any>((f, t) =>
         supabaseAdmin
           .from("course_sessions")
           .select("id,course_id,session_index,session_date,start_time,end_time,note,assigned_trainer_id")
-          .order("session_date", { ascending: true }),
-        supabaseAdmin.from("courses").select("id,name,location,schedule,trainer_id,archived_at"),
-        supabaseAdmin.from("profiles").select("id,first_name,last_name,email"),
-        supabaseAdmin.from("course_session_assignments").select("session_id,trainer_id"),
-        supabaseAdmin.from("events").select("id,title,location,starts_at,ends_at,signup_enabled"),
-        supabaseAdmin.from("event_helper_groups").select("id,event_id,name,needed_count,starts_at,ends_at"),
-        supabaseAdmin
-          .from("event_shift_signups")
-          .select("event_id,group_id,trainer_id,helper_name,available,starts_at,ends_at"),
-        supabaseAdmin.from("course_session_availability").select("session_id,trainer_id,available"),
-      ]);
+          .order("session_date", { ascending: true })
+          .order("id")
+          .range(f, t),
+      ),
+      fetchAll<any>((f, t) => supabaseAdmin.from("courses").select("id,name,location,schedule,trainer_id,archived_at").order("id").range(f, t)),
+      fetchAll<any>((f, t) => supabaseAdmin.from("profiles").select("id,first_name,last_name,email").order("id").range(f, t)),
+      fetchAll<any>((f, t) => supabaseAdmin.from("course_session_assignments").select("session_id,trainer_id").order("id").range(f, t)),
+      fetchAll<any>((f, t) => supabaseAdmin.from("events").select("id,title,location,starts_at,ends_at,signup_enabled").order("id").range(f, t)),
+      fetchAll<any>((f, t) => supabaseAdmin.from("event_helper_groups").select("id,event_id,name,needed_count,starts_at,ends_at").order("id").range(f, t)),
+      fetchAll<any>((f, t) =>
+        supabaseAdmin.from("event_shift_signups").select("event_id,group_id,trainer_id,helper_name,available,starts_at,ends_at").order("id").range(f, t),
+      ),
+      fetchAll<any>((f, t) => supabaseAdmin.from("course_session_availability").select("session_id,trainer_id,available").order("id").range(f, t)),
+    ]);
     const availBySession = new Map<string, { id: string; available: boolean }[]>();
-    (avail || []).forEach((a) => {
+    avail.forEach((a) => {
       const l = availBySession.get(a.session_id as string) ?? [];
       l.push({ id: a.trainer_id as string, available: !!a.available });
       availBySession.set(a.session_id as string, l);
     });
 
     const nameOf = new Map<string, string>();
-    (profiles || []).forEach((p) => {
+    profiles.forEach((p) => {
       const n = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
       nameOf.set(p.id as string, n || (p.email as string) || "Unbekannt");
     });
 
     const courseById = new Map<string, (typeof courses extends (infer T)[] ? T : never)>();
-    (courses || []).forEach((c) => courseById.set(c.id as string, c as never));
+    courses.forEach((c) => courseById.set(c.id as string, c as never));
 
     const perSession = new Map<string, Set<string>>();
-    (assigns || []).forEach((a) => {
+    assigns.forEach((a) => {
       const set = perSession.get(a.session_id as string) ?? new Set<string>();
       set.add(a.trainer_id as string);
       perSession.set(a.session_id as string, set);
@@ -100,7 +106,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     const entries: CalendarEntry[] = [];
 
-    (sessions || []).forEach((s) => {
+    sessions.forEach((s) => {
       const c = courseById.get(s.course_id as string) as
         | { name: string; location: string | null; schedule: string | null; trainer_id: string | null; archived_at: string | null }
         | undefined;
@@ -128,11 +134,11 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
       });
     });
 
-    (events || []).forEach((e) => {
+    events.forEach((e) => {
       const start = berlinParts(e.starts_at as string);
       const end = e.ends_at ? berlinParts(e.ends_at as string) : null;
-      const evGroups = (groups || []).filter((g) => g.event_id === e.id);
-      const evSignups = (signups || []).filter((s) => s.event_id === e.id && s.available !== false);
+      const evGroups = groups.filter((g) => g.event_id === e.id);
+      const evSignups = signups.filter((s) => s.event_id === e.id && s.available !== false);
       const helperNames = evSignups.map(
         (s) => (s.helper_name as string | null) || nameOf.get(s.trainer_id as string) || "Helfer:in",
       );

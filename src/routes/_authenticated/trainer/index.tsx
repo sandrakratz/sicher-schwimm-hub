@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { CalendarCheck, CalendarDays, MapPin } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 
 export const Route = createFileRoute("/_authenticated/trainer/")({
@@ -43,19 +44,25 @@ function TrainerHome() {
       const me = userData.user?.id;
       if (!me) { setLoading(false); return; }
 
-      const { data: assignments } = await supabase
-        .from("course_session_assignments")
-        .select("session_id")
-        .eq("trainer_id", me);
-      const ids = (assignments ?? []).map((a) => a.session_id);
-
-      const { data: sessions } = await supabase
-        .from("course_sessions")
-        .select("id,course_id,session_date,session_index,assigned_trainer_id,courses(name,location,schedule)")
-        .order("session_date", { ascending: true });
-
-      const mine = ((sessions as any[]) ?? []).filter(
-        (s) => ids.includes(s.id) || s.assigned_trainer_id === me,
+      // Nur die eigenen Einsätze laden (nicht alle Termine des Vereins; Supabase liefert pro Abfrage höchstens
+      // 1000 Zeilen). Wie unter „Meine Kurse“ zählen auch Kurse, in denen man als Kurstrainer:in eingetragen ist.
+      const SELECT = "id,course_id,session_date,session_index,assigned_trainer_id,courses(name,location,schedule)";
+      const assignments = await fetchAll<{ session_id: string }>((f, t) =>
+        supabase.from("course_session_assignments").select("session_id").eq("trainer_id", me).order("id").range(f, t));
+      const ownCourses = await fetchAll<{ id: string }>((f, t) =>
+        supabase.from("courses").select("id").eq("trainer_id", me).order("id").range(f, t));
+      const [byAssignment, byTerm, byCourse] = await Promise.all([
+        fetchIn<any>(assignments.map((a) => a.session_id), (chunk, f, t) =>
+          supabase.from("course_sessions").select(SELECT).in("id", chunk).order("id").range(f, t)),
+        fetchAll<any>((f, t) =>
+          supabase.from("course_sessions").select(SELECT).eq("assigned_trainer_id", me).order("id").range(f, t)),
+        fetchIn<any>(ownCourses.map((c) => c.id), (chunk, f, t) =>
+          supabase.from("course_sessions").select(SELECT).in("course_id", chunk).order("id").range(f, t)),
+      ]);
+      const byId = new Map<string, any>();
+      for (const s of [...byAssignment, ...byTerm, ...byCourse]) byId.set(s.id, s);
+      const mine = [...byId.values()].sort(
+        (a, b) => a.session_date.localeCompare(b.session_date) || a.session_index - b.session_index,
       );
       setRows(
         mine.map((s) => ({
@@ -70,7 +77,7 @@ function TrainerHome() {
     })();
   }, []);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayBerlinIso();
   const upcoming = useMemo(() => rows.filter(r => r.session_date >= today), [rows, today]);
   const past = useMemo(() => rows.filter(r => r.session_date < today), [rows, today]);
   const currentYear = String(new Date().getFullYear());

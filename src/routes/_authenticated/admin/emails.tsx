@@ -15,6 +15,7 @@ import { backfillEmailBodies } from "@/lib/email-backfill.functions";
 import { templateLabel } from "@/lib/email-template-labels";
 import { TestSendDialog } from "@/components/admin/TestSendDialog";
 import { toast } from "sonner";
+import { fetchAll } from "@/lib/fetch-all";
 
 
 export const Route = createFileRoute("/_authenticated/admin/emails")({
@@ -68,6 +69,7 @@ function rangeStart(r: RangeKey): Date | null {
 }
 
 const PAGE_SIZE = 50;
+const MAX_ROWS = 10000;
 
 function Page() {
   const [rows, setRows] = useState<LogRow[]>([]);
@@ -78,21 +80,50 @@ function Page() {
   const [recipient, setRecipient] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<LogRow | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [truncated, setTruncated] = useState(false);
+  const [bodyLoading, setBodyLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+    setLoadError(null);
     const start = rangeStart(range);
-    let q = supabase
-      .from("email_send_log")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(2000);
-    if (start) q = q.gte("created_at", start.toISOString());
-    q.then(({ data }) => {
-      setRows((data as LogRow[]) || []);
-      setLoading(false);
-    });
+    // Liste ohne Mailtexte laden (die sind groß); den Inhalt holt „Ansehen“ bei Bedarf.
+    // Seitenweise, denn Supabase liefert pro Abfrage höchstens 1000 Zeilen.
+    fetchAll<LogRow>((f, t) => {
+      let q = supabase
+        .from("email_send_log")
+        .select("id,message_id,template_name,recipient_email,status,error_message,subject,created_at")
+        .order("created_at", { ascending: false })
+        .order("id");
+      if (start) q = q.gte("created_at", start.toISOString());
+      return q.range(f, t);
+    }, MAX_ROWS)
+      .then(data => {
+        if (cancelled) return;
+        setRows(data.map(r => ({ ...r, body_text: null, body_html: null })));
+        setTruncated(data.length >= MAX_ROWS);
+      })
+      .catch(e => { if (!cancelled) setLoadError(e?.message || "Die E-Mail-Liste konnte nicht geladen werden."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [range]);
+
+  // Inhalt einer E-Mail nachladen (alle Protokollzeilen derselben Nachricht zusammenführen, wie bei der Liste)
+  async function openRow(r: LogRow) {
+    setSelected(r);
+    setBodyLoading(true);
+    let q = supabase.from("email_send_log").select("created_at,subject,body_html,body_text,error_message");
+    q = r.message_id ? q.eq("message_id", r.message_id) : q.eq("id", r.id);
+    const { data } = await q.order("created_at", { ascending: false });
+    setBodyLoading(false);
+    const list = (data as Array<Pick<LogRow, "subject" | "body_html" | "body_text" | "error_message">>) || [];
+    const pick = <K extends "subject" | "body_html" | "body_text" | "error_message">(k: K) => list.find(x => x[k])?.[k] ?? null;
+    setSelected(cur => (cur && cur.id === r.id
+      ? { ...cur, subject: cur.subject ?? pick("subject"), body_html: pick("body_html"), body_text: pick("body_text"), error_message: cur.error_message ?? pick("error_message") }
+      : cur));
+  }
 
   // Dedupe by message_id — dabei Inhalte aus allen Einträgen derselben E-Mail
   // zusammenführen (z. B. Betreff/Text aus dem „pending“-Eintrag, Status aus „sent“).
@@ -208,6 +239,9 @@ function Page() {
         </CardContent>
       </Card>
 
+      {loadError && <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{loadError}</p>}
+      {truncated && <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">Es werden nur die neuesten {MAX_ROWS.toLocaleString("de-DE")} E-Mails des Zeitraums angezeigt. Bitte den Zeitraum verkleinern.</p>}
+
       <CollapsibleCard title="Gesendete E-Mails" storageKey="admin-emails" contentClassName="px-0">
           {loading ? (
             <p className="text-center text-muted-foreground py-10">Lade …</p>
@@ -235,7 +269,7 @@ function Page() {
                       <td className="p-3 max-w-xs truncate">{r.subject || <span className="text-muted-foreground italic">—</span>}</td>
                       <td className="p-3"><Badge variant={statusVariant(r.status)}>{STATUS_LABEL[r.status] || r.status}</Badge></td>
                       <td className="p-3 text-right">
-                        <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
+                        <Button size="sm" variant="outline" onClick={() => void openRow(r)}>
                           <Eye className="h-4 w-4 mr-1" />Ansehen
                         </Button>
                       </td>
@@ -292,7 +326,8 @@ function Page() {
                   <pre className="whitespace-pre-wrap text-sm bg-muted/40 rounded-md p-3">{selected.body_text}</pre>
                 </div>
               ) : null}
-              {!selected.body_html && !selected.body_text && (
+              {bodyLoading && <p className="text-sm text-muted-foreground">Inhalt wird geladen …</p>}
+              {!bodyLoading && !selected.body_html && !selected.body_text && (
                 <p className="text-sm text-muted-foreground">Für diese E-Mail wurde kein Inhalt gespeichert (z.&nbsp;B. automatische System- oder Auth-Mail). Betreff, Empfänger und Status sind oben ersichtlich.</p>
               )}
             </div>

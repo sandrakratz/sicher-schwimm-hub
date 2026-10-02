@@ -122,7 +122,8 @@ function ageAt(dobStr: string | null | undefined, refStr: string | null | undefi
   if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
   return age;
 }
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { parseSessionList } from "@/lib/session-list";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
 
@@ -249,6 +250,11 @@ function Page() {
   const exportXlsx = useServerFn(generateCourseListXlsx);
   const exportTrainerProof = useServerFn(generateTrainerProofXlsx);
   const [proofBusy, setProofBusy] = useState(false);
+  // Im Januar/Februar wird meist der Nachweis fürs Vorjahr gebraucht
+  const [proofYear, setProofYear] = useState(() => {
+    const now = new Date();
+    return now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
+  });
   const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
   const [exportingConf, setExportingConf] = useState<string | null>(null);
   const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
@@ -422,7 +428,7 @@ function Page() {
   async function downloadTrainerProof() {
     setProofBusy(true);
     try {
-      const res = await exportTrainerProof({ data: { year: new Date().getFullYear() } });
+      const res = await exportTrainerProof({ data: { year: proofYear } });
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -543,8 +549,8 @@ function Page() {
       setCanManage(manage);
     } catch { /* keep current */ }
 
-    const { data } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
-    let list = (data as Course[]) || [];
+    // Alle Abfragen seitenweise/in Blöcken: Supabase liefert sonst höchstens 1000 Zeilen und rechnet still mit zu wenigen Daten.
+    let list = await fetchAll<Course>((f, t) => supabase.from("courses").select("*").order("created_at", { ascending: false }).order("id").range(f, t));
 
     if (!manage) {
       // Trainer: nur eigene Kurse (als Kurstrainer oder einem Termin zugewiesen)
@@ -552,26 +558,20 @@ function Page() {
       const allowed = new Set<string>();
       if (uid) {
         list.forEach(c => { if (c.trainer_id === uid) allowed.add(c.id); });
-        const { data: mySessions } = await supabase
-          .from("course_sessions")
-          .select("id,course_id,assigned_trainer_id");
-        const sessions = (mySessions as any[]) || [];
+        const sessions = await fetchAll<any>((f, t) => supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").order("id").range(f, t));
         sessions.forEach(s => { if (s.assigned_trainer_id === uid) allowed.add(s.course_id); });
-        const { data: myAssign } = await supabase
-          .from("course_session_assignments")
-          .select("session_id")
-          .eq("trainer_id", uid);
-        const assignedSessionIds = new Set(((myAssign as any[]) || []).map(a => a.session_id));
+        const myAssign = await fetchAll<any>((f, t) => supabase.from("course_session_assignments").select("session_id").eq("trainer_id", uid).order("session_id").range(f, t));
+        const assignedSessionIds = new Set(myAssign.map(a => a.session_id));
         sessions.forEach(s => { if (assignedSessionIds.has(s.id)) allowed.add(s.course_id); });
       }
       list = list.filter(c => allowed.has(c.id));
     }
     setRows(list);
 
-    const { data: parts } = await supabase.from("course_participants").select("course_id,status,paid,payment_due_date");
-    const today = new Date().toISOString().slice(0, 10);
+    const parts = await fetchAll<any>((f, t) => supabase.from("course_participants").select("course_id,status,paid,payment_due_date").order("id").range(f, t));
+    const today = todayBerlinIso();
     const map: Record<string, CourseCounts> = {};
-    (parts || []).forEach((p: any) => {
+    parts.forEach((p: any) => {
       map[p.course_id] = map[p.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
       if (p.status === "confirmed") {
         map[p.course_id].confirmed++;
@@ -583,24 +583,21 @@ function Page() {
     });
     const courseIds = list.map(c => c.id);
     if (courseIds.length) {
-      const { data: offers } = await supabase.from("waitlist_entries").select("offer_course_id,offer_expires_at")
-        .eq("status", "offered").in("offer_course_id", courseIds);
+      const offers = await fetchIn<any>(courseIds, (chunk, f, t) => supabase.from("waitlist_entries").select("offer_course_id,offer_expires_at")
+        .eq("status", "offered").in("offer_course_id", chunk).order("id").range(f, t));
       const nowIso = new Date().toISOString();
-      ((offers as any[]) || []).forEach(o => {
+      offers.forEach(o => {
         if (!o.offer_course_id || (o.offer_expires_at && o.offer_expires_at < nowIso)) return;
         const m = map[o.offer_course_id] = map[o.offer_course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
         m.offered = (m.offered ?? 0) + 1;
       });
     }
     if (courseIds.length) {
-      const { data: sess } = await supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").in("course_id", courseIds);
-      const sessList = (sess as any[]) || [];
+      const sessList = await fetchIn<any>(courseIds, (chunk, f, t) => supabase.from("course_sessions").select("id,course_id,assigned_trainer_id").in("course_id", chunk).order("id").range(f, t));
       const sessIds = sessList.map(s => s.id);
       const assigned = new Set<string>();
-      for (let i = 0; i < sessIds.length; i += 200) {
-        const { data: asg } = await supabase.from("course_session_assignments").select("session_id").in("session_id", sessIds.slice(i, i + 200));
-        ((asg as any[]) || []).forEach(a => assigned.add(a.session_id));
-      }
+      const asgRows = await fetchIn<any>(sessIds, (chunk, f, t) => supabase.from("course_session_assignments").select("session_id").in("session_id", chunk).order("id").range(f, t));
+      asgRows.forEach(a => assigned.add(a.session_id));
       sessList.forEach(s => {
         const m = map[s.course_id] = map[s.course_id] || { confirmed: 0, waiting: 0, unpaid: 0, overdue: 0, sessions: 0, staffed: 0 };
         m.sessions++;
@@ -1135,9 +1132,17 @@ function Page() {
         </div>
         {canManage && (
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={proofBusy} onClick={downloadTrainerProof}>
-              <FileSpreadsheet className="h-4 w-4" /> {proofBusy ? "Erstelle…" : `Trainer-Nachweis ${new Date().getFullYear()}`}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Select value={String(proofYear)} onValueChange={v => setProofYear(Number(v))}>
+                <SelectTrigger className="h-9 w-[88px]" aria-label="Jahr für den Trainer-Nachweis"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[0, 1, 2, 3].map(i => new Date().getFullYear() - i).map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" disabled={proofBusy} onClick={downloadTrainerProof}>
+                <FileSpreadsheet className="h-4 w-4" /> {proofBusy ? "Erstelle…" : `Trainer-Nachweis ${proofYear}`}
+              </Button>
+            </div>
             <Button variant="outline" disabled={inviting} onClick={handleSendPushInvites} title="Einmalige Info-Mail mit Link zum Aktivieren der Handy-Mitteilungen">
               <Smartphone className="h-4 w-4" /> {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
             </Button>
