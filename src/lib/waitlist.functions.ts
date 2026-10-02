@@ -575,6 +575,24 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
       const prev = (patch['admin_notes'] as string | null) ?? entry.admin_notes ?? ''
       patch['admin_notes'] = `${prev ? `${prev}\n` : ''}[${stamp}] ${data.appendNote}`
     }
+    // Angebot zurückziehen / Absage nachtragen (Zurück auf wartend): Platz wird frei, die Familie wartet
+    // frühestens bis zum nächsten Kurs – sonst bekäme sie sofort wieder ein Angebot und würde erneut Plätze blockieren.
+    // Nicht bei einem Wechsel des Kursangebots (Fehlzuordnung) oder einem ausdrücklich gesetzten Datum.
+    if (
+      data.status === 'waiting' &&
+      ['offered', 'declined', 'expired'].includes(entry.status) &&
+      data.programId === undefined &&
+      data.availableFrom === undefined
+    ) {
+      const { earliestAfterOffer } = await import('@/lib/waitlist.server')
+      const { formatDateBerlin, formatDateTimeBerlin } = await import('@/lib/format')
+      const from = await earliestAfterOffer(entry, (entry.available_from as string | null) ?? null)
+      patch['available_from'] = from
+      const prevNotes = (patch['admin_notes'] as string | null | undefined) ?? entry.admin_notes ?? ''
+      const line = `[${formatDateTimeBerlin(new Date().toISOString())}] Zurück auf wartend – frühestens für Kurse ab ${from ? formatDateBerlin(from) : 'sofort'}.`
+      patch['admin_notes'] = `${prevNotes ? `${prevNotes}
+` : ''}${line}`
+    }
     if (data.programId !== undefined) {
       patch['program_id'] = data.programId
       patch['course_id'] = null

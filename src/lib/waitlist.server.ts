@@ -255,7 +255,7 @@ function newToken() {
  * berücksichtigt: Kurse, die nicht nach dem abgelehnten Kurs starten, werden nicht mehr angeboten.
  * Ein später gewünschtes Datum der Eltern bleibt erhalten.
  */
-async function earliestAfterOffer(entry: any, requested: string | null): Promise<string | null> {
+export async function earliestAfterOffer(entry: any, requested: string | null): Promise<string | null> {
   if (!entry.offer_course_id) return requested
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
   const { data: c } = await supabaseAdmin.from('courses').select('starts_on').eq('id', entry.offer_course_id).maybeSingle()

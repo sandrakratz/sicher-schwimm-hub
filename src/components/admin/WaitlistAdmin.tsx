@@ -932,7 +932,7 @@ export function WaitlistAdmin() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              title="Zurück auf wartend"
+                              title={e.status === "offered" ? "Angebot zurückziehen: Platz wird frei, Familie wartet erst wieder ab dem nächsten Kurs (zählt nicht als Absage)" : "Zurück auf wartend"}
                               onClick={() => update.mutate({ entryId: e.id, status: "waiting" })}
                             >
                               <Undo2 className="h-4 w-4" />
