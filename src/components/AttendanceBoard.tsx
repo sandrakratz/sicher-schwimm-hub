@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { toast } from "sonner";
 
 export type AttendanceParticipant = { id: string; name: string; no?: number | null; hint?: string | null; paid?: boolean | null };
@@ -153,7 +153,7 @@ export function AttendanceBoard({
         if (cancelled) return;
         setSessions(res.sessions);
         setRecords(res.records);
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayBerlinIso();
         const next =
           res.sessions.find(s => s.session_date >= today) ||
           res.sessions[res.sessions.length - 1];

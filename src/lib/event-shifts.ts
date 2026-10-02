@@ -110,3 +110,13 @@ export function coverageSlices(
 export function formatRange(start: number, end: number): string {
   return `${berlinTime(new Date(start).toISOString())}–${berlinTime(new Date(end).toISOString())}`;
 }
+
+/**
+ * Eindeutige Person hinter einer Zusage: namentlich eingetragene Helfer:innen zählen einzeln,
+ * sonst das Konto. Mehrere Zeitfenster derselben Person zählen nur einmal – so zählen Kalender,
+ * Helfer-Dialog und die automatische „besetzt“-Markierung gleich.
+ */
+export function helperKey(s: { trainer_id: string; helper_name?: string | null }): string {
+  const name = (s.helper_name ?? "").trim().toLowerCase();
+  return name ? `n:${name}` : `t:${s.trainer_id}`;
+}

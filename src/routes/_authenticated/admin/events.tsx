@@ -101,6 +101,14 @@ function Page() {
     trainersFn().then(setTrainers).catch(() => { /* Namen optional */ });
   }, []);
 
+
+  /** Datei im Speicher löschen (Fehler sind nicht kritisch: die Datei bleibt dann nur liegen). */
+  async function removeStored(path: string | null | undefined) {
+    if (!path) return;
+    const { error } = await supabase.storage.from("media").remove([path]);
+    if (error) console.warn("Datei konnte nicht gelöscht werden:", path, error.message);
+  }
+
   function startNew() { setEditing({ visibility: "public", starts_at: new Date().toISOString(), signup_enabled: false }); setOpen(true); }
   function startEdit(e: Ev) { setEditing(e); setOpen(true); }
 
@@ -123,6 +131,9 @@ function Page() {
       ? await supabase.from("events").update(payload).eq("id", editing.id)
       : await supabase.from("events").insert(payload);
     if (res.error) return toast.error(res.error.message);
+    // Ersetztes/entferntes Bild bzw. PDF aus dem Speicher löschen (sonst bleibt es dort liegen)
+    const oldImage = editing.id ? rows.find(r => r.id === editing.id)?.image_url : null;
+    if (oldImage && oldImage !== (editing.image_url || null)) await removeStored(oldImage);
     toast.success("Gespeichert");
     setOpen(false);
     await load();
@@ -132,6 +143,7 @@ function Page() {
     if (!confirm(`Event "${e.title}" löschen?`)) return;
     const { error } = await supabase.from("events").delete().eq("id", e.id);
     if (error) return toast.error(error.message);
+    await removeStored(e.image_url);
     toast.success("Gelöscht"); await load();
   }
 

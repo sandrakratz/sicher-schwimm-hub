@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll } from "@/lib/fetch-all";
+import { helperKey } from "@/lib/event-shifts";
 
 export type CalendarPerson = { id: string; name: string };
 
@@ -159,7 +160,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
         helperNeed: evGroups.map((g) => ({
           name: g.name as string,
           needed: (g.needed_count as number) ?? 0,
-          filled: evSignups.filter((s) => s.group_id === g.id).length,
+          filled: new Set(evSignups.filter((s) => s.group_id === g.id).map((s) => helperKey(s))).size,
         })),
         eventId: e.id as string,
       });

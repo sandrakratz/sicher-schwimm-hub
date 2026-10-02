@@ -11,7 +11,7 @@ import {
   deleteHelperGroup,
   syncHelperGroupFill,
 } from "@/lib/event-helpers.functions";
-import { toBerlinInput, fromBerlinInput, type ShiftSignup } from "@/lib/event-shifts";
+import { toBerlinInput, fromBerlinInput, helperKey, type ShiftSignup } from "@/lib/event-shifts";
 import type { TrainerOption } from "@/lib/trainers.functions";
 
 export type HelperGroup = {
@@ -123,7 +123,9 @@ export function HelperGroupsPanel({
         )}
         {groups.map(g => {
           const helpers = signups.filter(s => s.group_id === g.id && s.available);
-          const full = helpers.length >= g.needed_count;
+          // gezählt werden Personen, nicht Zeitfenster
+          const people = new Set(helpers.map(h => helperKey(h))).size;
+          const full = people >= g.needed_count;
           return (
             <div key={g.id} className="space-y-2 p-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -162,7 +164,7 @@ export function HelperGroupsPanel({
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-900">
-                    <AlertTriangle className="h-3 w-3" /> {helpers.length}/{g.needed_count}
+                    <AlertTriangle className="h-3 w-3" /> {people}/{g.needed_count}
                   </Badge>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => remove(g)}>

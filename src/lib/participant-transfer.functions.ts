@@ -3,9 +3,26 @@ import { z } from 'zod'
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { formatDateBerlin } from '@/lib/format'
 
-async function assertStaff(supabase: any, userId: string) {
-  const { data } = await supabase.rpc('is_staff', { _user_id: userId })
-  if (!data) throw new Error('Forbidden')
+/** Vorstand/Admin immer; Trainer:innen nur für Kinder aus Kursen, in denen sie eingeteilt sind. */
+async function assertMayTransfer(supabase: any, userId: string, participantId: string) {
+  const { data: staff } = await supabase.rpc('is_staff', { _user_id: userId })
+  if (staff) return
+  const { data: isTrainer } = await supabase.rpc('has_role', { _user_id: userId, _role: 'trainer' })
+  if (!isTrainer) throw new Error('Forbidden')
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
+  const { data: p } = await supabaseAdmin.from('course_participants').select('course_id').eq('id', participantId).maybeSingle()
+  if (!p) throw new Error('Teilnehmer nicht gefunden')
+  const { data: ofCourse } = await supabase.rpc('is_trainer_of_course', { _trainer_id: userId, _course_id: p.course_id })
+  if (!ofCourse) throw new Error('Forbidden')
+}
+
+/** Zielkurse auswählen darf jede Person im Team. */
+async function assertTeam(supabase: any, userId: string) {
+  for (const role of ['admin', 'board', 'trainer']) {
+    const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: role })
+    if (data) return
+  }
+  throw new Error('Forbidden')
 }
 
 function todayBerlin() {
@@ -39,7 +56,7 @@ export const previewTransfer = createServerFn({ method: 'POST' })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ participantId: z.string().uuid(), targetCourseId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }): Promise<TransferPreview> => {
-    await assertStaff(context.supabase, context.userId)
+    await assertMayTransfer(context.supabase, context.userId, data.participantId)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { data: p } = await supabaseAdmin.from('course_participants').select('*').eq('id', data.participantId).maybeSingle()
     if (!p) throw new Error('Teilnehmer nicht gefunden')
@@ -70,7 +87,7 @@ export const transferParticipant = createServerFn({ method: 'POST' })
     notify: z.boolean(),
   }).parse(d))
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId)
+    await assertMayTransfer(context.supabase, context.userId, data.participantId)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { data: p } = await supabaseAdmin.from('course_participants').select('*').eq('id', data.participantId).maybeSingle()
     if (!p) throw new Error('Teilnehmer nicht gefunden')
@@ -176,11 +193,11 @@ export const transferParticipant = createServerFn({ method: 'POST' })
     return { ok: true, emailed, due }
   })
 
-/** Mögliche Zielkurse für eine Umbuchung (auch für Trainer:innen). */
+/** Mögliche Zielkurse für eine Umbuchung (Vorstand, Admin und Trainer:innen). */
 export const listTransferTargets = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context.supabase, context.userId)
+    await assertTeam(context.supabase, context.userId)
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
     const { data: courses } = await supabaseAdmin.from('courses')
       .select('id,name,schedule,location,max_participants').is('archived_at', null).order('name')
