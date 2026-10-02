@@ -27,21 +27,13 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
     if (data.website) return { ok: true as const }
 
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-    const emailNorm = data.parentEmail.trim().toLowerCase()
-    const childNorm = data.childName.trim().replace(/\s+/g, ' ').toLowerCase()
+    const { isBlocked, normalizeEmail } = await import('@/lib/blocklist.server')
+    const emailNorm = normalizeEmail(data.parentEmail)
 
     // Sperrliste prüfen
-    const { data: blocked } = await supabaseAdmin
-      .from('booking_blocklist')
-      .select('id,email_norm,child_name_norm,child_dob')
-      .eq('active', true)
-      .or(`email_norm.eq.${emailNorm},child_name_norm.eq.${childNorm}`)
-    const isBlocked = (blocked ?? []).some(
-      (b) =>
-        b.email_norm === emailNorm ||
-        (b.child_name_norm === childNorm && (!b.child_dob || b.child_dob === (data.childDob || null))),
-    )
-    if (isBlocked) return { ok: false as const, blocked: true as const }
+    if (await isBlocked({ email: data.parentEmail, childName: data.childName, childDob: data.childDob || null })) {
+      return { ok: false as const, blocked: true as const }
+    }
 
     // Doppeleintrag vermeiden
     const { data: existing } = await supabaseAdmin
@@ -556,8 +548,11 @@ export const updateWaitlistEntry = createServerFn({ method: 'POST' })
     if (data.status) {
       patch['status'] = data.status
       patch['offer_token'] = null
-      patch['offer_course_id'] = null
       patch['offer_expires_at'] = null
+      // Bei „Wartend“ bleibt der zuletzt angebotene Kurs als „bereits angeboten“ stehen,
+      // damit die automatische Vergabe ihn nicht sofort erneut anbietet
+      // (siehe allocateWaitlist). Ein bewusstes Neu-Angebot geht über offerWaitlistPlace.
+      if (data.status !== 'waiting') patch['offer_course_id'] = null
     }
     if (data.status) {
       patch['followup_token'] = null

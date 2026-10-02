@@ -258,19 +258,9 @@ export const bookCourseTerm = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
 
     // Sperrliste prüfen: Treffer bei Eltern-E-Mail ODER Kind (Name + Geburtsdatum)
-    const emailNorm = data.parentEmail.trim().toLowerCase()
-    const childNorm = data.childName.trim().replace(/\s+/g, ' ').toLowerCase()
-    const { data: blocked } = await supabaseAdmin
-      .from('booking_blocklist')
-      .select('id,email_norm,child_name_norm,child_dob')
-      .eq('active', true)
-      .or(`email_norm.eq.${emailNorm},child_name_norm.eq.${childNorm}`)
-    const isBlocked = (blocked ?? []).some(
-      (b) =>
-        b.email_norm === emailNorm ||
-        (b.child_name_norm === childNorm && b.child_dob === data.childDob),
-    )
-    if (isBlocked) {
+    const { isBlocked, normalizeEmail } = await import('@/lib/blocklist.server')
+    const emailNorm = normalizeEmail(data.parentEmail)
+    if (await isBlocked({ email: data.parentEmail, childName: data.childName, childDob: data.childDob })) {
       // Keine Direktbuchung: stattdessen Kursanfrage zur Einzelfallprüfung anlegen
       const { data: courseInfo } = await supabaseAdmin
         .from('courses')
