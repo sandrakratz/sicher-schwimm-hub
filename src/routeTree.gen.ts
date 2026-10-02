@@ -80,6 +80,7 @@ import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/
 import { Route as ApiPublicHooksMajorityNoticeRouteImport } from './routes/api/public/hooks/majority-notice'
 import { Route as ApiPublicHooksPartialCertificateRouteImport } from './routes/api/public/hooks/partial-certificate'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
+import { Route as ApiPublicHooksTransferConsentReminderRouteImport } from './routes/api/public/hooks/transfer-consent-reminder'
 import { Route as ApiPublicHooksWaitlistSweepRouteImport } from './routes/api/public/hooks/waitlist-sweep'
 
 const IndexRoute = IndexRouteImport.update({
@@ -467,6 +468,12 @@ const ApiPublicHooksPaymentCheckReminderRoute =
     path: '/api/public/hooks/payment-check-reminder',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksTransferConsentReminderRoute =
+  ApiPublicHooksTransferConsentReminderRouteImport.update({
+    id: '/api/public/hooks/transfer-consent-reminder',
+    path: '/api/public/hooks/transfer-consent-reminder',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksWaitlistSweepRoute =
   ApiPublicHooksWaitlistSweepRouteImport.update({
     id: '/api/public/hooks/waitlist-sweep',
@@ -545,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/transfer-consent-reminder': typeof ApiPublicHooksTransferConsentReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
 }
 export interface FileRoutesByTo {
@@ -617,6 +625,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/transfer-consent-reminder': typeof ApiPublicHooksTransferConsentReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
 }
 export interface FileRoutesById {
@@ -692,6 +701,7 @@ export interface FileRoutesById {
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/transfer-consent-reminder': typeof ApiPublicHooksTransferConsentReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
 }
 export interface FileRouteTypes {
@@ -767,6 +777,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/transfer-consent-reminder'
     | '/api/public/hooks/waitlist-sweep'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -839,6 +850,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/transfer-consent-reminder'
     | '/api/public/hooks/waitlist-sweep'
   id:
     | '__root__'
@@ -913,6 +925,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/transfer-consent-reminder'
     | '/api/public/hooks/waitlist-sweep'
   fileRoutesById: FileRoutesById
 }
@@ -956,6 +969,7 @@ export interface RootRouteChildren {
   ApiPublicHooksMajorityNoticeRoute: typeof ApiPublicHooksMajorityNoticeRoute
   ApiPublicHooksPartialCertificateRoute: typeof ApiPublicHooksPartialCertificateRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
+  ApiPublicHooksTransferConsentReminderRoute: typeof ApiPublicHooksTransferConsentReminderRoute
   ApiPublicHooksWaitlistSweepRoute: typeof ApiPublicHooksWaitlistSweepRoute
 }
 
@@ -1458,6 +1472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksPaymentCheckReminderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/transfer-consent-reminder': {
+      id: '/api/public/hooks/transfer-consent-reminder'
+      path: '/api/public/hooks/transfer-consent-reminder'
+      fullPath: '/api/public/hooks/transfer-consent-reminder'
+      preLoaderRoute: typeof ApiPublicHooksTransferConsentReminderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/waitlist-sweep': {
       id: '/api/public/hooks/waitlist-sweep'
       path: '/api/public/hooks/waitlist-sweep'
@@ -1599,6 +1620,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPartialCertificateRoute: ApiPublicHooksPartialCertificateRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
+  ApiPublicHooksTransferConsentReminderRoute:
+    ApiPublicHooksTransferConsentReminderRoute,
   ApiPublicHooksWaitlistSweepRoute: ApiPublicHooksWaitlistSweepRoute,
 }
 export const routeTree = rootRouteImport

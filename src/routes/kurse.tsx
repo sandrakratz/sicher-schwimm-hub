@@ -12,7 +12,7 @@ import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { programAvailability } from "@/lib/course-status";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
-import { NOT_BOOKABLE_NOTE, PROGRAM_CARD_SUMMARIES } from "@/lib/upcoming-programs";
+import { NOT_BOOKABLE_NOTE, PROGRAM_CARD_SUMMARIES, parseRequirementLines } from "@/lib/upcoming-programs";
 
 export const Route = createFileRoute("/kurse")({
   loader: async () => await listCoursePrograms(),
@@ -107,7 +107,8 @@ function KursePage() {
                       <div className="text-xs text-muted-foreground mb-3">{status.detail}</div>
                     )}
                     {(() => {
-                      const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/) : []);
+                      // Nur der erste Absatz der Beschreibung ist der Kurztext; weitere Absätze stehen auf der Detailseite.
+                      const paras = PROGRAM_CARD_SUMMARIES[c.slug] ?? (c.description ? c.description.split(/\n\s*\n/).filter(Boolean).slice(0, 1) : []);
                       if (paras.length === 0) return null;
                       return (
                         <div className="space-y-2 text-sm text-muted-foreground mb-3">
@@ -115,18 +116,22 @@ function KursePage() {
                         </div>
                       );
                     })()}
-                    {c.requirements && (
-                      <div className="text-xs mb-4 flex-1">
-                        <span className="font-semibold text-primary-deep">{bookable ? "Voraussetzungen: " : "Rahmen:"}</span>
-                        {bookable ? (
-                          <span className="text-muted-foreground">{c.requirements}</span>
-                        ) : (
-                          <ul className="mt-1 list-disc pl-5 space-y-0.5 text-muted-foreground">
-                            {c.requirements.split("\n").filter(Boolean).map((f, i) => <li key={i}>{f}</li>)}
-                          </ul>
-                        )}
-                      </div>
-                    )}
+                    {(() => {
+                      const reqLines = parseRequirementLines(c.requirements);
+                      if (reqLines.length === 0) return null;
+                      return (
+                        <div className="text-xs mb-4 flex-1">
+                          <span className="font-semibold text-primary-deep">{bookable ? "Voraussetzungen:" : "Rahmen:"}</span>
+                          {bookable && reqLines.length === 1 ? (
+                            <span className="text-muted-foreground"> {reqLines[0]}</span>
+                          ) : (
+                            <ul className="mt-1 list-disc pl-5 space-y-0.5 text-muted-foreground">
+                              {reqLines.map((f, i) => <li key={i}>{f}</li>)}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="space-y-1.5 text-xs text-muted-foreground border-t pt-4 mb-4">
                       {c.duration && <div className="flex items-center gap-2"><Clock className="h-3.5 w-3.5" />{c.duration}</div>}
                       {c.location && <div className="flex items-start gap-2"><MapPin className="h-3.5 w-3.5 mt-0.5" />{c.location}</div>}

@@ -217,7 +217,7 @@ function Page() {
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const listConsentsFn = useServerFn(listTransferConsents);
-  const [transferConsents, setTransferConsents] = useState<Record<string, { participant_id: string; status: string; confirmed_at: string | null } | undefined>>({});
+  const [transferConsents, setTransferConsents] = useState<Record<string, { participant_id: string; status: string; confirmed_at: string | null; reminded_at: string | null } | undefined>>({});
   const [payFilter, setPayFilter] = useState<string>("all");
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{ name: string; email: string; phone: string; status: "confirmed" | "waiting"; notes: string; date_of_birth: string }>({ name: "", email: "", phone: "", status: "confirmed", notes: "", date_of_birth: "" });
@@ -1508,7 +1508,7 @@ function Page() {
                         <div className="mt-1">
                           {transferConsents[p.id]!.status === "confirmed"
                             ? <Badge className="bg-green-600 hover:bg-green-700" title="Eltern haben der Umbuchung per E-Mail-Link zugestimmt">Umbuchung zugestimmt {fmtDate(transferConsents[p.id]!.confirmed_at)}</Badge>
-                            : <Badge variant="outline" className="border-amber-500 text-amber-700" title="Die Eltern haben den Link in der Umbuchungs-Mail noch nicht bestätigt">Zustimmung Eltern offen</Badge>}
+                            : <Badge variant="outline" className="border-amber-500 text-amber-700" title="Die Eltern haben den Link in der Umbuchungs-Mail noch nicht bestätigt">Zustimmung Eltern offen{transferConsents[p.id]!.reminded_at ? ` · erinnert ${fmtDate(transferConsents[p.id]!.reminded_at)}` : ""}</Badge>}
                         </div>
                       )}
                     </TableCell>

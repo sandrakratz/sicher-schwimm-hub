@@ -44,7 +44,7 @@ import { formatPrice } from "@/lib/format";
 import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
-import { NOT_BOOKABLE_NOTE } from "@/lib/upcoming-programs";
+import { NOT_BOOKABLE_NOTE, parseRequirementLines } from "@/lib/upcoming-programs";
 import { PaymentSummary } from "@/components/PaymentSummary";
 import { getCourseProgram, bookCourseTerm, type CourseProgram, type CourseTerm } from "@/lib/courses-public.functions";
 
@@ -109,7 +109,7 @@ function ProgramPage() {
 
 function UpcomingProgramPage({ up }: { up: CourseProgram }) {
   const paragraphs = (up.description ?? "").split(/\n\s*\n/).filter(Boolean);
-  const frame = (up.requirements ?? "").split("\n").filter(Boolean);
+  const frame = parseRequirementLines(up.requirements);
   return (
     <PublicLayout>
       <section className="bg-hero text-white py-16">
@@ -126,7 +126,7 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
             <strong>Geplant – noch nicht buchbar.</strong> {NOT_BOOKABLE_NOTE}
           </div>
           <div className="space-y-3 text-muted-foreground">
-            {paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}
+            {paragraphs.slice(1).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}
           </div>
           <Card className="border-0 shadow-soft">
             <CardContent className="p-6">
@@ -176,7 +176,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
   const [blockedNotice, setBlockedNotice] = useState(false);
 
   const paragraphs = (program.description ?? "").split(/\n\s*\n/).filter(Boolean);
-  const requirements = (program.requirements ?? "").split("\n").map((r) => r.trim()).filter(Boolean);
+  const requirements = parseRequirementLines(program.requirements);
   const openTerms = program.terms.filter((t) => !t.is_full).length;
   const availability = programAvailability({
     openTerms,
@@ -365,7 +365,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
             )}
             {paragraphs.length > 1 && (
               <InfoItem value="desc" icon={Waves} title="Kursbeschreibung" subtitle={`Was lernt Ihr Kind bei „${program.name}“?`}>
-                <div className="space-y-3">{paragraphs.slice(1).map((p, i) => <p key={i}>{p}</p>)}</div>
+                <div className="space-y-3">{paragraphs.slice(1).map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}</div>
               </InfoItem>
             )}
             <InfoItem value="faq" icon={HelpCircle} title="Häufige Fragen" subtitle="Die wichtigsten Fragen kurz beantwortet.">

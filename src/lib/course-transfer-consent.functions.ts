@@ -74,8 +74,9 @@ export const listTransferConsents = createServerFn({ method: "POST" })
     const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
     if (!isStaff) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    if (!data.participantIds.length) return [] as Array<{ participant_id: string; status: string; confirmed_at: string | null }>;
+    type Row = { participant_id: string; status: string; confirmed_at: string | null; reminded_at: string | null };
+    if (!data.participantIds.length) return [] as Row[];
     const { data: rows } = await (supabaseAdmin as any)
-      .from("course_transfer_consents").select("participant_id,status,confirmed_at").in("participant_id", data.participantIds);
-    return (rows ?? []) as Array<{ participant_id: string; status: string; confirmed_at: string | null }>;
+      .from("course_transfer_consents").select("participant_id,status,confirmed_at,reminded_at").in("participant_id", data.participantIds);
+    return (rows ?? []) as Row[];
   });
