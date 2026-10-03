@@ -186,6 +186,7 @@ function ageAt(
   return age;
 }
 import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
+import { combineChildHint } from "@/lib/child-hint";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { parseSessionList } from "@/lib/session-list";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
@@ -290,6 +291,8 @@ function Page() {
   const [partOpen, setPartOpen] = useState(false);
   const [partCourse, setPartCourse] = useState<Course | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  /** Gesundheitsangaben aus der Anmeldung je Anfrage-ID (siehe combineChildHint) */
+  const [requestHealth, setRequestHealth] = useState<Record<string, string | null>>({});
   const listConsentsFn = useServerFn(listTransferConsents);
   const [transferConsents, setTransferConsents] = useState<
     Record<
@@ -1024,6 +1027,18 @@ function Page() {
       .eq("course_id", c.id)
       .order("created_at", { ascending: true });
     setParticipants((data as Participant[]) || []);
+    const requestIds = ((data as Participant[]) || [])
+      .map((x) => x.request_id)
+      .filter(Boolean) as string[];
+    if (requestIds.length > 0) {
+      const { data: reqs } = await supabase
+        .from("course_requests")
+        .select("id,health_info")
+        .in("id", requestIds);
+      setRequestHealth(Object.fromEntries((reqs || []).map((r) => [r.id, r.health_info])));
+    } else {
+      setRequestHealth({});
+    }
     try {
       const rows = await listConsentsFn({
         data: { participantIds: ((data as Participant[]) || []).map((x) => x.id) },
@@ -3090,24 +3105,34 @@ function Page() {
                           );
                         })()}
                       <TableCell className="text-xs max-w-[220px]">
-                        {p.notes && (
-                          <div
-                            className="truncate rounded bg-amber-50 px-1 text-amber-900"
-                            title={p.notes}
-                          >
-                            {p.notes}
-                          </div>
-                        )}
-                        {canManage && p.internal_notes && (
-                          <div
-                            className="mt-0.5 flex items-center gap-1 truncate text-muted-foreground"
-                            title={p.internal_notes}
-                          >
-                            <Lock className="h-3 w-3 shrink-0" />
-                            {p.internal_notes}
-                          </div>
-                        )}
-                        {!p.notes && !(canManage && p.internal_notes) && "—"}
+                        {(() => {
+                          const hint = combineChildHint(
+                            p.notes,
+                            p.request_id ? requestHealth[p.request_id] : null,
+                          );
+                          return (
+                            <>
+                              {hint && (
+                                <div
+                                  className="whitespace-pre-wrap rounded bg-amber-50 px-1 text-amber-900"
+                                  title={hint}
+                                >
+                                  {hint}
+                                </div>
+                              )}
+                              {canManage && p.internal_notes && (
+                                <div
+                                  className="mt-0.5 flex items-center gap-1 truncate text-muted-foreground"
+                                  title={p.internal_notes}
+                                >
+                                  <Lock className="h-3 w-3 shrink-0" />
+                                  {p.internal_notes}
+                                </div>
+                              )}
+                              {!hint && !(canManage && p.internal_notes) && "—"}
+                            </>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}>
@@ -3430,6 +3455,34 @@ function Page() {
                   </Select>
                 </div>
               </div>
+              {(() => {
+                const fromRequest = (
+                  editPart.request_id ? (requestHealth[editPart.request_id] ?? "") : ""
+                ).trim();
+                if (!fromRequest || (editPart.notes ?? "").includes(fromRequest)) return null;
+                return (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm">
+                    <div className="text-xs font-medium text-amber-900">
+                      Gesundheitshinweise aus der Anmeldung
+                    </div>
+                    <div className="whitespace-pre-wrap">{fromRequest}</div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() =>
+                        setEditPart(
+                          (p) =>
+                            p && { ...p, notes: combineChildHint(p.notes, fromRequest) ?? p.notes },
+                        )
+                      }
+                    >
+                      In den Hinweis zum Kind übernehmen
+                    </Button>
+                  </div>
+                );
+              })()}
               <div className="rounded-md border border-amber-300 bg-amber-50 p-2">
                 <Label>Wichtiger Hinweis zum Kind (für Trainer sichtbar)</Label>
                 <Textarea

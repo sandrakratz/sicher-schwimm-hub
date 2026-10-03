@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, ChevronDown, Pencil } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { updateParticipantHint } from "@/lib/trainer-courses.functions";
+import { combineChildHint } from "@/lib/child-hint";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -256,20 +257,39 @@ export function AttendanceBoard({
     (async () => {
       const { data } = await supabase
         .from("course_participants")
-        .select("id,participant_name,status,notes,paid")
+        .select("id,participant_name,status,notes,paid,request_id")
         .eq("course_id", courseId)
         .neq("status", "cancelled");
+      const rows =
+        (data as {
+          id: string;
+          participant_name: string | null;
+          notes: string | null;
+          paid: boolean;
+          request_id: string | null;
+        }[]) || [];
+      // Gesundheitsangaben aus der Anmeldung dazunehmen (siehe combineChildHint)
+      const requestIds = rows.map((p) => p.request_id).filter(Boolean) as string[];
+      const healthByRequest = new Map<string, string | null>();
+      if (requestIds.length > 0) {
+        const { data: reqs } = await supabase
+          .from("course_requests")
+          .select("id,health_info")
+          .in("id", requestIds);
+        (reqs || []).forEach((r) => healthByRequest.set(r.id, r.health_info));
+      }
       if (cancelled) return;
       setPeople(
-        (
-          (data as {
-            id: string;
-            participant_name: string | null;
-            notes: string | null;
-            paid: boolean;
-          }[]) || []
-        )
-          .map((p) => ({ id: p.id, name: p.participant_name || "—", hint: p.notes, paid: p.paid }))
+        rows
+          .map((p) => ({
+            id: p.id,
+            name: p.participant_name || "—",
+            hint: combineChildHint(
+              p.notes,
+              p.request_id ? healthByRequest.get(p.request_id) : null,
+            ),
+            paid: p.paid,
+          }))
           .sort((a, b) => a.name.localeCompare(b.name, "de"))
           .map((p, i) => ({ ...p, no: i + 1 })),
       );
