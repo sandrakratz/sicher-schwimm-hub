@@ -29,6 +29,25 @@ export class BookingRefused extends Error {
 }
 
 /**
+ * Die Anmerkungen eines Wartelisteneintrags beginnen immer mit dem Schwimmlevel
+ * („Schwimmlevel: …“ bzw. „Schwimmniveau: …“). Das ist keine Gesundheitsangabe:
+ * getrennt in Level und übrigen Freitext.
+ */
+function splitWaitlistNotes(notes: string | null | undefined): {
+  swimmingLevel: string | null;
+  rest: string | null;
+} {
+  let swimmingLevel: string | null = null;
+  const rest: string[] = [];
+  for (const line of (notes ?? "").split(/\r?\n/)) {
+    const m = line.match(/^\s*Schwimm(?:level|niveau):\s*(.*)$/i);
+    if (m && swimmingLevel === null) swimmingLevel = m[1].trim() || null;
+    else if (line.trim()) rest.push(line.trim());
+  }
+  return { swimmingLevel, rest: rest.length ? rest.join("\n") : null };
+}
+
+/**
  * Bucht einen Wartelisteneintrag verbindlich in einen Kurs.
  * `source` steuert nur die Notiz/Beschriftung in Anfrage und interner E-Mail.
  */
@@ -107,6 +126,8 @@ export async function bookWaitlistEntry(
   if (seat.result !== "booked") throw new BookingRefused(seat.result);
   const documentNo = seat.documentNo;
 
+  const { swimmingLevel, rest: freeText } = splitWaitlistNotes(entry.notes);
+
   let requestId = entry.request_id as string | null;
   if (!requestId) {
     const { data: request } = await supabaseAdmin
@@ -118,7 +139,8 @@ export async function bookWaitlistEntry(
         child_name: entry.child_name,
         child_dob: entry.child_dob,
         desired_course: program?.name ?? course.name,
-        health_info: entry.notes,
+        swimming_level: swimmingLevel,
+        health_info: freeText,
         gdpr_consent: true,
         contact_permission: true,
         status: "accepted",
@@ -198,7 +220,8 @@ export async function bookWaitlistEntry(
         child_name: entry.child_name,
         child_dob: entry.child_dob || "",
         desired_course: `${program?.name ?? course.name} – ${course.name}`,
-        has_health_info: Boolean(entry.notes?.trim()),
+        swimming_level: swimmingLevel ?? undefined,
+        has_health_info: Boolean(freeText),
         message: `${label} – Platz verbindlich gebucht`,
         submitted_at: issuedAt,
         created_at: issuedAt,

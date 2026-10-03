@@ -12,6 +12,8 @@ export type TrainerParticipant = {
   phone: string | null;
   status: string;
   notes: string | null;
+  /** Gesundheitsangaben aus der Anmeldung (Kursanfrage) – nur lesend. */
+  health_info: string | null;
   paid: boolean;
   goal_reached: boolean | null;
   badge: string | null;
@@ -109,7 +111,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("course_participants")
         .select(
-          "id,course_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no",
+          "id,course_id,request_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no",
         )
         .in("course_id", chunk)
         .neq("status", "cancelled")
@@ -117,6 +119,20 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
         .order("id")
         .range(f, t),
     );
+
+    // Gesundheitsangaben aus der Anmeldung: Trainer müssen sie beim Kind sehen, auch wenn sie bei der
+    // Buchung nicht in den Hinweis des Kindes übernommen wurden.
+    const requests = await fetchIn<{ id: string; health_info: string | null }>(
+      parts.map((p) => p.request_id as string),
+      (chunk, f, t) =>
+        supabaseAdmin
+          .from("course_requests")
+          .select("id,health_info")
+          .in("id", chunk)
+          .order("id")
+          .range(f, t),
+    );
+    const healthByRequest = new Map(requests.map((r) => [r.id, r.health_info]));
 
     return courses.map((c) => ({
       id: c.id as string,
@@ -135,6 +151,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
           phone: (p.participant_phone ?? null) as string | null,
           status: p.status as string,
           notes: (p.notes ?? null) as string | null,
+          health_info: (healthByRequest.get(p.request_id as string) ?? null) as string | null,
           paid: Boolean(p.paid),
           goal_reached: (p.goal_reached ?? null) as boolean | null,
           badge: (p.badge ?? null) as string | null,

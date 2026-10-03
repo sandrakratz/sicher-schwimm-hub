@@ -17,6 +17,7 @@ import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { ParticipantCard, ParticipantDetails } from "@/components/trainer/ParticipantCard";
 import { buildBeltNumbers } from "@/lib/trainer-belt-no";
+import { combineChildHint } from "@/lib/child-hint";
 import { type ParticipantResult } from "@/components/trainer/ParticipantResultEditor";
 import { MultiWatch } from "@/components/trainer/MultiWatch";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
@@ -223,7 +224,7 @@ function Page() {
                         id: p.id,
                         name: p.name || "—",
                         no: beltNo.get(p.id) ?? null,
-                        hint: p.notes,
+                        hint: combineChildHint(p.notes, p.health_info),
                         paid: p.paid,
                       }))}
                     editableHints

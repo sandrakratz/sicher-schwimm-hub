@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Mail, Phone } from "lucide-react";
+import { AlertTriangle, ChevronDown, Mail, Phone } from "lucide-react";
+import { combineChildHint } from "@/lib/child-hint";
 import { PhoneEditor } from "@/components/trainer/PhoneEditor";
 import {
   ParticipantResultEditor,
@@ -18,6 +19,8 @@ export type ParticipantCardData = {
   email: string | null;
   phone: string | null;
   notes: string | null;
+  /** Gesundheitsangaben aus der Anmeldung */
+  health_info?: string | null;
   status: string;
   paid?: boolean;
   goal_reached?: boolean | null;
@@ -51,8 +54,15 @@ export function ParticipantDetails({
   editableResult?: boolean;
   onResultSaved?: (participantId: string, result: ParticipantResult) => void;
 }) {
+  const hint = combineChildHint(p.notes, p.health_info);
   return (
     <div className="space-y-2 text-sm">
+      {hint && (
+        <div className="flex items-start gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span className="whitespace-pre-wrap">{hint}</span>
+        </div>
+      )}
       <div className="text-xs text-muted-foreground">
         Geburtsdatum: {p.date_of_birth ? formatDateBerlin(p.date_of_birth) : "unbekannt"}
         {" · "}Status: {STATUS_LABEL[p.status] || p.status}
