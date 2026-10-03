@@ -17,7 +17,7 @@ import { Check, Users, Heart, User, HandHeart, Waves, Euro, Star, Vote } from "l
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { COURSE_FEES, MEMBERSHIP_FEES } from "@/lib/billing-config";
+import { MEMBERSHIP_FEES } from "@/lib/billing-config";
 import { HoneypotField, SubmitButton } from "@/components/form-support";
 import {
   AlertDialog,
@@ -459,7 +459,7 @@ function Page() {
               {
                 icon: Euro,
                 title: "Vergünstigte Kurse",
-                desc: `Mitglieder zahlen für Schwimmkurse ${COURSE_FEES.member} € statt ${COURSE_FEES.standard} € (10 Einheiten à 45 Min.).`,
+                desc: "Mitglieder zahlen für Schwimmkurse weniger als Nichtmitglieder. Die Preise stehen in der jeweiligen Kursausschreibung.",
               },
               {
                 icon: Star,

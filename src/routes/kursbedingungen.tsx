@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
-import { COURSE_FEES } from "@/lib/billing-config";
 import { BankDetails } from "@/components/BankDetails";
-import { formatPrice } from "@/lib/format";
 
 export const Route = createFileRoute("/kursbedingungen")({
   head: () => ({
@@ -38,10 +36,10 @@ function KursbedingungenPage() {
         2. Kursgebühr &amp; Zahlung
       </h2>
       <p>
-        Die Kursgebühr beträgt{" "}
-        <strong>{formatPrice(COURSE_FEES.standard)} für Nichtmitglieder</strong> bzw.
-        <strong> {formatPrice(COURSE_FEES.member)} für Vereinsmitglieder</strong> und umfasst in der
-        Regel 10 Einheiten à 45 Minuten. Die Gebühr ist innerhalb von
+        Die Höhe der Kursgebühr richtet sich nach der jeweiligen{" "}
+        <strong>Kursausschreibung auf unserer Webseite</strong>; dort sind auch die Preise für
+        Nichtmitglieder und Vereinsmitglieder sowie der Umfang des Kurses angegeben. Die Gebühr ist
+        innerhalb von
         <strong> 14 Tagen nach Bestätigung</strong> per Überweisung auf das folgende Vereinskonto zu
         zahlen, <strong>spätestens jedoch bis 10 Tage vor Kursbeginn</strong>. Wird ein Kurs
         innerhalb der letzten 10 Tage vor Kursbeginn gebucht, ist die Kursgebühr{" "}
