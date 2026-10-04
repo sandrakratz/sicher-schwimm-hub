@@ -395,10 +395,20 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     const { data: partsData } = await supabase
       .from("course_participants")
       .select(
-        "participant_name,participant_email,participant_phone,date_of_birth,status,is_member,online_booking,price_amount,paid,paid_at,payment_note,created_at,notes,request_id",
+        "id,participant_name,participant_email,participant_phone,date_of_birth,status,is_member,online_booking,price_amount,paid,paid_at,payment_note,created_at,notes,request_id",
       )
       .eq("course_id", data.courseId);
+    // Umgebuchte Kinder, deren Eltern zugestimmt haben, stehen nur noch im neuen Kurs
+    const partIds = (partsData || []).map((p) => p.id);
+    const { data: movedRows } = await (supabase as any)
+      .from("course_transfer_consents")
+      .select("from_participant_id")
+      .eq("status", "confirmed")
+      .in("from_participant_id", partIds);
+    const movedOut = new Set<string>();
+    for (const r of movedRows || []) movedOut.add(r.from_participant_id);
     const participants = (partsData || [])
+      .filter((p) => !movedOut.has(p.id))
       .slice()
       .sort((a, b) => (a.participant_name || "").localeCompare(b.participant_name || "", "de"));
 

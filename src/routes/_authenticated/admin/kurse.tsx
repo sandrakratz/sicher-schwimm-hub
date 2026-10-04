@@ -299,6 +299,7 @@ function Page() {
       string,
       | {
           participant_id: string;
+          from_participant_id: string | null;
           status: string;
           confirmed_at: string | null;
           reminded_at: string | null;
@@ -1026,10 +1027,24 @@ function Page() {
       .select("*")
       .eq("course_id", c.id)
       .order("created_at", { ascending: true });
-    setParticipants((data as Participant[]) || []);
-    const requestIds = ((data as Participant[]) || [])
-      .map((x) => x.request_id)
-      .filter(Boolean) as string[];
+    const all = (data as Participant[]) || [];
+    // Haben die Eltern einer Umbuchung zugestimmt, steht das Kind nur noch im neuen Kurs.
+    // Bis zur Zustimmung bleibt die alte Buchung (Status „Abgesagt“) sichtbar.
+    let consentRows: Awaited<ReturnType<typeof listConsentsFn>> = [];
+    try {
+      consentRows = await listConsentsFn({ data: { participantIds: all.map((x) => x.id) } });
+    } catch {
+      consentRows = [];
+    }
+    const movedOut = new Set(
+      consentRows
+        .filter((r) => r.status === "confirmed" && r.from_participant_id)
+        .map((r) => r.from_participant_id as string),
+    );
+    setTransferConsents(Object.fromEntries(consentRows.map((r) => [r.participant_id, r])));
+    const shown = all.filter((x) => !movedOut.has(x.id));
+    setParticipants(shown);
+    const requestIds = shown.map((x) => x.request_id).filter(Boolean) as string[];
     if (requestIds.length > 0) {
       const { data: reqs } = await supabase
         .from("course_requests")
@@ -1038,14 +1053,6 @@ function Page() {
       setRequestHealth(Object.fromEntries((reqs || []).map((r) => [r.id, r.health_info])));
     } else {
       setRequestHealth({});
-    }
-    try {
-      const rows = await listConsentsFn({
-        data: { participantIds: ((data as Participant[]) || []).map((x) => x.id) },
-      });
-      setTransferConsents(Object.fromEntries(rows.map((r) => [r.participant_id, r])));
-    } catch {
-      setTransferConsents({});
     }
     const { data: wl } = await supabase
       .from("waitlist_entries")
