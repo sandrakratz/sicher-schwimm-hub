@@ -5,6 +5,9 @@ import type { PDFFont, PDFPage } from "pdf-lib";
 import { ORG, ASSOCIATION } from "@/lib/billing-config";
 import { findExamLevel, examLevelLabel, type ExamCriteriaState } from "@/lib/swim-exams";
 import { beltLabel } from "@/lib/belt";
+import { loadBrandingImages } from "@/lib/pdf-branding.server";
+import { EXAMINER_NAME, EXAMINER_TITLE } from "@/lib/partial-certificate-pdf.server";
+import { todayBerlinIso } from "@/lib/format";
 
 const A4: [number, number] = [595.28, 841.89];
 const LEFT = 48;
@@ -201,8 +204,16 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
     y -= 14;
   }
 
-  // Unterschriftsfeld für die Vereinsakte
-  ensure(90);
+  // Unterschrift der prüfenden Person (Michael Kratz) mit Registrierungsnummer, aus dem privaten Speicher "branding"
+  const signature = await pdf.embedPng((await loadBrandingImages()).signature);
+  let sigW = 150;
+  let sigH = (signature.height / signature.width) * sigW;
+  if (sigH > 55) {
+    sigH = 55;
+    sigW = (signature.width / signature.height) * sigH;
+  }
+  const SIG_X = LEFT + 240;
+  ensure(sigH + 110);
   y -= 20;
   draw(
     "Hiermit wird bestätigt, dass die vorstehenden Leistungen nach der Deutschen Prüfungsordnung Schwimmen",
@@ -210,26 +221,30 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
   );
   y -= 11;
   draw("persönlich abgenommen und geprüft wurden.", { size: 8.5, color: MUTED });
-  y -= 40;
-  page.drawLine({
-    start: { x: LEFT, y },
-    end: { x: LEFT + 200, y },
-    thickness: 0.7,
-    color: rgb(0.5, 0.55, 0.6),
-  });
-  page.drawLine({
-    start: { x: LEFT + 240, y },
-    end: { x: RIGHT, y },
-    thickness: 0.7,
-    color: rgb(0.5, 0.55, 0.6),
-  });
-  y -= 11;
+  y -= 14;
+  const lineY = y - sigH;
+  page.drawImage(signature, { x: SIG_X, y: lineY + 2, width: sigW, height: sigH });
+  y = lineY + 4;
+  draw(`${ORG.city}, ${deDate(todayBerlinIso())}`, { size: 9.5 });
+  for (const [x0, x1] of [
+    [LEFT, LEFT + 200],
+    [SIG_X, RIGHT],
+  ] as const) {
+    page.drawLine({
+      start: { x: x0, y: lineY },
+      end: { x: x1, y: lineY },
+      thickness: 0.7,
+      color: rgb(0.5, 0.55, 0.6),
+    });
+  }
+  y = lineY - 11;
   draw("Ort, Datum", { size: 8.5, color: MUTED });
-  draw("Unterschrift der prüfenden Person (Lizenz-Nr.)", {
-    size: 8.5,
-    color: MUTED,
-    x: LEFT + 240,
-  });
+  draw(EXAMINER_NAME, { size: 9.5, bold: true, x: SIG_X });
+  y -= 11;
+  for (const line of wrap(EXAMINER_TITLE, font, 8.5, RIGHT - SIG_X)) {
+    draw(line, { size: 8.5, color: MUTED, x: SIG_X });
+    y -= 11;
+  }
 
   return await pdf.save();
 }
