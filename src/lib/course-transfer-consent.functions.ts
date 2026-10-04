@@ -102,14 +102,22 @@ export const listTransferConsents = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     type Row = {
       participant_id: string;
+      from_participant_id: string | null;
       status: string;
       confirmed_at: string | null;
       reminded_at: string | null;
     };
     if (!data.participantIds.length) return [] as Row[];
-    const { data: rows } = await (supabaseAdmin as any)
-      .from("course_transfer_consents")
-      .select("participant_id,status,confirmed_at,reminded_at")
-      .in("participant_id", data.participantIds);
-    return (rows ?? []) as Row[];
+    const sb = supabaseAdmin as any;
+    const cols = "participant_id,from_participant_id,status,confirmed_at,reminded_at";
+    // Zustimmung zur neuen Buchung (participant_id) und zur ursprünglichen Buchung, aus der umgebucht wurde
+    const ids = data.participantIds;
+    const [toNew, fromOld] = await Promise.all([
+      sb.from("course_transfer_consents").select(cols).in("participant_id", ids),
+      sb.from("course_transfer_consents").select(cols).in("from_participant_id", ids),
+    ]);
+    const byId = new Map<string, Row>();
+    for (const r of [...(toNew.data ?? []), ...(fromOld.data ?? [])] as Row[])
+      byId.set(`${r.participant_id}:${r.from_participant_id}`, r);
+    return [...byId.values()];
   });
