@@ -4,6 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { PDFFont, PDFPage } from "pdf-lib";
 import { ORG, ASSOCIATION } from "@/lib/billing-config";
 import { findExamLevel, examLevelLabel, type ExamCriteriaState } from "@/lib/swim-exams";
+import { beltLabel } from "@/lib/belt";
 
 const A4: [number, number] = [595.28, 841.89];
 const LEFT = 48;
@@ -48,6 +49,8 @@ export type ExamProtocolParticipant = {
   goalReached: boolean | null;
   badge: string | null;
   achievement: string | null;
+  /** Klötzchen am Schwimmgurt (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst. */
+  beltBlocks: number | null;
 };
 
 export type ExamProtocolInput = {
@@ -139,7 +142,7 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
   for (const p of input.participants) {
     const level = findExamLevel(p.examLevel);
     const rows = level ? level.criteria.length : 1;
-    ensure(56 + rows * 13);
+    ensure(70 + rows * 13);
 
     draw(p.name || "—", { size: 10.5, bold: true });
     draw(`geb. ${deDate(p.dateOfBirth)}`, { size: 9, color: MUTED, x: LEFT + 240 });
@@ -152,7 +155,12 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
       }`,
       { size: 9, color: MUTED },
     );
-    y -= 14;
+    y -= 12;
+    if (p.beltBlocks != null) {
+      draw(`Schwimmgurt am Kursende: ${beltLabel(p.beltBlocks)}`, { size: 9, color: MUTED });
+      y -= 12;
+    }
+    y -= 2;
 
     if (level) {
       for (const c of level.criteria) {

@@ -630,7 +630,7 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
     const { data: parts } = await supabaseAdmin
       .from("course_participants")
       .select(
-        "participant_name,date_of_birth,exam_level,exam_criteria,exam_date,exam_pass_no,goal_reached,badge,achievement,status",
+        "participant_name,date_of_birth,exam_level,exam_criteria,exam_date,exam_pass_no,goal_reached,badge,achievement,belt_blocks,status",
       )
       .eq("course_id", data.courseId)
       .neq("status", "cancelled")
@@ -663,6 +663,7 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
         goalReached: (p.goal_reached ?? null) as boolean | null,
         badge: (p.badge ?? null) as string | null,
         achievement: (p.achievement ?? null) as string | null,
+        beltBlocks: (p.belt_blocks ?? null) as number | null,
       })),
     });
 
