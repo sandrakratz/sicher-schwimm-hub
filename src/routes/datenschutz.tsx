@@ -66,10 +66,10 @@ function Page() {
       <p>
         <strong>Lernstand des Kindes:</strong> Die Trainerinnen und Trainer halten fest, wie viele
         Klötzchen am Schwimmgurt des Kindes zuletzt verblieben sind. Wir speichern diese Angabe bei
-        der Buchung (Art. 6 Abs. 1 lit. b DSGVO) und zeigen sie bei einer erneuten Buchung desselben
-        Kindes (Abgleich über Name und Geburtsdatum) dem Trainerteam an, damit das Kind auf dem
-        bisherigen Stand weiterlernen kann. Sorgeberechtigte sehen den Stand im Portal unter „Meine
-        Kurse“.
+        der Buchung (Art. 6 Abs. 1 lit. b DSGVO) und übernehmen sie bei einer erneuten Buchung
+        desselben Kindes (Abgleich über Name und Geburtsdatum) in die neue Buchung, damit das Kind
+        auf dem bisherigen Stand weiterlernen kann. Sorgeberechtigte sehen den Stand im Portal unter
+        „Meine Kurse“.
       </p>
 
       <H2>3. Besondere Kategorien (Gesundheitsdaten)</H2>
