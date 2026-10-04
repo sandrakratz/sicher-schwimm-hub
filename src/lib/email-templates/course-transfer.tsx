@@ -24,6 +24,7 @@ interface Props {
   new_start?: string | null;
   sessions?: string[] | null;
   reason?: string | null;
+  cancellation_fee?: string | null;
   amount_due?: string | null;
   refund?: string | null;
   due_date?: string | null;
@@ -64,6 +65,16 @@ const Transfer = (p: Props) => (
           </>
         ) : null}
         <Hr />
+        {p.cancellation_fee ? (
+          <Text>
+            Für die Umbuchung fällt gemäß{" "}
+            <Link href="https://sicher-schwimmen.com/kursbedingungen">
+              § 3 unserer Kursteilnahmebedingungen
+            </Link>{" "}
+            eine Stornogebühr von <strong>{p.cancellation_fee}</strong> an. Sie ist in der folgenden
+            Abrechnung bereits berücksichtigt.
+          </Text>
+        ) : null}
         {p.amount_due ? (
           <>
             <Text>
@@ -151,6 +162,7 @@ export const template: TemplateEntry = {
     new_course: "Aufbaukurs Sportschule",
     new_schedule: "Sa 12:00–12:45",
     reason: "Trainer-Empfehlung",
+    cancellation_fee: "40,00 €",
     amount_due: "70,00 €",
     due_date: "10.11.2026",
     consent_url:

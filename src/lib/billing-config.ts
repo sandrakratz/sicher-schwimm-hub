@@ -68,6 +68,23 @@ export const COURSE_FEES = {
   member: 150,
 };
 
+/**
+ * Stornogebühr bei Rücktritt bzw. Umbuchung durch die Eltern – muss mit § 3 der
+ * Kursteilnahmebedingungen (/kursbedingungen) übereinstimmen.
+ * Bis 3 Wochen vor Kursbeginn kostenfrei, danach 50 %, weniger als 7 Tage vorher 100 %.
+ */
+export function cancellationFeeRule(daysBeforeStart: number | null): {
+  pct: number;
+  label: string;
+} {
+  if (daysBeforeStart == null) return { pct: 0, label: "Kursbeginn unbekannt" };
+  if (daysBeforeStart >= 21)
+    return { pct: 0, label: "mehr als 3 Wochen vor Kursbeginn – kostenfrei" };
+  if (daysBeforeStart >= 7)
+    return { pct: 50, label: "weniger als 3 Wochen bis 7 Tage vor Kursbeginn" };
+  return { pct: 100, label: "weniger als 7 Tage vor Kursbeginn" };
+}
+
 /** Primärfarbe (--primary-deep) als Hex für <meta name="theme-color">. */
 export const THEME_COLOR = "#0a4d8c";
 

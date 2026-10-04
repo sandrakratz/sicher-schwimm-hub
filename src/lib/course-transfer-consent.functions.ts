@@ -12,6 +12,8 @@ export type TransferSnapshot = {
   new_location: string | null;
   sessions: string[];
   reason: string | null;
+  /** Stornogebühr gemäß § 3 der Kursbedingungen; fehlt bei älteren Zustimmungen. */
+  cancellation_fee?: string | null;
   amount_due: string | null;
   refund: string | null;
   due_date: string | null;

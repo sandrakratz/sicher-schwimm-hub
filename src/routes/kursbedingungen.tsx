@@ -52,20 +52,19 @@ function KursbedingungenPage() {
       </div>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">
-        3. Rücktritt durch die Teilnehmer:innen
+        3. Rücktritt und Umbuchung durch die Teilnehmer:innen
       </h2>
       <ul className="list-disc pl-6 space-y-1">
         <li>
-          <strong>Bis 3 Wochen vor Kursbeginn:</strong> kostenfreier Rücktritt, bereits gezahlte
-          Gebühren werden vollständig erstattet.
+          <strong>Bis 3 Wochen vor Kursbeginn:</strong> kostenfrei, bereits gezahlte Gebühren werden
+          vollständig erstattet bzw. angerechnet.
         </li>
         <li>
-          <strong>Bis 7 Tage vor Kursbeginn:</strong> Es werden 50 % der Kursgebühr als
-          Bearbeitungspauschale fällig.
+          <strong>Weniger als 3 Wochen bis 7 Tage vor Kursbeginn:</strong> Stornogebühr von 50 % der
+          Kursgebühr.
         </li>
         <li>
-          <strong>Ab Kursbeginn:</strong> Die volle Kursgebühr ist zu zahlen, eine Erstattung ist
-          nicht mehr möglich.
+          <strong>Weniger als 7 Tage vor Kursbeginn:</strong> Stornogebühr von 100 % der Kursgebühr.
         </li>
       </ul>
       <p>
@@ -74,6 +73,13 @@ function KursbedingungenPage() {
           kurse@sicher-schwimmen.com
         </a>{" "}
         erfolgen. Maßgeblich ist der Eingang beim Verein.
+      </p>
+      <p>
+        <strong>Umbuchung:</strong> Der Wunsch, einen Kurs zu verschieben oder in einen anderen Kurs
+        zu wechseln, gilt als Rücktritt vom gebuchten Kurs mit anschließender Neuanmeldung (nur bei
+        freien Plätzen). Die Stornogebühr richtet sich nach dem Beginn des ursprünglich gebuchten
+        Kurses. Bereits gezahlte Beträge abzüglich der Stornogebühr werden auf den neuen Kurs
+        angerechnet.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">
