@@ -159,7 +159,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
         supabaseAdmin
           .from("course_participants")
           .select(
-            "id,course_id,participant_name,date_of_birth,belt_blocks,created_at,courses(name,starts_on,ends_on)",
+            "id,course_id,participant_name,date_of_birth,belt_blocks,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on)",
           )
           .in("date_of_birth", chunk)
           .not("belt_blocks", "is", null)

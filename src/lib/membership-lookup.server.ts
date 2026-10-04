@@ -100,7 +100,7 @@ export async function repriceMemberParticipants(
   let q = supabaseAdmin
     .from("course_participants")
     .select(
-      "id,participant_name,participant_email,is_member,price_amount,paid,internal_notes,course_id,courses(name,ends_on,price_member,price_non_member,course_programs(price_member,price_non_member))",
+      "id,participant_name,participant_email,is_member,price_amount,paid,internal_notes,course_id,courses!course_participants_course_id_fkey(name,ends_on,price_member,price_non_member,course_programs(price_member,price_non_member))",
     )
     .in("status", ["confirmed", "waiting"]);
   if (opts.courseId) q = q.eq("course_id", opts.courseId);
