@@ -1449,6 +1449,30 @@ export type Database = {
         }
         Relationships: []
       }
+      trainer_payout_details: {
+        Row: {
+          account_holder: string
+          created_at: string
+          iban: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_holder: string
+          created_at?: string
+          iban: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_holder?: string
+          created_at?: string
+          iban?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trainer_session_attendance: {
         Row: {
           confirmed_at: string | null

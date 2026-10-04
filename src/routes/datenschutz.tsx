@@ -211,7 +211,9 @@ function Page() {
       <p>
         Für Trainer*innen, Helfer*innen und Ehrenamtliche verarbeiten wir Kontaktdaten, Konto und
         Rolle, Verfügbarkeiten, Dienstplan und Anwesenheit zur Organisation des Kursbetriebs (Art. 6
-        Abs. 1 lit. b DSGVO, § 26 BDSG). Erweiterte Führungszeugnisse werden ausschließlich zur
+        Abs. 1 lit. b DSGVO, § 26 BDSG). Trainer*innen können zudem eine Bankverbindung (IBAN,
+        Kontoinhaber*in) für die Auszahlung der Übungsleitergelder hinterlegen; diese ist nur für
+        sie selbst und den Vorstand sichtbar. Erweiterte Führungszeugnisse werden ausschließlich zur
         Erfüllung der Pflichten nach § 72a SGB VIII im Rahmen unseres Kinderschutzkonzepts
         verarbeitet.
       </p>

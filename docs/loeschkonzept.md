@@ -34,3 +34,4 @@ Gelöscht wird endgültig. Wer frühere Daten noch braucht, sollte vor dem Einsp
 - Sperrliste: Einträge nach spätestens 2 Jahren prüfen und löschen (siehe Seite „Sperrliste“ im Verwaltungsbereich).
 - Verwaltungsprotokoll `audit_logs` (mit IP-Adressen): derzeit unbegrenzt, Empfehlung 12 Monate.
 - Mitglieder- und Trainerkonten nach Kündigung.
+- Trainer-Bankverbindungen `trainer_payout_details` (IBAN für Übungsleitergelder): werden mit dem Benutzerkonto gelöscht; scheidet jemand aus, nach der letzten Abrechnung (Aufbewahrung der Abrechnungsbelege 10 Jahre bleibt davon unberührt) den Eintrag entfernen.

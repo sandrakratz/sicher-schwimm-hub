@@ -30,6 +30,7 @@ import { template as courseBroadcast } from "./course-broadcast";
 import { template as accountActivated } from "./account-activated";
 import { template as majorityNotice } from "./majority-notice";
 import { template as pushInvite } from "./push-invite";
+import { template as trainerPayoutChanged } from "./trainer-payout-changed";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -71,4 +72,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "course-broadcast": courseBroadcast,
   "account-activated": accountActivated,
   "majority-notice": majorityNotice,
+  "trainer-payout-changed": trainerPayoutChanged,
 };

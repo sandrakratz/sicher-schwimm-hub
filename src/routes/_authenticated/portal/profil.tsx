@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { PayoutIbanCard } from "@/components/trainer/PayoutIbanCard";
 
 export const Route = createFileRoute("/_authenticated/portal/profil")({
   component: Profile,
@@ -17,10 +18,16 @@ function Profile() {
   const [family, setFamily] = useState<
     Array<{ name?: string; date_of_birth?: string; role?: string }>
   >([]);
+  const [isTrainer, setIsTrainer] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id);
+      setIsTrainer((roleRows ?? []).some((r) => r.role === "trainer"));
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -115,6 +122,11 @@ function Profile() {
           </form>
         </CardContent>
       </Card>
+      {isTrainer && (
+        <PayoutIbanCard
+          defaultHolder={[p.first_name, p.last_name].filter(Boolean).join(" ") || undefined}
+        />
+      )}
       {family.length > 0 && (
         <Card className="border-0 shadow-soft mt-6">
           <CardContent className="p-6">
