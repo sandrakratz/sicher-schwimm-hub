@@ -153,6 +153,15 @@ function Page() {
             </div>
           )}
           <div className="border-t pt-2">
+            {s.cancellation_fee && (
+              <p className="mb-1">
+                <strong>Stornogebühr:</strong> {s.cancellation_fee} gemäß{" "}
+                <a href="/kursbedingungen" className="text-primary underline">
+                  § 3 der Kursteilnahmebedingungen
+                </a>{" "}
+                (in der Abrechnung unten berücksichtigt)
+              </p>
+            )}
             {s.amount_due ? (
               <p>
                 <strong>Restbetrag:</strong> {s.amount_due}

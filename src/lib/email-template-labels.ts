@@ -7,6 +7,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "course-start-reminder": "Erinnerung 3 Tage vor Kursstart",
   "course-transfer": "Kursumbuchung – Bitte um Zustimmung (Eltern)",
   "course-transfer-reminder": "Erinnerung: Zustimmung zur Kursumbuchung (Eltern, nach 3 Tagen)",
+  "course-waitlist-return": "Kurs verschoben – zurück auf die Warteliste (Eltern)",
   "course-rescheduled": "Kursstart verschoben",
   "course-cancelled": "Kurs abgesagt",
   "partial-certificate": "Teilleistungsnachweis",

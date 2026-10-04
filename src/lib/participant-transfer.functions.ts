@@ -39,6 +39,17 @@ function todayBerlin() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
 }
 const round2 = (n: number) => Math.round(n * 100) / 100;
+const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
+
+/** Frei gewordenen Platz gleich an die Warteliste vergeben (sonst erst beim stündlichen Sweep). */
+async function offerFreedPlace(courseId: string) {
+  try {
+    const { allocateWaitlist } = await import("@/lib/waitlist.server");
+    await allocateWaitlist(courseId);
+  } catch (err) {
+    console.error("waitlist allocation after transfer failed", err);
+  }
+}
 
 export type TransferPreview = {
   oldCourse: string;
@@ -46,6 +57,9 @@ export type TransferPreview = {
   oldPaid: boolean;
   oldTotal: number;
   oldUsed: number;
+  /** Start des bisherigen Kurses (YYYY-MM-DD) und Tage bis dahin (negativ = schon gestartet). */
+  oldStartsOn: string | null;
+  daysBeforeStart: number | null;
   newCourse: string;
   newPrice: number;
   newTotal: number;
@@ -71,11 +85,16 @@ async function loadCourseInfo(admin: any, courseId: string) {
   };
 }
 
-/** Berechnungsgrundlage für eine Umbuchung (Vorschlag, im Dialog änderbar). */
+/**
+ * Berechnungsgrundlage für eine Umbuchung (Vorschlag, im Dialog änderbar).
+ * Ohne Zielkurs (Rückkehr auf die Warteliste) bleiben die Angaben zum neuen Kurs leer.
+ */
 export const previewTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ participantId: z.string().uuid(), targetCourseId: z.string().uuid() }).parse(d),
+    z
+      .object({ participantId: z.string().uuid(), targetCourseId: z.string().uuid().optional() })
+      .parse(d),
   )
   .handler(async ({ data, context }): Promise<TransferPreview> => {
     await assertMayTransfer(context.supabase, context.userId, data.participantId);
@@ -88,28 +107,43 @@ export const previewTransfer = createServerFn({ method: "POST" })
     if (!p) throw new Error("Teilnehmer nicht gefunden");
     const today = todayBerlin();
     const oldI = await loadCourseInfo(supabaseAdmin, p.course_id);
-    const newI = await loadCourseInfo(supabaseAdmin, data.targetCourseId);
+    const newI = data.targetCourseId
+      ? await loadCourseInfo(supabaseAdmin, data.targetCourseId)
+      : null;
     const oldTotal = oldI.sessions.length || oldI.course.unit_count || 1;
     const oldUsed = oldI.sessions.length
       ? oldI.sessions.filter((s) => s.session_date < today).length
       : 0;
-    const newTotal = newI.sessions.length || newI.course.unit_count || 1;
-    const newRemaining = newI.sessions.length
-      ? newI.sessions.filter((s) => s.session_date >= today).length
-      : newTotal;
+    const oldStartsOn: string | null =
+      oldI.course.starts_on ?? oldI.sessions[0]?.session_date ?? null;
+    const daysBeforeStart = oldStartsOn
+      ? Math.round(
+          (Date.parse(`${oldStartsOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000,
+        )
+      : null;
+    const newTotal = newI ? newI.sessions.length || newI.course.unit_count || 1 : 0;
+    const newRemaining = newI
+      ? newI.sessions.length
+        ? newI.sessions.filter((s) => s.session_date >= today).length
+        : newTotal
+      : 0;
     const member = p.is_member === true;
-    const newPrice = Number(
-      (member ? newI.course.price_member : newI.course.price_non_member) ??
-        newI.course.price_non_member ??
-        0,
-    );
+    const newPrice = newI
+      ? Number(
+          (member ? newI.course.price_member : newI.course.price_non_member) ??
+            newI.course.price_non_member ??
+            0,
+        )
+      : 0;
     return {
       oldCourse: oldI.course.name,
       oldPrice: Number(p.price_amount ?? 0),
       oldPaid: !!p.paid,
       oldTotal,
       oldUsed,
-      newCourse: newI.course.name,
+      oldStartsOn,
+      daysBeforeStart,
+      newCourse: newI?.course.name ?? "",
       newPrice,
       newTotal,
       newRemaining,
@@ -127,6 +161,8 @@ export const transferParticipant = createServerFn({ method: "POST" })
         targetCourseId: z.string().uuid(),
         reason: z.string().trim().min(3).max(2000),
         amountDue: z.number().min(-10000).max(10000),
+        /** Stornogebühr gemäß § 3 der Kursbedingungen (ist in amountDue bereits enthalten). */
+        cancellationFee: z.number().min(0).max(10000).default(0),
         calcNote: z.string().max(1000),
         notify: z.boolean(),
       })
@@ -151,6 +187,7 @@ export const transferParticipant = createServerFn({ method: "POST" })
     if (free != null && free <= 0) throw new Error("Im Zielkurs ist kein Platz mehr frei.");
 
     const due = round2(data.amountDue);
+    const fee = round2(data.cancellationFee);
     const now = new Date().toISOString();
     const today = todayBerlin();
     const dueDate =
@@ -161,7 +198,8 @@ export const transferParticipant = createServerFn({ method: "POST" })
             return d.toISOString().slice(0, 10);
           })()
         : null;
-    const line = `Umbuchung ${formatDateBerlin(today)}: „${oldI.course.name}“ → „${newI.course.name}“. Grund: ${data.reason}. ${data.calcNote}`;
+    const feeText = fee > 0 ? ` Stornogebühr (§ 3 Kursbedingungen): ${eur(fee)}.` : "";
+    const line = `Umbuchung ${formatDateBerlin(today)}: „${oldI.course.name}“ → „${newI.course.name}“. Grund: ${data.reason}.${feeText} ${data.calcNote}`;
 
     const { data: inserted, error: insErr } = await supabaseAdmin
       .from("course_participants")
@@ -192,7 +230,7 @@ export const transferParticipant = createServerFn({ method: "POST" })
         paid_by: due <= 0 ? context.userId : null,
         payment_note:
           due > 0
-            ? `Restbetrag aus Umbuchung (${data.calcNote})`
+            ? `Restbetrag aus Umbuchung (${data.calcNote}${fee > 0 ? `; inkl. Stornogebühr ${eur(fee)}` : ""})`
             : `Durch Umbuchung verrechnet (${data.calcNote})`,
         payment_due_date: dueDate,
         exam_level: p.exam_level,
@@ -238,6 +276,8 @@ export const transferParticipant = createServerFn({ method: "POST" })
       );
     }
 
+    await offerFreedPlace(p.course_id);
+
     // Belegnummer erst jetzt ziehen (kein Nummernloch bei einer fehlgeschlagenen Umbuchung)
     if (due > 0) {
       const { data: docNo } = await supabaseAdmin.rpc("generate_course_document_no");
@@ -252,7 +292,6 @@ export const transferParticipant = createServerFn({ method: "POST" })
     let emailed = false;
     if (data.notify && p.participant_email) {
       const { queueTemplateEmail } = await import("@/lib/email-send.server");
-      const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
       const sessions = newI.sessions
         .filter((s) => s.session_date >= today)
         .map(
@@ -267,6 +306,7 @@ export const transferParticipant = createServerFn({ method: "POST" })
         new_location: newI.course.location,
         sessions,
         reason: data.reason,
+        cancellation_fee: fee > 0 ? eur(fee) : null,
         amount_due: due > 0 ? eur(due) : null,
         refund: due < 0 ? eur(-due) : null,
         due_date: dueDate ? formatDateBerlin(dueDate) : null,
@@ -308,8 +348,107 @@ export const transferParticipant = createServerFn({ method: "POST" })
         to: newI.course.id,
         new_id: (inserted as { id: string }).id,
         due,
+        fee,
         reason: data.reason,
       },
+    });
+    return { ok: true, emailed, due };
+  });
+
+/**
+ * Kurs verschoben, aber (noch) kein neuer Kurs: Kind verlässt den Kurs und kommt zurück auf die
+ * Warteliste. Stornogebühr und Guthaben werden vermerkt und den Eltern per E-Mail mitgeteilt.
+ */
+export const returnParticipantToWaitlist = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        participantId: z.string().uuid(),
+        reason: z.string().trim().min(3).max(2000),
+        /** Positiv = Eltern müssen noch zahlen, negativ = Guthaben bleibt für den nächsten Kurs. */
+        amountDue: z.number().min(-10000).max(10000),
+        cancellationFee: z.number().min(0).max(10000).default(0),
+        calcNote: z.string().max(1000),
+        notify: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertMayTransfer(context.supabase, context.userId, data.participantId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p } = await supabaseAdmin
+      .from("course_participants")
+      .select("*")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (!p) throw new Error("Teilnehmer nicht gefunden");
+    if (p.status === "cancelled") throw new Error("Diese Buchung ist bereits beendet.");
+    const { course } = await loadCourseInfo(supabaseAdmin, p.course_id);
+
+    const due = round2(data.amountDue);
+    const fee = round2(data.cancellationFee);
+    const today = todayBerlin();
+    const dueDate =
+      due > 0
+        ? (() => {
+            const d = new Date(`${today}T12:00:00Z`);
+            d.setUTCDate(d.getUTCDate() + (course.payment_due_days || 14));
+            return d.toISOString().slice(0, 10);
+          })()
+        : null;
+    const outcome =
+      due > 0
+        ? `Offen: ${eur(due)} bis ${formatDateBerlin(dueDate!)}`
+        : due < 0
+          ? `Guthaben ${eur(-due)} für den nächsten Kurs (Verrechnung/Erstattung)`
+          : "kein Betrag offen";
+    const line = `Zurück auf die Warteliste ${formatDateBerlin(today)}: „${course.name}“ verlassen. Grund: ${data.reason}.${fee > 0 ? ` Stornogebühr (§ 3 Kursbedingungen): ${eur(fee)}.` : ""} ${outcome}. ${data.calcNote}`;
+
+    const { moveToWaitlist } = await import("@/lib/waitlist-move.server");
+    const { entryId } = await moveToWaitlist(p, {
+      note: line,
+      holdUntilNextCourse: true,
+      participantUpdate: {
+        transfer_reason: data.reason,
+        transferred_at: new Date().toISOString(),
+        internal_notes: [p.internal_notes, line].filter(Boolean).join("\n"),
+        payment_note: [p.payment_note, `Kurs verschoben, zurück auf die Warteliste: ${outcome}`]
+          .filter(Boolean)
+          .join(" · "),
+      },
+    });
+
+    await offerFreedPlace(p.course_id);
+
+    let emailed = false;
+    if (data.notify && p.participant_email) {
+      const { queueTemplateEmail } = await import("@/lib/email-send.server");
+      const r = await queueTemplateEmail({
+        templateName: "course-waitlist-return",
+        recipientEmail: p.participant_email,
+        senderUserId: context.userId,
+        idempotencyKey: `course-waitlist-return-${p.id}`,
+        templateData: {
+          child_name: p.participant_name,
+          old_course: course.name,
+          reason: data.reason,
+          cancellation_fee: fee > 0 ? eur(fee) : null,
+          amount_due: due > 0 ? eur(due) : null,
+          credit: due < 0 ? eur(-due) : null,
+          due_date: dueDate ? formatDateBerlin(dueDate) : null,
+          reference: `${course.name} ${p.participant_name ?? ""} Stornogebühr`,
+        },
+      });
+      emailed = !!r.queued;
+    }
+
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "participant.returned_to_waitlist",
+      entity: "course_participants",
+      entity_id: p.id,
+      metadata: { course_id: course.id, waitlist_entry_id: entryId, due, fee, reason: data.reason },
     });
     return { ok: true, emailed, due };
   });

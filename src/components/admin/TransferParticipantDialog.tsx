@@ -22,9 +22,12 @@ import {
 } from "@/components/ui/select";
 import {
   previewTransfer,
+  returnParticipantToWaitlist,
   transferParticipant,
   type TransferPreview,
 } from "@/lib/participant-transfer.functions";
+import { cancellationFeeRule } from "@/lib/billing-config";
+import { formatDateBerlin } from "@/lib/format";
 
 type CourseOpt = {
   id: string;
@@ -34,7 +37,10 @@ type CourseOpt = {
   free?: number | null;
 };
 
+type Mode = "course" | "waitlist";
+
 const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 const REASONS = [
   "Trainer-Empfehlung: Kind ist schon weiter",
   "Trainer-Empfehlung: Kind braucht mehr Wassergewöhnung",
@@ -59,27 +65,37 @@ export function TransferParticipantDialog({
 }) {
   const previewFn = useServerFn(previewTransfer);
   const transferFn = useServerFn(transferParticipant);
+  const waitlistFn = useServerFn(returnParticipantToWaitlist);
+  const [mode, setMode] = useState<Mode>("course");
   const [target, setTarget] = useState("");
   const [reason, setReason] = useState("");
   const [pv, setPv] = useState<TransferPreview | null>(null);
   const [used, setUsed] = useState(0);
   const [remaining, setRemaining] = useState(0);
+  const [fee, setFee] = useState("");
   const [override, setOverride] = useState("");
   const [notify, setNotify] = useState(true);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    setMode("course");
     setTarget("");
     setReason("");
     setPv(null);
+    setFee("");
     setOverride("");
     setNotify(true);
   }, [participant?.id]);
 
   useEffect(() => {
-    if (!participant || !target) return;
+    if (!participant || (mode === "course" && !target)) return;
     setPv(null);
-    previewFn({ data: { participantId: participant.id, targetCourseId: target } })
+    previewFn({
+      data: {
+        participantId: participant.id,
+        targetCourseId: mode === "course" ? target : undefined,
+      },
+    })
       .then((r) => {
         setPv(r);
         setUsed(r.oldUsed);
@@ -87,7 +103,9 @@ export function TransferParticipantDialog({
         setOverride("");
       })
       .catch((e) => toast.error((e as Error)?.message || "Berechnung fehlgeschlagen"));
-  }, [participant?.id, target]);
+  }, [participant?.id, target, mode]);
+
+  const feeNum = Math.max(0, Number(fee.replace(",", ".")) || 0);
 
   const calc = useMemo(() => {
     if (!pv) return null;
@@ -95,10 +113,13 @@ export function TransferParticipantDialog({
     const perNew = pv.newTotal > 0 ? pv.newPrice / pv.newTotal : 0;
     const usedValue = perOld * used;
     const credit = (pv.oldPaid ? pv.oldPrice : 0) - usedValue;
-    const newCost = perNew * remaining;
-    const due = Math.round((newCost - credit) * 100) / 100;
-    return { perOld, perNew, usedValue, credit, newCost, due };
-  }, [pv, used, remaining]);
+    const newCost = mode === "course" ? perNew * remaining : 0;
+    const due = round2(newCost - credit + feeNum);
+    const rule = cancellationFeeRule(pv.daysBeforeStart);
+    // Gebühr nach § 3 vom Preis des bisherigen Kurses; bereits genutzte Termine werden nicht doppelt berechnet
+    const suggestedFee = round2(Math.max(0, (pv.oldPrice * rule.pct) / 100 - usedValue));
+    return { perOld, perNew, usedValue, credit, newCost, due, rule, suggestedFee };
+  }, [pv, used, remaining, feeNum, mode]);
 
   const finalDue = override.trim() !== "" ? Number(override.replace(",", ".")) : (calc?.due ?? 0);
 
@@ -108,58 +129,103 @@ export function TransferParticipantDialog({
     if (!Number.isFinite(finalDue)) return toast.error("Betrag ungültig.");
     setBusy(true);
     try {
-      const calcNote = `alt ${eur(pv.oldPrice)}${pv.oldPaid ? " bezahlt" : " offen"}, ${used}/${pv.oldTotal} Termine genutzt; neu ${remaining}/${pv.newTotal} Termine à ${eur(calc.perNew)}${override.trim() ? `; Betrag manuell ${eur(finalDue)}` : ""}`;
-      const r = await transferFn({
-        data: {
-          participantId: participant.id,
-          targetCourseId: target,
-          reason: reason.trim(),
-          amountDue: finalDue,
-          calcNote,
-          notify: notify && !!participant.participant_email,
-        },
-      });
-      toast.success(
-        ["Umgebucht", r.emailed ? "E-Mail an die Eltern versendet" : null]
-          .filter(Boolean)
-          .join(" · "),
-      );
+      const oldNote = `alt ${eur(pv.oldPrice)}${pv.oldPaid ? " bezahlt" : " offen"}, ${used}/${pv.oldTotal} Termine genutzt`;
+      const manualNote = override.trim() ? `; Betrag manuell ${eur(finalDue)}` : "";
+      const canNotify = notify && !!participant.participant_email;
+      if (mode === "waitlist") {
+        const r = await waitlistFn({
+          data: {
+            participantId: participant.id,
+            reason: reason.trim(),
+            amountDue: finalDue,
+            cancellationFee: feeNum,
+            calcNote: `${oldNote}${manualNote}`,
+            notify: canNotify,
+          },
+        });
+        toast.success(
+          ["Zurück auf die Warteliste gesetzt", r.emailed ? "E-Mail an die Eltern versendet" : null]
+            .filter(Boolean)
+            .join(" · "),
+        );
+      } else {
+        const r = await transferFn({
+          data: {
+            participantId: participant.id,
+            targetCourseId: target,
+            reason: reason.trim(),
+            amountDue: finalDue,
+            cancellationFee: feeNum,
+            calcNote: `${oldNote}; neu ${remaining}/${pv.newTotal} Termine à ${eur(calc.perNew)}${manualNote}`,
+            notify: canNotify,
+          },
+        });
+        toast.success(
+          ["Umgebucht", r.emailed ? "E-Mail an die Eltern versendet" : null]
+            .filter(Boolean)
+            .join(" · "),
+        );
+      }
       onDone();
     } catch (e) {
-      toast.error((e as Error)?.message || "Umbuchung fehlgeschlagen");
+      toast.error((e as Error)?.message || "Speichern fehlgeschlagen");
     } finally {
       setBusy(false);
     }
   }
 
   const options = courses.filter((c) => c.id !== participant?.course_id);
+  const waitlist = mode === "waitlist";
 
   return (
     <Dialog open={!!participant} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Kind umbuchen: {participant?.participant_name}</DialogTitle>
+          <DialogTitle>
+            {waitlist ? "Kurs verschoben – zurück auf die Warteliste" : "Kind umbuchen"}:{" "}
+            {participant?.participant_name}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div>
-            <Label>Neuer Kurs</Label>
-            <Select value={target} onValueChange={setTarget}>
-              <SelectTrigger>
-                <SelectValue placeholder="Kurs wählen …" />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map((c) => (
-                  <SelectItem key={c.id} value={c.id} disabled={c.free != null && c.free <= 0}>
-                    {c.name}
-                    {c.schedule ? ` · ${c.schedule}` : ""}
-                    {c.free != null ? ` · ${c.free > 0 ? `${c.free} frei` : "voll"}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={waitlist ? "outline" : "default"}
+              onClick={() => setMode("course")}
+            >
+              In anderen Kurs umbuchen
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={waitlist ? "default" : "outline"}
+              onClick={() => setMode("waitlist")}
+            >
+              Zurück auf die Warteliste
+            </Button>
           </div>
+          {!waitlist && (
+            <div>
+              <Label>Neuer Kurs</Label>
+              <Select value={target} onValueChange={setTarget}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Kurs wählen …" />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((c) => (
+                    <SelectItem key={c.id} value={c.id} disabled={c.free != null && c.free <= 0}>
+                      {c.name}
+                      {c.schedule ? ` · ${c.schedule}` : ""}
+                      {c.free != null ? ` · ${c.free > 0 ? `${c.free} frei` : "voll"}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
-            <Label>Grund der Umbuchung *</Label>
+            <Label>{waitlist ? "Grund der Verschiebung *" : "Grund der Umbuchung *"}</Label>
             <div className="mb-2 flex flex-wrap gap-1">
               {REASONS.map((r) => (
                 <Button
@@ -177,7 +243,9 @@ export function TransferParticipantDialog({
             <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
 
-          {target && !pv && <p className="text-sm text-muted-foreground">Wird berechnet …</p>}
+          {!pv && (waitlist || target) && (
+            <p className="text-sm text-muted-foreground">Wird berechnet …</p>
+          )}
           {pv && calc && (
             <div className="space-y-3 rounded-md border bg-muted/30 p-3 text-sm">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -202,45 +270,109 @@ export function TransferParticipantDialog({
                   />
                   <div className="text-muted-foreground">Verbraucht: {eur(calc.usedValue)}</div>
                 </div>
-                <div className="space-y-1">
-                  <div className="font-semibold">Neu: {pv.newCourse}</div>
-                  <div>
-                    Preis {eur(pv.newPrice)} ({pv.isMember ? "Mitglied" : "Nicht-Mitglied"})
+                {waitlist ? (
+                  <div className="space-y-1">
+                    <div className="font-semibold">Neu: Warteliste</div>
+                    <div className="text-muted-foreground">
+                      Der Kursplatz wird frei. Die Familie wartet frühestens auf einen Kurs, der
+                      nach dem Start von „{pv.oldCourse}“ beginnt, und bekommt dann automatisch ein
+                      Platzangebot.
+                    </div>
                   </div>
-                  <div>
-                    {pv.newTotal} Termine → {eur(calc.perNew)} pro Termin
+                ) : (
+                  <div className="space-y-1">
+                    <div className="font-semibold">Neu: {pv.newCourse}</div>
+                    <div>
+                      Preis {eur(pv.newPrice)} ({pv.isMember ? "Mitglied" : "Nicht-Mitglied"})
+                    </div>
+                    <div>
+                      {pv.newTotal} Termine → {eur(calc.perNew)} pro Termin
+                    </div>
+                    <Label className="text-xs">Noch anstehende Termine</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={pv.newTotal}
+                      value={remaining}
+                      onChange={(e) =>
+                        setRemaining(
+                          Math.max(0, Math.min(pv.newTotal, Number(e.target.value) || 0)),
+                        )
+                      }
+                      className="h-9 w-24"
+                    />
+                    <div className="text-muted-foreground">Kosten: {eur(calc.newCost)}</div>
                   </div>
-                  <Label className="text-xs">Noch anstehende Termine</Label>
+                )}
+              </div>
+
+              <div className="space-y-1 border-t pt-2">
+                <Label>Stornogebühr (§ 3 Kursteilnahmebedingungen)</Label>
+                <div className="text-xs text-muted-foreground">
+                  {pv.oldStartsOn
+                    ? `„${pv.oldCourse}“ beginnt am ${formatDateBerlin(pv.oldStartsOn)} (${
+                        pv.daysBeforeStart != null && pv.daysBeforeStart >= 0
+                          ? `in ${pv.daysBeforeStart} ${pv.daysBeforeStart === 1 ? "Tag" : "Tagen"}`
+                          : "bereits gestartet"
+                      }) → ${calc.rule.label}${calc.rule.pct > 0 ? `: ${calc.rule.pct} %` : ""}. `
+                    : "Kursbeginn unbekannt. "}
+                  Bei Trainer-Empfehlung keine Stornogebühr berechnen.
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   <Input
-                    type="number"
-                    min={0}
-                    max={pv.newTotal}
-                    value={remaining}
-                    onChange={(e) =>
-                      setRemaining(Math.max(0, Math.min(pv.newTotal, Number(e.target.value) || 0)))
-                    }
-                    className="h-9 w-24"
+                    value={fee}
+                    onChange={(e) => setFee(e.target.value)}
+                    placeholder="0,00"
+                    className="h-8 w-28"
                   />
-                  <div className="text-muted-foreground">Kosten: {eur(calc.newCost)}</div>
+                  <span className="text-xs">€</span>
+                  {calc.suggestedFee > 0 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => setFee(calc.suggestedFee.toFixed(2).replace(".", ","))}
+                    >
+                      Vorschlag übernehmen: {eur(calc.suggestedFee)}
+                      {calc.usedValue > 0 ? " (abzgl. genutzter Termine)" : ""}
+                    </Button>
+                  )}
                 </div>
               </div>
+
               <div className="border-t pt-2">
                 <div>
                   Guthaben aus bisherigem Kurs: <strong>{eur(calc.credit)}</strong>
+                  {feeNum > 0 && (
+                    <>
+                      {" "}
+                      · Stornogebühr: <strong>{eur(feeNum)}</strong>
+                    </>
+                  )}
                 </div>
                 <div className="text-base">
                   {calc.due > 0 ? (
                     <>
-                      Zuzahlung: <strong>{eur(calc.due)}</strong>
+                      {waitlist ? "Noch zu zahlen" : "Zuzahlung"}: <strong>{eur(calc.due)}</strong>
                     </>
                   ) : calc.due < 0 ? (
                     <>
-                      Guthaben / Erstattung: <strong>{eur(-calc.due)}</strong>
+                      Guthaben{waitlist ? " für den nächsten Kurs" : " / Erstattung"}:{" "}
+                      <strong>{eur(-calc.due)}</strong>
                     </>
                   ) : (
-                    <strong>Kein Restbetrag – bleibt bezahlt</strong>
+                    <strong>
+                      {waitlist ? "Kein Betrag offen" : "Kein Restbetrag – bleibt bezahlt"}
+                    </strong>
                   )}
                 </div>
+                {waitlist && calc.due > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Ein offener Betrag wird per E-Mail angefordert, aber nicht automatisch
+                    nachverfolgt.
+                  </div>
+                )}
                 <div className="mt-2 flex items-center gap-2">
                   <Label className="text-xs">Betrag manuell (optional, negativ = Erstattung)</Label>
                   <Input
@@ -260,13 +392,14 @@ export function TransferParticipantDialog({
               disabled={!participant?.participant_email}
               onCheckedChange={(v) => setNotify(!!v)}
             />
-            Eltern per E-Mail informieren und um Zustimmung bitten (neue Termine
-            {finalDue > 0 ? ", Restbetrag mit Bankverbindung" : ""}, Zustimmungs-Button)
+            {waitlist
+              ? `Eltern per E-Mail informieren (Wartelisten-Platz${feeNum > 0 ? ", Stornogebühr" : ""}${finalDue > 0 ? ", Bankverbindung" : ""})`
+              : `Eltern per E-Mail informieren und um Zustimmung bitten (neue Termine${feeNum > 0 ? ", Stornogebühr" : ""}${finalDue > 0 ? ", Restbetrag mit Bankverbindung" : ""}, Zustimmungs-Button)`}
           </label>
           <p className="text-xs text-muted-foreground">
-            Die bisherige Buchung bleibt mit Anwesenheit als „Abgesagt (umgebucht)“ erhalten.
-            Prüfungsfortschritt wird übernommen. Die Zustimmung der Eltern wird mit Zeitstempel
-            gespeichert und in der Teilnehmerliste angezeigt.
+            {waitlist
+              ? "Die bisherige Buchung bleibt mit Anwesenheit als „Abgesagt“ erhalten, Stornogebühr und Guthaben stehen in den internen Notizen. Das Kind erscheint wieder auf der Warteliste."
+              : "Die bisherige Buchung bleibt mit Anwesenheit als „Abgesagt (umgebucht)“ erhalten. Prüfungsfortschritt wird übernommen. Die Zustimmung der Eltern wird mit Zeitstempel gespeichert und in der Teilnehmerliste angezeigt."}
           </p>
         </div>
         <DialogFooter>
@@ -274,7 +407,7 @@ export function TransferParticipantDialog({
             Abbrechen
           </Button>
           <Button disabled={!pv || busy} onClick={submit}>
-            {busy ? "Wird umgebucht …" : "Umbuchen"}
+            {busy ? "Wird gespeichert …" : waitlist ? "Auf Warteliste setzen" : "Umbuchen"}
           </Button>
         </DialogFooter>
       </DialogContent>
