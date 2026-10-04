@@ -199,6 +199,7 @@ export const transferParticipant = createServerFn({ method: "POST" })
         exam_criteria: p.exam_criteria,
         exam_date: p.exam_date,
         exam_pass_no: p.exam_pass_no,
+        belt_blocks: p.belt_blocks,
         transferred_from_participant_id: p.id,
         transfer_reason: data.reason,
         transferred_at: now,

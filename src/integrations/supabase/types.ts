@@ -215,6 +215,7 @@ export type Database = {
           exam_date: string | null
           exam_level: string | null
           exam_pass_no: string | null
+          belt_blocks: number | null
           exam_recorded_at: string | null
           exam_recorded_by: string | null
           goal_reached: boolean | null
@@ -262,6 +263,7 @@ export type Database = {
           exam_date?: string | null
           exam_level?: string | null
           exam_pass_no?: string | null
+          belt_blocks?: number | null
           exam_recorded_at?: string | null
           exam_recorded_by?: string | null
           goal_reached?: boolean | null
@@ -309,6 +311,7 @@ export type Database = {
           exam_date?: string | null
           exam_level?: string | null
           exam_pass_no?: string | null
+          belt_blocks?: number | null
           exam_recorded_at?: string | null
           exam_recorded_by?: string | null
           goal_reached?: boolean | null

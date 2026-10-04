@@ -63,6 +63,14 @@ function Page() {
           Gesundheitsangaben (Art. 9 Abs. 2 lit. a DSGVO) und die Veröffentlichung von Fotos.
         </li>
       </ul>
+      <p>
+        <strong>Lernstand des Kindes:</strong> Die Trainerinnen und Trainer halten fest, wie viele
+        Klötzchen am Schwimmgurt des Kindes zuletzt verblieben sind. Wir speichern diese Angabe bei
+        der Buchung (Art. 6 Abs. 1 lit. b DSGVO) und übernehmen sie bei einer erneuten Buchung
+        desselben Kindes (Abgleich über Name und Geburtsdatum) in die neue Buchung, damit das Kind
+        auf dem bisherigen Stand weiterlernen kann. Sorgeberechtigte sehen den Stand im Portal unter
+        „Meine Kurse“.
+      </p>
 
       <H2>3. Besondere Kategorien (Gesundheitsdaten)</H2>
       <p>
@@ -94,6 +102,10 @@ function Page() {
           <strong>Gesundheits- und Notfalldaten:</strong> sichere Archivierung nach Kursende;
           Löschung nach Ablauf der regelmäßigen zivilrechtlichen Verjährungsfrist (i. d. R. 3 Jahre
           nach Ablauf des Kursjahres), bei Widerruf der Einwilligung früher.
+        </li>
+        <li>
+          <strong>Lernstand (Klötzchen am Schwimmgurt):</strong> 3 Jahre nach Ablauf des Kursjahres,
+          dann wird die Angabe automatisch gelöscht.
         </li>
         <li>
           <strong>Widerrufe und Versandprotokolle:</strong> in der Regel 3 Jahre.

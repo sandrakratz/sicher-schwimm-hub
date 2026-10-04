@@ -121,6 +121,8 @@ type Participant = {
   goal_reached: boolean | null;
   achievement: string | null;
   badge: string | null;
+  /** Klötzchen am Schwimmgurt (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst */
+  belt_blocks?: number | null;
   paid: boolean;
   paid_at: string | null;
   payment_note: string | null;
@@ -186,6 +188,7 @@ function ageAt(
   return age;
 }
 import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
+import { beltLabel } from "@/lib/belt";
 import { combineChildHint } from "@/lib/child-hint";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { parseSessionList } from "@/lib/session-list";
@@ -3086,7 +3089,16 @@ function Page() {
                             {p.achievement}
                           </div>
                         )}
-                        {p.goal_reached == null && !p.badge && !p.achievement && "—"}
+                        {p.belt_blocks != null && (
+                          <div className="mt-1 text-muted-foreground">
+                            Gurt: {beltLabel(p.belt_blocks)}
+                          </div>
+                        )}
+                        {p.goal_reached == null &&
+                          !p.badge &&
+                          !p.achievement &&
+                          p.belt_blocks == null &&
+                          "—"}
                       </TableCell>
                       {canManage &&
                         (() => {

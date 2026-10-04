@@ -29,6 +29,7 @@ type Row = {
   badge: string | null;
   achievement: string | null;
   exam_criteria: unknown;
+  belt_blocks: number | null;
   courses: {
     id: string;
     name: string;
@@ -51,6 +52,7 @@ const STATUS_LABEL: Record<
 };
 
 import { formatDateBerlin } from "@/lib/format";
+import { beltLabel } from "@/lib/belt";
 
 function fmt(d: string | null) {
   if (!d) return null;
@@ -107,7 +109,7 @@ function Page() {
       const { data } = await supabase
         .from("course_participants")
         .select(
-          "id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,courses!course_participants_course_id_fkey(id,name,starts_on,ends_on,schedule,location,duration,target_group)",
+          "id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,belt_blocks,courses!course_participants_course_id_fkey(id,name,starts_on,ends_on,schedule,location,duration,target_group)",
         )
         .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`)
         .order("created_at", { ascending: false });
@@ -229,11 +231,20 @@ function Page() {
                             )}
                           </div>
 
-                          {(r.goal_reached != null || r.badge || r.achievement) && (
+                          {(r.goal_reached != null ||
+                            r.badge ||
+                            r.achievement ||
+                            r.belt_blocks != null) && (
                             <div className="pt-2 border-t text-sm space-y-1">
                               <div className="flex items-center gap-2 font-medium text-primary-deep">
                                 <Award className="h-4 w-4" /> Ergebnis
                               </div>
+                              {r.belt_blocks != null && (
+                                <div>
+                                  <span className="text-muted-foreground">Schwimmgurt:</span>{" "}
+                                  {beltLabel(r.belt_blocks)}
+                                </div>
+                              )}
                               {r.goal_reached === true && (
                                 <Badge className="bg-green-600 hover:bg-green-700">
                                   Ziel erreicht

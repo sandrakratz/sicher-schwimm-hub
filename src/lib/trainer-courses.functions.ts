@@ -22,6 +22,17 @@ export type TrainerParticipant = {
   exam_criteria: ExamCriteriaState;
   exam_date: string | null;
   exam_pass_no: string | null;
+  /** Klötzchen am Schwimmgurt (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst. */
+  belt_blocks: number | null;
+  /** Letzter erfasster Gurt-Stand desselben Kindes aus einem früheren Kurs. */
+  prev_belt: PreviousBelt | null;
+};
+
+export type PreviousBelt = {
+  blocks: number;
+  course_name: string | null;
+  /** Kursende bzw. -beginn des früheren Kurses (YYYY-MM-DD). */
+  date: string | null;
 };
 
 export type TrainerCourse = {
@@ -111,7 +122,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("course_participants")
         .select(
-          "id,course_id,request_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no",
+          "id,course_id,request_id,participant_name,participant_email,participant_phone,date_of_birth,status,notes,paid,goal_reached,badge,achievement,exam_level,exam_criteria,exam_date,exam_pass_no,belt_blocks",
         )
         .in("course_id", chunk)
         .neq("status", "cancelled")
@@ -133,6 +144,58 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
           .range(f, t),
     );
     const healthByRequest = new Map(requests.map((r) => [r.id, r.health_info]));
+
+    // Gurt-Stand aus früheren Kursen desselben Kindes (Name + Geburtsdatum, wie bei der Dubletten-Prüfung).
+    const beltHistory = await fetchIn<{
+      course_id: string;
+      participant_name: string | null;
+      date_of_birth: string | null;
+      belt_blocks: number;
+      created_at: string | null;
+      courses: { name: string | null; starts_on: string | null; ends_on: string | null } | null;
+    }>(
+      parts.map((p) => p.date_of_birth as string),
+      (chunk, f, t) =>
+        supabaseAdmin
+          .from("course_participants")
+          .select(
+            "id,course_id,participant_name,date_of_birth,belt_blocks,created_at,courses(name,starts_on,ends_on)",
+          )
+          .in("date_of_birth", chunk)
+          .not("belt_blocks", "is", null)
+          .order("id")
+          .range(f, t),
+    );
+    const childKey = (name: unknown, dob: unknown) =>
+      `${String(name ?? "")
+        .trim()
+        .toLowerCase()}|${String(dob ?? "")}`;
+    type BeltRow = PreviousBelt & { courseId: string; startsOn: string | null };
+    const historyByChild = new Map<string, BeltRow[]>();
+    for (const h of beltHistory) {
+      const course = h.courses;
+      const key = childKey(h.participant_name, h.date_of_birth);
+      const row: BeltRow = {
+        blocks: Number(h.belt_blocks),
+        course_name: course?.name ?? null,
+        date:
+          String(course?.ends_on ?? course?.starts_on ?? h.created_at ?? "").slice(0, 10) || null,
+        courseId: h.course_id,
+        startsOn: course?.starts_on ?? null,
+      };
+      historyByChild.set(key, [...(historyByChild.get(key) ?? []), row]);
+    }
+    /** Jüngster Stand aus einem anderen, nicht später beginnenden Kurs. */
+    const prevFor = (
+      p: { participant_name: unknown; date_of_birth: unknown },
+      course: { id: string; starts_on: unknown },
+    ): PreviousBelt | null => {
+      const start = (course.starts_on ?? null) as string | null;
+      const best = (historyByChild.get(childKey(p.participant_name, p.date_of_birth)) ?? [])
+        .filter((h) => h.courseId !== course.id && !(start && h.startsOn && h.startsOn > start))
+        .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))[0];
+      return best ? { blocks: best.blocks, course_name: best.course_name, date: best.date } : null;
+    };
 
     return courses.map((c) => ({
       id: c.id as string,
@@ -160,8 +223,48 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
           exam_criteria: (p.exam_criteria ?? {}) as ExamCriteriaState,
           exam_date: (p.exam_date ?? null) as string | null,
           exam_pass_no: (p.exam_pass_no ?? null) as string | null,
+          belt_blocks: (p.belt_blocks ?? null) as number | null,
+          prev_belt: prevFor(p, c),
         })),
     }));
+  });
+
+/**
+ * Gurt-Stand (Klötzchen am Schwimmgurt, 6 … 0) eines Kindes setzen; `null` = nicht erfasst.
+ * Erlaubt für Admin/Vorstand sowie Trainer:innen des jeweiligen Kurses.
+ */
+export const updateParticipantBelt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { participantId: string; blocks: number | null }) => {
+    if (!input?.participantId) throw new Error("Teilnehmende:r fehlt.");
+    if (
+      input.blocks !== null &&
+      !(Number.isInteger(input.blocks) && input.blocks >= 0 && input.blocks <= 6)
+    ) {
+      throw new Error("Die Zahl der Klötzchen muss zwischen 0 und 6 liegen.");
+    }
+    return input;
+  })
+  .handler(async ({ data, context }): Promise<{ belt_blocks: number | null }> => {
+    await assertCourseAccessForParticipant(context.supabase, context.userId, data.participantId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("course_participants")
+      .update({ belt_blocks: data.blocks })
+      .eq("id", data.participantId);
+    if (error) throw new Error(error.message);
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, context.userId, {
+        action: "participant.belt_updated",
+        entity: "course_participants",
+        entity_id: data.participantId,
+        metadata: { belt_blocks: data.blocks },
+      });
+    } catch {
+      /* Audit-Fehler dürfen die Erfassung nicht blockieren */
+    }
+    return { belt_blocks: data.blocks };
   });
 
 /** Wichtigen Hinweis zum Kind (Gesundheit, Besonderheiten) bearbeiten – Trainer des Kurses + Vorstand. */
@@ -527,7 +630,7 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
     const { data: parts } = await supabaseAdmin
       .from("course_participants")
       .select(
-        "participant_name,date_of_birth,exam_level,exam_criteria,exam_date,exam_pass_no,goal_reached,badge,achievement,status",
+        "participant_name,date_of_birth,exam_level,exam_criteria,exam_date,exam_pass_no,goal_reached,badge,achievement,belt_blocks,status",
       )
       .eq("course_id", data.courseId)
       .neq("status", "cancelled")
@@ -560,6 +663,7 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
         goalReached: (p.goal_reached ?? null) as boolean | null,
         badge: (p.badge ?? null) as string | null,
         achievement: (p.achievement ?? null) as string | null,
+        beltBlocks: (p.belt_blocks ?? null) as number | null,
       })),
     });
 
