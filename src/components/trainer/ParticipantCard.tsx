@@ -11,6 +11,9 @@ import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PartialCertificateActions } from "@/components/trainer/PartialCertificateActions";
 import { allCriteriaDone, countCriteriaDone, type ExamCriteriaState } from "@/lib/swim-exams";
+import { BeltBlocksEditor } from "@/components/trainer/BeltBlocksEditor";
+import { beltLabel } from "@/lib/belt";
+import type { PreviousBelt } from "@/lib/trainer-courses.functions";
 
 export type ParticipantCardData = {
   id: string;
@@ -30,6 +33,8 @@ export type ParticipantCardData = {
   exam_criteria?: import("@/lib/swim-exams").ExamCriteriaState;
   exam_date?: string | null;
   exam_pass_no?: string | null;
+  belt_blocks?: number | null;
+  prev_belt?: PreviousBelt | null;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -46,6 +51,7 @@ export function ParticipantDetails({
   onPhoneSaved,
   editableResult = false,
   onResultSaved,
+  onBeltSaved,
 }: {
   p: ParticipantCardData;
   showPayment?: boolean;
@@ -53,6 +59,7 @@ export function ParticipantDetails({
   onPhoneSaved?: (participantId: string, phone: string | null) => void;
   editableResult?: boolean;
   onResultSaved?: (participantId: string, result: ParticipantResult) => void;
+  onBeltSaved?: (participantId: string, blocks: number | null) => void;
 }) {
   const hint = combineChildHint(p.notes, p.health_info);
   return (
@@ -97,6 +104,20 @@ export function ParticipantDetails({
           )}
         </div>
       )}
+      {editableResult ? (
+        <div className="border-t pt-3">
+          <BeltBlocksEditor
+            participantId={p.id}
+            value={p.belt_blocks ?? null}
+            previous={p.prev_belt ?? null}
+            onSaved={onBeltSaved}
+          />
+        </div>
+      ) : (
+        p.belt_blocks != null && (
+          <div className="text-xs text-muted-foreground">Gurt: {beltLabel(p.belt_blocks)}</div>
+        )
+      )}
       {editableResult && (
         <div className="border-t pt-3">
           <p className="mb-2 text-xs font-semibold">Prüfungsnachweis</p>
@@ -134,6 +155,7 @@ export function ParticipantCard({
   onPhoneSaved,
   editableResult = false,
   onResultSaved,
+  onBeltSaved,
 }: {
   p: ParticipantCardData;
   showPayment?: boolean;
@@ -142,6 +164,7 @@ export function ParticipantCard({
   onPhoneSaved?: (participantId: string, phone: string | null) => void;
   editableResult?: boolean;
   onResultSaved?: (participantId: string, result: ParticipantResult) => void;
+  onBeltSaved?: (participantId: string, blocks: number | null) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -187,6 +210,7 @@ export function ParticipantCard({
             onPhoneSaved={onPhoneSaved}
             editableResult={editableResult}
             onResultSaved={onResultSaved}
+            onBeltSaved={onBeltSaved}
           />
         </div>
       )}

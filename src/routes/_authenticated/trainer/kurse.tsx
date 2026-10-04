@@ -70,6 +70,17 @@ function Page() {
     );
   };
 
+  const applyBelt = (participantId: string, blocks: number | null) => {
+    setCourses((prev) =>
+      prev.map((c) => ({
+        ...c,
+        participants: c.participants.map((p) =>
+          p.id === participantId ? { ...p, belt_blocks: blocks } : p,
+        ),
+      })),
+    );
+  };
+
   const exportProtocol = useServerFn(exportExamProtocol);
   const [exporting, setExporting] = useState<string | null>(null);
   const [broadcast, setBroadcast] = useState<{ id: string; name: string } | null>(null);
@@ -264,6 +275,7 @@ function Page() {
                             onPhoneSaved={applyPhone}
                             editableResult
                             onResultSaved={applyResult}
+                            onBeltSaved={applyBelt}
                           />
                         </>
                       );
