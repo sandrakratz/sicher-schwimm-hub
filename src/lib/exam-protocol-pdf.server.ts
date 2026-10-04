@@ -204,16 +204,20 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
     y -= 14;
   }
 
-  // Unterschrift der prüfenden Person (Michael Kratz) mit Registrierungsnummer, aus dem privaten Speicher "branding"
-  const signature = await pdf.embedPng((await loadBrandingImages()).signature);
-  let sigW = 150;
-  let sigH = (signature.height / signature.width) * sigW;
-  if (sigH > 55) {
-    sigH = 55;
-    sigW = (signature.width / signature.height) * sigH;
-  }
+  // Unterschrift und Vereinsstempel der prüfenden Person (Michael Kratz) mit Registrierungsnummer,
+  // aus dem privaten Speicher "branding". Beide stehen über der Linie, Text und Nummer darunter.
+  const images = await loadBrandingImages();
+  const signature = await pdf.embedPng(images.signature);
+  const stamp = await pdf.embedPng(images.stamp);
+  const fit = (img: { width: number; height: number }, maxW: number, maxH: number) => {
+    const scale = Math.min(maxW / img.width, maxH / img.height);
+    return { w: img.width * scale, h: img.height * scale };
+  };
+  const sig = fit(signature, 150, 55);
+  const stp = fit(stamp, 105, 70);
+  const blockH = Math.max(sig.h, stp.h);
   const SIG_X = LEFT + 240;
-  ensure(sigH + 110);
+  ensure(blockH + 110);
   y -= 20;
   draw(
     "Hiermit wird bestätigt, dass die vorstehenden Leistungen nach der Deutschen Prüfungsordnung Schwimmen",
@@ -222,8 +226,9 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
   y -= 11;
   draw("persönlich abgenommen und geprüft wurden.", { size: 8.5, color: MUTED });
   y -= 14;
-  const lineY = y - sigH;
-  page.drawImage(signature, { x: SIG_X, y: lineY + 2, width: sigW, height: sigH });
+  const lineY = y - blockH;
+  page.drawImage(signature, { x: SIG_X, y: lineY + 2, width: sig.w, height: sig.h });
+  page.drawImage(stamp, { x: RIGHT - stp.w, y: lineY + 2, width: stp.w, height: stp.h });
   y = lineY + 4;
   draw(`${ORG.city}, ${deDate(todayBerlinIso())}`, { size: 9.5 });
   for (const [x0, x1] of [
