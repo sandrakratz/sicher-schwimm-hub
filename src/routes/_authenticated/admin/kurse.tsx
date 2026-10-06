@@ -310,6 +310,10 @@ function Page() {
       | undefined
     >
   >({});
+  // Abgesagte Buchungen (Status „cancelled“) sind standardmäßig ausgeblendet
+  const [showCancelled, setShowCancelled] = useState(false);
+  // Alte Buchungen, deren Umbuchung noch auf die Zustimmung der Eltern wartet: bleiben sichtbar
+  const [pendingMoveOut, setPendingMoveOut] = useState<Set<string>>(new Set());
   const [payFilter, setPayFilter] = useState<string>("all");
   const [paySort, setPaySort] = useState<string>("name");
   const [newPart, setNewPart] = useState<{
@@ -1045,6 +1049,13 @@ function Page() {
         .map((r) => r.from_participant_id as string),
     );
     setTransferConsents(Object.fromEntries(consentRows.map((r) => [r.participant_id, r])));
+    setPendingMoveOut(
+      new Set(
+        consentRows
+          .filter((r) => r.status !== "confirmed" && r.from_participant_id)
+          .map((r) => r.from_participant_id as string),
+      ),
+    );
     const shown = all.filter((x) => !movedOut.has(x.id));
     setParticipants(shown);
     const requestIds = shown.map((x) => x.request_id).filter(Boolean) as string[];
@@ -1095,21 +1106,25 @@ function Page() {
     });
 
   const PAY_RANK: Record<string, number> = { immediate: 0, overdue: 1, expected: 2, paid: 3 };
+  // Abgesagte Buchungen ohne Zahlungseingang schulden nichts mehr: weder Filter noch „dringend zuerst“
+  const isDeadBooking = (p: Participant) => p.status === "cancelled" && !p.paid;
+  const payRank = (p: Participant) =>
+    isDeadBooking(p) ? 4 : PAY_RANK[participantPaymentState(p).key];
 
   const visibleParticipants = useMemo(() => {
-    let list = participants;
+    let list = showCancelled
+      ? participants
+      : participants.filter((p) => p.status !== "cancelled" || pendingMoveOut.has(p.id));
     if (payFilter !== "all") {
       list = list.filter((p) => {
+        if (isDeadBooking(p)) return false;
         const key = participantPaymentState(p).key;
         return payFilter === "open" ? key !== "paid" : key === payFilter;
       });
     }
     const sorted = [...list];
     if (paySort === "payment") {
-      sorted.sort(
-        (a, b) =>
-          PAY_RANK[participantPaymentState(a).key] - PAY_RANK[participantPaymentState(b).key],
-      );
+      sorted.sort((a, b) => payRank(a) - payRank(b));
     } else if (paySort === "due") {
       const due = (p: Participant) => p.payment_due_date || "9999-12-31";
       sorted.sort((a, b) => due(a).localeCompare(due(b)));
@@ -1118,7 +1133,10 @@ function Page() {
     }
     return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [participants, payFilter, paySort, partCourse]);
+  }, [participants, payFilter, paySort, partCourse, showCancelled, pendingMoveOut]);
+  const cancelledCount = participants.filter(
+    (p) => p.status === "cancelled" && !pendingMoveOut.has(p.id),
+  ).length;
 
   async function addParticipant() {
     if (!partCourse) return;
@@ -2922,7 +2940,8 @@ function Page() {
                 </SelectContent>
               </Select>
               <span className="text-xs text-muted-foreground">
-                {visibleParticipants.length} von {participants.length}
+                {visibleParticipants.length} von{" "}
+                {showCancelled ? participants.length : participants.length - cancelledCount}
               </span>
               <Button
                 size="sm"
@@ -2943,6 +2962,12 @@ function Page() {
                 Mitgliedspreise abgleichen
               </Button>
             </div>
+          )}
+          {cancelledCount > 0 && (
+            <label className="mb-2 flex w-fit cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+              <Checkbox checked={showCancelled} onCheckedChange={(v) => setShowCancelled(!!v)} />
+              Abgesagte Buchungen anzeigen ({cancelledCount})
+            </label>
           )}
           <div className="border rounded-md overflow-x-auto">
             <Table>
@@ -3102,6 +3127,15 @@ function Page() {
                       </TableCell>
                       {canManage &&
                         (() => {
+                          if (isDeadBooking(p)) {
+                            return (
+                              <TableCell className="text-xs">
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  Abgesagt – keine Zahlung
+                                </Badge>
+                              </TableCell>
+                            );
+                          }
                           const st = participantPaymentState(p);
                           return (
                             <TableCell className="text-xs">
