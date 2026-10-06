@@ -1,0 +1,6 @@
+# Sicherheitslücken bitte vertraulich melden (nicht öffentlich).
+# Report security vulnerabilities privately by e-mail.
+Contact: mailto:info@sicher-schwimmen.com
+Expires: 2027-09-30T23:59:59.000Z
+Preferred-Languages: de, en
+Canonical: https://sicher-schwimmen.com/.well-known/security.txt
