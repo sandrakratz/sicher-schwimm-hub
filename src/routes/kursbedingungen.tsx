@@ -56,8 +56,8 @@ function KursbedingungenPage() {
       </h2>
       <ul className="list-disc pl-6 space-y-1">
         <li>
-          <strong>Bis 3 Wochen vor Kursbeginn:</strong> kostenfrei, bereits gezahlte Gebühren werden
-          vollständig erstattet bzw. angerechnet.
+          <strong>Bis 3 Wochen vor Kursbeginn:</strong> kostenfrei, gezahlte Gebühren werden
+          vollständig erstattet oder angerechnet.
         </li>
         <li>
           <strong>Weniger als 3 Wochen bis 7 Tage vor Kursbeginn:</strong> Stornogebühr von 50 % der
@@ -72,14 +72,19 @@ function KursbedingungenPage() {
         <a href="mailto:kurse@sicher-schwimmen.com" className="text-primary underline">
           kurse@sicher-schwimmen.com
         </a>{" "}
-        erfolgen. Maßgeblich ist der Eingang beim Verein.
+        erfolgen; maßgeblich ist der Eingang beim Verein.
       </p>
       <p>
-        <strong>Umbuchung:</strong> Der Wunsch, einen Kurs zu verschieben oder in einen anderen Kurs
-        zu wechseln, gilt als Rücktritt vom gebuchten Kurs mit anschließender Neuanmeldung (nur bei
-        freien Plätzen). Die Stornogebühr richtet sich nach dem Beginn des ursprünglich gebuchten
-        Kurses. Bereits gezahlte Beträge abzüglich der Stornogebühr werden auf den neuen Kurs
-        angerechnet.
+        <strong>Umbuchung:</strong> Der Wechsel in einen anderen Kurs gilt als Rücktritt vom
+        gebuchten Kurs mit anschließender Neuanmeldung (nur bei freien Plätzen). Maßgeblich für die
+        Stornogebühr ist der Beginn des ursprünglich gebuchten Kurses. Eine kostenfreie Umbuchung
+        ist nur bis 3 Wochen vor Kursbeginn möglich.
+      </p>
+      <p>
+        Die Stornogebühr wird angemessen reduziert, soweit der freigewordene Platz anderweitig
+        belegt wird. Über die vollständige oder teilweise Ersetzung der Gebühr – insbesondere bei
+        ärztlich attestierter Krankheit des teilnehmenden Kindes (einmalig je Kurs und Kind) sowie
+        in sonstigen Härtefällen – entscheidet der Vorstand im Einzelfall.
       </p>
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">
