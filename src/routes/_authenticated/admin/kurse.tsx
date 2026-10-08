@@ -934,6 +934,10 @@ function Page() {
       const usedIds = new Set(list.map((c) => c.program_id).filter(Boolean) as string[]);
       progList = progList.filter((p) => usedIds.has(p.id));
     }
+    // Interne Kurse ans Ende; Array.sort ist stabil, die Reihenfolge nach sort_order bleibt sonst erhalten.
+    progList = [...progList].sort(
+      (a, b) => Number(a.is_public === false) - Number(b.is_public === false),
+    );
     setPrograms(progList);
   }
   useEffect(() => {
