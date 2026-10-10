@@ -86,7 +86,10 @@ function AdminDashboard() {
           .from("profiles")
           .select("id", { count: "exact", head: true })
           .eq("status", "active"),
-        supabase.from("messages").select("id", { count: "exact", head: true }).eq("status", "new"),
+        supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["new", "read"]),
       ]);
       setStats({
         requests: r.count || 0,
@@ -114,7 +117,7 @@ function AdminDashboard() {
     { icon: Users, label: "Aktive Benutzer", value: stats.members, to: "/admin/benutzer" as const },
     {
       icon: MailOpen,
-      label: "Offene Nachrichten",
+      label: "Unbeantwortete Nachrichten",
       value: stats.messages,
       to: "/admin/nachrichten" as const,
     },
