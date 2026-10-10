@@ -79,7 +79,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
       supabaseAdmin
         .from("messages")
         .select("id", { count: "exact", head: true })
-        .eq("status", "new"),
+        .in("status", ["new", "read"]),
       supabaseAdmin
         .from("course_requests")
         .select("id", { count: "exact", head: true })

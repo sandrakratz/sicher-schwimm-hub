@@ -21,6 +21,7 @@ import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 import { replyToCourseRequest } from "@/lib/course-requests.functions";
 import { replyToWaitlistEntry } from "@/lib/waitlist-reply.functions";
 import type { InboxItem } from "@/lib/inbox.functions";
+import { AgeBadge } from "@/components/admin/AgeBadge";
 
 const SOURCE_LABEL: Record<InboxItem["source"], string> = {
   message: "Kontaktformular",
@@ -51,7 +52,7 @@ function markRead(key: string) {
 }
 
 /** Kursanfragen und Wartelisten-Einträge im gemeinsamen Posteingang – eingeklappt wie eine Mailliste. */
-export function InboxItemCard({ item }: { item: InboxItem }) {
+export function InboxItemCard({ item, showAge }: { item: InboxItem; showAge?: boolean }) {
   const key = `${item.source}:${item.id}`;
   const [open, setOpen] = useState(false);
   // Nur Vorgänge der letzten 30 Tage gelten als „ungelesen“ – ältere sind längst bekannt.
@@ -117,6 +118,7 @@ export function InboxItemCard({ item }: { item: InboxItem }) {
                 <span className="text-xs text-muted-foreground">
                   {formatDateTimeBerlin(item.created_at)}
                 </span>
+                {showAge && <AgeBadge since={item.created_at} />}
               </div>
               <div
                 className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}
