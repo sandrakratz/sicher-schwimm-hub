@@ -17,7 +17,6 @@ import {
   Activity,
   ScrollText,
   Euro,
-  Search,
 } from "lucide-react";
 
 export type Role = "admin" | "board" | "trainer" | "member" | "parent";
@@ -115,6 +114,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
     label: "Anmeldungen",
     tabs: [
       { to: "/admin/warteliste", label: "Anfrageliste" },
+      { to: "/admin/suche", label: "Gesamtsuche" },
       { to: "/admin/sperrliste", label: "Sperrliste" },
       { to: "/admin/widerrufe", label: "Widerrufe" },
     ],
@@ -176,7 +176,6 @@ const sectionNav = (index: number, icon: AppNavItem["icon"], allow: Role[]) => {
 
 export const adminNav: (AppNavItem & { group?: string[] })[] = [
   { to: "/admin", icon: Shield, label: "Heute", exact: true, allow: ["admin", "board"] },
-  { to: "/admin/suche", icon: Search, label: "Suche", allow: ["admin", "board"] },
   sectionNav(0, Hourglass, ["admin", "board"]),
   sectionNav(1, BookOpen, ["admin", "board"]),
   sectionNav(2, Euro, ["admin", "board"]),
