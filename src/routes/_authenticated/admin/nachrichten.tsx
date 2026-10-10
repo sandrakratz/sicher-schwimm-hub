@@ -386,6 +386,13 @@ function MessageCard({
               <Reply className="h-4 w-4 mr-1" />
               Antworten
             </Button>
+            {m.from_email && (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/admin/familie" search={{ email: m.from_email }}>
+                  Familie öffnen
+                </Link>
+              </Button>
+            )}
             <Dialog open={replyOpen} onOpenChange={setReplyOpen}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
