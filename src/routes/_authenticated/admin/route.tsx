@@ -35,7 +35,7 @@ function AdminLayout() {
           <div className="text-accent font-semibold text-xs uppercase tracking-wider mb-2">
             {section.label}
           </div>
-          <div className="flex gap-1 overflow-x-auto border-b border-border">
+          <div className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-border">
             {section.tabs.map((t) => (
               <Link
                 key={t.to}
