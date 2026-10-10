@@ -103,6 +103,10 @@ function WaitlistPage() {
             `${String(fd.get("child_first_name") || "").trim()} ${String(fd.get("child_last_name") || "").trim()}`.trim(),
           childDob: String(fd.get("child_dob") || ""),
           swimmingLevel: String(fd.get("swimming_level") || ""),
+          preferredDays: fd
+            .getAll("wish_day")
+            .map(String)
+            .filter((d): d is "Samstag" | "Sonntag" => d === "Samstag" || d === "Sonntag"),
           isMember: memberValue === "ja",
           notes: String(fd.get("notes") || ""),
           gdprConsent: true,
@@ -268,6 +272,9 @@ function WaitlistPage() {
                       <option value="Erste Schwimmversuche">Erste Schwimmversuche</option>
                       <option value="Seepferdchen">Seepferdchen vorhanden</option>
                       <option value="Sicherer Schwimmer">Sicherer Schwimmer</option>
+                      <option value="Bronze">Schwimmabzeichen Bronze vorhanden</option>
+                      <option value="Silber">Schwimmabzeichen Silber vorhanden</option>
+                      <option value="Gold">Schwimmabzeichen Gold vorhanden</option>
                     </select>
                   </div>
                   <div className="space-y-2">
@@ -290,6 +297,20 @@ function WaitlistPage() {
                   </div>
                 </div>
 
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium">Wunschtag (optional)</legend>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    {["Samstag", "Sonntag"].map((d) => (
+                      <label key={d} className="flex items-center gap-2">
+                        <input type="checkbox" name="wish_day" value={d} /> {d}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Unsere Kurse finden je nach Angebot samstags oder sonntags statt. So können wir
+                    Ihnen passende Plätze anbieten.
+                  </p>
+                </fieldset>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Anmerkungen (z. B. Wunschzeiten)</Label>
                   <Textarea id="notes" name="notes" rows={4} maxLength={2000} />

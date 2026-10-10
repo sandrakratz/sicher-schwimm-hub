@@ -73,6 +73,7 @@ import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleAction
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 import { DeclineReasonFields } from "@/components/admin/DeclineReasonFields";
+import { ProgramFitFields } from "@/components/admin/ProgramFitFields";
 import { combineReason } from "@/lib/decline-reasons";
 import { listTransferConsents } from "@/lib/course-transfer-consent.functions";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
@@ -251,6 +252,8 @@ type ProgramRow = {
   age_range: string | null;
   min_age_years: number | null;
   max_age_years?: number | null;
+  min_swim_level?: number | null;
+  weekday?: number | null;
   description: string | null;
   requirements: string | null;
   duration: string | null;
@@ -1004,6 +1007,8 @@ function Page() {
       age_range: editingProg.age_range || null,
       min_age_years: editingProg.min_age_years ?? null,
       max_age_years: editingProg.max_age_years ?? null,
+      min_swim_level: editingProg.min_swim_level ?? null,
+      weekday: editingProg.weekday ?? null,
       description: editingProg.description || null,
       requirements: editingProg.requirements || null,
       course_info: editingProg.course_info || null,
@@ -2199,6 +2204,11 @@ function Page() {
                         und Warteliste.
                       </Hint>
                     </div>
+                    <ProgramFitFields
+                      minSwimLevel={editingProg.min_swim_level}
+                      weekday={editingProg.weekday}
+                      onChange={(v) => setEditingProg((p) => ({ ...p, ...v }))}
+                    />
                     <div>
                       <Label>Höchstalter (Jahre)</Label>
                       <Input
@@ -2475,6 +2485,11 @@ function Page() {
                   Warteliste.
                 </Hint>
               </div>
+              <ProgramFitFields
+                minSwimLevel={editingProg.min_swim_level}
+                weekday={editingProg.weekday}
+                onChange={(v) => setEditingProg((p) => ({ ...p, ...v }))}
+              />
               <div>
                 <Label>Höchstalter (Jahre)</Label>
                 <Input

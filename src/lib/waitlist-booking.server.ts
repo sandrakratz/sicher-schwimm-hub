@@ -40,6 +40,7 @@ function splitWaitlistNotes(notes: string | null | undefined): {
   let swimmingLevel: string | null = null;
   const rest: string[] = [];
   for (const line of (notes ?? "").split(/\r?\n/)) {
+    if (/^\s*Wunschtage?:/i.test(line)) continue; // strukturierte Angabe, keine Freitext-Anmerkung
     const m = line.match(/^\s*Schwimm(?:level|niveau):\s*(.*)$/i);
     if (m && swimmingLevel === null) swimmingLevel = m[1].trim() || null;
     else if (line.trim()) rest.push(line.trim());

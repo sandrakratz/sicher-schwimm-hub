@@ -37,7 +37,13 @@ import {
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
-import { WaitlistToday, buildTodo } from "@/components/admin/WaitlistToday";
+import {
+  WaitlistToday,
+  buildTodo,
+  fitProblems,
+  type TodayEntry,
+} from "@/components/admin/WaitlistToday";
+import { checkFit } from "@/lib/swim-fit";
 import { WaitlistReport } from "@/components/admin/WaitlistReport";
 import { DeclineReasonFields } from "@/components/admin/DeclineReasonFields";
 import { categorizeReason, combineReason } from "@/lib/decline-reasons";
@@ -773,6 +779,12 @@ export function WaitlistAdmin() {
               <li>Nur Kinder, die zum Kursbeginn das Mindestalter erreichen.</li>
               <li>Kinder mit „Erst zuteilen ab“ erst für Kurse ab diesem Datum.</li>
               <li>Programme mit ausgeschalteter Warteliste nehmen keine neuen Einträge an.</li>
+              <li>
+                „Passt das?“: Automatisch angeboten wird nur, wenn Schwimmniveau (Mindest-Niveau des
+                Angebots) und Wunschtag zum Kurs passen. Andere Fälle erscheinen in „Heute“ unter
+                „Passt das?“ mit Begründung; der Vorstand bietet dann von Hand an. Mindest-Niveau
+                und Kurstag stellen Sie je Angebot in der Kursverwaltung ein.
+              </li>
             </ul>
           </div>
           <div>
@@ -1344,6 +1356,14 @@ export function WaitlistAdmin() {
                             </div>
                           );
                         })()}
+                        {(() => {
+                          const issues = fitProblems(e as unknown as TodayEntry, data);
+                          return issues ? (
+                            <div className="mt-1 rounded border border-red-300 bg-red-50 p-1.5 text-xs text-red-900">
+                              Passt das? {issues.join("; ")}
+                            </div>
+                          ) : null;
+                        })()}
                         {(e as { payment_status?: string }).payment_status &&
                           (e as { payment_status?: string }).payment_status !== "none" && (
                             <div className="mt-1">
@@ -1486,6 +1506,20 @@ export function WaitlistAdmin() {
                                   )
                                     return;
                                 }
+                                const fitO = checkFit(
+                                  e.notes,
+                                  programs.find((p) => p.id === c?.program_id) ?? null,
+                                );
+                                if (
+                                  c &&
+                                  !fitO.ok &&
+                                  !confirm(
+                                    "Passt laut Prüfung nicht:\n- " +
+                                      fitO.issues.join("\n- ") +
+                                      "\n\nTrotzdem anbieten?",
+                                  )
+                                )
+                                  return;
                                 offer.mutate({ entryId: e.id, courseId });
                               }}
                             >
@@ -1515,6 +1549,20 @@ export function WaitlistAdmin() {
                                 if (
                                   !confirm(
                                     `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen${c?.free === 0 ? " (Kurs ist voll – Überbuchung)" : ""}? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
+                                  )
+                                )
+                                  return;
+                                const fitB = checkFit(
+                                  e.notes,
+                                  programs.find((p) => p.id === c?.program_id) ?? null,
+                                );
+                                if (
+                                  c &&
+                                  !fitB.ok &&
+                                  !confirm(
+                                    "Passt laut Prüfung nicht:\n- " +
+                                      fitB.issues.join("\n- ") +
+                                      "\n\nTrotzdem buchen?",
                                   )
                                 )
                                   return;

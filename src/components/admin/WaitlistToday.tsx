@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
+import { checkFit } from "@/lib/swim-fit";
 import type { listWaitlist } from "@/lib/waitlist.functions";
 
 type Data = Awaited<ReturnType<typeof listWaitlist>>;
@@ -67,7 +68,8 @@ export function buildTodo(data: Data | undefined, assignee = "") {
           !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
         const af = (e as Record<string, unknown>)["available_from"] as string | null;
         const timely = !af || !c.starts_on || c.starts_on >= af;
-        return fits && timely;
+        const fitsLevel = checkFit(e.notes, programs.find((p) => p.id === c.program_id) ?? null).ok;
+        return fits && timely && fitsLevel;
       });
       return { course: c, waiting: candidates.length };
     })
@@ -75,6 +77,9 @@ export function buildTodo(data: Data | undefined, assignee = "") {
 
   const weekAgo = now - 7 * 24 * 3600 * 1000;
   const newEntries = waiting.filter((e) => new Date(e.created_at).getTime() >= weekAgo);
+  const fitChecks = waiting
+    .map((e) => ({ e, issues: fitProblems(e, data) }))
+    .filter((x): x is { e: TodayEntry; issues: string[] } => !!x.issues);
   const dueFollowUps = entries
     .filter((e) => {
       const fu = (e as Record<string, unknown>)["follow_up_on"] as string | null;
@@ -94,12 +99,14 @@ export function buildTodo(data: Data | undefined, assignee = "") {
     freeCourses,
     newEntries,
     dueFollowUps,
+    fitChecks,
     count:
       suggestions.length +
       expiringOffers.length +
       followups.length +
       freeCourses.length +
-      dueFollowUps.length,
+      dueFollowUps.length +
+      fitChecks.length,
   };
 }
 
@@ -203,6 +210,30 @@ export function WaitlistToday({
         <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
           Heute ist nichts zu tun. Alle Angebote, Rückfragen und Sperrvorschläge sind erledigt.
         </div>
+      )}
+
+      {t.fitChecks.length > 0 && (
+        <Section
+          title="Passt das? – manuell prüfen"
+          count={t.fitChecks.length}
+          tone="urgent"
+          onAll={() => onGoto("waiting")}
+        >
+          {t.fitChecks.map(({ e, issues }) => (
+            <li key={e.id} className="py-2">
+              <div>{nameBtn(e)}</div>
+              <ul className="ml-4 list-disc text-xs text-red-900">
+                {issues.map((i) => (
+                  <li key={i}>{i}</li>
+                ))}
+              </ul>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Es gibt freie Plätze, aber keinen automatisch passenden. Bitte in „Wartend“ einen
+                passenden Kurs anbieten oder die Familie anschreiben.
+              </div>
+            </li>
+          ))}
+        </Section>
       )}
 
       {t.dueFollowUps.length > 0 && (
@@ -357,4 +388,32 @@ export function WaitlistToday({
       )}
     </div>
   );
+}
+
+/**
+ * „Passt das?“: Gibt es für einen wartenden Eintrag freie Plätze, aber keiner davon besteht die
+ * Prüfung (Niveau/Wunschtag)? Dann wird nie automatisch angeboten; die Gründe stehen hier.
+ * `null` = nichts zu prüfen (kein freier Platz oder mindestens ein Kurs passt).
+ */
+export function fitProblems(e: TodayEntry, data: Data | undefined): string[] | null {
+  if (e.status !== "waiting" || !data) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const af = (e as Record<string, unknown>)["available_from"] as string | null;
+  const candidates = data.courses.filter((c) => {
+    if (c.free == null || c.free <= 0) return false;
+    if (c.starts_on && c.starts_on <= today) return false;
+    if (af && c.starts_on && c.starts_on < af) return false;
+    if (e.program_id && !relatedProgramIds(c.program_id, data.programs).includes(e.program_id))
+      return false;
+    return true;
+  });
+  if (candidates.length === 0) return null;
+  const issues = new Set<string>();
+  for (const c of candidates) {
+    const program = data.programs.find((p) => p.id === c.program_id) ?? null;
+    const fit = checkFit(e.notes, program);
+    if (fit.ok) return null;
+    fit.issues.forEach((i) => issues.add(i));
+  }
+  return [...issues];
 }
