@@ -3,6 +3,24 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type InboxSource = "message" | "course-request" | "waitlist";
 
+export type InboxSummary = {
+  /** Anmeldungen der letzten 30 Tage, die automatisch weiterlaufen (Angebot oder wartend ohne Anmerkung) */
+  automatic: number;
+  offered: number;
+  waiting: number;
+  /** Davon einzeln im Posteingang, weil die Eltern etwas geschrieben haben */
+  withNote: number;
+};
+
+/** Freitext der Eltern ohne die strukturierten Zeilen „Schwimmlevel“ und „Wunschtag“. */
+function parentFreeText(notes: string | null | undefined): string {
+  return (notes ?? "")
+    .split(/\r?\n/)
+    .filter((l) => l.trim() && !/^\s*(Schwimm(level|niveau)|Wunschtage?):/i.test(l))
+    .join("\n")
+    .trim();
+}
+
 export type InboxItem = {
   source: InboxSource;
   id: string;
@@ -16,6 +34,8 @@ export type InboxItem = {
   contextTo: string;
   /** Optionaler Reiter/Parameter der Zielseite */
   contextSearch?: { tab: "archive" };
+  /** Wartelisteneintrag: Familie hat einen Freitext geschrieben, den das System nicht auswerten kann */
+  hasParentNote?: boolean;
 };
 
 const REQUEST_STATUS: Record<string, string> = {
@@ -42,7 +62,7 @@ const WAITLIST_STATUS: Record<string, string> = {
  */
 export const listInbox = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ items: InboxItem[] }> => {
+  .handler(async ({ context }): Promise<{ items: InboxItem[]; summary: InboxSummary }> => {
     const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
     if (!isStaff) throw new Response("Forbidden", { status: 403 });
 
@@ -94,20 +114,33 @@ export const listInbox = createServerFn({ method: "POST" })
       });
     }
 
+    // Wartelisteneintrag-Anmeldungen laufen in aller Regel automatisch (Platzangebot per E-Mail, Zusage-Link).
+    // Einzeln erscheinen nur wartende Einträge, bei denen die Eltern etwas geschrieben haben, das das
+    // System nicht auswerten kann (z. B. Zeiten, Mitgliedschaft). Alles andere steht nur in der Zusammenfassung.
+    const summary: InboxSummary = { automatic: 0, offered: 0, waiting: 0, withNote: 0 };
     for (const w of waitlist.data ?? []) {
-      items.push({
-        source: "waitlist",
-        id: w.id as string,
-        name: (w.parent_name as string) || "—",
-        email: (w.parent_email as string) || "",
-        subject: `Warteliste${w.child_name ? ` – ${w.child_name}` : ""}`,
-        body: (w.notes as string) || "(keine Nachricht hinterlegt)",
-        created_at: w.created_at as string,
-        statusLabel: WAITLIST_STATUS[w.status as string] ?? (w.status as string),
-        contextTo: "/admin/warteliste",
-      });
+      const note = parentFreeText(w.notes as string | null);
+      if (w.status === "offered") summary.offered++;
+      if (w.status === "waiting") summary.waiting++;
+      if (w.status === "waiting" && note) {
+        summary.withNote++;
+        items.push({
+          source: "waitlist",
+          id: w.id as string,
+          name: (w.parent_name as string) || "—",
+          email: (w.parent_email as string) || "",
+          subject: `Anmeldung${w.child_name ? ` – ${w.child_name}` : ""}`,
+          body: note,
+          created_at: w.created_at as string,
+          statusLabel: WAITLIST_STATUS[w.status as string] ?? (w.status as string),
+          contextTo: "/admin/warteliste",
+          hasParentNote: true,
+        });
+      } else {
+        summary.automatic++;
+      }
     }
 
     items.sort((a, b) => b.created_at.localeCompare(a.created_at));
-    return { items };
+    return { items, summary };
   });

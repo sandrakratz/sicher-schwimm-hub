@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +39,8 @@ import { formatDateTimeBerlin } from "@/lib/format";
 import { replyToMessage } from "@/lib/messages.functions";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 import { InboxItemCard } from "@/components/admin/InboxItemCard";
-import { listInbox, type InboxItem } from "@/lib/inbox.functions";
+import { listInbox, type InboxItem, type InboxSummary } from "@/lib/inbox.functions";
+import { AgeBadge } from "@/components/admin/AgeBadge";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   beforeLoad: async () => {
@@ -65,6 +66,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   general: "Allgemein",
   membership: "Mitgliedschaft",
   course: "Kurs",
+  courses: "Kurs",
   feedback: "Feedback",
   complaint: "Beschwerde",
   other: "Sonstiges",
@@ -85,7 +87,7 @@ type Msg = {
 function Page() {
   const [rows, setRows] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("all");
+  const [tab, setTab] = useState<"open" | "done">("open");
 
   async function load() {
     setLoading(true);
@@ -121,117 +123,175 @@ function Page() {
     toast.success("Nachricht gelöscht");
   }
 
-  const filtered = filter === "all" ? rows : rows.filter((m) => m.status === filter);
-
-  // Gemeinsamer Posteingang: zusätzlich Kursanfragen und Wartelisten-Einträge
-  const [source, setSource] = useState<"all" | "message" | "course-request" | "waitlist">("all");
+  // Kursanfragen und Anmeldungen mit Anmerkung der Eltern aus dem gemeinsamen Posteingang
   const [inbox, setInbox] = useState<InboxItem[] | null>(null);
+  const [summary, setSummary] = useState<InboxSummary | null>(null);
   useEffect(() => {
     listInbox()
-      .then((r) => setInbox(r.items))
+      .then((r) => {
+        setInbox(r.items);
+        setSummary(r.summary);
+      })
       .catch(() => setInbox([]));
   }, []);
 
-  const showMessages = source === "all" || source === "message";
-  const otherItems = (inbox ?? []).filter((i) => source === "all" || i.source === source);
-  // Kursanfragen und Warteliste sind immer offene Vorgänge – sie gehören zu „Neu“.
-  // Wird gezielt nach diesen Quellen gefiltert, gilt der Status-Filter nicht (er ist dann deaktiviert).
-  const showOthers =
-    source === "course-request" || source === "waitlist"
-      ? true
-      : source !== "message" && (filter === "all" || filter === "new");
+  const doneMsgs = rows.filter((m) => !["new", "read"].includes(m.status));
+  const requests = (inbox ?? []).filter((i) => i.source === "course-request");
+  const withNote = (inbox ?? []).filter((i) => i.source === "waitlist");
 
-  // Alles gemeinsam nach Datum sortieren, wenn „Alle“ gewählt ist
-  const combined: Array<{ when: string; node: React.ReactNode }> = [];
-  if (showMessages) {
-    for (const m of filtered) {
-      combined.push({
+  // „Antworten nötig“: unbeantwortete Nachrichten und neue Kursanfragen. Beschwerden zuerst, danach
+  // die am längsten wartenden zuerst.
+  const needReply = [
+    ...rows
+      .filter((m) => ["new", "read"].includes(m.status))
+      .map((m) => ({
+        key: `msg-${m.id}`,
         when: m.created_at,
+        prio: m.category === "complaint" ? 0 : 1,
         node: (
           <MessageCard
             key={`msg-${m.id}`}
             m={m}
+            showAge
             onStatus={updateStatus}
             onNotes={saveNotes}
             onDelete={deleteMsg}
           />
         ),
-      });
-    }
-  }
-  if (showOthers) {
-    for (const i of otherItems) {
-      if (i.source === "message") continue;
-      combined.push({
-        when: i.created_at,
-        node: <InboxItemCard key={`${i.source}-${i.id}`} item={i} />,
-      });
-    }
-  }
-  combined.sort((a, b) => b.when.localeCompare(a.when));
+      })),
+    ...requests.map((i) => ({
+      key: `${i.source}-${i.id}`,
+      when: i.created_at,
+      prio: 1,
+      node: <InboxItemCard key={`${i.source}-${i.id}`} item={i} showAge />,
+    })),
+  ].sort((a, b) => a.prio - b.prio || a.when.localeCompare(b.when));
+
+  const loaded = !loading && inbox !== null;
 
   return (
-    <div className="max-w-5xl space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-bold text-primary-deep">Posteingang</h1>
-          <p className="text-sm text-muted-foreground">
-            Kontaktformular, Kursanfragen und Warteliste an einer Stelle – mit vollständigem
-            Antwortverlauf.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={source} onValueChange={(v) => setSource(v as typeof source)}>
-            <SelectTrigger className="w-52">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Quellen</SelectItem>
-              <SelectItem value="message">Kontaktformular</SelectItem>
-              <SelectItem value="course-request">Kursanfragen</SelectItem>
-              <SelectItem value="waitlist">Warteliste</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={filter}
-            onValueChange={setFilter}
-            disabled={source !== "all" && source !== "message"}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle Status</SelectItem>
-              <SelectItem value="new">Neu</SelectItem>
-              <SelectItem value="read">Gelesen</SelectItem>
-              <SelectItem value="replied">Beantwortet</SelectItem>
-              <SelectItem value="archived">Archiviert</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="max-w-5xl space-y-6">
+      <div>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">Posteingang</h1>
+        <p className="text-sm text-muted-foreground">
+          Hier steht, was Ihre Antwort braucht. Anmeldungen laufen automatisch und stehen nur dann
+          einzeln da, wenn die Eltern etwas dazugeschrieben haben.
+        </p>
       </div>
 
-      {(loading || inbox === null) && <p className="text-muted-foreground text-sm">Lade …</p>}
-      {!loading && inbox !== null && combined.length === 0 && (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="p-10 text-center text-muted-foreground">
-            Keine Einträge.
-          </CardContent>
-        </Card>
+      <div className="flex flex-wrap gap-2 border-b pb-2">
+        <Button
+          size="sm"
+          variant={tab === "open" ? "default" : "outline"}
+          onClick={() => setTab("open")}
+        >
+          Offen ({loaded ? needReply.length + withNote.length : "…"})
+        </Button>
+        <Button
+          size="sm"
+          variant={tab === "done" ? "default" : "outline"}
+          onClick={() => setTab("done")}
+        >
+          Erledigt ({loading ? "…" : doneMsgs.length})
+        </Button>
+      </div>
+
+      {!loaded && <p className="text-sm text-muted-foreground">Lade …</p>}
+
+      {loaded && tab === "open" && (
+        <>
+          <section className="space-y-3">
+            <h2 className="font-display text-xl font-bold text-primary-deep">
+              Antworten nötig ({needReply.length})
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Kontaktformular und neue Kursanfragen. Beschwerden stehen oben, danach die am längsten
+              wartenden.
+            </p>
+            {needReply.length === 0 ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-900">
+                Alles beantwortet.
+              </div>
+            ) : (
+              <div className="space-y-4">{needReply.map((c) => c.node)}</div>
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="font-display text-xl font-bold text-primary-deep">Anmeldungen</h2>
+            <div className="rounded-xl border bg-card p-4 text-sm">
+              {summary ? (
+                <>
+                  <p>
+                    <strong>{summary.automatic}</strong> Anmeldungen der letzten 30 Tage laufen
+                    automatisch weiter ({summary.offered} mit Platzangebot,{" "}
+                    {summary.waiting - summary.withNote} wartend ohne Anmerkung). Dazu müssen Sie
+                    nichts tun.
+                  </p>
+                  <Button asChild size="sm" variant="outline" className="mt-3">
+                    <Link to="/admin/warteliste">
+                      Zur Anfrageliste („Heute“ zeigt, was zu prüfen ist)
+                    </Link>
+                  </Button>
+                </>
+              ) : (
+                <p className="text-muted-foreground">Zusammenfassung nicht verfügbar.</p>
+              )}
+            </div>
+            {withNote.length > 0 && (
+              <>
+                <h3 className="pt-2 text-sm font-semibold">
+                  Mit Anmerkung der Eltern ({withNote.length})
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Die Eltern haben etwas dazugeschrieben, das das System nicht auswertet (zum
+                  Beispiel Zeiten). Bitte kurz lesen.
+                </p>
+                <div className="space-y-4">
+                  {withNote.map((i) => (
+                    <InboxItemCard key={`${i.source}-${i.id}`} item={i} />
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        </>
       )}
 
-      <div className="space-y-4">{combined.map((c) => c.node)}</div>
+      {loaded && tab === "done" && (
+        <section className="space-y-4">
+          {doneMsgs.length === 0 ? (
+            <Card className="border-0 shadow-soft">
+              <CardContent className="p-10 text-center text-muted-foreground">
+                Noch keine erledigten Nachrichten.
+              </CardContent>
+            </Card>
+          ) : (
+            doneMsgs.map((m) => (
+              <MessageCard
+                key={`msg-${m.id}`}
+                m={m}
+                onStatus={updateStatus}
+                onNotes={saveNotes}
+                onDelete={deleteMsg}
+              />
+            ))
+          )}
+        </section>
+      )}
     </div>
   );
 }
 
 function MessageCard({
   m,
+  showAge,
   onStatus,
   onNotes,
   onDelete,
 }: {
   m: Msg;
+  showAge?: boolean;
   onStatus: (id: string, s: string) => void;
   onNotes: (id: string, n: string) => void;
   onDelete: (id: string) => void;
@@ -288,13 +348,16 @@ function MessageCard({
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline">{CATEGORY_LABEL[m.category] || m.category}</Badge>
+                <Badge variant={m.category === "complaint" ? "destructive" : "outline"}>
+                  {CATEGORY_LABEL[m.category] || m.category}
+                </Badge>
                 <Badge variant={unread ? "default" : "outline"}>
                   {STATUS_LABEL[m.status] || m.status}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {formatDateTimeBerlin(m.created_at)}
                 </span>
+                {showAge && ["new", "read"].includes(m.status) && <AgeBadge since={m.created_at} />}
               </div>
               <div
                 className={`mt-1 truncate ${unread ? "font-bold text-primary-deep" : "font-medium"}`}
