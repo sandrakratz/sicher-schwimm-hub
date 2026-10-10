@@ -1029,6 +1029,25 @@ export function WaitlistAdmin({ initialProgramIds }: { initialProgramIds?: strin
           onDismiss={(s) =>
             resolveSuggestion.mutate({ action: "dismiss", email: s.email, childName: s.childName })
           }
+          onOffer={(e, courseId) => {
+            const c = (data?.courses ?? []).find((x) => x.id === courseId);
+            if (!c) return;
+            const minAge = programs.find((p) => p.id === c.program_id)?.min_age_years ?? null;
+            if (
+              !meetsMinAge(e.child_dob, c.starts_on, minAge) &&
+              !confirm(
+                `${e.child_name} erreicht zum Kursbeginn das Mindestalter noch nicht. Trotzdem anbieten?`,
+              )
+            )
+              return;
+            if (
+              !confirm(
+                `${e.child_name} einen Platz in „${c.name}“ anbieten? Die Eltern erhalten eine E-Mail mit Zusage-Link.`,
+              )
+            )
+              return;
+            offer.mutate({ entryId: e.id, courseId });
+          }}
         />
       )}
 
