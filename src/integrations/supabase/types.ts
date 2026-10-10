@@ -400,6 +400,8 @@ export type Database = {
           location: string | null
           max_age_years: number | null
           min_age_years: number | null
+          min_swim_level: number | null
+          weekday: number | null
           name: string
           payment_due_days: number
           price_member: number | null
@@ -424,6 +426,8 @@ export type Database = {
           location?: string | null
           max_age_years?: number | null
           min_age_years?: number | null
+          min_swim_level?: number | null
+          weekday?: number | null
           name: string
           payment_due_days?: number
           price_member?: number | null
@@ -448,6 +452,8 @@ export type Database = {
           location?: string | null
           max_age_years?: number | null
           min_age_years?: number | null
+          min_swim_level?: number | null
+          weekday?: number | null
           name?: string
           payment_due_days?: number
           price_member?: number | null
