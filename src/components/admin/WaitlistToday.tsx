@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw } from "lucide-react";
@@ -12,8 +14,13 @@ export type TodayView = "waiting" | "offered" | "followup" | "declined" | "done"
 
 type Suggestion = { key: string; childName: string | null; email: string | null; total: number };
 
-export function buildTodo(data: Data | undefined) {
-  const entries = data?.entries ?? [];
+export function buildTodo(data: Data | undefined, assignee = "") {
+  // Zuständigkeitsfilter gilt für Einträge der Anfrageliste (nicht für Sperrvorschläge und Kurse)
+  const entries = (data?.entries ?? []).filter((e) => {
+    const who = ((e as Record<string, unknown>)["assigned_to"] as string | null) ?? "";
+    return assignee === "" ? true : assignee === "__none" ? !who : who === assignee;
+  });
+  const todayIso = new Date().toISOString().slice(0, 10);
   const courses = data?.courses ?? [];
   const programs = data?.programs ?? [];
   const now = Date.now();
@@ -68,6 +75,16 @@ export function buildTodo(data: Data | undefined) {
 
   const weekAgo = now - 7 * 24 * 3600 * 1000;
   const newEntries = waiting.filter((e) => new Date(e.created_at).getTime() >= weekAgo);
+  const dueFollowUps = entries
+    .filter((e) => {
+      const fu = (e as Record<string, unknown>)["follow_up_on"] as string | null;
+      return !!fu && fu <= todayIso && !["removed", "accepted"].includes(e.status);
+    })
+    .sort((a, b) =>
+      String((a as Record<string, unknown>)["follow_up_on"]).localeCompare(
+        String((b as Record<string, unknown>)["follow_up_on"]),
+      ),
+    );
 
   const suggestions = [...suggestionMap.values()];
   return {
@@ -76,7 +93,13 @@ export function buildTodo(data: Data | undefined) {
     followups,
     freeCourses,
     newEntries,
-    count: suggestions.length + expiringOffers.length + followups.length + freeCourses.length,
+    dueFollowUps,
+    count:
+      suggestions.length +
+      expiringOffers.length +
+      followups.length +
+      freeCourses.length +
+      dueFollowUps.length,
   };
 }
 
@@ -133,27 +156,81 @@ export function WaitlistToday({
   onBlock: (s: Suggestion) => void;
   onDismiss: (s: Suggestion) => void;
 }) {
-  const t = buildTodo(data);
+  const [assignee, setAssignee] = useState("");
+  const t = buildTodo(data, assignee);
   const nameBtn = (e: TodayEntry) => (
-    <button
-      type="button"
-      className="font-medium text-primary underline underline-offset-2"
-      onClick={() => onOpenDetail(e)}
-    >
-      {e.child_name}
-    </button>
+    <span className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        className="font-medium text-primary underline underline-offset-2"
+        onClick={() => onOpenDetail(e)}
+      >
+        {e.child_name}
+      </button>
+      <Link
+        to="/admin/familie"
+        search={{ email: e.parent_email ?? "" }}
+        className="text-xs text-muted-foreground underline"
+      >
+        Familie
+      </Link>
+    </span>
   );
-
-  if (t.count === 0 && t.newEntries.length === 0) {
-    return (
-      <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-        Heute ist nichts zu tun. Alle Angebote, Rückfragen und Sperrvorschläge sind erledigt.
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <label className="text-muted-foreground" htmlFor="today-assignee">
+          Zuständig:
+        </label>
+        <select
+          id="today-assignee"
+          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          value={assignee}
+          onChange={(ev) => setAssignee(ev.target.value)}
+        >
+          <option value="">Alle</option>
+          <option value="__none">Nicht zugewiesen</option>
+          {(data?.staff ?? []).map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {t.count === 0 && t.newEntries.length === 0 && (
+        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
+          Heute ist nichts zu tun. Alle Angebote, Rückfragen und Sperrvorschläge sind erledigt.
+        </div>
+      )}
+
+      {t.dueFollowUps.length > 0 && (
+        <Section
+          title="Wiedervorlage fällig"
+          count={t.dueFollowUps.length}
+          tone="urgent"
+          onAll={() => onGoto("waiting")}
+        >
+          {t.dueFollowUps.map((e) => {
+            const rec = e as Record<string, unknown>;
+            return (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  {nameBtn(e)}{" "}
+                  <span className="text-muted-foreground">
+                    {rec["assigned_to"] ? `→ ${String(rec["assigned_to"])}` : "nicht zugewiesen"}
+                  </span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  seit {formatDateBerlin(String(rec["follow_up_on"]))}
+                </span>
+              </li>
+            );
+          })}
+        </Section>
+      )}
+
       {t.suggestions.length > 0 && (
         <Section
           title="Sperrliste prüfen (ab 3 Absagen/Stornierungen)"

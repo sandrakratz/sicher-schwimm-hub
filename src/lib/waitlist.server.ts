@@ -396,6 +396,52 @@ async function deactivateEntry(entry: any, count: number, note: string) {
   });
 }
 
+/**
+ * Passende Kurse mit freien Plätzen, die der Familie nach einer Absage zusätzlich genannt werden
+ * (bis zu 3, ohne den abgelehnten Kurs). Fehler hier dürfen die Rückfrage-Mail nie verhindern.
+ */
+async function findAlternatives(
+  entry: any,
+): Promise<Array<{ name: string; starts_label: string }>> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { relatedProgramIds } = await import("@/lib/waitlist-programs");
+    const [{ data: courses }, { data: allPrograms }] = await Promise.all([
+      supabaseAdmin
+        .from("courses")
+        .select("*, course_programs(*)")
+        .is("archived_at", null)
+        .in("status", ["open", "planned", "waiting_list"]),
+      supabaseAdmin.from("course_programs").select("id,slug"),
+    ]);
+    const today = todayBerlinIso();
+    const out: Array<{ name: string; starts_on: string }> = [];
+    for (const c of courses ?? []) {
+      const program = (c as any).course_programs ?? null;
+      if (c.id === entry.offer_course_id) continue;
+      if (c.is_public === false || program?.is_public === false || program?.bookable === false)
+        continue;
+      if (!c.starts_on || c.starts_on <= today) continue;
+      if (entry.program_id) {
+        const pids = relatedProgramIds(program?.id ?? null, allPrograms ?? []);
+        if (!pids.includes(entry.program_id)) continue;
+      }
+      if (!meetsMinAge(entry.child_dob ?? null, c.starts_on, program?.min_age_years ?? null))
+        continue;
+      const free = await freeSlots(c.id, c.max_participants);
+      if (free == null || free <= 0) continue;
+      out.push({ name: c.name, starts_on: c.starts_on });
+    }
+    return out
+      .sort((a, b) => a.starts_on.localeCompare(b.starts_on))
+      .slice(0, 3)
+      .map((c) => ({ name: c.name, starts_label: formatDateBerlin(c.starts_on) }));
+  } catch (err) {
+    console.error("findAlternatives failed", err);
+    return [];
+  }
+}
+
 /** Verschickt die Rückfrage, ob das Kind auf der Warteliste bleiben soll (7 Tage Frist). */
 export async function sendFollowup(
   entry: any,
@@ -423,6 +469,7 @@ export async function sendFollowup(
     })
     .eq("id", entry.id);
   if (error) throw new Error(`Rückfrage konnte nicht gespeichert werden: ${error.message}`);
+  const alternatives = await findAlternatives(entry);
   await queueTemplateEmail({
     templateName: "waitlist-followup",
     recipientEmail: entry.parent_email,
@@ -435,6 +482,7 @@ export async function sendFollowup(
       max: MAX_DECLINES,
       expires_label: formatDateBerlin(expiresAt),
       answer_url: `${SITE_BASE_URL}/warteliste/rueckfrage?token=${token}`,
+      alternatives,
     },
     metadata: { waitlist_entry_id: entry.id },
   });

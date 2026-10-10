@@ -22,6 +22,7 @@ interface Props {
   max?: number;
   expires_label?: string;
   answer_url?: string;
+  alternatives?: Array<{ name: string; starts_label: string }>;
 }
 
 const row = { margin: "3px 0" } as const;
@@ -47,6 +48,19 @@ const Email = (p: Props) => (
           mit, ob Ihr Kind weiterhin auf der Warteliste bleiben soll – und ab wann wir es bei der
           Platzvergabe wieder berücksichtigen dürfen.
         </Text>
+        {p.alternatives && p.alternatives.length > 0 && (
+          <>
+            <Text>
+              Falls Sie nicht warten möchten: Aktuell haben wir freie Plätze in folgenden Kursen.
+              Melden Sie sich gern bei uns, wenn einer davon für Sie passt.
+            </Text>
+            {p.alternatives.map((a) => (
+              <Text key={a.name + a.starts_label} style={row}>
+                • {a.name} (Start {a.starts_label})
+              </Text>
+            ))}
+          </>
+        )}
         {p.answer_url && (
           <Button
             href={p.answer_url}
@@ -89,6 +103,7 @@ export const template: TemplateEntry = {
     max: 3,
     expires_label: "07.10.2026",
     answer_url: "https://sicher-schwimmen.com/warteliste/rueckfrage?token=x",
+    alternatives: [{ name: "Schwimmstarter", starts_label: "02.11.2026" }],
   },
 };
 export default template;

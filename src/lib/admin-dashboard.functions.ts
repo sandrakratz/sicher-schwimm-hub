@@ -92,7 +92,9 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     const [{ data: entryRows }, { data: activeBlocks }, cancellationRows] = await Promise.all([
       supabaseAdmin
         .from("waitlist_entries")
-        .select("parent_email,child_name,status,decline_count,block_review_dismissed_at"),
+        .select(
+          "parent_email,child_name,status,decline_count,block_review_dismissed_at,follow_up_on",
+        ),
       supabaseAdmin
         .from("booking_blocklist")
         .select("email_norm,child_name_norm,child_dob")
@@ -101,6 +103,10 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     ]);
     const rows = entryRows ?? [];
     const followups = rows.filter((r) => ["declined", "expired"].includes(r.status)).length;
+    const dueFollowUps = rows.filter(
+      (r) =>
+        !!r.follow_up_on && r.follow_up_on <= today && !["removed", "accepted"].includes(r.status),
+    ).length;
     const statsFor = buildDeclineStats(rows, cancellationRows, activeBlocks ?? []);
     const suggestedFamilies = new Set<string>();
     for (const r of rows) {
@@ -149,10 +155,10 @@ export const getAdminTasks = createServerFn({ method: "POST" })
       {
         key: "waitlist-review",
         label: "Anfrageliste: zu prüfen",
-        count: followups + suggestedFamilies.size,
+        count: followups + suggestedFamilies.size + dueFollowUps,
         to: "/admin/warteliste",
         tone: "attention",
-        hint: `${followups} offene Rückfrage(n), ${suggestedFamilies.size} Sperrvorschlag/-vorschläge`,
+        hint: `${followups} offene Rückfrage(n), ${suggestedFamilies.size} Sperrvorschlag/-vorschläge, ${dueFollowUps} Wiedervorlage(n)`,
       },
       {
         key: "memberships",

@@ -492,6 +492,20 @@ export const listWaitlist = createServerFn({ method: "GET" })
       })
       .sort((a, b) => (b.cancelled_at ?? "").localeCompare(a.cancelled_at ?? ""));
 
+    // Mitarbeitende (Vorstand/Verwaltung) für „Zuständig“ in der Anfrageliste
+    const { data: roleRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["admin", "board"]);
+    const staffIds = [...new Set((roleRows ?? []).map((r) => r.user_id))];
+    const { data: staffProfiles } = staffIds.length
+      ? await supabaseAdmin.from("profiles").select("first_name,last_name").in("id", staffIds)
+      : { data: [] as Array<{ first_name: string | null; last_name: string | null }> };
+    const staff = (staffProfiles ?? [])
+      .map((p) => `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "de"));
+
     return {
       entries: entries.map((e) => {
         const req = e.request_id ? (requests.get(e.request_id) ?? null) : null;
@@ -541,6 +555,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
       }),
 
       cancellations,
+      staff,
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => {
         const nowIso = new Date().toISOString();
@@ -686,6 +701,12 @@ const updateSchema = z.object({
   notes: z.string().max(4000).nullable().optional(),
   blocklist: z.boolean().optional(),
   dismissBlockSuggestion: z.boolean().optional(),
+  assignedTo: z.string().trim().max(120).nullable().optional(),
+  followUpOn: z
+    .string()
+    .regex(/^d{4}-d{2}-d{2}$/)
+    .nullable()
+    .optional(),
   availableFrom: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -724,6 +745,8 @@ export const updateWaitlistEntry = createServerFn({ method: "POST" })
       patch["followup_expires_at"] = null;
     }
     if (data.declineCount !== undefined) patch["decline_count"] = data.declineCount;
+    if (data.assignedTo !== undefined) patch["assigned_to"] = data.assignedTo || null;
+    if (data.followUpOn !== undefined) patch["follow_up_on"] = data.followUpOn;
     if (data.dismissBlockSuggestion) patch["block_review_dismissed_at"] = new Date().toISOString();
     if (data.adminNotes !== undefined) patch["admin_notes"] = data.adminNotes;
     if (data.appendNote) {
