@@ -42,6 +42,7 @@ import {
   migrateWaitingRequests,
   bookWaitlistPlaceDirect,
   recordWaitlistDecline,
+  resolveBlockSuggestion,
 } from "@/lib/waitlist.functions";
 
 const PAYMENT_LABEL: Record<string, { label: string; className: string }> = {
@@ -585,6 +586,20 @@ export function WaitlistAdmin() {
     onError: (e: Error) => toast.error(e.message || "Aktualisierung fehlgeschlagen"),
   });
 
+  const resolveSuggestion = useMutation({
+    mutationFn: (v: {
+      action: "block" | "dismiss";
+      email: string | null;
+      childName: string | null;
+      reason?: string;
+    }) => resolveBlockSuggestion({ data: v }),
+    onSuccess: (_r, v) => {
+      toast.success(v.action === "block" ? "Auf die Sperrliste gesetzt" : "Vorschlag ignoriert");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message || "Aktion fehlgeschlagen"),
+  });
+
   const remove = useMutation({
     mutationFn: (entryId: string) => deleteWaitlistEntry({ data: { entryId } }),
     onSuccess: () => {
@@ -623,12 +638,19 @@ export function WaitlistAdmin() {
     waiting: allEntries.filter((e) => inView(e, "waiting")).length,
     offered: allEntries.filter((e) => inView(e, "offered")).length,
     followup: allEntries.filter((e) => inView(e, "followup")).length,
-    declined: allEntries.filter((e) => inView(e, "declined")).length,
+    declined:
+      allEntries.filter((e) => inView(e, "declined")).length + (data?.cancellations ?? []).length,
     done: allEntries.filter((e) => inView(e, "done")).length,
   };
-  const blockSuggestions = allEntries.filter(
-    (e) => (e as { block_suggestion?: boolean }).block_suggestion && declineCountOf(e) > 0,
-  );
+  const cancellations = data?.cancellations ?? [];
+  const blockSuggestions = [
+    ...allEntries
+      .filter((e) => (e as { block_suggestion?: boolean }).block_suggestion && declineCountOf(e) > 0)
+      .map((e) => String(e.parent_email ?? "").toLowerCase()),
+    ...cancellations
+      .filter((c) => c.block_suggestion)
+      .map((c) => String(c.parent_email ?? "").toLowerCase()),
+  ];
 
   const grouped = useMemo(() => {
     const entries = allEntries.filter((e) => inView(e, view));
@@ -762,8 +784,8 @@ export function WaitlistAdmin() {
               </li>
               <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
               <li>
-                Der Zähler gilt je Eltern-E-Mail bzw. Kind (Name + Geburtsdatum) über alle Einträge:
-                ein neuer Eintrag setzt ihn nicht zurück. Ab 3 Absagen gesamt erscheint „Sperrliste
+                Der Zähler gilt je Eltern-E-Mail bzw. Kind über alle Einträge und zählt auch Stornierungen gebuchter Plätze (Umbuchung, „zurück auf die Warteliste“) mit:
+                ein neuer Eintrag setzt ihn nicht zurück. Ab 3 Absagen/Stornierungen gesamt erscheint „Sperrliste
                 prüfen“; gesperrt wird nie automatisch, sondern nur per Klick auf „Sperren“.
                 „Ignorieren“ blendet den Vorschlag dauerhaft aus.
               </li>
@@ -811,8 +833,8 @@ export function WaitlistAdmin() {
       {blockSuggestions.length > 0 && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm">
           <p className="font-semibold text-red-900">
-            Sperrliste prüfen: {new Set(blockSuggestions.map((e) => e.parent_email)).size} Familie(n)
-            mit mindestens 3 Absagen
+            Sperrliste prüfen: {new Set(blockSuggestions).size} Familie(n) mit mindestens 3
+            Absagen/Stornierungen
           </p>
           <p className="text-red-900/80">
             Zeilen sind im Reiter „Abgesagt – nachhalten“ markiert. Dort können Sie sperren oder den
@@ -852,7 +874,112 @@ export function WaitlistAdmin() {
         </div>
       )}
 
-      {grouped.length === 0 && (
+      {view === "declined" && cancellations.length > 0 && (
+        <CollapsibleCard
+          storageKey="waitlist-cancellations"
+          title="Stornierungen gebuchter Plätze"
+          meta={
+            <span className="text-sm text-muted-foreground">{cancellations.length} Einträge</span>
+          }
+          contentClassName="overflow-x-auto"
+        >
+          <p className="mb-2 text-xs text-muted-foreground">
+            Umbuchungen und „zurück auf die Warteliste“ durch die Familie. Jede zählt wie eine
+            Absage. Kursabsagen des Vereins zählen nicht.
+          </p>
+          <table className="w-full min-w-[800px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="py-2 pr-3">Kind</th>
+                <th className="py-2 pr-3">E-Mail</th>
+                <th className="py-2 pr-3">Kurs</th>
+                <th className="py-2 pr-3">Datum</th>
+                <th className="py-2 pr-3">Art / Grund</th>
+                <th className="py-2 pr-3">Gesamt</th>
+                <th className="py-2 pr-3">Sperrliste</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cancellations.map((c) => (
+                <tr key={c.id} className="border-b align-top">
+                  <td className="py-2 pr-3 font-medium">{c.child_name ?? "–"}</td>
+                  <td className="py-2 pr-3">{c.parent_email ?? "–"}</td>
+                  <td className="py-2 pr-3">{c.course_name}</td>
+                  <td className="py-2 pr-3 whitespace-nowrap">
+                    {c.cancelled_at ? formatDateBerlin(c.cancelled_at) : "–"}
+                  </td>
+                  <td className="py-2 pr-3">
+                    <Badge variant="secondary">
+                      {c.moved_to ? `Umbuchung → ${c.moved_to}` : "Zurück auf Warteliste"}
+                    </Badge>
+                    {c.reason && <div className="mt-1 text-xs text-muted-foreground">{c.reason}</div>}
+                  </td>
+                  <td className="py-2 pr-3">
+                    <Badge
+                      variant="secondary"
+                      className={
+                        c.declines_total >= 3
+                          ? "bg-red-100 text-red-900"
+                          : c.declines_total === 2
+                            ? "bg-amber-100 text-amber-900"
+                            : "bg-slate-100 text-slate-700"
+                      }
+                    >
+                      {c.declines_total}×
+                    </Badge>
+                  </td>
+                  <td className="py-2 pr-3 text-xs">
+                    {c.blocked ? (
+                      <span className="text-muted-foreground">gesperrt</span>
+                    ) : c.block_suggestion ? (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="font-semibold text-red-900">prüfen:</span>
+                        <button
+                          type="button"
+                          className="text-red-900 underline"
+                          onClick={() => {
+                            if (
+                              !confirm(
+                                `${c.child_name} / ${c.parent_email} auf die Sperrliste setzen? Buchung und Warteliste sind dann gesperrt.`,
+                              )
+                            )
+                              return;
+                            resolveSuggestion.mutate({
+                              action: "block",
+                              email: c.parent_email,
+                              childName: c.child_name,
+                              reason: `Wiederholte Absagen/Stornierungen (${c.declines_total})`,
+                            });
+                          }}
+                        >
+                          Sperren
+                        </button>
+                        <button
+                          type="button"
+                          className="text-muted-foreground underline"
+                          onClick={() =>
+                            resolveSuggestion.mutate({
+                              action: "dismiss",
+                              email: c.parent_email,
+                              childName: c.child_name,
+                            })
+                          }
+                        >
+                          Ignorieren
+                        </button>
+                      </div>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CollapsibleCard>
+      )}
+
+      {grouped.length === 0 && !(view === "declined" && cancellations.length > 0) && (
         <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>
       )}
 

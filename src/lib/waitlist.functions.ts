@@ -448,33 +448,51 @@ export const listWaitlist = createServerFn({ method: "GET" })
       dupCount.set(key, (dupCount.get(key) ?? 0) + 1);
     }
 
-    // Absagen je E-Mail bzw. je Kind (Name + Geburtsdatum) über ALLE Einträge summieren,
-    // damit ein neuer Eintrag den Zähler nicht zurücksetzt.
-    const declinesByEmail = new Map<string, number>();
-    const declinesByChild = new Map<string, number>();
-    const dismissedEmail = new Set<string>();
-    const dismissedChild = new Set<string>();
-    const childKey = (e: WaitlistRow) => `${norm(e.child_name)}|${e.child_dob ?? ""}`;
-    for (const e of entries) {
-      const n = Number((e as Record<string, unknown>)["decline_count"] ?? 0);
-      const em = norm(e.parent_email);
-      if (em) declinesByEmail.set(em, (declinesByEmail.get(em) ?? 0) + n);
-      declinesByChild.set(childKey(e), (declinesByChild.get(childKey(e)) ?? 0) + n);
-      if ((e as Record<string, unknown>)["block_review_dismissed_at"]) {
-        if (em) dismissedEmail.add(em);
-        dismissedChild.add(childKey(e));
-      }
+    // Absagen (Anfrageliste) und Stornierungen (gebuchte Plätze) je E-Mail bzw. Kind über ALLE
+    // Einträge summieren, damit ein neuer Eintrag den Zähler nicht zurücksetzt.
+    const { loadCancellations, buildDeclineStats } = await import("@/lib/decline-stats.server");
+    const cancellationRows = await loadCancellations();
+    const statsFor = buildDeclineStats(entries as never, cancellationRows, blocklist ?? []);
+    const cancelCourseIds = [
+      ...new Set(
+        cancellationRows.flatMap((c) =>
+          [c.course_id, c.transferred_to_course_id].filter((v): v is string => !!v),
+        ),
+      ),
+    ];
+    const cancelCourseNames = new Map<string, string>();
+    if (cancelCourseIds.length) {
+      const named = await fetchIn<{ id: string; name: string }>(cancelCourseIds, (chunk, f, t) =>
+        supabaseAdmin.from("courses").select("id,name").in("id", chunk).order("id").range(f, t),
+      );
+      for (const c of named) cancelCourseNames.set(c.id, c.name);
     }
+    const cancellations = cancellationRows
+      .map((c) => {
+        const st = statsFor(c.participant_email, c.participant_name);
+        return {
+          id: c.id,
+          child_name: c.participant_name,
+          parent_email: c.participant_email,
+          course_name: cancelCourseNames.get(c.course_id) ?? "Kurs",
+          moved_to: c.transferred_to_course_id
+            ? (cancelCourseNames.get(c.transferred_to_course_id) ?? "anderer Kurs")
+            : null,
+          cancelled_at: c.transferred_at,
+          reason: c.transfer_reason,
+          declines_total: st.total,
+          blocked: st.blocked,
+          block_suggestion: st.suggest,
+        };
+      })
+      .sort((a, b) => (b.cancelled_at ?? "").localeCompare(a.cancelled_at ?? ""));
 
     return {
       entries: entries.map((e) => {
         const req = e.request_id ? (requests.get(e.request_id) ?? null) : null;
         const emailNorm = norm(e.parent_email);
         const childNorm = norm(e.child_name);
-        const declinesTotal = Math.max(
-          emailNorm ? (declinesByEmail.get(emailNorm) ?? 0) : 0,
-          declinesByChild.get(childKey(e)) ?? 0,
-        );
+        const stats = statsFor(e.parent_email, e.child_name, e.child_dob);
         const block = (blocklist ?? []).find(
           (b) =>
             (b.email_norm && b.email_norm === emailNorm) ||
@@ -499,12 +517,8 @@ export const listWaitlist = createServerFn({ method: "GET" })
           desired_course: (req?.["desired_course"] as string | null) ?? null,
           request: req,
           blocked_reason: block?.reason ?? null,
-          declines_total: declinesTotal,
-          block_suggestion:
-            !block &&
-            declinesTotal >= 3 &&
-            !(emailNorm && dismissedEmail.has(emailNorm)) &&
-            !dismissedChild.has(childKey(e)),
+          declines_total: stats.total,
+          block_suggestion: stats.suggest,
           duplicate: (dupCount.get(`${emailNorm}|${childNorm}`) ?? 0) > 1,
           booking: part
             ? {
@@ -521,6 +535,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
         };
       }),
 
+      cancellations,
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => {
         const nowIso = new Date().toISOString();
@@ -991,4 +1006,73 @@ export const answerWaitlistFollowup = createServerFn({ method: "POST" })
     const { answerFollowup } = await import("@/lib/waitlist.server");
     await answerFollowup(e, data.stay, data.availableFrom ?? null);
     return { ok: true as const };
+  });
+
+const blockSuggestionSchema = z.object({
+  action: z.enum(["block", "dismiss"]),
+  email: z.string().trim().max(200).nullable(),
+  childName: z.string().trim().max(120).nullable(),
+  reason: z.string().trim().max(500).optional(),
+});
+
+/** Sperrvorschlag bearbeiten (für Familien, die nur Stornierungen, aber keinen Wartelisteneintrag haben). */
+export const resolveBlockSuggestion = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => blockSuggestionSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const norm = (v: string | null | undefined) =>
+      (v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    const email = norm(data.email);
+    const child = norm(data.childName);
+    if (!email && !child) throw new Error("E-Mail oder Kindname fehlt.");
+
+    if (data.action === "block") {
+      const { error } = await supabaseAdmin.from("booking_blocklist").insert({
+        child_name_norm: child || null,
+        child_dob: null,
+        email_norm: email || null,
+        reason: data.reason || "Wiederholte Absagen/Stornierungen",
+        source: "manual",
+        active: true,
+        created_by: context.userId,
+      });
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+
+    // „Ignorieren“: alle passenden Stornierungen und Wartelisteneinträge markieren
+    const stamp = new Date().toISOString();
+    const matches = (e: string | null, c: string | null) =>
+      (!!email && norm(e) === email) || (!!child && norm(c) === child);
+    const [{ data: parts }, { data: ents }] = await Promise.all([
+      supabaseAdmin
+        .from("course_participants")
+        .select("id,participant_email,participant_name")
+        .eq("status", "cancelled")
+        .not("transferred_at", "is", null),
+      supabaseAdmin.from("waitlist_entries").select("id,parent_email,child_name"),
+    ]);
+    const partIds = (parts ?? [])
+      .filter((p) => matches(p.participant_email, p.participant_name))
+      .map((p) => p.id);
+    const entryIds = (ents ?? [])
+      .filter((e) => matches(e.parent_email, e.child_name))
+      .map((e) => e.id);
+    if (partIds.length) {
+      const { error } = await supabaseAdmin
+        .from("course_participants")
+        .update({ block_review_dismissed_at: stamp })
+        .in("id", partIds);
+      if (error) throw new Error(error.message);
+    }
+    if (entryIds.length) {
+      const { error } = await supabaseAdmin
+        .from("waitlist_entries")
+        .update({ block_review_dismissed_at: stamp })
+        .in("id", entryIds);
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true };
   });
