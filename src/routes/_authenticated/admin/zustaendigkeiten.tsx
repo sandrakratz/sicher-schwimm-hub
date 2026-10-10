@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAssignmentContext } from "@/components/admin/AssignControl";
 import {
   ASSIGNMENT_AREAS,
+  getDigestSetting,
   setAssignmentRule,
+  setDigestSetting,
   type AssignmentArea,
 } from "@/lib/assignments.functions";
 
@@ -31,6 +33,15 @@ export const Route = createFileRoute("/_authenticated/admin/zustaendigkeiten")({
 function Page() {
   const qc = useQueryClient();
   const ctx = useAssignmentContext();
+  const digest = useQuery({ queryKey: ["digest-setting"], queryFn: () => getDigestSetting() });
+  const toggleDigest = useMutation({
+    mutationFn: (enabled: boolean) => setDigestSetting({ data: { enabled } }),
+    onSuccess: (r) => {
+      toast.success(r.enabled ? "Zusammenfassung eingeschaltet" : "Zusammenfassung ausgeschaltet");
+      qc.invalidateQueries({ queryKey: ["digest-setting"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Speichern fehlgeschlagen"),
+  });
   const save = useMutation({
     mutationFn: (v: { area: AssignmentArea; assignee: string | null }) =>
       setAssignmentRule({ data: v }),
@@ -72,6 +83,26 @@ function Page() {
               </select>
             </label>
           ))}
+        </CardContent>
+      </Card>
+      <Card className="border-0 shadow-soft">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div>
+            <div className="font-medium">Tägliche Zusammenfassung per E-Mail</div>
+            <p className="text-xs text-muted-foreground">
+              Werktags früh: „Das liegt heute bei dir“ mit Ihren offenen Zahlungen, Nachrichten und
+              Anfragen, nur wenn etwas offen ist. Gilt für Sie persönlich.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={digest.data?.enabled ?? true}
+              disabled={digest.isLoading || toggleDigest.isPending}
+              onChange={(e) => toggleDigest.mutate(e.target.checked)}
+            />
+            Zusammenfassung erhalten
+          </label>
         </CardContent>
       </Card>
       <p className="text-xs text-muted-foreground">

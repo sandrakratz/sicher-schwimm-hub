@@ -19,6 +19,7 @@ import { template as waitlistOffer } from "./waitlist-offer";
 import { template as waitlistSignup } from "./waitlist-signup";
 import { template as waitlistFollowup } from "./waitlist-followup";
 import { template as taskAssigned } from "./task-assigned";
+import { template as dailyDigest } from "./daily-digest";
 import { template as waitlistDeactivated } from "./waitlist-deactivated";
 import { template as courseRemovalUnpaid } from "./course-removal-unpaid";
 import { template as courseRemovalAgreed } from "./course-removal-agreed";
@@ -63,6 +64,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "waitlist-signup": waitlistSignup,
   "waitlist-followup": waitlistFollowup,
   "task-assigned": taskAssigned,
+  "daily-digest": dailyDigest,
   "waitlist-deactivated": waitlistDeactivated,
   "course-removal-unpaid": courseRemovalUnpaid,
   "course-removal-agreed": courseRemovalAgreed,

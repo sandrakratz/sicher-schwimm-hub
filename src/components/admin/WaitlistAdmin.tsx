@@ -884,7 +884,7 @@ export function WaitlistAdmin({
               </li>
               <li>
                 Zuständigkeit: Der Knopf „Zuweisen“ (in „Heute“ an jedem Namen, in der Tabelle in
-                der aufgeklappten Zeile) weist einem Vorstandsmitglied zu oder gibt mit einer Notiz
+                der Spalte „Zuständig“) weist einem Vorstandsmitglied zu oder gibt mit einer Notiz
                 weiter; die Person bekommt eine E-Mail. Standard-Zuständigkeiten stehen unter
                 „Mitglieder“ → „Zuständigkeiten“. Wiedervorlage am: in der aufgeklappten Zeile;
                 fällige stehen in „Heute“.
@@ -1264,6 +1264,7 @@ export function WaitlistAdmin({
                 <th className="py-2 pr-3">Kind</th>
                 <th className="py-2 pr-3">Eltern</th>
                 <th className="py-2 pr-3">Status</th>
+                <th className="py-2 pr-3">Zuständig</th>
                 <th className="py-2 pr-3">Aktion</th>
               </tr>
             </thead>
@@ -1376,7 +1377,6 @@ export function WaitlistAdmin({
                           const due = !!fu && fu <= new Date().toISOString().slice(0, 10);
                           return (
                             <div className="mt-1 flex flex-wrap gap-1 text-xs">
-                              {who && <Badge variant="outline">→ {who}</Badge>}
                               {fu && (
                                 <Badge
                                   variant="secondary"
@@ -1510,6 +1510,16 @@ export function WaitlistAdmin({
                             {formatDateBerlin(e.offer_expires_at)}
                           </div>
                         )}
+                      </td>
+                      <td className="py-2 pr-3">
+                        <AssignControl
+                          kind="waitlist"
+                          id={e.id}
+                          area="waitlist"
+                          current={(e as Record<string, unknown>)["assigned_to"] as string | null}
+                          label={`Anfrageliste – ${e.child_name}`}
+                          onDone={() => invalidate()}
+                        />
                       </td>
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1699,7 +1709,7 @@ export function WaitlistAdmin({
                     </tr>
                     {isOpen && (
                       <tr className="border-b bg-muted/30">
-                        <td colSpan={4} className="p-3">
+                        <td colSpan={5} className="p-3">
                           <div className="grid gap-4 md:grid-cols-4">
                             <div className="space-y-1">
                               <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -1767,23 +1777,8 @@ export function WaitlistAdmin({
                             </div>
                             <div className="space-y-2 text-sm">
                               <p className="text-xs font-semibold uppercase text-muted-foreground">
-                                Zuständigkeit
+                                Wiedervorlage
                               </p>
-                              <div className="space-y-1 text-xs text-muted-foreground">
-                                <span>Zuständig</span>
-                                <div>
-                                  <AssignControl
-                                    kind="waitlist"
-                                    id={e.id}
-                                    area="waitlist"
-                                    current={
-                                      (e as Record<string, unknown>)["assigned_to"] as string | null
-                                    }
-                                    label={`Anfrageliste – ${e.child_name}`}
-                                    onDone={() => invalidate()}
-                                  />
-                                </div>
-                              </div>
                               <label className="block text-xs text-muted-foreground">
                                 Wiedervorlage am
                                 <Input
