@@ -15,6 +15,7 @@ import { template as immediatePaymentAlert } from "./immediate-payment-alert";
 import { template as paymentReminder } from "./payment-reminder";
 import { template as paymentDueFriendly } from "./payment-due-friendly";
 import { template as paymentDueFinal } from "./payment-due-final";
+import { template as paymentReceived } from "./payment-received";
 import { template as waitlistOffer } from "./waitlist-offer";
 import { template as waitlistSignup } from "./waitlist-signup";
 import { template as waitlistFollowup } from "./waitlist-followup";
@@ -69,6 +70,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "course-removal-unpaid": courseRemovalUnpaid,
   "course-removal-agreed": courseRemovalAgreed,
   "course-start-reminder": courseStartReminder,
+  "payment-received": paymentReceived,
   "partial-certificate": partialCertificate,
   "course-rescheduled": rescheduleTemplate,
   "course-cancelled": cancelTemplate,

@@ -2,7 +2,6 @@ import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import {
   CalendarCheck,
   CheckCircle2,
@@ -166,57 +165,6 @@ function TaskList() {
 }
 
 function AdminDashboard() {
-  const [stats, setStats] = useState({ requests: 0, memberships: 0, members: 0, messages: 0 });
-  useEffect(() => {
-    (async () => {
-      const [r, m, p, msg] = await Promise.all([
-        supabase
-          .from("course_requests")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "new"),
-        supabase
-          .from("memberships")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
-        supabase
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "active"),
-        supabase
-          .from("messages")
-          .select("id", { count: "exact", head: true })
-          .in("status", ["new", "read"]),
-      ]);
-      setStats({
-        requests: r.count || 0,
-        memberships: m.count || 0,
-        members: p.count || 0,
-        messages: msg.count || 0,
-      });
-    })();
-  }, []);
-
-  const cards = [
-    {
-      icon: ListChecks,
-      label: "Neue Kursanfragen",
-      to: "/admin/archiv" as const,
-      search: { tab: "archive" as const },
-    },
-    {
-      icon: Users,
-      label: "Mitgliedsanträge offen",
-      value: stats.memberships,
-      to: "/admin/mitgliedschaften" as const,
-    },
-    { icon: Users, label: "Aktive Benutzer", value: stats.members, to: "/admin/benutzer" as const },
-    {
-      icon: MailOpen,
-      label: "Unbeantwortete Nachrichten",
-      value: stats.messages,
-      to: "/admin/nachrichten" as const,
-    },
-  ];
   return (
     <div className="space-y-8 max-w-6xl">
       <div>
@@ -228,37 +176,6 @@ function AdminDashboard() {
       <OpenAvailabilityNotice />
       <MyAssignmentsSection />
       <TaskList />
-      <section className="space-y-3">
-        <h2 className="font-display text-xl font-bold text-primary-deep">Auf einen Blick</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((s) => (
-            <Link
-              key={s.label}
-              to={s.to}
-              search={(s as { search?: { tab: "archive" } }).search as never}
-              className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
-            >
-              <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
-                <CardContent className="p-5">
-                  <s.icon className="h-7 w-7 text-accent mb-3" />
-                  <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                    {s.label}
-                  </div>
-                  <div className="text-3xl font-bold text-primary-deep">{s.value}</div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
-      <Card className="border-0 shadow-soft">
-        <CardContent className="p-6">
-          <h2 className="font-display text-xl font-bold text-primary-deep">Schnellstart</h2>
-          <p className="text-muted-foreground text-sm mt-2">
-            Wählen Sie links einen Bereich zur Verwaltung oder klicken Sie eine Kachel oben an.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

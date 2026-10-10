@@ -228,7 +228,7 @@ function UpcomingProgramPage({ up }: { up: CourseProgram }) {
               {up.duration && (
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  {up.duration}
+                  {/^\d+$/.test(up.duration.trim()) ? `${up.duration.trim()} Wochen` : up.duration}
                 </div>
               )}
               <div className="flex items-start gap-2">
@@ -328,7 +328,13 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
   if (program.location) facts.push({ icon: MapPin, label: "Ort", value: program.location });
   if (program.age_range) facts.push({ icon: Baby, label: "Alter", value: program.age_range });
   if (program.duration)
-    facts.push({ icon: CalendarDays, label: "Kursdauer", value: program.duration });
+    facts.push({
+      icon: CalendarDays,
+      label: "Kursdauer",
+      value: /^\d+$/.test(program.duration.trim())
+        ? `${program.duration.trim()} Wochen`
+        : program.duration,
+    });
   const maxP = program.terms.find((t) => t.max_participants != null)?.max_participants;
   if (maxP) facts.push({ icon: Users, label: "Gruppengröße", value: `max. ${maxP} Kinder` });
 

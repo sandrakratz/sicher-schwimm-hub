@@ -97,6 +97,26 @@ function KursePage() {
       </section>
 
       <section className="container mx-auto px-4 py-16">
+        <div className="mb-10 max-w-3xl mx-auto rounded-xl border-2 border-primary/30 bg-primary/5 p-5 text-foreground">
+          <h2 className="text-lg font-semibold mb-1">
+            📅 Unsere Kurse finden nur am Wochenende statt
+          </h2>
+          <p className="text-sm">
+            Wir leisten die gesamte Vereinsarbeit ehrenamtlich neben unseren Berufen. Deshalb bieten
+            wir unsere Kurse aktuell und auch in nächster Zeit{" "}
+            <strong>ausschließlich am Wochenende</strong> an – Kurse unter der Woche sind derzeit
+            nicht geplant. Sie suchen einen Schwimmkurs unter der Woche? In Hennef bietet die{" "}
+            <a
+              href="https://www.sharky-hennef.de/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline text-primary hover:opacity-80"
+            >
+              Schwimmschule Sharky Hennef
+            </a>{" "}
+            auch Termine unter der Woche an.
+          </p>
+        </div>
         {programs.length === 0 ? (
           <p className="text-center text-muted-foreground">
             Aktuell sind keine Kursangebote veröffentlicht.
@@ -190,7 +210,9 @@ function KursePage() {
                       {c.duration && (
                         <div className="flex items-center gap-2">
                           <Clock className="h-3.5 w-3.5" />
-                          {c.duration}
+                          {/^\d+$/.test(c.duration.trim())
+                            ? `${c.duration.trim()} Wochen`
+                            : c.duration}
                         </div>
                       )}
                       {c.location && (
@@ -225,6 +247,14 @@ function KursePage() {
                             <div className="text-[11px] opacity-80">
                               Mitglieder werden bevorzugt aufgenommen
                             </div>
+                            {mem && (
+                              <Link
+                                to="/mitgliedschaft"
+                                className="mt-1 inline-block text-[11px] font-semibold text-primary underline underline-offset-2 hover:text-primary-deep"
+                              >
+                                Mitglied werden und Geld sparen →
+                              </Link>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -320,29 +350,6 @@ function KursePage() {
         </p>
         <div className="flex justify-center mt-6">
           <CancellationButton />
-        </div>
-        <div className="mt-10 max-w-2xl mx-auto rounded-xl border-2 border-primary/30 bg-primary/5 p-6 text-left text-base text-foreground">
-          <h2 className="text-lg font-semibold mb-2">
-            📅 Unsere Kurse finden nur am Wochenende statt
-          </h2>
-          <p className="mb-3">
-            Wir leisten die gesamte Vereinsarbeit ehrenamtlich neben unseren Berufen. Deshalb bieten
-            wir unsere Kurse aktuell und auch in nächster Zeit{" "}
-            <strong>ausschließlich am Wochenende</strong> an – Kurse unter der Woche sind derzeit
-            nicht geplant.
-          </p>
-          <p className="mb-4">
-            Sie suchen einen Schwimmkurs unter der Woche? In Hennef bietet die Schwimmschule Sharky
-            auch Termine unter der Woche an.
-          </p>
-          <a
-            href="https://www.sharky-hennef.de/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block font-medium underline text-primary hover:opacity-80"
-          >
-            ➡️ Zur Schwimmschule Sharky Hennef
-          </a>
         </div>
         <AiImageNotice className="mt-8 text-center" />
       </section>

@@ -8,6 +8,7 @@ import { CalendarCheck, CalendarDays, MapPin } from "lucide-react";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
+import { getMyPayoutDetails } from "@/lib/trainer-payout.functions";
 
 export const Route = createFileRoute("/_authenticated/trainer/")({
   beforeLoad: async () => {
@@ -36,6 +37,8 @@ type Row = {
   id: string;
   session_date: string;
   session_index: number;
+  start_time: string | null;
+  end_time: string | null;
   courseId: string;
   course: { name: string; location: string | null; schedule: string | null } | null;
 };
@@ -56,7 +59,7 @@ function TrainerHome() {
       // Nur die eigenen Einsätze laden (nicht alle Termine des Vereins; Supabase liefert pro Abfrage höchstens
       // 1000 Zeilen). Wie unter „Meine Kurse“ zählen auch Kurse, in denen man als Kurstrainer:in eingetragen ist.
       const SELECT =
-        "id,course_id,session_date,session_index,assigned_trainer_id,courses(name,location,schedule)";
+        "id,course_id,session_date,session_index,start_time,end_time,assigned_trainer_id,courses(name,location,schedule)";
       const assignments = await fetchAll<{ session_id: string }>((f, t) =>
         supabase
           .from("course_session_assignments")
@@ -103,6 +106,8 @@ function TrainerHome() {
           id: s.id,
           session_date: s.session_date,
           session_index: s.session_index,
+          start_time: s.start_time ?? null,
+          end_time: s.end_time ?? null,
           courseId: s.course_id,
           course: s.courses ?? null,
         })),
@@ -132,6 +137,7 @@ function TrainerHome() {
   }, [upcoming]);
 
   const next = upcoming[0];
+  const todayRows = upcoming.filter((r) => r.session_date === today);
 
   return (
     <div className="max-w-4xl space-y-4">
@@ -140,12 +146,15 @@ function TrainerHome() {
       </h1>
 
       <OpenAvailabilityNotice />
+      <PayoutIbanNotice />
 
       {next && (
         <Card className="border-0 shadow-soft bg-primary/5">
           <CardContent className="p-4">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Nächster Einsatz
+              {todayRows.length > 0
+                ? `Heute (${todayRows.length} ${todayRows.length === 1 ? "Einsatz" : "Einsätze"})`
+                : "Nächster Einsatz"}
             </div>
             <div className="mt-1 text-base font-bold text-primary-deep">
               {next.course?.name ?? "Kurs"}
@@ -153,7 +162,8 @@ function TrainerHome() {
             <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <CalendarDays className="h-3 w-3" />
-                {formatDateBerlin(next.session_date)}
+                {weekdayLabel(next.session_date)}, {formatDateBerlin(next.session_date)}
+                {timeLabel(next) ? `, ${timeLabel(next)}` : ""}
               </span>
               {next.course?.location && (
                 <span className="inline-flex items-center gap-1">
@@ -234,7 +244,7 @@ function TrainerHome() {
                       <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <CalendarDays className="h-3 w-3" />
-                          {formatDateBerlin(r.session_date)}
+                          {weekdayLabel(r.session_date)}, {formatDateBerlin(r.session_date)}
                         </span>
                         {r.course?.location && (
                           <span className="inline-flex items-center gap-1">
@@ -244,9 +254,13 @@ function TrainerHome() {
                         )}
                       </div>
                     </div>
-                    <Badge className="border-transparent bg-primary text-primary-foreground">
-                      Eingeteilt
-                    </Badge>
+                    {r.session_date === today ? (
+                      <Badge className="border-transparent bg-primary text-primary-foreground">
+                        Heute{timeLabel(r) ? `, ${timeLabel(r)}` : ""}
+                      </Badge>
+                    ) : timeLabel(r) ? (
+                      <span className="text-xs text-muted-foreground">{timeLabel(r)}</span>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -255,6 +269,54 @@ function TrainerHome() {
         </div>
       )}
     </div>
+  );
+}
+
+const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+function weekdayLabel(date: string) {
+  return WEEKDAYS[new Date(`${date}T12:00:00Z`).getUTCDay()] ?? "";
+}
+function timeLabel(r: { start_time: string | null; end_time: string | null }) {
+  if (!r.start_time) return "";
+  const a = r.start_time.slice(0, 5);
+  return r.end_time ? `${a}–${r.end_time.slice(0, 5)} Uhr` : `${a} Uhr`;
+}
+
+/** Hinweis, solange für die Auszahlung der Übungsleiterpauschale noch keine IBAN hinterlegt ist. */
+function PayoutIbanNotice() {
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", u.user.id);
+      if (!(roles ?? []).some((r) => r.role === "trainer")) return;
+      const res = await getMyPayoutDetails();
+      setMissing(!res.details);
+    })().catch(() => setMissing(false));
+  }, []);
+  if (!missing) return null;
+  return (
+    <Card className="border-0 shadow-soft bg-accent/10">
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <div className="text-sm">
+          <div className="font-semibold text-primary-deep">Deine IBAN fehlt noch</div>
+          <div className="text-muted-foreground">
+            Damit wir die Übungsleiterpauschale überweisen können, trag bitte deine Bankverbindung
+            ein.
+          </div>
+        </div>
+        <Link
+          to="/portal/profil"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground"
+        >
+          IBAN eintragen
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 
