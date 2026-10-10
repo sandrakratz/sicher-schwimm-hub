@@ -123,13 +123,12 @@ function AdminDashboard() {
     <div className="space-y-8 max-w-6xl">
       <div>
         <div className="text-accent font-semibold text-sm uppercase tracking-wider">Admin</div>
-        <h1 className="font-display text-4xl font-bold text-primary-deep">Übersicht</h1>
-        <p className="text-muted-foreground mt-2">
-          Verwalten Sie Mitglieder, Kurse, Anfragen und Inhalte.
-        </p>
+        <h1 className="font-display text-4xl font-bold text-primary-deep">Heute</h1>
+        <p className="text-muted-foreground mt-2">Was heute zu tun ist, auf einen Blick.</p>
       </div>
 
       <OpenAvailabilityNotice />
+      <TaskList />
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((s) => (
           <Link
