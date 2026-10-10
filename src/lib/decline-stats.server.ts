@@ -2,8 +2,9 @@
 // Gezählt werden
 //  - Absagen auf der Anfrageliste (waitlist_entries.decline_count) und
 //  - Stornierungen gebuchter Plätze durch die Familie (Umbuchung / „zurück auf die Warteliste“),
-//    erkennbar an status = cancelled UND transferred_at gesetzt. Absagen des Vereins (Kurs entfällt)
-//    und Verwaltungs-Verschiebungen setzen transferred_at nicht und zählen deshalb nicht.
+//    erkennbar an status = cancelled UND transferred_at gesetzt, sowie Absagen in der Teilnehmerliste
+//    (cancelled_at gesetzt). Absagen des Vereins (Kurs entfällt) und Verwaltungs-Verschiebungen setzen
+//    beides nicht und zählen deshalb nicht.
 // Zählweise je Eltern-E-Mail ODER Kind (Name); der höhere Wert gilt.
 
 export const BLOCK_SUGGESTION_THRESHOLD = 3;
@@ -15,6 +16,8 @@ export type CancellationRow = {
   participant_email: string | null;
   transfer_reason: string | null;
   transferred_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
   transferred_to_course_id: string | null;
   block_review_dismissed_at: string | null;
 };
@@ -41,10 +44,10 @@ export async function loadCancellations(): Promise<CancellationRow[]> {
     const { data, error } = await supabaseAdmin
       .from("course_participants")
       .select(
-        "id,course_id,participant_name,participant_email,transfer_reason,transferred_at,transferred_to_course_id,block_review_dismissed_at",
+        "id,course_id,participant_name,participant_email,transfer_reason,transferred_at,cancelled_at,cancel_reason,transferred_to_course_id,block_review_dismissed_at",
       )
       .eq("status", "cancelled")
-      .not("transferred_at", "is", null)
+      .or("transferred_at.not.is.null,cancelled_at.not.is.null")
       .order("id")
       .range(from, from + 999);
     if (error) throw new Error(`Stornierungen konnten nicht geladen werden: ${error.message}`);
@@ -79,12 +82,7 @@ export function buildDeclineStats(
       !!e.block_review_dismissed_at,
     );
   for (const c of cancellations)
-    add(
-      norm(c.participant_email),
-      norm(c.participant_name),
-      1,
-      !!c.block_review_dismissed_at,
-    );
+    add(norm(c.participant_email), norm(c.participant_name), 1, !!c.block_review_dismissed_at);
 
   return (email: string | null, childName: string | null, childDob: string | null = null) => {
     const em = norm(email);
