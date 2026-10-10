@@ -203,3 +203,38 @@ export const setAssignmentRule = createServerFn({ method: "POST" })
     });
     return { ok: true as const };
   });
+
+/** Tägliche Zusammenfassung per E-Mail für die angemeldete Person: an oder aus. */
+export const getDigestSetting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("digest_optout")
+      .select("user_id")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    return { enabled: !data };
+  });
+
+export const setDigestSetting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ enabled: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.enabled) {
+      const { error } = await supabaseAdmin
+        .from("digest_optout")
+        .delete()
+        .eq("user_id", context.userId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabaseAdmin
+        .from("digest_optout")
+        .upsert({ user_id: context.userId });
+      if (error) throw new Error(error.message);
+    }
+    return { ok: true as const, enabled: data.enabled };
+  });
