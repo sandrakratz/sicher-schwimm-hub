@@ -486,9 +486,10 @@ function NotesCell({
 }
 
 export function WaitlistAdmin({
+  initialMine,
   initialProgramIds,
   initialSearch,
-}: { initialProgramIds?: string[]; initialSearch?: string } = {}) {
+}: { initialProgramIds?: string[]; initialSearch?: string; initialMine?: boolean } = {}) {
   const qc = useQueryClient();
   const [view, setView] = useState<
     "today" | "report" | "waiting" | "offered" | "followup" | "declined" | "done"
@@ -1039,6 +1040,7 @@ export function WaitlistAdmin({
           onDismiss={(s) =>
             resolveSuggestion.mutate({ action: "dismiss", email: s.email, childName: s.childName })
           }
+          initialMine={initialMine}
           onOffer={(e, courseId) => {
             const c = (data?.courses ?? []).find((x) => x.id === courseId);
             if (!c) return;

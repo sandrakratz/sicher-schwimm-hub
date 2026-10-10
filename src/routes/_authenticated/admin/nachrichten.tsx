@@ -48,6 +48,9 @@ import {
 } from "@/components/admin/AssignControl";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
+  // ?zustaendig=ich öffnet die Liste gefiltert auf die angemeldete Person (Link aus „Mir zugewiesen“)
+  validateSearch: (search: Record<string, unknown>): { zustaendig?: "ich" } =>
+    search["zustaendig"] === "ich" ? { zustaendig: "ich" } : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -95,6 +98,10 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const ctx = useAssignmentContext();
   const [who, setWho] = useState("");
+  const { zustaendig } = Route.useSearch();
+  useEffect(() => {
+    if (zustaendig === "ich" && ctx.data?.me) setWho(ctx.data.me);
+  }, [zustaendig, ctx.data?.me]);
   const assigned = (id: string, assignee: string | null) =>
     setRows((r) => r.map((m) => (m.id === id ? { ...m, assigned_to: assignee } : m)));
   const [tab, setTab] = useState<"open" | "done">("open");

@@ -112,7 +112,9 @@ export function AssignControl({
                 value={person}
                 onChange={(e) => setPerson(e.target.value)}
               >
-                <option value="">Niemand (Zuweisung aufheben)</option>
+                <option value="">
+                  {current ? "Niemand (Zuweisung aufheben)" : "– bitte wählen –"}
+                </option>
                 {(ctx.data?.staff ?? []).map((n) => (
                   <option key={n} value={n}>
                     {n}
@@ -142,9 +144,12 @@ export function AssignControl({
             <Button variant="ghost" onClick={() => setOpen(false)} disabled={save.isPending}>
               Abbrechen
             </Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            <Button
+              onClick={() => save.mutate()}
+              disabled={save.isPending || (!person && !current) || person === (current ?? "")}
+            >
               {save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {person ? "Zuweisen" : "Aufheben"}
+              {person ? (current ? "Weitergeben" : "Zuweisen") : "Zuweisung aufheben"}
             </Button>
           </DialogFooter>
         </DialogContent>
