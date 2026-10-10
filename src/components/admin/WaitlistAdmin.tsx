@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import {
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
   Copy,
   FileText,
   Loader2,
@@ -33,6 +35,7 @@ import {
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
+import { WaitlistToday, buildTodo } from "@/components/admin/WaitlistToday";
 import {
   listWaitlist,
   runWaitlistAllocation,
@@ -468,9 +471,18 @@ function NotesCell({
 
 export function WaitlistAdmin() {
   const qc = useQueryClient();
-  const [view, setView] = useState<"waiting" | "offered" | "followup" | "declined" | "done">(
-    "waiting",
-  );
+  const [view, setView] = useState<
+    "today" | "waiting" | "offered" | "followup" | "declined" | "done"
+  >("today");
+  const [search, setSearch] = useState("");
+  const [openRows, setOpenRows] = useState<Set<string>>(new Set());
+  const toggleRow = (id: string) =>
+    setOpenRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [detail, setDetail] = useState<WaitlistEntry | null>(null);
   const [declineFor, setDeclineFor] = useState<WaitlistEntry | null>(null);
   const [declineStay, setDeclineStay] = useState(true);
@@ -643,17 +655,27 @@ export function WaitlistAdmin() {
     done: allEntries.filter((e) => inView(e, "done")).length,
   };
   const cancellations = data?.cancellations ?? [];
-  const blockSuggestions = [
-    ...allEntries
-      .filter((e) => (e as { block_suggestion?: boolean }).block_suggestion && declineCountOf(e) > 0)
-      .map((e) => String(e.parent_email ?? "").toLowerCase()),
-    ...cancellations
-      .filter((c) => c.block_suggestion)
-      .map((c) => String(c.parent_email ?? "").toLowerCase()),
-  ];
+  const q = search.trim().toLowerCase();
+  const shown = q ? "search" : view;
+  const matchesSearch = (...vals: Array<unknown>) =>
+    vals.some((v) =>
+      String(v ?? "")
+        .toLowerCase()
+        .includes(q),
+    );
+  const cancellationsShown = q
+    ? cancellations.filter((c) => matchesSearch(c.child_name, c.parent_email))
+    : cancellations;
+  const todo = buildTodo(data);
 
   const grouped = useMemo(() => {
-    const entries = allEntries.filter((e) => inView(e, view));
+    const entries = q
+      ? allEntries.filter((e) =>
+          matchesSearch(e.child_name, e.parent_name, e.parent_email, e.parent_phone),
+        )
+      : view === "today"
+        ? []
+        : allEntries.filter((e) => inView(e, view));
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
       const key = e.program_id ?? "none";
@@ -661,12 +683,21 @@ export function WaitlistAdmin() {
     }
     return [...map.entries()];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, view]);
+  }, [data, view, q]);
+
+  // Freie Plätze der Kurse, die zu einem Programm gehören (für den Gruppenkopf der Wartenden)
+  const freeForProgram = (programId: string) =>
+    (data?.courses ?? [])
+      .filter(
+        (c) =>
+          c.free != null && relatedProgramIds(c.program_id, programs).includes(programId),
+      )
+      .reduce((sum, c) => sum + (c.free ?? 0), 0);
 
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Warteliste wird geladen…
+        <Loader2 className="h-4 w-4 animate-spin" /> Anfrageliste wird geladen…
       </div>
     );
   }
@@ -674,7 +705,7 @@ export function WaitlistAdmin() {
   if (loadError) {
     return (
       <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
-        <p className="font-semibold">Die Warteliste konnte nicht geladen werden.</p>
+        <p className="font-semibold">Die Anfrageliste konnte nicht geladen werden.</p>
         <p className="text-muted-foreground">
           Das ist ein technischer Fehler, die Einträge sind nicht gelöscht. Meldung:{" "}
           {loadError.message}
@@ -749,12 +780,13 @@ export function WaitlistAdmin() {
                 Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.
               </li>
               <li>
-                Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage
+                Kam die Absage per Telefon oder E-Mail, im Reiter „Angebote“ auf „Absage
                 erfassen“ klicken – der Platz wird dann freigegeben.
               </li>
               <li>
-                Alle Familien mit mindestens einer Absage stehen zum Nachhalten im Reiter „Abgesagt
-                – nachhalten“ (zusätzlich zu ihrem eigentlichen Reiter).
+                Alle Familien mit mindestens einer Absage stehen zum Nachhalten im Reiter „Absagen“
+                (zusätzlich zu ihrem eigentlichen Reiter). Der Reiter „Heute“ zeigt, was gerade zu
+                tun ist; die Suche findet eine Familie in allen Reitern.
               </li>
             </ul>
           </div>
@@ -764,11 +796,11 @@ export function WaitlistAdmin() {
               <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
               <li>
                 Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist; solange sie
-                läuft, steht der Eintrag im Reiter „Rückfrage offen“.
+                läuft, steht der Eintrag im Reiter „Rückfragen“.
               </li>
               <li>
                 Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Reiter
-                „Entfernt / Archiv“). Keine automatische Sperrliste.
+                „Archiv“). Keine automatische Sperrliste.
               </li>
             </ul>
           </div>
@@ -808,60 +840,101 @@ export function WaitlistAdmin() {
           </div>
         </div>
       </CollapsibleCard>
+      <div className="flex flex-wrap items-center gap-3">
+        <Input
+          value={search}
+          onChange={(ev) => setSearch(ev.target.value)}
+          placeholder="Suchen: Kind, Eltern, E-Mail, Telefon …"
+          className="max-w-sm"
+        />
+        {q && (
+          <Button size="sm" variant="ghost" onClick={() => setSearch("")}>
+            Suche löschen
+          </Button>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2 border-b pb-2">
         {(
           [
-            ["waiting", "Wartend auf Platz"],
-            ["offered", "Laufende Angebote"],
-            ["followup", "Rückfrage offen"],
-            ["declined", "Abgesagt – nachhalten"],
-            ["done", "Entfernt / Archiv"],
+            ["today", "Heute"],
+            ["waiting", "Wartend"],
+            ["offered", "Angebote"],
+            ["followup", "Rückfragen"],
+            ["declined", "Absagen"],
+            ["done", "Archiv"],
           ] as const
         ).map(([key, label]) => (
           <Button
             key={key}
             size="sm"
-            variant={view === key ? "default" : "outline"}
-            onClick={() => setView(key)}
+            variant={shown === key ? "default" : "outline"}
+            onClick={() => {
+              setSearch("");
+              setView(key);
+            }}
           >
-            {label} ({tabCounts[key]})
+            {label} ({key === "today" ? todo.count : tabCounts[key]})
           </Button>
         ))}
       </div>
 
-      {blockSuggestions.length > 0 && (
-        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm">
-          <p className="font-semibold text-red-900">
-            Sperrliste prüfen: {new Set(blockSuggestions).size} Familie(n) mit mindestens 3
-            Absagen/Stornierungen
-          </p>
-          <p className="text-red-900/80">
-            Zeilen sind im Reiter „Abgesagt – nachhalten“ markiert. Dort können Sie sperren oder den
-            Vorschlag ignorieren.
-          </p>
-          {view !== "declined" && (
-            <Button size="sm" variant="outline" className="mt-2" onClick={() => setView("declined")}>
-              Zu „Abgesagt – nachhalten“
-            </Button>
-          )}
-        </div>
+      {q && (
+        <p className="text-sm text-muted-foreground">
+          Suchergebnis für „{search.trim()}“ in allen Reitern: {grouped.reduce((n, [, l]) => n + l.length, 0)}{" "}
+          Eintrag/Einträge, {cancellationsShown.length} Stornierung(en). Der Status steht jeweils in
+          der Zeile.
+        </p>
       )}
 
-      {view === "followup" && (
+      {shown === "today" && (
+        <WaitlistToday
+          data={data}
+          courseName={courseName}
+          onGoto={(v) => setView(v)}
+          onOpenDetail={(e) => setDetail(e as unknown as WaitlistEntry)}
+          onDeclineOffer={(e) => {
+            setDeclineStay(true);
+            setDeclineFrom("");
+            setDeclineReason("");
+            setDeclineFor(e as unknown as WaitlistEntry);
+          }}
+          onAllocate={() => allocate.mutate(null)}
+          allocating={allocate.isPending}
+          onBlock={(s) => {
+            if (
+              !confirm(
+                `${s.childName} / ${s.email} auf die Sperrliste setzen? Buchung und Anfrageliste sind dann gesperrt.`,
+              )
+            )
+              return;
+            resolveSuggestion.mutate({
+              action: "block",
+              email: s.email,
+              childName: s.childName,
+              reason: `Wiederholte Absagen/Stornierungen (${s.total})`,
+            });
+          }}
+          onDismiss={(s) =>
+            resolveSuggestion.mutate({ action: "dismiss", email: s.email, childName: s.childName })
+          }
+        />
+      )}
+
+      {shown === "followup" && (
         <p className="text-sm text-muted-foreground">
           Die Familien haben „Warteliste behalten?“ erhalten. Ohne Antwort innerhalb der Frist wird
           der Platz automatisch gestrichen.
         </p>
       )}
-      {view === "declined" && (
+      {shown === "declined" && (
         <p className="text-sm text-muted-foreground">
           Alle Einträge mit mindestens einer Absage, egal in welchem Status (Zähler, Grund und
           Verlauf stehen in den Notizen). Der Zähler zählt je E-Mail bzw. Kind über alle Einträge.
         </p>
       )}
 
-      {view === "waiting" && (data?.courses ?? []).some((c) => c.max_participants != null) && (
+      {shown === "waiting" && (data?.courses ?? []).some((c) => c.max_participants != null) && (
         <div className="flex flex-wrap gap-2 text-xs">
           {(data?.courses ?? [])
             .filter((c) => c.max_participants != null)
@@ -874,12 +947,12 @@ export function WaitlistAdmin() {
         </div>
       )}
 
-      {view === "declined" && cancellations.length > 0 && (
+      {(shown === "declined" || shown === "search") && cancellationsShown.length > 0 && (
         <CollapsibleCard
           storageKey="waitlist-cancellations"
           title="Stornierungen gebuchter Plätze"
           meta={
-            <span className="text-sm text-muted-foreground">{cancellations.length} Einträge</span>
+            <span className="text-sm text-muted-foreground">{cancellationsShown.length} Einträge</span>
           }
           contentClassName="overflow-x-auto"
         >
@@ -900,7 +973,7 @@ export function WaitlistAdmin() {
               </tr>
             </thead>
             <tbody>
-              {cancellations.map((c) => (
+              {cancellationsShown.map((c) => (
                 <tr key={c.id} className="border-b align-top">
                   <td className="py-2 pr-3 font-medium">{c.child_name ?? "–"}</td>
                   <td className="py-2 pr-3">{c.parent_email ?? "–"}</td>
@@ -979,7 +1052,7 @@ export function WaitlistAdmin() {
         </CollapsibleCard>
       )}
 
-      {grouped.length === 0 && !(view === "declined" && cancellations.length > 0) && (
+      {grouped.length === 0 && !((shown === "declined" || shown === "search") && cancellationsShown.length > 0) && shown !== "today" && (
         <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>
       )}
 
@@ -991,22 +1064,20 @@ export function WaitlistAdmin() {
           meta={
             <span className="text-sm text-muted-foreground">
               {entries.length}{" "}
-              {view === "waiting" ? "wartend" : view === "offered" ? "Angebote aktiv" : "Einträge"}
+              {shown === "waiting" ? "wartend" : shown === "offered" ? "Angebote aktiv" : "Einträge"}
+              {shown === "waiting" && programId !== "none" && freeForProgram(programId) > 0
+                ? ` · ${freeForProgram(programId)} Platz/Plätze frei`
+                : ""}
             </span>
           }
           contentClassName="overflow-x-auto"
         >
-          <table className="w-full min-w-[1100px] text-sm">
+          <table className="w-full min-w-[820px] text-sm">
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 <th className="py-2 pr-3">Kind</th>
                 <th className="py-2 pr-3">Eltern</th>
-                <th className="py-2 pr-3 w-56">Wunschkurs</th>
-                <th className="py-2 pr-3 w-64">Notiz</th>
-                <th className="py-2 pr-3">Eingang</th>
-                <th className="py-2 pr-3">Mitglied</th>
                 <th className="py-2 pr-3">Status</th>
-                <th className="py-2 pr-3">Zahlung</th>
                 <th className="py-2 pr-3">Aktion</th>
               </tr>
             </thead>
@@ -1033,9 +1104,11 @@ export function WaitlistAdmin() {
                   minAge != null &&
                   courses.length > 0 &&
                   courses.every((c) => !meetsMinAge(e.child_dob, c.starts_on, minAge));
+                const isOpen = openRows.has(e.id);
 
                 return (
-                  <tr key={e.id} className="border-b align-top">
+                  <Fragment key={e.id}>
+                  <tr className="border-b align-top">
                     <td className="py-2 pr-3 font-medium">
                       <button
                         type="button"
@@ -1076,6 +1149,18 @@ export function WaitlistAdmin() {
                       >
                         <FileText className="h-3 w-3" /> Details
                       </button>
+                      <button
+                        type="button"
+                        className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                        onClick={() => toggleRow(e.id)}
+                      >
+                        {isOpen ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                        Kurswunsch, Notiz, Zahlung
+                      </button>
                     </td>
 
                     <td className="py-2 pr-3">
@@ -1086,62 +1171,15 @@ export function WaitlistAdmin() {
                       )}
                     </td>
                     <td className="py-2 pr-3">
-                      <select
-                        className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                        value={e.program_id ?? ""}
-                        onChange={(ev) =>
-                          update.mutate({ entryId: e.id, programId: ev.target.value || null })
-                        }
-                      >
-                        <option value="">Kein Wunschkurs</option>
-                        {programs.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                      {wish && (
-                        <div className="mt-1 text-xs text-muted-foreground">Wunsch: {wish}</div>
-                      )}
-                      {suggestion && (
-                        <button
-                          type="button"
-                          className="mt-1 text-xs text-primary underline"
-                          onClick={() => update.mutate({ entryId: e.id, programId: suggestion.id })}
-                        >
-                          Vorschlag übernehmen: {suggestion.name}
-                        </button>
-                      )}
-                      {readyOn && (
-                        <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
-                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
-                          <span>
-                            Mindestalter erreicht ab {formatDateBerlin(readyOn)}
-                            {tooYoungEverywhere ? " – aktuell kein passender Kursstart" : ""}
-                          </span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-2 pr-3">
-                      <NotesCell
-                        entryId={e.id}
-                        parentNote={e.notes}
-                        adminNote={e.admin_notes}
-                        onSave={(v) => {
-                          update.mutate(v, { onSuccess: () => toast.success("Notiz gespeichert") });
-                        }}
-                      />
-                    </td>
-                    <td className="py-2 pr-3 whitespace-nowrap">
-                      {formatDateBerlin(e.created_at)}
-                    </td>
-                    <td className="py-2 pr-3">
-                      {e.is_member ? "Ja" : e.is_member === false ? "Nein" : "–"}
-                    </td>
-                    <td className="py-2 pr-3">
                       <Badge className={st.className} variant="secondary">
                         {st.label}
                       </Badge>
+                      {(e as { payment_status?: string }).payment_status &&
+                        (e as { payment_status?: string }).payment_status !== "none" && (
+                          <div className="mt-1">
+                            <PaymentCell entry={e as unknown as WaitlistEntry} />
+                          </div>
+                        )}
                       {Number((e as Record<string, unknown>)["decline_count"] ?? 0) > 0 &&
                         (() => {
                           const n = Number((e as Record<string, unknown>)["decline_count"]);
@@ -1244,9 +1282,6 @@ export function WaitlistAdmin() {
                           {formatDateBerlin(e.offer_expires_at)}
                         </div>
                       )}
-                    </td>
-                    <td className="py-2 pr-3">
-                      <PaymentCell entry={e as unknown as WaitlistEntry} />
                     </td>
                     <td className="py-2 pr-3">
                       <div className="flex flex-wrap items-center gap-2">
@@ -1401,6 +1436,81 @@ export function WaitlistAdmin() {
                       </div>
                     </td>
                   </tr>
+                  {isOpen && (
+                    <tr className="border-b bg-muted/30">
+                      <td colSpan={4} className="p-3">
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase text-muted-foreground">
+                              Kurswunsch
+                            </p>
+                      <select
+                        className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                        value={e.program_id ?? ""}
+                        onChange={(ev) =>
+                          update.mutate({ entryId: e.id, programId: ev.target.value || null })
+                        }
+                      >
+                        <option value="">Kein Wunschkurs</option>
+                        {programs.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      {wish && (
+                        <div className="mt-1 text-xs text-muted-foreground">Wunsch: {wish}</div>
+                      )}
+                      {suggestion && (
+                        <button
+                          type="button"
+                          className="mt-1 text-xs text-primary underline"
+                          onClick={() => update.mutate({ entryId: e.id, programId: suggestion.id })}
+                        >
+                          Vorschlag übernehmen: {suggestion.name}
+                        </button>
+                      )}
+                      {readyOn && (
+                        <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600" />
+                          <span>
+                            Mindestalter erreicht ab {formatDateBerlin(readyOn)}
+                            {tooYoungEverywhere ? " – aktuell kein passender Kursstart" : ""}
+                          </span>
+                        </div>
+                      )}
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase text-muted-foreground">
+                              Notiz
+                            </p>
+                      <NotesCell
+                        entryId={e.id}
+                        parentNote={e.notes}
+                        adminNote={e.admin_notes}
+                        onSave={(v) => {
+                          update.mutate(v, { onSuccess: () => toast.success("Notiz gespeichert") });
+                        }}
+                      />
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <p className="text-xs font-semibold uppercase text-muted-foreground">
+                              Angaben
+                            </p>
+                            <div>Eingang: {formatDateBerlin(e.created_at)}</div>
+                            <div>
+                              Mitglied: {e.is_member ? "Ja" : e.is_member === false ? "Nein" : "–"}
+                            </div>
+                            {e.parent_phone && <div>Telefon: {e.parent_phone}</div>}
+                            <div>
+                              <PaymentCell entry={e as unknown as WaitlistEntry} />
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
