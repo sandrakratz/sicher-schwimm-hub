@@ -108,9 +108,8 @@ export const listInbox = createServerFn({ method: "POST" })
         body: parts || "(keine Nachricht hinterlegt)",
         created_at: r.created_at as string,
         statusLabel: REQUEST_STATUS[r.status as string] ?? (r.status as string),
-        // Kursanfragen stehen im Reiter „Frühere Kursanfragen“, nicht in der Warteliste
-        contextTo: "/admin/warteliste",
-        contextSearch: { tab: "archive" },
+        // Kursanfragen stehen im Reiter „Frühere Kursanfragen“ (Anmeldungen)
+        contextTo: "/admin/archiv",
       });
     }
 

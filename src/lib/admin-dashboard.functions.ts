@@ -171,8 +171,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         key: "requests",
         label: "Neue Kursanfragen",
         count: requests.count ?? 0,
-        to: "/admin/warteliste",
-        search: { tab: "archive" },
+        to: "/admin/archiv",
         tone: "attention",
       },
       {

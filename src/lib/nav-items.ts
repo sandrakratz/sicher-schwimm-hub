@@ -47,6 +47,7 @@ export type AppNavItem = {
     | "/admin/warteliste"
     | "/admin/sperrliste"
     | "/admin/zustaendigkeiten"
+    | "/admin/archiv"
     | "/admin/uebungsleitergelder"
     | "/admin/news"
     | "/admin/dokumente"
@@ -117,6 +118,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
       { to: "/admin/warteliste", label: "Anfrageliste" },
       { to: "/admin/suche", label: "Gesamtsuche" },
       { to: "/admin/sperrliste", label: "Sperrliste" },
+      { to: "/admin/archiv", label: "Frühere Kursanfragen" },
       { to: "/admin/widerrufe", label: "Widerrufe" },
     ],
   },

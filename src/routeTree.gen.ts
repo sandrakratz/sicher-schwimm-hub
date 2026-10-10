@@ -44,6 +44,7 @@ import { Route as WartelisteAntwortRouteImport } from './routes/warteliste_.antw
 import { Route as WartelisteRueckfrageRouteImport } from './routes/warteliste_.rueckfrage'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminAnfragenRouteImport } from './routes/_authenticated/admin/anfragen'
+import { Route as AuthenticatedAdminArchivRouteImport } from './routes/_authenticated/admin/archiv'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminBenutzerRouteImport } from './routes/_authenticated/admin/benutzer'
 import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authenticated/admin/dokumente'
@@ -260,6 +261,12 @@ const AuthenticatedAdminAnfragenRoute =
   AuthenticatedAdminAnfragenRouteImport.update({
     id: '/anfragen',
     path: '/anfragen',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminArchivRoute =
+  AuthenticatedAdminArchivRouteImport.update({
+    id: '/archiv',
+    path: '/archiv',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
@@ -536,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/warteliste/rueckfrage': typeof WartelisteRueckfrageRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
+  '/admin/archiv': typeof AuthenticatedAdminArchivRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
@@ -612,6 +620,7 @@ export interface FileRoutesByTo {
   '/warteliste/antwort': typeof WartelisteAntwortRoute
   '/warteliste/rueckfrage': typeof WartelisteRueckfrageRoute
   '/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
+  '/admin/archiv': typeof AuthenticatedAdminArchivRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
@@ -691,6 +700,7 @@ export interface FileRoutesById {
   '/warteliste_/antwort': typeof WartelisteAntwortRoute
   '/warteliste_/rueckfrage': typeof WartelisteRueckfrageRoute
   '/_authenticated/admin/anfragen': typeof AuthenticatedAdminAnfragenRoute
+  '/_authenticated/admin/archiv': typeof AuthenticatedAdminArchivRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
   '/_authenticated/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
@@ -770,6 +780,7 @@ export interface FileRouteTypes {
     | '/warteliste/antwort'
     | '/warteliste/rueckfrage'
     | '/admin/anfragen'
+    | '/admin/archiv'
     | '/admin/audit'
     | '/admin/benutzer'
     | '/admin/dokumente'
@@ -846,6 +857,7 @@ export interface FileRouteTypes {
     | '/warteliste/antwort'
     | '/warteliste/rueckfrage'
     | '/admin/anfragen'
+    | '/admin/archiv'
     | '/admin/audit'
     | '/admin/benutzer'
     | '/admin/dokumente'
@@ -924,6 +936,7 @@ export interface FileRouteTypes {
     | '/warteliste_/antwort'
     | '/warteliste_/rueckfrage'
     | '/_authenticated/admin/anfragen'
+    | '/_authenticated/admin/archiv'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
     | '/_authenticated/admin/dokumente'
@@ -1259,6 +1272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnfragenRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/archiv': {
+      id: '/_authenticated/admin/archiv'
+      path: '/archiv'
+      fullPath: '/admin/archiv'
+      preLoaderRoute: typeof AuthenticatedAdminArchivRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/audit': {
       id: '/_authenticated/admin/audit'
       path: '/audit'
@@ -1551,6 +1571,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminAnfragenRoute: typeof AuthenticatedAdminAnfragenRoute
+  AuthenticatedAdminArchivRoute: typeof AuthenticatedAdminArchivRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminBenutzerRoute: typeof AuthenticatedAdminBenutzerRoute
   AuthenticatedAdminDokumenteRoute: typeof AuthenticatedAdminDokumenteRoute
@@ -1578,6 +1599,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
     AuthenticatedAdminAnfragenRoute: AuthenticatedAdminAnfragenRoute,
+    AuthenticatedAdminArchivRoute: AuthenticatedAdminArchivRoute,
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
     AuthenticatedAdminBenutzerRoute: AuthenticatedAdminBenutzerRoute,
     AuthenticatedAdminDokumenteRoute: AuthenticatedAdminDokumenteRoute,
