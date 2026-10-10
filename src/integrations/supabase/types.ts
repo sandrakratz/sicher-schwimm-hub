@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_rules: {
+        Row: {
+          area: string
+          assignee: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          area: string
+          assignee: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          area?: string
+          assignee?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -216,6 +237,7 @@ export type Database = {
           exam_level: string | null
           exam_pass_no: string | null
           block_review_dismissed_at: string | null
+          assigned_to: string | null
           cancel_reason: string | null
           cancelled_at: string | null
           belt_blocks: number | null
@@ -267,6 +289,7 @@ export type Database = {
           exam_level?: string | null
           exam_pass_no?: string | null
           block_review_dismissed_at?: string | null
+          assigned_to?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           belt_blocks?: number | null
@@ -318,6 +341,7 @@ export type Database = {
           exam_level?: string | null
           exam_pass_no?: string | null
           block_review_dismissed_at?: string | null
+          assigned_to?: string | null
           cancel_reason?: string | null
           cancelled_at?: string | null
           belt_blocks?: number | null
@@ -1268,6 +1292,7 @@ export type Database = {
           from_user_id: string | null
           id: string
           internal_notes: string | null
+          assigned_to: string | null
           status: string
           subject: string | null
           updated_at: string
@@ -1281,6 +1306,7 @@ export type Database = {
           from_user_id?: string | null
           id?: string
           internal_notes?: string | null
+          assigned_to?: string | null
           status?: string
           subject?: string | null
           updated_at?: string
@@ -1294,6 +1320,7 @@ export type Database = {
           from_user_id?: string | null
           id?: string
           internal_notes?: string | null
+          assigned_to?: string | null
           status?: string
           subject?: string | null
           updated_at?: string

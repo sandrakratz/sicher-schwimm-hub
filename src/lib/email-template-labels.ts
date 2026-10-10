@@ -27,6 +27,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "course-request-reply": "Antwort auf eine Kursanfrage",
   "message-reply": "Antwort auf eine Nachricht",
   "waitlist-reply": "Rückfrage zu einem Wartelisten-Eintrag",
+  "task-assigned": "Vorgang zugewiesen (intern, an das zuständige Vorstandsmitglied)",
   signup: "Registrierung – E-Mail-Bestätigung",
   recovery: "Passwort zurücksetzen",
   magiclink: "Anmeldelink (Magic Link)",
