@@ -1,4 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
+import { CourseDialog } from "@/components/admin/kurse/CourseDialog";
+import { EditParticipantDialog } from "@/components/admin/kurse/EditParticipantDialog";
+import { RequestDialog } from "@/components/admin/kurse/RequestDialog";
+import {
+  CancelParticipantDialog,
+  RemoveParticipantDialog,
+} from "@/components/admin/kurse/ParticipantDialogs";
+import { ProgramDialog } from "@/components/admin/kurse/ProgramDialog";
+import {
+  ageAt,
+  addDaysIso,
+  fmtDate,
+  slugify,
+  Hint,
+  ENROLL_STATUS,
+  ENROLL_STATUS_LABEL,
+  REQUEST_STATUS_LABEL,
+  STATUS_OPTIONS,
+  STATUS_LABEL,
+  type Course,
+  type CourseCounts,
+  type CourseRequest,
+  type Participant,
+  type ProgramRow,
+} from "@/components/admin/kurse/shared";
 import { exportExamProtocol } from "@/lib/trainer-courses.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
@@ -89,16 +115,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type CourseCounts = {
-  confirmed: number;
-  waiting: number;
-  unpaid: number;
-  overdue: number;
-  sessions: number;
-  staffed: number;
-  offered?: number;
-};
-
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
@@ -113,178 +129,13 @@ export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
 });
 
-type Participant = {
-  id: string;
-  course_id: string;
-  user_id: string | null;
-  participant_name: string | null;
-  participant_email: string | null;
-  participant_phone: string | null;
-  status: "confirmed" | "waiting" | "cancelled";
-  notes: string | null;
-  internal_notes?: string | null;
-  date_of_birth: string | null;
-  goal_reached: boolean | null;
-  achievement: string | null;
-  badge: string | null;
-  /** Klötzchen am Schwimmgurt (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst */
-  belt_blocks?: number | null;
-  paid: boolean;
-  paid_at: string | null;
-  payment_note: string | null;
-  is_member: boolean | null;
-  member_confirmed: boolean;
-  member_confirmed_at: string | null;
-  paid_by?: string | null;
-  member_confirmed_by?: string | null;
-  price_amount: number | null;
-  created_at?: string | null;
-  payment_method?: string | null;
-  payment_due_date?: string | null;
-  parent_user_id: string | null;
-  request_id: string | null;
-};
-
-type CourseRequest = {
-  id: string;
-  created_at: string;
-  status: string;
-  parent_name: string;
-  parent_email: string;
-  parent_phone: string | null;
-  child_name: string | null;
-  child_dob: string | null;
-  swimming_level: string | null;
-  desired_course: string | null;
-  health_info: string | null;
-  message: string | null;
-  admin_notes: string | null;
-  contact_permission: boolean;
-};
-
-const REQUEST_STATUS_LABEL: Record<string, string> = {
-  new: "Neu",
-  under_review: "In Prüfung",
-  contacted: "Kontaktiert",
-  accepted: "Angenommen",
-  waiting_list: "Warteliste",
-  rejected: "Abgelehnt",
-};
-
-const ENROLL_STATUS = [
-  { value: "confirmed", label: "Bestätigt" },
-  { value: "waiting", label: "Warteliste" },
-  { value: "cancelled", label: "Abgesagt" },
-];
-const ENROLL_STATUS_LABEL: Record<string, string> = Object.fromEntries(
-  ENROLL_STATUS.map((o) => [o.value, o.label]),
-);
-
-function ageAt(
-  dobStr: string | null | undefined,
-  refStr: string | null | undefined,
-): number | null {
-  if (!dobStr) return null;
-  const dob = new Date(dobStr);
-  const ref = refStr ? new Date(refStr) : new Date();
-  if (isNaN(dob.getTime()) || isNaN(ref.getTime())) return null;
-  let age = ref.getFullYear() - dob.getFullYear();
-  const m = ref.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
-  return age;
-}
 import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { beltLabel } from "@/lib/belt";
 import { combineChildHint } from "@/lib/child-hint";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
+import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
 import { parseSessionList } from "@/lib/session-list";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
-
-function addDaysIso(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function fmtDate(s: string | null | undefined) {
-  return formatDateBerlin(s);
-}
-
-type Course = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  target_group: string | null;
-  age_range: string | null;
-  duration: string | null;
-  location: string | null;
-  trainer_id?: string | null;
-  status: "planned" | "open" | "waiting_list" | "fully_booked" | "completed";
-  max_participants: number | null;
-  starts_on: string | null;
-  ends_on: string | null;
-  schedule: string | null;
-  is_public: boolean;
-  price_member: number | null;
-  price_non_member: number | null;
-  payment_due_days: number | null;
-  archived_at: string | null;
-  program_id: string | null;
-  unit_count: number | null;
-  course_info: string | null;
-  min_participants?: number | null;
-  lanes?: number | null;
-  trainers_needed?: number | null;
-  start_tentative?: boolean;
-  tentative_note?: string | null;
-};
-
-function Hint({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] text-muted-foreground mt-1 leading-snug">{children}</p>;
-}
-
-type ProgramRow = {
-  id: string;
-  name: string;
-  slug: string;
-  target_group: string | null;
-  age_range: string | null;
-  min_age_years: number | null;
-  max_age_years?: number | null;
-  min_swim_level?: number | null;
-  weekday?: number | null;
-  description: string | null;
-  requirements: string | null;
-  duration: string | null;
-  location: string | null;
-  price_member: number | null;
-  price_non_member: number | null;
-  payment_due_days: number;
-  is_public: boolean;
-  bookable: boolean;
-  sort_order: number;
-  course_info: string | null;
-};
-
-const STATUS_OPTIONS = [
-  { value: "planned", label: "Geplant" },
-  { value: "open", label: "Offen" },
-  { value: "waiting_list", label: "Warteliste" },
-  { value: "fully_booked", label: "Ausgebucht" },
-  { value: "completed", label: "Abgeschlossen" },
-];
-const STATUS_LABEL: Record<string, string> = Object.fromEntries(
-  STATUS_OPTIONS.map((o) => [o.value, o.label]),
-);
-
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/[äöüß]/g, (m) => ({ ä: "ae", ö: "oe", ü: "ue", ß: "ss" })[m] || m)
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 function Page() {
   const [canManage, setCanManage] = useState(true);
@@ -1400,6 +1251,8 @@ function Page() {
       })
       .eq("id", editPart.id);
     if (error) return toast.error(error.message);
+    if (editPart.paid) schedulePaymentMail(editPart.id);
+    else cancelPaymentMail(editPart.id);
     toast.success("Gespeichert");
     setEditPart(null);
     if (partCourse) await openParticipants(partCourse);
@@ -1417,7 +1270,16 @@ function Page() {
       })
       .eq("id", p.id);
     if (error) return toast.error(error.message);
-    toast.success(paid ? "Als bezahlt markiert" : "Zahlung zurückgesetzt");
+    if (paid) schedulePaymentMail(p.id);
+    else cancelPaymentMail(p.id);
+    toast.success(
+      paid
+        ? "Als bezahlt markiert – Eltern erhalten gleich eine Bestätigung"
+        : "Zahlung zurückgesetzt",
+      paid
+        ? { action: { label: "Rückgängig", onClick: () => void togglePaid(p, false) } }
+        : undefined,
+    );
     if (partCourse) await openParticipants(partCourse);
   }
 
@@ -2377,612 +2239,24 @@ function Page() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={progOpen} onOpenChange={setProgOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingProg.id ? "Kursangebot bearbeiten" : "Neues Kursangebot"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Name *</Label>
-                <Input
-                  value={editingProg.name || ""}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({
-                      ...p,
-                      name: e.target.value,
-                      slug: p.slug || slugify(e.target.value),
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Slug (URL)</Label>
-                <Input
-                  value={editingProg.slug || ""}
-                  onChange={(e) => setEditingProg((p) => ({ ...p, slug: e.target.value }))}
-                />
-                <Hint>
-                  Adresse der Detailseite: /kurse/{editingProg.slug || "…"} – nachträgliches Ändern
-                  verändert bestehende Links.
-                </Hint>
-              </div>
-            </div>
-            <div>
-              <Label>Beschreibung</Label>
-              <Textarea
-                rows={3}
-                value={editingProg.description || ""}
-                onChange={(e) => setEditingProg((p) => ({ ...p, description: e.target.value }))}
-              />
-              <Hint>
-                Erster Absatz = Kurztext in der Kursübersicht /kurse und Einleitung oben auf der
-                Detailseite. Weitere Absätze (durch Leerzeile trennen) erscheinen nur auf der
-                Detailseite.
-              </Hint>
-            </div>
-            <div>
-              <Label>Voraussetzungen</Label>
-              <Textarea
-                rows={2}
-                value={editingProg.requirements || ""}
-                onChange={(e) => setEditingProg((p) => ({ ...p, requirements: e.target.value }))}
-              />
-              <Hint>
-                Kursübersicht: kurz unter „Voraussetzungen" bzw. bei geplanten Angeboten als
-                „Rahmen". Detailseite: eigener Abschnitt. Jede Zeile wird zu einem Aufzählungspunkt.
-              </Hint>
-            </div>
-            <div>
-              <Label>Ablauf & Wichtiges für den Kurstag</Label>
-              <Textarea
-                rows={6}
-                value={editingProg.course_info || ""}
-                onChange={(e) => setEditingProg((p) => ({ ...p, course_info: e.target.value }))}
-                placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"}
-              />
-              <Hint>
-                Standardtext für neue Zeiträume dieses Angebots. Wird auf der Detailseite, in der
-                Buchungsbestätigung und in der Erinnerungs-E-Mail gezeigt.
-              </Hint>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Zielgruppe</Label>
-                <Input
-                  value={editingProg.target_group || ""}
-                  onChange={(e) => setEditingProg((p) => ({ ...p, target_group: e.target.value }))}
-                />
-                <Hint>Badge oben auf der Kurskarte und in der Infobox der Detailseite.</Hint>
-              </div>
-              <div>
-                <Label>Altersangabe</Label>
-                <Input
-                  value={editingProg.age_range || ""}
-                  onChange={(e) => setEditingProg((p) => ({ ...p, age_range: e.target.value }))}
-                />
-                <Hint>
-                  Blaue Zeile unter dem Kursnamen (Kursübersicht) und Infobox (Detailseite).
-                </Hint>
-              </div>
-              <div>
-                <Label>Mindestalter (Jahre)</Label>
-                <Input
-                  type="number"
-                  value={editingProg.min_age_years ?? ""}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({
-                      ...p,
-                      min_age_years: e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                />
-                <Hint>
-                  Nur Detailseite (Hinweis bei den Voraussetzungen) und Prüfung bei Buchung und
-                  Warteliste.
-                </Hint>
-              </div>
-              <ProgramFitFields
-                minSwimLevel={editingProg.min_swim_level}
-                weekday={editingProg.weekday}
-                onChange={(v) => setEditingProg((p) => ({ ...p, ...v }))}
-              />
-              <div>
-                <Label>Höchstalter (Jahre)</Label>
-                <Input
-                  type="number"
-                  value={editingProg.max_age_years ?? ""}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({
-                      ...p,
-                      max_age_years: e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                />
-                <Hint>
-                  Bis einschließlich (z. B. 5 = am 6. Geburtstag nicht mehr). Leer = keine
-                  Obergrenze.
-                </Hint>
-              </div>
-              <div>
-                <Label>Dauer</Label>
-                <Input
-                  value={editingProg.duration || ""}
-                  onChange={(e) => setEditingProg((p) => ({ ...p, duration: e.target.value }))}
-                />
-                <Hint>
-                  Uhr-Zeile auf Kurskarte und Detailseite (z. B. „8 Termine · ca. 40 Minuten").
-                </Hint>
-              </div>
-            </div>
-            <div>
-              <Label>Ort</Label>
-              <Input
-                value={editingProg.location || ""}
-                onChange={(e) => setEditingProg((p) => ({ ...p, location: e.target.value }))}
-              />
-              <Hint>
-                Ortszeile auf Kurskarte und Detailseite. Einzelne Zeiträume können unten einen
-                abweichenden Ort haben.
-              </Hint>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>Preis Nicht-Mitglied (€)</Label>
-                <Input
-                  type="number"
-                  value={editingProg.price_non_member ?? ""}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({
-                      ...p,
-                      price_non_member: e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                />
-                <Hint>Preiszeile auf Kurskarte und Detailseite.</Hint>
-              </div>
-              <div>
-                <Label>Preis Mitglied (€)</Label>
-                <Input
-                  type="number"
-                  value={editingProg.price_member ?? ""}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({
-                      ...p,
-                      price_member: e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                />
-                <Hint>Preiszeile auf Kurskarte und Detailseite.</Hint>
-              </div>
-              <div>
-                <Label>Zahlungsziel (Tage)</Label>
-                <Input
-                  type="number"
-                  value={editingProg.payment_due_days ?? 14}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({ ...p, payment_due_days: Number(e.target.value) }))
-                  }
-                />
-                <Hint>
-                  Nicht öffentlich sichtbar – wird in Buchungsbestätigung und Rechnungstext genutzt.
-                </Hint>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 items-end">
-              <div>
-                <Label>Sortierung</Label>
-                <Input
-                  type="number"
-                  value={editingProg.sort_order ?? 0}
-                  onChange={(e) =>
-                    setEditingProg((p) => ({ ...p, sort_order: Number(e.target.value) }))
-                  }
-                />
-                <Hint>Reihenfolge der Karten in der Kursübersicht (kleine Zahl zuerst).</Hint>
-              </div>
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={editingProg.is_public ?? true}
-                  onCheckedChange={(v) => setEditingProg((p) => ({ ...p, is_public: Boolean(v) }))}
-                />
-                Auf der Webseite anzeigen
-                <span className="text-[11px] text-muted-foreground">
-                  (Karte in /kurse + Detailseite)
-                </span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={(editingProg as any).waitlist_open ?? true}
-                  onCheckedChange={(v) =>
-                    setEditingProg((p) => ({ ...p, waitlist_open: Boolean(v) }) as any)
-                  }
-                />
-                Warteliste aktiv
-                <span className="text-[11px] text-muted-foreground">
-                  (aus: keine neuen Wartelisten-Einträge)
-                </span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={editingProg.bookable ?? true}
-                  onCheckedChange={(v) => setEditingProg((p) => ({ ...p, bookable: Boolean(v) }))}
-                />
-                Online buchbar
-                <span className="text-[11px] text-muted-foreground">
-                  (aus: „Geplant – noch nicht buchbar")
-                </span>
-              </label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProgOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={saveProgram}>Speichern</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ProgramDialog
+        open={progOpen}
+        onOpenChange={setProgOpen}
+        editing={editingProg}
+        setEditing={setEditingProg}
+        onSave={saveProgram}
+      />
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing.id ? "Kurs bearbeiten" : "Neuer Kurs"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Name *</Label>
-                <Input
-                  value={editing.name || ""}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      name: e.target.value,
-                      slug: p.slug || slugify(e.target.value),
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Slug</Label>
-                <Input
-                  value={editing.slug || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, slug: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>Kursangebot (für die Webseite)</Label>
-              <Select
-                value={editing.program_id || "none"}
-                onValueChange={(v) =>
-                  setEditing((p) => ({ ...p, program_id: v === "none" ? null : v }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Kein Kursangebot" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Kein Kursangebot (nur intern)</SelectItem>
-                  {programs.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Zugeordnete Zeiträume erscheinen auf der Webseite unter dem Kursangebot und können
-                dort gebucht werden.
-              </p>
-            </div>
-
-            <div>
-              <Label>Beschreibung</Label>
-              <Textarea
-                rows={3}
-                value={editing.description || ""}
-                onChange={(e) => setEditing((p) => ({ ...p, description: e.target.value }))}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Zielgruppe</Label>
-                <Input
-                  value={editing.target_group || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, target_group: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Altersgruppe</Label>
-                <Input
-                  value={editing.age_range || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, age_range: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Dauer</Label>
-                <Input
-                  value={editing.duration || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, duration: e.target.value }))}
-                  placeholder="z.B. 10 Wochen"
-                />
-              </div>
-              <div>
-                <Label>Ort</Label>
-                <Input
-                  value={editing.location || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, location: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Start</Label>
-                <Input
-                  type="date"
-                  value={editing.starts_on || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, starts_on: e.target.value || null }))}
-                />
-              </div>
-              <div>
-                <Label>Ende</Label>
-                <Input
-                  type="date"
-                  value={editing.ends_on || ""}
-                  onChange={(e) => setEditing((p) => ({ ...p, ends_on: e.target.value || null }))}
-                />
-              </div>
-              <div>
-                <Label>Max. Plätze</Label>
-                <Input
-                  type="number"
-                  value={editing.max_participants ?? ""}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      max_participants: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label>Mindestteilnehmerzahl</Label>
-                <Input
-                  type="number"
-                  value={editing.min_participants ?? ""}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      min_participants: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                  placeholder="z.B. 14"
-                />
-              </div>
-              <div>
-                <Label>Bahnen</Label>
-                <Select
-                  value={editing.lanes ? String(editing.lanes) : "none"}
-                  onValueChange={(v) =>
-                    setEditing((p) => ({ ...p, lanes: v === "none" ? null : Number(v) }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Keine Angabe</SelectItem>
-                    <SelectItem value="1">1 Bahn</SelectItem>
-                    <SelectItem value="2">2 Bahnen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Benötigte Trainer:innen pro Termin</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={editing.trainers_needed ?? 2}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      trainers_needed: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                />
-                <Hint>Maßgeblich für Dienstplan und Kurskalender (Ampel „unterbesetzt“).</Hint>
-              </div>
-              <div>
-                <Label>Anzahl der Einheiten</Label>
-                <Input
-                  type="number"
-                  value={editing.unit_count ?? ""}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      unit_count: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                  placeholder="z.B. 12"
-                />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select
-                  value={editing.status}
-                  onValueChange={(v: any) => setEditing((p) => ({ ...p, status: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
-              <Label className="text-sm font-semibold">
-                Terminliste einfügen (z. B. aus der KI kopiert)
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“
-                markieren. Beim Speichern werden Start, Ende, Anzahl der Einheiten und alle Termine
-                übernommen – Eltern sehen sie auf der Kursseite.
-                {editing.id ? " Vorhandene Termine werden ersetzt." : ""} Leer lassen, um nichts zu
-                ändern.
-              </p>
-              <Textarea
-                rows={6}
-                value={formSessText}
-                onChange={(e) => setFormSessText(e.target.value)}
-                placeholder={
-                  "1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027  11:00–11:45 Uhr"
-                }
-              />
-              {formSessText.trim() &&
-                (() => {
-                  const p = parseSessionList(formSessText);
-                  const r = p.filter((x) => !x.isBreak);
-                  return (
-                    <p className="text-xs text-muted-foreground">
-                      Erkannt: {r.length} Termine, {p.length - r.length} Pausen
-                      {r.length
-                        ? ` · ${formatDateBerlin(r[0].date)} – ${formatDateBerlin(r[r.length - 1].date)}`
-                        : ""}
-                    </p>
-                  );
-                })()}
-            </div>
-            <div className="rounded-md border p-3 space-y-2">
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={!!editing.start_tentative}
-                  onCheckedChange={(v) => setEditing((p) => ({ ...p, start_tentative: !!v }))}
-                />{" "}
-                Starttermin unter Vorbehalt (z. B. Wiedereröffnung / Sanierung)
-              </label>
-              {editing.start_tentative && (
-                <>
-                  <Input
-                    value={editing.tentative_note || ""}
-                    onChange={(e) => setEditing((p) => ({ ...p, tentative_note: e.target.value }))}
-                    placeholder="vorbehaltlich der Wiedereröffnung der Sportschule Hennef"
-                  />
-                  <Hint>
-                    Wird bei Kursbeginn auf der Webseite angezeigt. Buchung und Zahlungsfrist laufen
-                    normal.
-                  </Hint>
-                </>
-              )}
-            </div>
-            <div>
-              <Label>Ablauf & Wichtiges für den Kurstag</Label>
-              <Textarea
-                rows={6}
-                value={editing.course_info || ""}
-                onChange={(e) => setEditing((p) => ({ ...p, course_info: e.target.value }))}
-                placeholder={"Treffpunkt, Ankunftszeit, was mitzubringen ist …"}
-              />
-              <Hint>
-                Erscheint auf der Kursdetailseite, in der Buchungsbestätigung und in der
-                Erinnerungs-E-Mail 3 Tage vor Kursstart. Absätze und Zeilen bleiben erhalten.
-              </Hint>
-            </div>
-            <div>
-              <Label>Zeitplan</Label>
-              <Input
-                value={editing.schedule || ""}
-                onChange={(e) => setEditing((p) => ({ ...p, schedule: e.target.value }))}
-                placeholder="z.B. Mo & Mi 17:00–18:00"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3 border-t pt-3">
-              <div>
-                <Label>Preis Mitglied (€)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editing.price_member ?? ""}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      price_member: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                  placeholder="150"
-                />
-              </div>
-              <div>
-                <Label>Preis Nicht-Mitglied (€)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={editing.price_non_member ?? ""}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      price_non_member: e.target.value ? Number(e.target.value) : null,
-                    }))
-                  }
-                  placeholder="200"
-                />
-              </div>
-              <div>
-                <Label>Zahlungsfrist (Tage)</Label>
-                <Input
-                  type="number"
-                  value={editing.payment_due_days ?? 14}
-                  onChange={(e) =>
-                    setEditing((p) => ({
-                      ...p,
-                      payment_due_days: e.target.value ? Number(e.target.value) : 14,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            {editing.starts_on &&
-              (() => {
-                const terms = paymentTerms({
-                  startsOn: editing.starts_on,
-                  paymentDueDays: editing.payment_due_days ?? 14,
-                });
-                return (
-                  <div className="rounded-md border bg-muted/40 p-3 text-xs">
-                    <div className="font-medium">Zahlungsvorschau bei Buchung heute</div>
-                    <div className="mt-1 text-muted-foreground">
-                      Kursbeginn {formatDateBerlin(editing.starts_on)} · Zahlungsart:{" "}
-                      {terms.methodLabel} · fällig bis {terms.dueDateLabel}
-                    </div>
-                    <div className="mt-1 text-muted-foreground">{terms.note}</div>
-                  </div>
-                );
-              })()}
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={editing.is_public ?? true}
-                onCheckedChange={(v) => setEditing((p) => ({ ...p, is_public: !!v }))}
-              />{" "}
-              Öffentlich sichtbar
-            </label>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={save}>Speichern</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CourseDialog
+        open={open}
+        onOpenChange={setOpen}
+        editing={editing}
+        setEditing={setEditing}
+        programs={programs}
+        sessionText={formSessText}
+        setSessionText={setFormSessText}
+        onSave={save}
+      />
 
       <Dialog open={partOpen} onOpenChange={setPartOpen}>
         <DialogContent className="w-[95vw] max-w-[1400px] sm:max-w-[1400px] max-h-[90vh] overflow-y-auto">
@@ -3426,89 +2700,12 @@ function Page() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={reqOpen} onOpenChange={setReqOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Kursanfrage</DialogTitle>
-          </DialogHeader>
-          {reqLoading && <div className="text-sm text-muted-foreground">Wird geladen …</div>}
-          {!reqLoading && !reqRow && (
-            <div className="text-sm text-muted-foreground">Keine Anfrage gefunden.</div>
-          )}
-          {reqRow && (
-            <div className="space-y-3 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline">
-                  {REQUEST_STATUS_LABEL[reqRow.status] || reqRow.status}
-                </Badge>
-                <span className="text-muted-foreground">
-                  Eingegangen: {formatDateTimeBerlin(reqRow.created_at)}
-                </span>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Eltern / Kontakt</div>
-                  <div className="font-medium">{reqRow.parent_name}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">E-Mail</div>
-                  <div className="font-medium break-all">{reqRow.parent_email}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Telefon</div>
-                  <div className="font-medium">{reqRow.parent_phone || "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Kontaktaufnahme erlaubt</div>
-                  <div className="font-medium">{reqRow.contact_permission ? "Ja" : "Nein"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Kind</div>
-                  <div className="font-medium">{reqRow.child_name || "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Geburtsdatum</div>
-                  <div className="font-medium">
-                    {reqRow.child_dob ? fmtDate(reqRow.child_dob) : "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Gewünschter Kurs</div>
-                  <div className="font-medium">{reqRow.desired_course || "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Schwimmniveau</div>
-                  <div className="font-medium">{reqRow.swimming_level || "—"}</div>
-                </div>
-              </div>
-              {reqRow.health_info && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Gesundheitshinweise</div>
-                  <div className="whitespace-pre-wrap">{reqRow.health_info}</div>
-                </div>
-              )}
-              {reqRow.message && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Nachricht</div>
-                  <div className="whitespace-pre-wrap">{reqRow.message}</div>
-                </div>
-              )}
-              {reqRow.admin_notes && (
-                <div>
-                  <div className="text-xs text-muted-foreground">Interne Notizen</div>
-                  <div className="whitespace-pre-wrap">{reqRow.admin_notes}</div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReqOpen(false)}>
-              Schließen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      <RequestDialog
+        open={reqOpen}
+        onOpenChange={setReqOpen}
+        loading={reqLoading}
+        request={reqRow}
+      />
       <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
 
       <TransferParticipantDialog
@@ -3533,621 +2730,51 @@ function Page() {
         }}
       />
 
-      <Dialog open={!!editPart} onOpenChange={(v) => !v && setEditPart(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Teilnehmer bearbeiten</DialogTitle>
-          </DialogHeader>
-          {editPart && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Name *</Label>
-                  <Input
-                    value={editPart.participant_name || ""}
-                    onChange={(e) =>
-                      setEditPart((p) => p && { ...p, participant_name: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Geburtsdatum</Label>
-                  <Input
-                    type="date"
-                    value={editPart.date_of_birth || ""}
-                    onChange={(e) =>
-                      setEditPart((p) => p && { ...p, date_of_birth: e.target.value })
-                    }
-                  />
-                  {editPart.date_of_birth &&
-                    (() => {
-                      const a = ageAt(editPart.date_of_birth, partCourse?.starts_on);
-                      return a != null ? (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {a} Jahre {partCourse?.starts_on ? "bei Kursbeginn" : "(heute)"}
-                        </div>
-                      ) : null;
-                    })()}
-                </div>
-                <div>
-                  <Label>E-Mail</Label>
-                  <Input
-                    type="email"
-                    value={editPart.participant_email || ""}
-                    onChange={(e) =>
-                      setEditPart((p) => p && { ...p, participant_email: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Telefon</Label>
-                  <Input
-                    value={editPart.participant_phone || ""}
-                    onChange={(e) =>
-                      setEditPart((p) => p && { ...p, participant_phone: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select
-                    value={editPart.status}
-                    onValueChange={(v: any) => setEditPart((p) => p && { ...p, status: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    {/* „Warteliste“ gibt es nur über die Wartelisten-Funktionen (Status-Auswahl in der Teilnehmerliste) */}
-                    <SelectContent>
-                      {ENROLL_STATUS.filter(
-                        (o) => o.value !== "waiting" || editPart.status === "waiting",
-                      ).map((o) => (
-                        <SelectItem key={o.value} value={o.value}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {(() => {
-                const fromRequest = (
-                  editPart.request_id ? (requestHealth[editPart.request_id] ?? "") : ""
-                ).trim();
-                if (!fromRequest || (editPart.notes ?? "").includes(fromRequest)) return null;
-                return (
-                  <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm">
-                    <div className="text-xs font-medium text-amber-900">
-                      Gesundheitshinweise aus der Anmeldung
-                    </div>
-                    <div className="whitespace-pre-wrap">{fromRequest}</div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() =>
-                        setEditPart(
-                          (p) =>
-                            p && { ...p, notes: combineChildHint(p.notes, fromRequest) ?? p.notes },
-                        )
-                      }
-                    >
-                      In den Hinweis zum Kind übernehmen
-                    </Button>
-                  </div>
-                );
-              })()}
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-2">
-                <Label>Wichtiger Hinweis zum Kind (für Trainer sichtbar)</Label>
-                <Textarea
-                  rows={2}
-                  placeholder="Gesundheit, Ängste, Besonderheiten …"
-                  value={editPart.notes || ""}
-                  onChange={(e) => setEditPart((p) => p && { ...p, notes: e.target.value })}
-                />
-              </div>
-              {canManage && (
-                <div className="rounded-md border bg-muted/40 p-2">
-                  <Label className="flex items-center gap-1">
-                    <Lock className="h-3 w-3" />
-                    Interne Notiz (nur Vorstand – Trainer sehen das nicht)
-                  </Label>
-                  <Textarea
-                    rows={2}
-                    placeholder="Zahlungsabsprache, Geschwisterkind, Umbuchung …"
-                    value={editPart.internal_notes || ""}
-                    onChange={(e) =>
-                      setEditPart((p) => p && { ...p, internal_notes: e.target.value })
-                    }
-                  />
-                </div>
-              )}
+      <EditParticipantDialog
+        editPart={editPart}
+        setEditPart={setEditPart}
+        course={partCourse}
+        canManage={canManage}
+        requestHealth={requestHealth}
+        onSave={savePart}
+      />
 
-              {canManage && (
-                <div className="border-t pt-3 mt-2">
-                  <div className="font-semibold text-sm mb-2">Mitgliedschaft & Preis</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <Label>Mitglied?</Label>
-                      <Select
-                        value={
-                          editPart.is_member == null ? "unset" : editPart.is_member ? "yes" : "no"
-                        }
-                        onValueChange={(v) =>
-                          setEditPart((p) => {
-                            if (!p) return p;
-                            const next = v === "unset" ? null : v === "yes";
-                            // Preis mitziehen, solange er noch dem Standardpreis der bisherigen Stufe entspricht (oder leer ist)
-                            const memberPrice = partCourse?.price_member ?? null;
-                            const nonMemberPrice = partCourse?.price_non_member ?? null;
-                            const cur = p.price_amount == null ? null : Number(p.price_amount);
-                            const isStandard =
-                              cur == null || cur === memberPrice || cur === nonMemberPrice;
-                            let price = p.price_amount;
-                            if (isStandard && next === true && memberPrice != null)
-                              price = memberPrice;
-                            if (isStandard && next === false && nonMemberPrice != null)
-                              price = nonMemberPrice;
-                            return { ...p, is_member: next, price_amount: price };
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unset">— Unklar —</SelectItem>
-                          <SelectItem value="yes">Ja</SelectItem>
-                          <SelectItem value="no">Nein</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Kursgebühr (€)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={editPart.price_amount ?? ""}
-                        onChange={(e) =>
-                          setEditPart(
-                            (p) =>
-                              p && {
-                                ...p,
-                                price_amount: e.target.value ? Number(e.target.value) : null,
-                              },
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={editPart.member_confirmed}
-                          onCheckedChange={(v) =>
-                            setEditPart((p) => p && { ...p, member_confirmed: !!v })
-                          }
-                        />
-                        Mitgliedschaft bestätigt (Buchhaltung)
-                      </label>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    Elternkonto-Verknüpfung:{" "}
-                    {editPart.parent_user_id ? (
-                      <span className="font-mono">{editPart.parent_user_id}</span>
-                    ) : (
-                      "noch nicht verknüpft (wird automatisch bei Registrierung der Eltern-E-Mail gesetzt)"
-                    )}
-                  </div>
-                </div>
-              )}
+      <SessionsDialog
+        open={sessOpen}
+        onOpenChange={setSessOpen}
+        course={sessCourse}
+        sessions={sessions}
+        availability={sessAvail}
+        assignments={sessAssign}
+        trainers={trainers}
+        bulkText={bulkText}
+        setBulkText={setBulkText}
+        bulkBusy={bulkBusy}
+        onImport={importSessions}
+        onAdd={addSession}
+        onRemove={removeSession}
+        onDateChange={updateSessionDate}
+        onTimeChange={updateSessionTime}
+        onToggleAssignment={toggleAssignment}
+      />
 
-              <div className="border-t pt-3 mt-2">
-                <div className="font-semibold text-sm mb-2 flex items-center gap-2">
-                  <Award className="h-4 w-4" /> Kursergebnis
-                </div>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <span className="text-muted-foreground">Kursziel: </span>
-                    {editPart.goal_reached === true
-                      ? "erreicht"
-                      : editPart.goal_reached === false
-                        ? "nicht erreicht"
-                        : "offen"}
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Abzeichen: </span>
-                    {editPart.badge || "—"}
-                  </div>
-                  <div className="whitespace-pre-wrap">
-                    <span className="text-muted-foreground">Geschafft / Anmerkungen: </span>
-                    {editPart.achievement || "—"}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Das Kursergebnis wird von den Trainer:innen vor Ort im Trainerbereich unter „Meine
-                  Kurse“ erfasst.
-                </p>
-              </div>
+      <CancelParticipantDialog
+        participant={cancelFor}
+        busy={cancelBusy}
+        category={cancelCategory}
+        detail={cancelDetail}
+        onCategory={setCancelCategory}
+        onDetail={setCancelDetail}
+        onClose={() => setCancelFor(null)}
+        onConfirm={confirmCancelPart}
+      />
 
-              {canManage && (
-                <div className="border-t pt-3 mt-2">
-                  <div className="font-semibold text-sm mb-2 flex items-center gap-2">
-                    <Euro className="h-4 w-4" /> Zahlung (Buchhaltung)
-                  </div>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={editPart.paid}
-                      onCheckedChange={(v) =>
-                        setEditPart(
-                          (p) =>
-                            p && {
-                              ...p,
-                              paid: !!v,
-                              paid_at: v ? p.paid_at || new Date().toISOString() : null,
-                            },
-                        )
-                      }
-                    />
-                    Kursgebühr bezahlt
-                  </label>
-                  {editPart.paid && editPart.paid_at && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Bestätigt am {fmtDate(editPart.paid_at)}
-                    </div>
-                  )}
-                  <div className="mt-3">
-                    <Label>Zahlungsnotiz</Label>
-                    <Textarea
-                      rows={2}
-                      placeholder="z.B. Überweisung, Bar, Rechnungsnr. …"
-                      value={editPart.payment_note || ""}
-                      onChange={(e) =>
-                        setEditPart((p) => p && { ...p, payment_note: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditPart(null)}>
-              Abbrechen
-            </Button>
-            <Button onClick={savePart}>Speichern</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={sessOpen} onOpenChange={setSessOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Kurstermine: {sessCourse?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="rounded-md border bg-muted/30 p-3 space-y-2">
-            <Label className="text-sm font-semibold">Terminliste einfügen</Label>
-            <p className="text-xs text-muted-foreground">
-              Eine Zeile pro Termin, Uhrzeit optional. Pausen mit „—“ oder „kein Termin“ markieren.
-              Kursbeginn und -ende werden automatisch übernommen, Eltern sehen die Liste auf der
-              Kursseite.
-            </p>
-            <Textarea
-              rows={6}
-              value={bulkText}
-              onChange={(e) => setBulkText(e.target.value)}
-              placeholder={
-                "1  07.11.2026  11:00–11:45 Uhr\n2  14.11.2026  11:00–11:45 Uhr\n—  26.12.2026  kein Termin – Weihnachtspause\n3  09.01.2027"
-              }
-            />
-            {bulkText.trim() &&
-              (() => {
-                const p = parseSessionList(bulkText);
-                return (
-                  <p className="text-xs text-muted-foreground">
-                    Erkannt: {p.filter((x) => !x.isBreak).length} Termine,{" "}
-                    {p.filter((x) => x.isBreak).length} Pausen
-                  </p>
-                );
-              })()}
-            <Button size="sm" onClick={importSessions} disabled={bulkBusy || !bulkText.trim()}>
-              {bulkBusy ? "Übernehme…" : "Termine übernehmen"}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender,
-            das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre
-            Verfügbarkeit unter „Verfügbarkeit“.
-          </p>
-          <div className="space-y-3">
-            {sessions.length === 0 && (
-              <div className="text-sm text-muted-foreground">Noch keine Termine.</div>
-            )}
-            {sessions.map((s) => {
-              const nameOf = (id: string) => trainers.find((t) => t.id === id)?.name || "Unbekannt";
-              const yes = sessAvail.filter((a) => a.session_id === s.id && a.available);
-              const no = sessAvail.filter((a) => a.session_id === s.id && !a.available);
-              const assignedIds = sessAssign
-                .filter((a) => a.session_id === s.id)
-                .map((a) => a.trainer_id);
-              const declined = assignedIds.filter((id) => no.some((n) => n.trainer_id === id));
-              return (
-                <div key={s.id} className="rounded-md border p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
-                    <Input
-                      type="date"
-                      value={s.session_date}
-                      onChange={(e) => updateSessionDate(s.id, e.target.value)}
-                    />
-                    <Input
-                      type="time"
-                      className="w-28"
-                      title="Beginn"
-                      value={(s.start_time || "").slice(0, 5)}
-                      onChange={(e) => updateSessionTime(s.id, "start_time", e.target.value)}
-                    />
-                    <span className="text-xs text-muted-foreground">bis</span>
-                    <Input
-                      type="time"
-                      className="w-28"
-                      title="Ende"
-                      value={(s.end_time || "").slice(0, 5)}
-                      onChange={(e) => updateSessionTime(s.id, "end_time", e.target.value)}
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => removeSession(s.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 pl-10 text-xs">
-                    {yes.map((a) => (
-                      <Badge
-                        key={a.trainer_id}
-                        className="border-transparent bg-green-600 text-white"
-                      >
-                        {nameOf(a.trainer_id)}
-                      </Badge>
-                    ))}
-                    {no.map((a) => (
-                      <Badge
-                        key={a.trainer_id}
-                        className="border-transparent bg-red-600 text-white"
-                      >
-                        {nameOf(a.trainer_id)}
-                      </Badge>
-                    ))}
-                    {yes.length === 0 && no.length === 0 && (
-                      <span className="text-muted-foreground">Noch keine Rückmeldungen</span>
-                    )}
-                  </div>
-                  <div className="space-y-1 pl-10">
-                    <Label className="text-xs text-muted-foreground">
-                      Eingeteilt (Mehrfachauswahl)
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {trainers.length === 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          Keine Trainer gefunden
-                        </span>
-                      )}
-                      {trainers
-                        .slice()
-                        .sort((a, b) => {
-                          const rank = (id: string) =>
-                            yes.some((y) => y.trainer_id === id)
-                              ? 0
-                              : no.some((n) => n.trainer_id === id)
-                                ? 2
-                                : 1;
-                          return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de");
-                        })
-                        .map((t) => {
-                          const on = assignedIds.includes(t.id);
-                          return (
-                            <Button
-                              key={t.id}
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => toggleAssignment(s.id, t.id, !on)}
-                              className={
-                                on
-                                  ? "border-transparent bg-primary text-primary-foreground hover:bg-primary/90"
-                                  : ""
-                              }
-                            >
-                              {t.name}
-                              <span className="ml-1 text-[10px] opacity-80">
-                                {yes.some((y) => y.trainer_id === t.id)
-                                  ? "kann"
-                                  : no.some((n) => n.trainer_id === t.id)
-                                    ? "kann nicht"
-                                    : ""}
-                              </span>
-                            </Button>
-                          );
-                        })}
-                    </div>
-                    {assignedIds.length === 0 && (
-                      <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>
-                    )}
-                    {declined.length > 0 && (
-                      <span className="text-xs text-red-600">
-                        Abgesagt, aber eingeteilt: {declined.map(nameOf).join(", ")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {sessCourse && (
-            <div className="mt-4 space-y-2 border-t pt-4">
-              <h3 className="text-sm font-semibold">Anwesenheit</h3>
-              <AttendanceBoard courseId={sessCourse.id} editableHints />
-              <h3 className="pt-4 text-sm font-semibold">Trainer-Anwesenheit (Steuernachweis)</h3>
-              <TrainerAttendancePanel courseId={sessCourse.id} />
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSessOpen(false)}>
-              Schließen
-            </Button>
-            <Button onClick={addSession} disabled={sessions.length >= 30}>
-              <Plus className="h-4 w-4" /> Termin hinzufügen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!cancelFor} onOpenChange={(v) => !v && !cancelBusy && setCancelFor(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Absage erfassen – {cancelFor?.participant_name ?? "Kind"}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Der Platz wird frei und an die Anfrageliste vergeben. Die Absage zählt für den
-            Absagen-Zähler und den Sperrvorschlag.
-          </p>
-          <DeclineReasonFields
-            category={cancelCategory}
-            detail={cancelDetail}
-            onCategory={setCancelCategory}
-            onDetail={setCancelDetail}
-          />
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setCancelFor(null)} disabled={cancelBusy}>
-              Abbrechen
-            </Button>
-            <Button onClick={confirmCancelPart} disabled={cancelBusy}>
-              {cancelBusy ? "Speichern…" : "Absage speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!removeState} onOpenChange={(v) => !v && setRemovePart(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Teilnehmer entfernen</DialogTitle>
-          </DialogHeader>
-          {removeState && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                „{removeState.participant.participant_name}“ wird aus dem Kurs entfernt.
-                {!removeState.participant.paid && " Die Zahlung ist bisher nicht eingegangen."}
-              </p>
-              <div className="space-y-1">
-                <Label>Grund</Label>
-                <Select
-                  value={
-                    ["Nichtzahlung", "Rücktritt der Eltern", "Sonstiges"].includes(
-                      removeState.reason,
-                    )
-                      ? removeState.reason
-                      : "Sonstiges"
-                  }
-                  onValueChange={(v) =>
-                    setRemovePart(
-                      (s) =>
-                        s && {
-                          ...s,
-                          reason: v === "Sonstiges" ? "" : v,
-                          blocklist: v === "Nichtzahlung" ? true : s.blocklist,
-                          notify: v === "Nichtzahlung" ? "unpaid" : s.notify,
-                        },
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Grund wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Nichtzahlung">Nichtzahlung</SelectItem>
-                    <SelectItem value="Rücktritt der Eltern">Rücktritt der Eltern</SelectItem>
-                    <SelectItem value="Sonstiges">Sonstiges</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Textarea
-                  value={removeState.reason}
-                  onChange={(e) => setRemovePart((s) => s && { ...s, reason: e.target.value })}
-                  placeholder="Notiz zum Grund (optional)"
-                  rows={2}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>E-Mail an die Eltern</Label>
-                <Select
-                  value={removeState.participant.participant_email ? removeState.notify : "none"}
-                  disabled={!removeState.participant.participant_email}
-                  onValueChange={(v) =>
-                    setRemovePart(
-                      (s) =>
-                        s && {
-                          ...s,
-                          notify: v as "unpaid" | "agreed" | "none",
-                          blocklist: v === "unpaid" ? true : s.blocklist,
-                        },
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unpaid">
-                      Platz freigegeben (keine Rückmeldung/Zahlung)
-                    </SelectItem>
-                    <SelectItem value="agreed">
-                      Abmeldung wie besprochen (z. B. Krankheit)
-                    </SelectItem>
-                    <SelectItem value="none">Keine E-Mail senden</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Hint>
-                  {!removeState.participant.participant_email
-                    ? "Keine E-Mail-Adresse hinterlegt – es kann keine E-Mail versendet werden."
-                    : removeState.notify === "none"
-                      ? "Es wird keine E-Mail versendet."
-                      : `Empfänger: ${removeState.participant.participant_email}`}
-                </Hint>
-                {removeState.notify !== "none" && !!removeState.participant.participant_email && (
-                  <Textarea
-                    value={removeState.note}
-                    onChange={(e) => setRemovePart((s) => s && { ...s, note: e.target.value })}
-                    placeholder="Persönliche Ergänzung für die E-Mail (optional)"
-                    rows={3}
-                  />
-                )}
-              </div>
-              <label className="flex items-start gap-2 text-sm">
-                <Checkbox
-                  className="mt-0.5"
-                  checked={removeState.blocklist}
-                  onCheckedChange={(v) => setRemovePart((s) => s && { ...s, blocklist: !!v })}
-                />
-                <span>
-                  Auf die Sperrliste setzen
-                  <span className="block text-xs text-muted-foreground">
-                    Zukünftige Buchungen und Wartelisteneinträge werden blockiert (jederzeit unter
-                    „Sperrliste“ rücknehmbar).
-                  </span>
-                </span>
-              </label>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRemovePart(null)}>
-              Abbrechen
-            </Button>
-            <Button variant="destructive" onClick={confirmRemovePart} disabled={removing}>
-              {removing ? "Wird entfernt…" : "Entfernen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RemoveParticipantDialog
+        state={removeState}
+        setState={setRemovePart}
+        removing={removing}
+        onConfirm={confirmRemovePart}
+      />
     </div>
   );
 }

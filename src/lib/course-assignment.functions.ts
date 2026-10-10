@@ -346,11 +346,12 @@ export const assignRequestToCourse = createServerFn({ method: "POST" })
       const tpl = TEMPLATES["course-assignment"];
       const statusLabel = data.status === "waiting" ? "Warteliste" : "Bestätigt";
       const childPart = req.child_name || req.parent_name || "";
-      const { loadCourseSessionsForMail, courseIcsUrl } = await import(
-        "@/lib/course-session-mail.server"
-      );
+      const { loadCourseSessionsForMail, courseIcsUrl } =
+        await import("@/lib/course-session-mail.server");
       const mailSessions =
-        data.status === "waiting" ? [] : await loadCourseSessionsForMail(course.id, course.schedule);
+        data.status === "waiting"
+          ? []
+          : await loadCourseSessionsForMail(course.id, course.schedule);
       const templateData = {
         sessions: mailSessions,
         ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,

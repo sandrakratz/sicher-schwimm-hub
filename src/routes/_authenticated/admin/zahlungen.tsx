@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Check, Euro } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
+import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
 import {
   AssignControl,
@@ -138,6 +139,7 @@ function Page() {
   const total = shownRows.reduce((s, r) => s + (Number(r.price_amount) || 0), 0);
 
   async function undoPaid(r: Row) {
+    cancelPaymentMail(r.id);
     const { error } = await supabase
       .from("course_participants")
       .update({
@@ -168,6 +170,9 @@ function Page() {
     setBusy(null);
     if (error) return toast.error(error.message);
     setRows((rs) => rs.filter((x) => x.id !== r.id));
+    schedulePaymentMail(r.id, (sent) => {
+      if (sent) toast.info(`Zahlungsbestätigung an ${r.participant_name ?? "die Eltern"} gesendet`);
+    });
     // Fehlklick abfangen: kurz Zeit zum Rückgängigmachen
     toast.success(`${r.participant_name ?? "Teilnehmer"} als bezahlt markiert`, {
       duration: 10000,

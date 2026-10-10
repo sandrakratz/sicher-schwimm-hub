@@ -22,6 +22,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "payment-due-friendly": "Zahlungserinnerung 3 Tage vor Fristende (Eltern, freundlich)",
   "payment-due-final": "Letzte Zahlungserinnerung 1 Tag vor Fristende (Eltern)",
   "payment-reminder": "Zahlungserinnerung (Eltern, manuell)",
+  "payment-received": "Zahlung eingegangen (Eltern)",
   "course-removal-unpaid": "Kursplatz freigegeben (keine Rückmeldung/Zahlung)",
   "course-removal-agreed": "Kursabmeldung wie besprochen",
   "course-request-reply": "Antwort auf eine Kursanfrage",

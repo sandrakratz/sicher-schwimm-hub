@@ -538,9 +538,8 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
 
     const { queueTemplateEmail } = await import("@/lib/email-send.server");
 
-    const { loadCourseSessionsForMail, courseIcsUrl } = await import(
-      "@/lib/course-session-mail.server"
-    );
+    const { loadCourseSessionsForMail, courseIcsUrl } =
+      await import("@/lib/course-session-mail.server");
     const mailSessions = isFull ? [] : await loadCourseSessionsForMail(course.id, course.schedule);
 
     await queueTemplateEmail({
