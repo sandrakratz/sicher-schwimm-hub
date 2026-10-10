@@ -175,9 +175,8 @@ export async function bookWaitlistEntry(
       console.error(`booking mail failed (${label})`, err);
     }
   };
-  const { loadCourseSessionsForMail, courseIcsUrl } = await import(
-    "@/lib/course-session-mail.server"
-  );
+  const { loadCourseSessionsForMail, courseIcsUrl } =
+    await import("@/lib/course-session-mail.server");
   const mailSessions = await loadCourseSessionsForMail(course.id, course.schedule).catch(() => []);
   await safeMail("booking-confirmation", () =>
     queueTemplateEmail({

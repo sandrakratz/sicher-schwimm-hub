@@ -60,13 +60,7 @@ export function SessionList({
 }
 
 /** „Absagen oder umbuchen“ – die Stufen aus den Kursbedingungen (Abschnitt 3) mit den konkreten Stichtagen. */
-export function CancellationInfo({
-  startsOn,
-  base,
-}: {
-  startsOn?: string | null;
-  base: string;
-}) {
+export function CancellationInfo({ startsOn, base }: { startsOn?: string | null; base: string }) {
   const freeUntil = startsOn ? formatDateBerlin(shiftDate(startsOn, -21)) : null;
   const halfFrom = startsOn ? formatDateBerlin(shiftDate(startsOn, -20)) : null;
   const halfUntil = startsOn ? formatDateBerlin(shiftDate(startsOn, -7)) : null;
@@ -79,7 +73,8 @@ export function CancellationInfo({
         <strong>Kind kann nicht teilnehmen? Absagen oder umbuchen</strong>
       </Text>
       <Text style={row}>
-        <strong>Kostenfrei</strong> bis 3 Wochen vor Kursbeginn{freeUntil ? ` (bis ${freeUntil})` : ""}.
+        <strong>Kostenfrei</strong> bis 3 Wochen vor Kursbeginn
+        {freeUntil ? ` (bis ${freeUntil})` : ""}.
       </Text>
       <Text style={row}>
         <strong>50 % der Kursgebühr</strong> bis 7 Tage vor Kursbeginn
@@ -93,9 +88,9 @@ export function CancellationInfo({
         <Link href="mailto:kurse@sicher-schwimmen.com" style={{ color: "#0c4a6e" }}>
           kurse@sicher-schwimmen.com
         </Link>
-        ; maßgeblich ist der Eingang bei uns. Ein Wechsel in einen anderen Kurs zählt als Rücktritt mit
-        Neuanmeldung (bei freiem Platz). Bei ärztlich attestierter Krankheit entscheidet der Vorstand im
-        Einzelfall – melden Sie sich bitte rechtzeitig. Alle Einzelheiten:{" "}
+        ; maßgeblich ist der Eingang bei uns. Ein Wechsel in einen anderen Kurs zählt als Rücktritt
+        mit Neuanmeldung (bei freiem Platz). Bei ärztlich attestierter Krankheit entscheidet der
+        Vorstand im Einzelfall – melden Sie sich bitte rechtzeitig. Alle Einzelheiten:{" "}
         <Link href={`${base}/kursbedingungen`} style={{ color: "#0c4a6e" }}>
           Kursteilnahmebedingungen
         </Link>
