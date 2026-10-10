@@ -72,6 +72,8 @@ import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { CourseLifecycleActions } from "@/components/admin/CourseLifecycleActions";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
+import { DeclineReasonFields } from "@/components/admin/DeclineReasonFields";
+import { combineReason } from "@/lib/decline-reasons";
 import { listTransferConsents } from "@/lib/course-transfer-consent.functions";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
@@ -286,6 +288,7 @@ function Page() {
   const rolesFn = useServerFn(getMyAdminRoles);
   const [rows, setRows] = useState<Course[]>([]);
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
+  const [waitingByProgram, setWaitingByProgram] = useState<Record<string, number>>({});
   const [progOpen, setProgOpen] = useState(false);
   const [editingProg, setEditingProg] = useState<Partial<ProgramRow>>({});
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -330,6 +333,10 @@ function Page() {
   const [editPart, setEditPart] = useState<Participant | null>(null);
   const [transferPart, setTransferPart] = useState<Participant | null>(null);
   const [broadcastCourse, setBroadcastCourse] = useState<Course | null>(null);
+  const [cancelFor, setCancelFor] = useState<Participant | null>(null);
+  const [cancelCategory, setCancelCategory] = useState("");
+  const [cancelDetail, setCancelDetail] = useState("");
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [wlEntries, setWlEntries] = useState<any[]>([]);
   const [wlPick, setWlPick] = useState<string>("");
   const [removeState, setRemovePart] = useState<{
@@ -929,6 +936,23 @@ function Page() {
       });
     }
     setCounts(map);
+    // Familien auf der Anfrageliste (Status wartend) je Programm, für die Anzeige in der Kursliste
+    try {
+      const waiting = await fetchAll<{ id: string; program_id: string | null }>((f, t) =>
+        supabase
+          .from("waitlist_entries")
+          .select("id,program_id")
+          .eq("status", "waiting")
+          .order("id")
+          .range(f, t),
+      );
+      const byProgram: Record<string, number> = {};
+      for (const w of waiting)
+        if (w.program_id) byProgram[w.program_id] = (byProgram[w.program_id] ?? 0) + 1;
+      setWaitingByProgram(byProgram);
+    } catch {
+      setWaitingByProgram({});
+    }
     const { data: progs } = await supabase
       .from("course_programs")
       .select("*")
@@ -1241,27 +1265,37 @@ function Page() {
       return;
     }
     if (status === "cancelled") {
-      // Absage durch die Familie: Zeitpunkt und Grund festhalten, damit sie in der Anfrageliste
-      // (Reiter „Absagen“) und im Sperrvorschlag mitzählt; der Platz geht an die Warteliste.
-      const reason = window.prompt(
-        `Absage von ${p.participant_name ?? "diesem Kind"} erfassen.\nGrund (optional, z. B. Krankheit, Terminänderung):`,
-        "",
-      );
-      if (reason === null) return;
-      try {
-        await cancelParticipantFn({ data: { participantId: p.id, reason } });
-        toast.success("Absage erfasst – der Platz ist frei und zählt in der Anfrageliste mit");
-      } catch (e: any) {
-        return toast.error(e?.message || "Absage konnte nicht erfasst werden");
-      }
-      if (partCourse) await openParticipants(partCourse);
-      await load();
+      // Absage durch die Familie: Grund per Auswahl erfassen (Dialog), Zeitpunkt und Grund werden
+      // gespeichert, damit sie in der Anfrageliste (Reiter „Absagen“) und im Sperrvorschlag mitzählt.
+      setCancelCategory("");
+      setCancelDetail("");
+      setCancelFor(p);
       return;
     }
     const { error } = await supabase.from("course_participants").update({ status }).eq("id", p.id);
     if (error) return toast.error(error.message);
     if (partCourse) await openParticipants(partCourse);
     await load();
+  }
+  async function confirmCancelPart() {
+    if (!cancelFor) return;
+    setCancelBusy(true);
+    try {
+      await cancelParticipantFn({
+        data: {
+          participantId: cancelFor.id,
+          reason: combineReason(cancelCategory, cancelDetail) ?? "",
+        },
+      });
+      toast.success("Absage erfasst – der Platz ist frei und zählt in der Anfrageliste mit");
+      setCancelFor(null);
+      if (partCourse) await openParticipants(partCourse);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Absage konnte nicht erfasst werden");
+    } finally {
+      setCancelBusy(false);
+    }
   }
   function removePart(p: Participant) {
     setRemovePart({
@@ -1551,6 +1585,14 @@ function Page() {
 
   const detailProgram = detailId ? (programs.find((p) => p.id === detailId) ?? null) : null;
 
+  /** Wartende Familien der Anfrageliste, die für ein Programm (inkl. Mischkurse) in Frage kommen. */
+  function waitingFor(programId: string | null) {
+    return relatedProgramIds(programId, programs).reduce(
+      (sum, id) => sum + (waitingByProgram[id] ?? 0),
+      0,
+    );
+  }
+
   function termsOf(programId: string | null) {
     return rows.filter((r) => (programId === null ? !r.program_id : r.program_id === programId));
   }
@@ -1627,6 +1669,17 @@ function Page() {
                 >
                   {Math.max(0, max - cnt.confirmed - (cnt.offered ?? 0))} frei
                 </span>
+              </div>
+            )}
+            {waitingFor(c.program_id) > 0 && (
+              <div className="mt-0.5">
+                <a
+                  href="/admin/warteliste"
+                  className="text-primary underline underline-offset-2"
+                  title="Familien auf der Anfrageliste, die auf einen Platz in diesem Angebot warten"
+                >
+                  {waitingFor(c.program_id)} Familie(n) auf der Anfrageliste
+                </a>
               </div>
             )}
             {max ? (
@@ -1907,6 +1960,14 @@ function Page() {
                       title="Plätze, die gerade einem Kind von der Warteliste angeboten sind"
                     >
                       {reserved} reserviert
+                    </Badge>
+                  )}
+                  {waitingFor(p.id) > 0 && (
+                    <Badge
+                      variant="secondary"
+                      title="Familien auf der Anfrageliste, die auf einen Platz in diesem Angebot warten"
+                    >
+                      {waitingFor(p.id)} wartend
                     </Badge>
                   )}
                   {hasCap &&
@@ -3921,6 +3982,32 @@ function Page() {
             </Button>
             <Button onClick={addSession} disabled={sessions.length >= 30}>
               <Plus className="h-4 w-4" /> Termin hinzufügen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancelFor} onOpenChange={(v) => !v && !cancelBusy && setCancelFor(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Absage erfassen – {cancelFor?.participant_name ?? "Kind"}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Der Platz wird frei und an die Anfrageliste vergeben. Die Absage zählt für den
+            Absagen-Zähler und den Sperrvorschlag.
+          </p>
+          <DeclineReasonFields
+            category={cancelCategory}
+            detail={cancelDetail}
+            onCategory={setCancelCategory}
+            onDetail={setCancelDetail}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCancelFor(null)} disabled={cancelBusy}>
+              Abbrechen
+            </Button>
+            <Button onClick={confirmCancelPart} disabled={cancelBusy}>
+              {cancelBusy ? "Speichern…" : "Absage speichern"}
             </Button>
           </DialogFooter>
         </DialogContent>

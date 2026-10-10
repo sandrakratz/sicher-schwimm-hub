@@ -36,6 +36,8 @@ import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { WaitlistToday, buildTodo } from "@/components/admin/WaitlistToday";
+import { DeclineReasonFields } from "@/components/admin/DeclineReasonFields";
+import { categorizeReason, combineReason } from "@/lib/decline-reasons";
 import {
   listWaitlist,
   runWaitlistAllocation,
@@ -488,6 +490,7 @@ export function WaitlistAdmin() {
   const [declineStay, setDeclineStay] = useState(true);
   const [declineFrom, setDeclineFrom] = useState("");
   const [declineReason, setDeclineReason] = useState("");
+  const [declineCategory, setDeclineCategory] = useState("");
   const migratedOnce = useRef(false);
 
   const {
@@ -667,6 +670,17 @@ export function WaitlistAdmin() {
     ? cancellations.filter((c) => matchesSearch(c.child_name, c.parent_email))
     : cancellations;
   const todo = buildTodo(data);
+  const reasonCounts = (() => {
+    const m = new Map<string, number>();
+    const add = (r: unknown) => {
+      const c = categorizeReason(typeof r === "string" ? r : null);
+      m.set(c, (m.get(c) ?? 0) + 1);
+    };
+    for (const e of allEntries)
+      if (declineCountOf(e) > 0) add((e as Record<string, unknown>)["last_decline_reason"]);
+    for (const c of cancellations) add(c.reason);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  })();
 
   const grouped = useMemo(() => {
     const entries = q
@@ -897,6 +911,7 @@ export function WaitlistAdmin() {
             setDeclineStay(true);
             setDeclineFrom("");
             setDeclineReason("");
+            setDeclineCategory("");
             setDeclineFor(e as unknown as WaitlistEntry);
           }}
           onAllocate={() => allocate.mutate(null)}
@@ -932,6 +947,23 @@ export function WaitlistAdmin() {
           Alle Einträge mit mindestens einer Absage, egal in welchem Status (Zähler, Grund und
           Verlauf stehen in den Notizen). Der Zähler zählt je E-Mail bzw. Kind über alle Einträge.
         </p>
+      )}
+
+      {shown === "declined" && reasonCounts.length > 0 && (
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold">Gründe der Absagen</h3>
+          <div className="flex flex-wrap gap-2 text-sm">
+            {reasonCounts.map(([reason, n]) => (
+              <Badge key={reason} variant="secondary">
+                {reason} · {n}
+              </Badge>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Zählt den zuletzt genannten Grund je Eintrag und die Gründe der Stornierungen. Ältere
+            Freitexte werden automatisch einer Kategorie zugeordnet.
+          </p>
+        </div>
       )}
 
       {shown === "waiting" && (data?.courses ?? []).some((c) => c.max_participants != null) && (
@@ -1388,6 +1420,7 @@ export function WaitlistAdmin() {
                                 setDeclineStay(true);
                                 setDeclineFrom("");
                                 setDeclineReason("");
+                                setDeclineCategory("");
                                 setDeclineFor(e as unknown as WaitlistEntry);
                               }}
                             >
@@ -1607,14 +1640,12 @@ export function WaitlistAdmin() {
               />
               <span>Möchte nicht mehr auf der Warteliste stehen</span>
             </label>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Grund (optional)</label>
-              <Input
-                value={declineReason}
-                onChange={(ev) => setDeclineReason(ev.target.value)}
-                maxLength={500}
-              />
-            </div>
+            <DeclineReasonFields
+              category={declineCategory}
+              detail={declineReason}
+              onCategory={setDeclineCategory}
+              onDetail={setDeclineReason}
+            />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={() => setDeclineFor(null)}>
@@ -1628,7 +1659,7 @@ export function WaitlistAdmin() {
                   entryId: declineFor.id,
                   stay: declineStay,
                   availableFrom: declineStay && declineFrom ? declineFrom : null,
-                  reason: declineReason.trim() || null,
+                  reason: combineReason(declineCategory, declineReason),
                 })
               }
             >

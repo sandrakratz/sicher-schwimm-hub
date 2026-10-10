@@ -106,16 +106,38 @@ export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
   return trainerNav.filter((n) => (n.allow ?? []).some((r) => roles.includes(r)));
 }
 
-/** Gebündelte Verwaltungsbereiche: ein Menüpunkt, oben Reiter */
+/**
+ * Gebündelte Verwaltungsbereiche: ein Menüpunkt, oben Reiter.
+ * Gegliedert nach Arbeitsablauf: Heute → Anmeldungen → Kurse → Geld → Mitglieder → Kommunikation.
+ */
 export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label: string }[] }[] = [
   {
-    label: "Mitglieder & Anträge",
+    label: "Anmeldungen",
+    tabs: [
+      { to: "/admin/warteliste", label: "Anfrageliste" },
+      { to: "/admin/sperrliste", label: "Sperrliste" },
+      { to: "/admin/widerrufe", label: "Widerrufe" },
+    ],
+  },
+  {
+    label: "Kurse",
+    tabs: [
+      { to: "/admin/kurse", label: "Kurse & Teilnehmer" },
+      { to: "/admin/kalender", label: "Kurskalender" },
+    ],
+  },
+  {
+    label: "Geld",
+    tabs: [
+      { to: "/admin/zahlungen", label: "Offene Zahlungen" },
+      { to: "/admin/uebungsleitergelder", label: "Übungsleitergelder" },
+    ],
+  },
+  {
+    label: "Mitglieder",
     tabs: [
       { to: "/admin/benutzer", label: "Benutzer" },
       { to: "/admin/mitgliedschaften", label: "Mitgliedschaften" },
-      { to: "/admin/widerrufe", label: "Widerrufe" },
-      { to: "/admin/sperrliste", label: "Sperrliste" },
-      { to: "/admin/uebungsleitergelder", label: "Übungsleitergelder" },
     ],
   },
   {
@@ -141,34 +163,26 @@ export function findAdminSection(pathname: string) {
 }
 
 /** Nur mit passender Rolle sichtbar */
+const sectionNav = (index: number, icon: AppNavItem["icon"], allow: Role[]) => {
+  const section = adminSections[index]!;
+  return {
+    to: section.tabs[0]!.to,
+    icon,
+    label: section.label,
+    allow,
+    group: section.tabs.map((t) => t.to),
+  };
+};
+
 export const adminNav: (AppNavItem & { group?: string[] })[] = [
-  { to: "/admin", icon: Shield, label: "Übersicht", exact: true, allow: ["admin", "board"] },
+  { to: "/admin", icon: Shield, label: "Heute", exact: true, allow: ["admin", "board"] },
   { to: "/admin/suche", icon: Search, label: "Suche", allow: ["admin", "board"] },
-  { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board"] },
-  { to: "/admin/zahlungen", icon: Euro, label: "Offene Zahlungen", allow: ["admin", "board"] },
-  { to: "/admin/warteliste", icon: Hourglass, label: "Anfrageliste", allow: ["admin", "board"] },
-  { to: "/admin/kalender", icon: CalendarCheck, label: "Kurskalender", allow: ["admin", "board"] },
-  {
-    to: "/admin/benutzer",
-    icon: Users,
-    label: "Mitglieder & Anträge",
-    allow: ["admin", "board"],
-    group: adminSections[0].tabs.map((t) => t.to),
-  },
-  {
-    to: "/admin/nachrichten",
-    icon: MailOpen,
-    label: "Kommunikation & E-Mails",
-    allow: ["admin", "board"],
-    group: adminSections[1].tabs.map((t) => t.to),
-  },
-  {
-    to: "/admin/news",
-    icon: Newspaper,
-    label: "Inhalte & Verein",
-    allow: ["admin", "board"],
-    group: adminSections[2].tabs.map((t) => t.to),
-  },
+  sectionNav(0, Hourglass, ["admin", "board"]),
+  sectionNav(1, BookOpen, ["admin", "board"]),
+  sectionNav(2, Euro, ["admin", "board"]),
+  sectionNav(3, Users, ["admin", "board"]),
+  sectionNav(4, MailOpen, ["admin", "board"]),
+  sectionNav(5, Newspaper, ["admin", "board"]),
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
 ];
 
