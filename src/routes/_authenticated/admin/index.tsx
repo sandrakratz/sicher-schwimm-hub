@@ -200,8 +200,7 @@ function AdminDashboard() {
     {
       icon: ListChecks,
       label: "Neue Kursanfragen",
-      value: stats.requests,
-      to: "/admin/warteliste" as const,
+      to: "/admin/archiv" as const,
       search: { tab: "archive" as const },
     },
     {
@@ -229,27 +228,29 @@ function AdminDashboard() {
       <OpenAvailabilityNotice />
       <MyAssignmentsSection />
       <TaskList />
-      <h2 className="font-display text-xl font-bold text-primary-deep -mb-4">Auf einen Blick</h2>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((s) => (
-          <Link
-            key={s.label}
-            to={s.to}
-            search={(s as { search?: { tab: "archive" } }).search as never}
-            className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
-          >
-            <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
-              <CardContent className="p-5">
-                <s.icon className="h-7 w-7 text-accent mb-3" />
-                <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
-                  {s.label}
-                </div>
-                <div className="text-3xl font-bold text-primary-deep">{s.value}</div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <section className="space-y-3">
+        <h2 className="font-display text-xl font-bold text-primary-deep">Auf einen Blick</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {cards.map((s) => (
+            <Link
+              key={s.label}
+              to={s.to}
+              search={(s as { search?: { tab: "archive" } }).search as never}
+              className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
+            >
+              <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
+                <CardContent className="p-5">
+                  <s.icon className="h-7 w-7 text-accent mb-3" />
+                  <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                    {s.label}
+                  </div>
+                  <div className="text-3xl font-bold text-primary-deep">{s.value}</div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
       <Card className="border-0 shadow-soft">
         <CardContent className="p-6">
           <h2 className="font-display text-xl font-bold text-primary-deep">Schnellstart</h2>
