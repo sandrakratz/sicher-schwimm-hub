@@ -131,64 +131,73 @@ export const listAuditLog = createServerFn({ method: "POST" })
       [r.metadata?.["course_id"], r.metadata?.["to"]].filter(isUuid),
     );
 
-    const [parts, entries, requests, members, profilesAbout, msgs, sessions] = await Promise.all([
-      fetchIn<any>(ids("course_participants"), (c, f, t) =>
-        supabaseAdmin
-          .from("course_participants")
-          .select("id,participant_name,participant_email,course_id")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-      fetchIn<any>(ids("waitlist_entries"), (c, f, t) =>
-        supabaseAdmin
-          .from("waitlist_entries")
-          .select("id,child_name,parent_email")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-      fetchIn<any>(ids("course_requests"), (c, f, t) =>
-        supabaseAdmin
-          .from("course_requests")
-          .select("id,child_name,parent_name,parent_email")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-      fetchIn<any>(ids("memberships"), (c, f, t) =>
-        supabaseAdmin
-          .from("memberships")
-          .select("id,first_name,last_name,email")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-      fetchIn<any>(ids("profiles"), (c, f, t) =>
-        supabaseAdmin
-          .from("profiles")
-          .select("id,first_name,last_name,email")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-      fetchIn<any>(ids("messages"), (c, f, t) =>
-        supabaseAdmin
-          .from("messages")
-          .select("id,from_name,from_email")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-      fetchIn<any>(ids("course_sessions"), (c, f, t) =>
-        supabaseAdmin
-          .from("course_sessions")
-          .select("id,course_id,session_date")
-          .in("id", c)
-          .order("id")
-          .range(f, t),
-      ),
-    ]);
+    const [parts, entries, requests, members, profilesAbout, msgs, sessions, blocks] =
+      await Promise.all([
+        fetchIn<any>(ids("course_participants"), (c, f, t) =>
+          supabaseAdmin
+            .from("course_participants")
+            .select("id,participant_name,participant_email,course_id")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("waitlist_entries"), (c, f, t) =>
+          supabaseAdmin
+            .from("waitlist_entries")
+            .select("id,child_name,parent_email")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("course_requests"), (c, f, t) =>
+          supabaseAdmin
+            .from("course_requests")
+            .select("id,child_name,parent_name,parent_email")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("memberships"), (c, f, t) =>
+          supabaseAdmin
+            .from("memberships")
+            .select("id,first_name,last_name,email")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("profiles"), (c, f, t) =>
+          supabaseAdmin
+            .from("profiles")
+            .select("id,first_name,last_name,email")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("messages"), (c, f, t) =>
+          supabaseAdmin
+            .from("messages")
+            .select("id,from_name,from_email")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("course_sessions"), (c, f, t) =>
+          supabaseAdmin
+            .from("course_sessions")
+            .select("id,course_id,session_date")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+        fetchIn<any>(ids("booking_blocklist"), (c, f, t) =>
+          supabaseAdmin
+            .from("booking_blocklist")
+            .select("id,child_name_norm,email_norm")
+            .in("id", c)
+            .order("id")
+            .range(f, t),
+        ),
+      ]);
     const courseIdSet = new Set<string>([
       ...ids("courses"),
       ...metaCourseIds,
@@ -223,6 +232,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
     const profileMap = new Map(profilesAbout.map((p) => [p.id as string, p]));
     const msgMap = new Map(msgs.map((m) => [m.id as string, m]));
     const sessionMap = new Map(sessions.map((s) => [s.id as string, s]));
+    const blockMap = new Map(blocks.map((b) => [b.id as string, b]));
 
     const events: AuditEvent[] = list.map((r) => {
       const m = r.metadata ?? {};
@@ -285,7 +295,13 @@ export const listAuditLog = createServerFn({ method: "POST" })
           break;
         }
         case "booking_blocklist":
-          target = norm(m["child"]) || norm(m["email"]);
+          {
+            const b = blockMap.get(r.entity_id ?? "");
+            target =
+              norm(m["child"]) ||
+              norm(m["email"]) ||
+              (b ? b.child_name_norm || b.email_norm || "" : "");
+          }
           link = { to: "/admin/sperrliste" };
           break;
         case "trainer_payout_details":
@@ -354,11 +370,11 @@ export const listAuditLog = createServerFn({ method: "POST" })
           case "blocklist.added":
             return `hat ${t} auf die Sperrliste gesetzt${reason ? ` (Grund: ${reason})` : ""}`;
           case "blocklist.deleted":
-            return "hat einen Sperrlisteneintrag gelöscht";
+            return `hat den Sperrlisteneintrag${target ? ` für ${q(target)}` : ""} gelöscht`;
           case "blocklist.activated":
-            return "hat einen Sperrlisteneintrag aktiviert";
+            return `hat den Sperrlisteneintrag${target ? ` für ${q(target)}` : ""} wieder aktiviert (gesperrt)`;
           case "blocklist.deactivated":
-            return "hat einen Sperrlisteneintrag deaktiviert";
+            return `hat den Sperrlisteneintrag${target ? ` für ${q(target)}` : ""} deaktiviert (nicht mehr gesperrt)`;
           case "message.replied":
             return `hat die Nachricht von ${t} beantwortet`;
           case "course_request.replied":
