@@ -56,7 +56,8 @@ export function buildTodo(data: Data | undefined) {
     .filter((c) => c.free != null && c.free > 0)
     .map((c) => {
       const candidates = waiting.filter((e) => {
-        const fits = !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
+        const fits =
+          !e.program_id || relatedProgramIds(c.program_id, programs).includes(e.program_id);
         const af = (e as Record<string, unknown>)["available_from"] as string | null;
         const timely = !af || !c.starts_on || c.starts_on >= af;
         return fits && timely;
@@ -170,11 +171,7 @@ export function WaitlistToday({
                 </Badge>
               </span>
               <span className="flex gap-3 text-xs">
-                <button
-                  type="button"
-                  className="text-red-900 underline"
-                  onClick={() => onBlock(s)}
-                >
+                <button type="button" className="text-red-900 underline" onClick={() => onBlock(s)}>
                   Sperren
                 </button>
                 <button
@@ -202,7 +199,8 @@ export function WaitlistToday({
               <span>
                 {nameBtn(e)}{" "}
                 <span className="text-muted-foreground">
-                  {courseName(e.offer_course_id)} · Frist {formatDateBerlin(String(e.offer_expires_at))}
+                  {courseName(e.offer_course_id)} · Frist{" "}
+                  {formatDateBerlin(String(e.offer_expires_at))}
                 </span>
               </span>
               <Button size="sm" variant="outline" onClick={() => onDeclineOffer(e)}>

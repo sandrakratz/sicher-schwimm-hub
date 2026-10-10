@@ -109,7 +109,9 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     }
     for (const c of cancellationRows) {
       if (statsFor(c.participant_email, c.participant_name).suggest)
-        suggestedFamilies.add((c.participant_email ?? c.participant_name ?? "").trim().toLowerCase());
+        suggestedFamilies.add(
+          (c.participant_email ?? c.participant_name ?? "").trim().toLowerCase(),
+        );
     }
 
     const teamBySession = new Map<string, Set<string>>();

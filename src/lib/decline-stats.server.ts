@@ -79,12 +79,7 @@ export function buildDeclineStats(
       !!e.block_review_dismissed_at,
     );
   for (const c of cancellations)
-    add(
-      norm(c.participant_email),
-      norm(c.participant_name),
-      1,
-      !!c.block_review_dismissed_at,
-    );
+    add(norm(c.participant_email), norm(c.participant_name), 1, !!c.block_review_dismissed_at);
 
   return (email: string | null, childName: string | null, childDob: string | null = null) => {
     const em = norm(email);
