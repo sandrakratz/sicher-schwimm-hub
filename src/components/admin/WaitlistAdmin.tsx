@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 import { replyToWaitlistEntry } from "@/lib/waitlist-reply.functions";
@@ -29,6 +30,7 @@ import {
   Send,
   ShieldBan,
   Trash2,
+  Users,
   Undo2,
 } from "lucide-react";
 
@@ -36,6 +38,7 @@ import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { WaitlistToday, buildTodo } from "@/components/admin/WaitlistToday";
+import { WaitlistReport } from "@/components/admin/WaitlistReport";
 import { DeclineReasonFields } from "@/components/admin/DeclineReasonFields";
 import { categorizeReason, combineReason } from "@/lib/decline-reasons";
 import {
@@ -474,9 +477,10 @@ function NotesCell({
 export function WaitlistAdmin() {
   const qc = useQueryClient();
   const [view, setView] = useState<
-    "today" | "waiting" | "offered" | "followup" | "declined" | "done"
+    "today" | "report" | "waiting" | "offered" | "followup" | "declined" | "done"
   >("today");
   const [search, setSearch] = useState("");
+  const [programFilter, setProgramFilter] = useState<string | null>(null);
   const [openRows, setOpenRows] = useState<Set<string>>(new Set());
   const toggleRow = (id: string) =>
     setOpenRows((prev) => {
@@ -592,6 +596,8 @@ export function WaitlistAdmin() {
       blocklist?: boolean;
       blocklistReason?: string;
       dismissBlockSuggestion?: boolean;
+      assignedTo?: string | null;
+      followUpOn?: string | null;
       declineCount?: number;
     }) => updateWaitlistEntry({ data: v }),
 
@@ -687,9 +693,12 @@ export function WaitlistAdmin() {
       ? allEntries.filter((e) =>
           matchesSearch(e.child_name, e.parent_name, e.parent_email, e.parent_phone),
         )
-      : view === "today"
+      : view === "today" || view === "report"
         ? []
-        : allEntries.filter((e) => inView(e, view));
+        : allEntries.filter(
+            (e) =>
+              inView(e, view) && (!programFilter || (e.program_id ?? "none") === programFilter),
+          );
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
       const key = e.program_id ?? "none";
@@ -697,7 +706,7 @@ export function WaitlistAdmin() {
     }
     return [...map.entries()];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, view, q]);
+  }, [data, view, q, programFilter]);
 
   // Freie Plätze der Kurse, die zu einem Programm gehören (für den Gruppenkopf der Wartenden)
   const freeForProgram = (programId: string) =>
@@ -850,6 +859,16 @@ export function WaitlistAdmin() {
                 Familien, die Angebote wiederholt ablaufen lassen, über den Sperrvorschlag oder
                 manuell auf die Sperrliste setzen.
               </li>
+              <li>
+                Zuständigkeit und Wiedervorlage: in der aufgeklappten Zeile („Kurswunsch, Notiz,
+                Zahlung“) „Bearbeitet von“ und „Wiedervorlage am“ setzen. Fällige Wiedervorlagen
+                stehen im Reiter „Heute“.
+              </li>
+              <li>
+                „Familie, Verlauf“ zeigt alle Kinder, Buchungen, Absagen, E-Mails und Sperrliste
+                einer Familie auf einer Seite. Der Reiter „Nachfrage“ zeigt, wo sich ein
+                zusätzlicher Kurs lohnt.
+              </li>
             </ul>
           </div>
         </div>
@@ -877,6 +896,7 @@ export function WaitlistAdmin() {
             ["followup", "Rückfragen"],
             ["declined", "Absagen"],
             ["done", "Archiv"],
+            ["report", "Nachfrage"],
           ] as const
         ).map(([key, label]) => (
           <Button
@@ -888,10 +908,69 @@ export function WaitlistAdmin() {
               setView(key);
             }}
           >
-            {label} ({key === "today" ? todo.count : tabCounts[key]})
+            {label}
+            {key === "report" ? "" : ` (${key === "today" ? todo.count : tabCounts[key]})`}
           </Button>
         ))}
       </div>
+
+      {shown !== "today" && shown !== "search" && shown !== "report" && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            ...programs.map((p) => ({ key: p.id, name: p.name })),
+            ...(allEntries.some((e) => !e.program_id)
+              ? [{ key: "none", name: "Ohne Zuordnung" }]
+              : []),
+          ].map((p) => {
+            const mine = allEntries.filter((e) => (e.program_id ?? "none") === p.key);
+            const waiting = mine.filter((e) => inView(e, "waiting")).length;
+            const offered = mine.filter((e) => inView(e, "offered")).length;
+            const followup = mine.filter((e) => inView(e, "followup")).length;
+            const declined = mine.filter((e) => inView(e, "declined")).length;
+            const free = p.key === "none" ? 0 : freeForProgram(p.key);
+            const selected = programFilter === p.key;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => setProgramFilter(selected ? null : p.key)}
+                className={`rounded-lg border bg-card p-4 text-left transition hover:shadow-soft ${
+                  selected ? "ring-2 ring-primary" : ""
+                } ${mine.length === 0 ? "opacity-60" : ""}`}
+              >
+                <div className="font-semibold text-primary-deep">{p.name}</div>
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                  <Badge variant="outline">{waiting} wartend</Badge>
+                  {offered > 0 && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-900">
+                      {offered} Angebot(e)
+                    </Badge>
+                  )}
+                  {followup > 0 && <Badge variant="secondary">{followup} Rückfrage(n)</Badge>}
+                  {declined > 0 && (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                      {declined} mit Absage
+                    </Badge>
+                  )}
+                  {free > 0 && (
+                    <Badge className="bg-success text-success-foreground hover:bg-success">
+                      {free} Platz/Plätze frei
+                    </Badge>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {programFilter && shown !== "today" && shown !== "search" && shown !== "report" && (
+        <p className="text-sm text-muted-foreground">
+          Gefiltert auf ein Angebot.{" "}
+          <button type="button" className="underline" onClick={() => setProgramFilter(null)}>
+            Filter aufheben
+          </button>
+        </p>
+      )}
 
       {q && (
         <p className="text-sm text-muted-foreground">
@@ -900,6 +979,8 @@ export function WaitlistAdmin() {
           {cancellationsShown.length} Stornierung(en). Der Status steht jeweils in der Zeile.
         </p>
       )}
+
+      {shown === "report" && <WaitlistReport data={data} />}
 
       {shown === "today" && (
         <WaitlistToday
@@ -1009,7 +1090,19 @@ export function WaitlistAdmin() {
             <tbody>
               {cancellationsShown.map((c) => (
                 <tr key={c.id} className="border-b align-top">
-                  <td className="py-2 pr-3 font-medium">{c.child_name ?? "–"}</td>
+                  <td className="py-2 pr-3 font-medium">
+                    {c.parent_email ? (
+                      <Link
+                        to="/admin/familie"
+                        search={{ email: c.parent_email }}
+                        className="text-primary underline underline-offset-2"
+                      >
+                        {c.child_name ?? "–"}
+                      </Link>
+                    ) : (
+                      (c.child_name ?? "–")
+                    )}
+                  </td>
                   <td className="py-2 pr-3">{c.parent_email ?? "–"}</td>
                   <td className="py-2 pr-3">{c.course_name}</td>
                   <td className="py-2 pr-3 whitespace-nowrap">
@@ -1094,7 +1187,8 @@ export function WaitlistAdmin() {
 
       {grouped.length === 0 &&
         !((shown === "declined" || shown === "search") && cancellationsShown.length > 0) &&
-        shown !== "today" && (
+        shown !== "today" &&
+        shown !== "report" && (
           <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>
         )}
 
@@ -1195,6 +1289,13 @@ export function WaitlistAdmin() {
                         >
                           <FileText className="h-3 w-3" /> Details
                         </button>
+                        <Link
+                          to="/admin/familie"
+                          search={{ email: e.parent_email ?? "" }}
+                          className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                        >
+                          <Users className="h-3 w-3" /> Familie, Verlauf
+                        </Link>
                         <button
                           type="button"
                           className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
@@ -1220,6 +1321,29 @@ export function WaitlistAdmin() {
                         <Badge className={st.className} variant="secondary">
                           {st.label}
                         </Badge>
+                        {(() => {
+                          const who = (e as Record<string, unknown>)["assigned_to"] as
+                            string | null;
+                          const fu = (e as Record<string, unknown>)["follow_up_on"] as
+                            string | null;
+                          if (!who && !fu) return null;
+                          const due = !!fu && fu <= new Date().toISOString().slice(0, 10);
+                          return (
+                            <div className="mt-1 flex flex-wrap gap-1 text-xs">
+                              {who && <Badge variant="outline">→ {who}</Badge>}
+                              {fu && (
+                                <Badge
+                                  variant="secondary"
+                                  className={
+                                    due ? "bg-red-100 text-red-900" : "bg-sky-100 text-sky-900"
+                                  }
+                                >
+                                  Wiedervorlage {formatDateBerlin(fu)}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {(e as { payment_status?: string }).payment_status &&
                           (e as { payment_status?: string }).payment_status !== "none" && (
                             <div className="mt-1">
@@ -1494,7 +1618,7 @@ export function WaitlistAdmin() {
                     {isOpen && (
                       <tr className="border-b bg-muted/30">
                         <td colSpan={4} className="p-3">
-                          <div className="grid gap-4 md:grid-cols-3">
+                          <div className="grid gap-4 md:grid-cols-4">
                             <div className="space-y-1">
                               <p className="text-xs font-semibold uppercase text-muted-foreground">
                                 Kurswunsch
@@ -1558,6 +1682,50 @@ export function WaitlistAdmin() {
                                   });
                                 }}
                               />
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                                Zuständigkeit
+                              </p>
+                              <label className="block text-xs text-muted-foreground">
+                                Bearbeitet von
+                                <select
+                                  className="mt-1 h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
+                                  value={String(
+                                    (e as Record<string, unknown>)["assigned_to"] ?? "",
+                                  )}
+                                  onChange={(ev) =>
+                                    update.mutate({
+                                      entryId: e.id,
+                                      assignedTo: ev.target.value || null,
+                                    })
+                                  }
+                                >
+                                  <option value="">Niemand</option>
+                                  {(data?.staff ?? []).map((n) => (
+                                    <option key={n} value={n}>
+                                      {n}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="block text-xs text-muted-foreground">
+                                Wiedervorlage am
+                                <Input
+                                  type="date"
+                                  className="mt-1 h-8"
+                                  defaultValue={String(
+                                    (e as Record<string, unknown>)["follow_up_on"] ?? "",
+                                  )}
+                                  onBlur={(ev) => {
+                                    const v = ev.target.value || null;
+                                    if (
+                                      v !== ((e as Record<string, unknown>)["follow_up_on"] ?? null)
+                                    )
+                                      update.mutate({ entryId: e.id, followUpOn: v });
+                                  }}
+                                />
+                              </label>
                             </div>
                             <div className="space-y-2 text-sm">
                               <p className="text-xs font-semibold uppercase text-muted-foreground">

@@ -215,6 +215,15 @@ function Page() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{r.participant_name}</span>
                   <Badge variant="outline">{PART_STATUS[r.status] || r.status}</Badge>
+                  {r.participant_email && (
+                    <Link
+                      to="/admin/familie"
+                      search={{ email: r.participant_email }}
+                      className="text-xs text-primary underline"
+                    >
+                      Familie, Verlauf
+                    </Link>
+                  )}
                   {r.status !== "cancelled" &&
                     (r.paid ? (
                       <Badge className="bg-primary/10 text-primary border-transparent">
@@ -301,6 +310,15 @@ function Page() {
                   <span className="font-semibold">{w.child_name}</span>
                   <span className="text-sm text-muted-foreground">({w.parent_name})</span>
                   <Badge variant="outline">{WL_STATUS[w.status] || w.status}</Badge>
+                  {w.parent_email && (
+                    <Link
+                      to="/admin/familie"
+                      search={{ email: w.parent_email }}
+                      className="text-xs text-primary underline"
+                    >
+                      Familie, Verlauf
+                    </Link>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {w.course_programs?.name && `${w.course_programs.name} · `}
@@ -328,6 +346,15 @@ function Page() {
                   <span className="font-semibold">{r.child_name || "—"}</span>
                   <span className="text-sm text-muted-foreground">({r.parent_name})</span>
                   <Badge variant="outline">{REQ_STATUS[r.status] || r.status}</Badge>
+                  {r.parent_email && (
+                    <Link
+                      to="/admin/familie"
+                      search={{ email: r.parent_email }}
+                      className="text-xs text-primary underline"
+                    >
+                      Familie, Verlauf
+                    </Link>
+                  )}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {r.desired_course && `${r.desired_course} · `}
