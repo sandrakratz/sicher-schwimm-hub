@@ -1679,7 +1679,7 @@ function Page() {
             {waitingFor(c.program_id) > 0 && (
               <div className="mt-0.5">
                 <a
-                  href="/admin/warteliste"
+                  href={`/admin/warteliste?programm=${relatedProgramIds(c.program_id, programs).join(",")}`}
                   className="text-primary underline underline-offset-2"
                   title="Familien auf der Anfrageliste, die auf einen Platz in diesem Angebot warten"
                 >

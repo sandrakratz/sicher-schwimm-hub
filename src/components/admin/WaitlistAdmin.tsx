@@ -480,13 +480,15 @@ function NotesCell({
   );
 }
 
-export function WaitlistAdmin() {
+export function WaitlistAdmin({ initialProgramIds }: { initialProgramIds?: string[] } = {}) {
   const qc = useQueryClient();
   const [view, setView] = useState<
     "today" | "report" | "waiting" | "offered" | "followup" | "declined" | "done"
-  >("today");
+  >(initialProgramIds?.length ? "waiting" : "today");
   const [search, setSearch] = useState("");
-  const [programFilter, setProgramFilter] = useState<string | null>(null);
+  const [programFilter, setProgramFilter] = useState<string[] | null>(
+    initialProgramIds?.length ? initialProgramIds : null,
+  );
   const [openRows, setOpenRows] = useState<Set<string>>(new Set());
   const toggleRow = (id: string) =>
     setOpenRows((prev) => {
@@ -703,7 +705,7 @@ export function WaitlistAdmin() {
         ? []
         : allEntries.filter(
             (e) =>
-              inView(e, view) && (!programFilter || (e.program_id ?? "none") === programFilter),
+              inView(e, view) && (!programFilter || programFilter.includes(e.program_id ?? "none")),
           );
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
@@ -940,12 +942,12 @@ export function WaitlistAdmin() {
             const followup = mine.filter((e) => inView(e, "followup")).length;
             const declined = mine.filter((e) => inView(e, "declined")).length;
             const free = p.key === "none" ? 0 : freeForProgram(p.key);
-            const selected = programFilter === p.key;
+            const selected = programFilter?.length === 1 && programFilter[0] === p.key;
             return (
               <button
                 key={p.key}
                 type="button"
-                onClick={() => setProgramFilter(selected ? null : p.key)}
+                onClick={() => setProgramFilter(selected ? null : [p.key])}
                 className={`rounded-lg border bg-card p-4 text-left transition hover:shadow-soft ${
                   selected ? "ring-2 ring-primary" : ""
                 } ${mine.length === 0 ? "opacity-60" : ""}`}
@@ -977,7 +979,8 @@ export function WaitlistAdmin() {
       )}
       {programFilter && shown !== "today" && shown !== "search" && shown !== "report" && (
         <p className="text-sm text-muted-foreground">
-          Gefiltert auf ein Angebot.{" "}
+          Gefiltert auf{" "}
+          {programFilter?.length === 1 ? "ein Angebot" : "mehrere Angebote (Mischkurs)"}.{" "}
           <button type="button" className="underline" onClick={() => setProgramFilter(null)}>
             Filter aufheben
           </button>
