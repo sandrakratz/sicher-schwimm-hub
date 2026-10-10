@@ -478,8 +478,13 @@ export const listWaitlist = createServerFn({ method: "GET" })
           moved_to: c.transferred_to_course_id
             ? (cancelCourseNames.get(c.transferred_to_course_id) ?? "anderer Kurs")
             : null,
-          cancelled_at: c.transferred_at,
-          reason: c.transfer_reason,
+          cancelled_at: c.transferred_at ?? c.cancelled_at,
+          kind: c.transferred_to_course_id
+            ? ("transfer" as const)
+            : c.transferred_at
+              ? ("waitlist" as const)
+              : ("cancelled" as const),
+          reason: c.transfer_reason ?? c.cancel_reason,
           declines_total: st.total,
           blocked: st.blocked,
           block_suggestion: st.suggest,
@@ -1051,7 +1056,7 @@ export const resolveBlockSuggestion = createServerFn({ method: "POST" })
         .from("course_participants")
         .select("id,participant_email,participant_name")
         .eq("status", "cancelled")
-        .not("transferred_at", "is", null),
+        .or("transferred_at.not.is.null,cancelled_at.not.is.null"),
       supabaseAdmin.from("waitlist_entries").select("id,parent_email,child_name"),
     ]);
     const partIds = (parts ?? [])

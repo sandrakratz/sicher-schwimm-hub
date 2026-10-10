@@ -62,7 +62,10 @@ import {
 } from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/role-guard";
-import { removeCourseParticipant } from "@/lib/participants-admin.functions";
+import {
+  removeCourseParticipant,
+  cancelCourseParticipant,
+} from "@/lib/participants-admin.functions";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { syncMemberPrices } from "@/lib/membership.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
@@ -339,6 +342,7 @@ function Page() {
   const [removing, setRemoving] = useState(false);
   const removeParticipantFn = useServerFn(removeCourseParticipant);
   const moveToWaitlistFn = useServerFn(moveParticipantToWaitlist);
+  const cancelParticipantFn = useServerFn(cancelCourseParticipant);
   const syncMemberPricesFn = useServerFn(syncMemberPrices);
 
   const [reqOpen, setReqOpen] = useState(false);
@@ -1231,6 +1235,24 @@ function Page() {
         toast.success("Zurück auf die Warteliste gesetzt");
       } catch (e: any) {
         return toast.error(e?.message || "Verschieben auf die Warteliste fehlgeschlagen");
+      }
+      if (partCourse) await openParticipants(partCourse);
+      await load();
+      return;
+    }
+    if (status === "cancelled") {
+      // Absage durch die Familie: Zeitpunkt und Grund festhalten, damit sie in der Anfrageliste
+      // (Reiter „Absagen“) und im Sperrvorschlag mitzählt; der Platz geht an die Warteliste.
+      const reason = window.prompt(
+        `Absage von ${p.participant_name ?? "diesem Kind"} erfassen.\nGrund (optional, z. B. Krankheit, Terminänderung):`,
+        "",
+      );
+      if (reason === null) return;
+      try {
+        await cancelParticipantFn({ data: { participantId: p.id, reason } });
+        toast.success("Absage erfasst – der Platz ist frei und zählt in der Anfrageliste mit");
+      } catch (e: any) {
+        return toast.error(e?.message || "Absage konnte nicht erfasst werden");
       }
       if (partCourse) await openParticipants(partCourse);
       await load();

@@ -216,6 +216,8 @@ export type Database = {
           exam_level: string | null
           exam_pass_no: string | null
           block_review_dismissed_at: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
           belt_blocks: number | null
           exam_recorded_at: string | null
           exam_recorded_by: string | null
@@ -265,6 +267,8 @@ export type Database = {
           exam_level?: string | null
           exam_pass_no?: string | null
           block_review_dismissed_at?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           belt_blocks?: number | null
           exam_recorded_at?: string | null
           exam_recorded_by?: string | null
@@ -314,6 +318,8 @@ export type Database = {
           exam_level?: string | null
           exam_pass_no?: string | null
           block_review_dismissed_at?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
           belt_blocks?: number | null
           exam_recorded_at?: string | null
           exam_recorded_by?: string | null

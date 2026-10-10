@@ -121,3 +121,62 @@ export const removeCourseParticipant = createServerFn({ method: "POST" })
 
     return { ok: true as const, blocklisted: data.blocklist, emailed };
   });
+
+const cancelSchema = z.object({
+  participantId: z.string().uuid(),
+  reason: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+/**
+ * Absage einer Buchung durch die Familie (Teilnehmerliste, Status „Abgesagt“): hält Zeitpunkt und Grund
+ * fest, damit die Absage in der Anfrageliste (Reiter „Absagen“) und im Sperrvorschlag mitzählt, und gibt
+ * den Platz an die Warteliste frei.
+ */
+export const cancelCourseParticipant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => cancelSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+    if (!isStaff) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: part } = await supabaseAdmin
+      .from("course_participants")
+      .select("id,course_id,status,internal_notes")
+      .eq("id", data.participantId)
+      .maybeSingle();
+    if (!part) throw new Error("Teilnehmer nicht gefunden");
+    if (part.status === "cancelled") throw new Error("Diese Buchung ist bereits abgesagt.");
+
+    const reason = (data.reason || "").trim() || null;
+    const { formatDateTimeBerlin } = await import("@/lib/format");
+    const now = new Date().toISOString();
+    const line = `[${formatDateTimeBerlin(now)}] Absage erfasst${reason ? ` – Grund: ${reason}` : ""}.`;
+    const { error } = await supabaseAdmin
+      .from("course_participants")
+      .update({
+        status: "cancelled",
+        cancelled_at: now,
+        cancel_reason: reason,
+        internal_notes: [part.internal_notes, line].filter(Boolean).join("\n"),
+      } as never)
+      .eq("id", part.id);
+    if (error) throw new Error(error.message);
+
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(context.supabase, context.userId, {
+      action: "course.participant.cancelled",
+      entity: "course_participants",
+      entity_id: part.id,
+      metadata: { course_id: part.course_id, reason },
+    });
+
+    // Frei gewordenen Platz gleich an die Warteliste vergeben
+    try {
+      const { allocateWaitlist } = await import("@/lib/waitlist.server");
+      await allocateWaitlist(part.course_id as string);
+    } catch (err) {
+      console.error("waitlist allocation after cancellation failed", err);
+    }
+    return { ok: true };
+  });

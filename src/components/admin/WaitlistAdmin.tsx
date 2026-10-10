@@ -959,8 +959,8 @@ export function WaitlistAdmin() {
           contentClassName="overflow-x-auto"
         >
           <p className="mb-2 text-xs text-muted-foreground">
-            Umbuchungen und „zurück auf die Warteliste“ durch die Familie. Jede zählt wie eine
-            Absage. Kursabsagen des Vereins zählen nicht.
+            Absagen in der Teilnehmerliste, Umbuchungen und „zurück auf die Warteliste“ durch die
+            Familie. Jede zählt wie eine Absage. Kursabsagen des Vereins zählen nicht.
           </p>
           <table className="w-full min-w-[800px] text-sm">
             <thead>
@@ -985,7 +985,11 @@ export function WaitlistAdmin() {
                   </td>
                   <td className="py-2 pr-3">
                     <Badge variant="secondary">
-                      {c.moved_to ? `Umbuchung → ${c.moved_to}` : "Zurück auf Warteliste"}
+                      {c.kind === "transfer"
+                        ? `Umbuchung → ${c.moved_to}`
+                        : c.kind === "waitlist"
+                          ? "Zurück auf Warteliste"
+                          : "Absage im Kurs"}
                     </Badge>
                     {c.reason && (
                       <div className="mt-1 text-xs text-muted-foreground">{c.reason}</div>
