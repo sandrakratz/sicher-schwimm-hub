@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { checkFit } from "@/lib/swim-fit";
@@ -71,7 +71,12 @@ export function buildTodo(data: Data | undefined, assignee = "") {
         const fitsLevel = checkFit(e.notes, programs.find((p) => p.id === c.program_id) ?? null).ok;
         return fits && timely && fitsLevel;
       });
-      return { course: c, waiting: candidates.length };
+      const families = [...candidates].sort(
+        (a, b) =>
+          Number(b.is_member === true) - Number(a.is_member === true) ||
+          a.created_at.localeCompare(b.created_at),
+      );
+      return { course: c, waiting: candidates.length, families };
     })
     .filter((x) => x.waiting > 0);
 
@@ -152,6 +157,7 @@ export function WaitlistToday({
   allocating,
   onBlock,
   onDismiss,
+  onOffer,
 }: {
   data: Data | undefined;
   courseName: (id: unknown) => string;
@@ -162,8 +168,10 @@ export function WaitlistToday({
   allocating: boolean;
   onBlock: (s: Suggestion) => void;
   onDismiss: (s: Suggestion) => void;
+  onOffer: (e: TodayEntry, courseId: string) => void;
 }) {
   const [assignee, setAssignee] = useState("");
+  const [openCourse, setOpenCourse] = useState<string | null>(null);
   const t = buildTodo(data, assignee);
   const nameBtn = (e: TodayEntry) => (
     <span className="inline-flex items-center gap-2">
@@ -347,14 +355,59 @@ export function WaitlistToday({
           count={t.freeCourses.length}
           onAll={() => onGoto("waiting")}
         >
-          {t.freeCourses.map(({ course, waiting }) => (
-            <li key={course.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span className="font-medium">{course.name}</span>
-              <span className="text-muted-foreground">
-                {course.free} frei · {waiting} passende Familie(n) wartend
-              </span>
-            </li>
-          ))}
+          {t.freeCourses.map(({ course, waiting, families }) => {
+            const open = openCourse === course.id;
+            return (
+              <li key={course.id} className="py-2">
+                <button
+                  type="button"
+                  className="flex w-full flex-wrap items-center justify-between gap-2 text-left hover:text-primary"
+                  onClick={() => setOpenCourse(open ? null : course.id)}
+                  aria-expanded={open}
+                >
+                  <span className="flex items-center gap-1 font-medium">
+                    {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {course.name}
+                    {course.starts_on && (
+                      <span className="font-normal text-muted-foreground">
+                        {" "}
+                        · Start {formatDateBerlin(course.starts_on)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-muted-foreground underline underline-offset-2">
+                    {course.free} frei · {waiting} passende Familie(n) wartend
+                  </span>
+                </button>
+                {open && (
+                  <ul className="mt-2 divide-y rounded-md border bg-muted/30">
+                    {families.map((e) => (
+                      <li
+                        key={e.id}
+                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                      >
+                        <span>
+                          {nameBtn(e)}{" "}
+                          <span className="text-muted-foreground">
+                            {e.parent_name}
+                            {e.is_member ? " · Mitglied" : ""} · wartet seit{" "}
+                            {formatDateBerlin(e.created_at)}
+                          </span>
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={() => onOffer(e, course.id)}
+                          title={`Platz in „${course.name}“ anbieten (Mail mit Zusage-Link)`}
+                        >
+                          Platz anbieten
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
           <li className="pt-3">
             <Button size="sm" onClick={onAllocate} disabled={allocating}>
               {allocating ? (
