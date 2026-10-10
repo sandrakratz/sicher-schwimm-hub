@@ -343,6 +343,23 @@ export const respondWaitlistOffer = createServerFn({ method: "POST" })
 
 /* ---------------------------- Verwaltung ---------------------------- */
 
+/** Protokolliert eine Aktion der Verwaltung im Audit-Log (Fehler dabei brechen die Aktion nie ab). */
+async function audit(
+  context: any,
+  action: string,
+  entityId: string | null,
+  metadata: Record<string, unknown>,
+  entity = "waitlist_entries",
+) {
+  const { logAudit } = await import("@/lib/audit.server");
+  await logAudit(context.supabase, context.userId, {
+    action,
+    entity,
+    entity_id: entityId,
+    metadata,
+  });
+}
+
 async function assertStaff(context: any) {
   const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
   if (!isStaff) throw new Error("Forbidden");
@@ -593,6 +610,10 @@ export const runWaitlistAllocation = createServerFn({ method: "POST" })
     await assertStaff(context);
     const { allocateWaitlist } = await import("@/lib/waitlist.server");
     const result = await allocateWaitlist(data.courseId ?? null);
+    await audit(context, "waitlist.allocated", null, {
+      offers: result.offers.length,
+      expired: result.expired,
+    });
     return { offers: result.offers.length, expired: result.expired };
   });
 
@@ -624,6 +645,11 @@ export const offerWaitlistPlace = createServerFn({ method: "POST" })
     const free = await freeSlots(course.id, course.max_participants);
     if (free != null && free <= 0) throw new Error("In diesem Kurs ist kein Platz mehr frei");
     await offerPlaceManually(entry, course, (course as any).course_programs ?? null);
+    await audit(context, "waitlist.offered", entry.id, {
+      child: entry.child_name,
+      email: entry.parent_email,
+      course: course.name,
+    });
     return { ok: true };
   });
 
@@ -806,6 +832,15 @@ export const updateWaitlistEntry = createServerFn({ method: "POST" })
       .eq("id", data.entryId);
     if (error) throw new Error(error.message);
 
+    await audit(context, "waitlist.updated", data.entryId, {
+      child: entry.child_name,
+      email: entry.parent_email,
+      fields: Object.keys(patch),
+      ...(data.assignedTo !== undefined ? { assigned_to: data.assignedTo || null } : {}),
+      ...(data.followUpOn !== undefined ? { follow_up_on: data.followUpOn } : {}),
+      ...(data.status ? { status: data.status } : {}),
+    });
+
     if (data.blocklist) {
       const email = (entry.parent_email ?? "").trim().toLowerCase() || null;
       const child = (entry.child_name ?? "").trim().replace(/\s+/g, " ").toLowerCase() || null;
@@ -822,6 +857,17 @@ export const updateWaitlistEntry = createServerFn({ method: "POST" })
         throw new Error(
           `Der Eintrag wurde geändert, aber der Sperrlisteneintrag konnte nicht angelegt werden: ${blErr.message}`,
         );
+      await audit(
+        context,
+        "blocklist.added",
+        null,
+        {
+          child: entry.child_name,
+          email: entry.parent_email,
+          reason: data.blocklistReason || "Von der Warteliste abgemeldet",
+        },
+        "booking_blocklist",
+      );
     }
 
     return { ok: true };
@@ -937,7 +983,7 @@ export const deleteWaitlistEntry = createServerFn({ method: "POST" })
     // erneut aus den alten Kursanfragen importiert wird.
     const { data: entry } = await supabaseAdmin
       .from("waitlist_entries")
-      .select("request_id")
+      .select("request_id,child_name,parent_email")
       .eq("id", data.entryId)
       .maybeSingle();
     if (entry?.request_id) {
@@ -949,6 +995,10 @@ export const deleteWaitlistEntry = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin.from("waitlist_entries").delete().eq("id", data.entryId);
     if (error) throw new Error(error.message);
+    await audit(context, "waitlist.deleted", data.entryId, {
+      child: entry?.child_name ?? null,
+      email: entry?.parent_email ?? null,
+    });
     return { ok: true };
   });
 
@@ -988,6 +1038,11 @@ export const bookWaitlistPlaceDirect = createServerFn({ method: "POST" })
       { street: data.street ?? null, zip: data.zip ?? null, city: data.city ?? null },
       "admin",
     );
+    await audit(context, "waitlist.booked_directly", data.entryId, {
+      child: entry.child_name,
+      email: entry.parent_email,
+      course: booking.courseName,
+    });
     return { ok: true as const, ...booking };
   });
 
@@ -1076,6 +1131,17 @@ export const resolveBlockSuggestion = createServerFn({ method: "POST" })
         created_by: context.userId,
       });
       if (error) throw new Error(error.message);
+      await audit(
+        context,
+        "blocklist.added",
+        null,
+        {
+          email: data.email,
+          child: data.childName,
+          reason: data.reason || "Wiederholte Absagen/Stornierungen",
+        },
+        "booking_blocklist",
+      );
       return { ok: true };
     }
 
@@ -1111,5 +1177,9 @@ export const resolveBlockSuggestion = createServerFn({ method: "POST" })
         .in("id", entryIds);
       if (error) throw new Error(error.message);
     }
+    await audit(context, "waitlist.block_dismissed", null, {
+      email: data.email,
+      child: data.childName,
+    });
     return { ok: true };
   });

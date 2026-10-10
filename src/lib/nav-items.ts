@@ -182,7 +182,7 @@ export const adminNav: (AppNavItem & { group?: string[] })[] = [
   sectionNav(3, Users, ["admin", "board"]),
   sectionNav(4, MailOpen, ["admin", "board"]),
   sectionNav(5, Newspaper, ["admin", "board"]),
-  { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin"] },
+  { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin", "board"] },
 ];
 
 export function visibleAdminNav(roles: Role[]) {
