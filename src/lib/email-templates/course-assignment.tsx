@@ -6,6 +6,7 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Section,
@@ -14,6 +15,9 @@ import {
 import type { TemplateEntry } from "./registry";
 import { formatDateBerlin } from "@/lib/format";
 import { paymentTerms } from "@/lib/payment-status";
+import { ORG } from "@/lib/billing-config";
+import { buildPayQrUrl } from "@/lib/epc-qr";
+import { CancellationInfo, SessionList, type MailSession } from "./course-blocks";
 
 interface Props {
   parent_name?: string;
@@ -42,6 +46,8 @@ interface Props {
   payment_reference?: string;
   // Links
   site_base_url?: string;
+  sessions?: MailSession[] | null;
+  ics_url?: string | null;
 }
 
 function fmtDate(d?: string) {
@@ -62,9 +68,11 @@ function fmtPrice(p?: number | null) {
 const Email = (p: Props) => {
   const base = p.site_base_url || "https://sicher-schwimmen.com";
   const showPayment = p.status_label !== "Warteliste";
-  const memberLabel =
-    p.is_member === true ? "Mitglied" : p.is_member === false ? "Nicht-Mitglied" : null;
+  const memberLabel = p.is_member === true ? "Mitglied" : null;
   const hasBank = Boolean(p.bank_iban && p.bank_recipient);
+  const payQrUrl = hasBank
+    ? buildPayQrUrl({ amount: p.price_amount ?? null, reference: p.payment_reference ?? null })
+    : null;
   const terms = paymentTerms({
     bookedAt: p.issued_at ?? null,
     startsOn: p.course_starts_on ?? null,
@@ -79,7 +87,7 @@ const Email = (p: Props) => {
       >
         <Container style={{ padding: "24px", maxWidth: "600px" }}>
           <Heading style={{ color: "#0c4a6e" }}>Ihre Kurszuteilung</Heading>
-          <Text>Hallo {p.parent_name || ""},</Text>
+          <Text>Liebe Eltern,</Text>
           <Text>
             wir freuen uns, Ihnen mitteilen zu können, dass{" "}
             {p.child_name ? <strong>{p.child_name}</strong> : "Ihre Anmeldung"}{" "}
@@ -228,6 +236,38 @@ const Email = (p: Props) => {
             </>
           )}
 
+          {showPayment && payQrUrl && (
+            <Section
+              style={{
+                backgroundColor: "#fff7ed",
+                padding: "14px 16px",
+                borderRadius: "8px",
+                border: "1px solid #fed7aa",
+                marginTop: "14px",
+                textAlign: "center" as const,
+              }}
+            >
+              <Text style={{ margin: "0 0 8px", fontWeight: "bold", color: "#9a3412" }}>
+                {terms.immediate
+                  ? "QR-Code für die Echtzeit-/Sofortüberweisung"
+                  : "QR-Code für die Überweisung"}
+              </Text>
+              <Img
+                src={payQrUrl}
+                alt="QR-Code für die Überweisung"
+                width="180"
+                height="180"
+                style={{ margin: "0 auto", display: "block" }}
+              />
+              <Text style={{ margin: "8px 0 0", fontSize: "12px", color: "#7c2d12" }}>
+                Einfach mit Ihrer Banking-App scannen – Empfänger, IBAN, Betrag und Verwendungszweck
+                werden automatisch übernommen.
+              </Text>
+            </Section>
+          )}
+
+          {showPayment && <SessionList sessions={p.sessions} icsUrl={p.ics_url} />}
+
           {p.admin_notes && (
             <>
               <Hr />
@@ -237,6 +277,8 @@ const Email = (p: Props) => {
               <Text>{p.admin_notes}</Text>
             </>
           )}
+
+          {showPayment && <CancellationInfo startsOn={p.course_starts_on} base={base} />}
 
           <Hr />
           <Heading as="h3" style={{ color: "#0c4a6e", fontSize: "15px", margin: "12px 0 6px 0" }}>
@@ -266,11 +308,9 @@ const Email = (p: Props) => {
             Sollten Sie Fragen haben oder den Platz nicht wahrnehmen können, antworten Sie bitte
             einfach auf diese E-Mail.
           </Text>
-          <Text>
-            Mit besten Grüßen,
-            <br />
-            Ihr Team von Sicher-Schwimmen
-          </Text>
+          <Text>Herzliche Grüße</Text>
+          <Text style={{ margin: "3px 0" }}>{ORG.signatory}</Text>
+          <Text style={{ margin: "3px 0", fontSize: "12px", color: "#475569" }}>{ORG.name}</Text>
         </Container>
       </Body>
     </Html>

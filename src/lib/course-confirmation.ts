@@ -138,7 +138,7 @@ export function buildConfirmationDoc(input: ConfirmationInput): ConfirmationDoc 
       ? `Buchung innerhalb der letzten ${DAYS_BEFORE_START} Tage vor Kursbeginn – sofort fällig`
       : `${dueDays} Tage nach Bestätigung, spätestens ${DAYS_BEFORE_START} Tage vor Kursbeginn`,
     paymentReference: reference,
-    epcPayload: immediate ? buildEpcPayload({ amount: input.priceAmount, reference }) : null,
-    payQrUrl: immediate ? buildPayQrUrl({ amount: input.priceAmount, reference }) : null,
+    epcPayload: buildEpcPayload({ amount: input.priceAmount, reference }),
+    payQrUrl: buildPayQrUrl({ amount: input.priceAmount, reference }),
   };
 }

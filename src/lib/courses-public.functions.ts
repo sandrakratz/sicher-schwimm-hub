@@ -538,6 +538,11 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
 
     const { queueTemplateEmail } = await import("@/lib/email-send.server");
 
+    const { loadCourseSessionsForMail, courseIcsUrl } = await import(
+      "@/lib/course-session-mail.server"
+    );
+    const mailSessions = isFull ? [] : await loadCourseSessionsForMail(course.id, course.schedule);
+
     await queueTemplateEmail({
       templateName: isFull ? "course-waitlist-confirmation" : "course-booking-confirmation",
       recipientEmail: data.parentEmail,
@@ -556,6 +561,8 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
         course_ends_on: course.ends_on,
         course_description: program?.description ?? course.description,
         course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
+        sessions: mailSessions,
+        ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
         unit_count: course.unit_count ?? null,
         waitlist: isFull,
         is_member: isMember,

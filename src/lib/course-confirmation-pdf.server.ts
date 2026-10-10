@@ -202,7 +202,12 @@ async function addConfirmationPage(pdf: PDFDocument, input: ConfirmationInput) {
 
   if (d.epcPayload) {
     w.space(14);
-    w.text("QR-Code für die Echtzeit-/Sofortüberweisung", { size: 12, bold: true });
+    w.text(
+      d.immediatePayment
+        ? "QR-Code für die Echtzeit-/Sofortüberweisung"
+        : "QR-Code für die Überweisung",
+      { size: 12, bold: true },
+    );
     w.text(
       "Scannen Sie den Code mit Ihrer Banking-App - Empfänger, IBAN, Betrag und Verwendungszweck werden automatisch übernommen.",
       { size: 9.5 },
