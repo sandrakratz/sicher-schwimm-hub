@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AssignControl, useAssignmentContext } from "@/components/admin/AssignControl";
 import { Link } from "@tanstack/react-router";
@@ -162,6 +162,7 @@ export function WaitlistToday({
   onBlock,
   onDismiss,
   onOffer,
+  initialMine,
 }: {
   data: Data | undefined;
   courseName: (id: unknown) => string;
@@ -173,10 +174,15 @@ export function WaitlistToday({
   onBlock: (s: Suggestion) => void;
   onDismiss: (s: Suggestion) => void;
   onOffer: (e: TodayEntry, courseId: string) => void;
+  /** Mit ?zustaendig=ich geöffnet: Filter „Zuständig“ auf die angemeldete Person */
+  initialMine?: boolean;
 }) {
   const [assignee, setAssignee] = useState("");
   const [openCourse, setOpenCourse] = useState<string | null>(null);
   const ctx = useAssignmentContext();
+  useEffect(() => {
+    if (initialMine && ctx.data?.me) setAssignee(ctx.data.me);
+  }, [initialMine, ctx.data?.me]);
   const qc = useQueryClient();
   const t = buildTodo(data, assignee, ctx.data?.rules);
   const nameBtn = (e: TodayEntry) => (

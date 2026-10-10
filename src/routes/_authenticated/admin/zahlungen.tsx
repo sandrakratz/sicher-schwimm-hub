@@ -17,6 +17,9 @@ import {
 
 export const Route = createFileRoute("/_authenticated/admin/zahlungen")({
   ssr: false,
+  // ?zustaendig=ich öffnet die Liste gefiltert auf die angemeldete Person (Link aus „Mir zugewiesen“)
+  validateSearch: (search: Record<string, unknown>): { zustaendig?: "ich" } =>
+    search["zustaendig"] === "ich" ? { zustaendig: "ich" } : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -91,6 +94,10 @@ function Page() {
   const [sortBy, setSortBy] = useState<SortKey>("due");
   const ctx = useAssignmentContext();
   const [who, setWho] = useState("");
+  const { zustaendig } = Route.useSearch();
+  useEffect(() => {
+    if (zustaendig === "ich" && ctx.data?.me) setWho(ctx.data.me);
+  }, [zustaendig, ctx.data?.me]);
 
   async function load() {
     setLoading(true);

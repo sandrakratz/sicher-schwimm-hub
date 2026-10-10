@@ -8,7 +8,8 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
   // ?programm=<id>[,<id>] öffnet „Wartend“ gefiltert auf diese Angebote (Link aus der Kursverwaltung)
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: "archive"; programm?: string; suche?: string } => ({
+  ): { tab?: "archive"; programm?: string; suche?: string; zustaendig?: "ich" } => ({
+    ...(search["zustaendig"] === "ich" ? { zustaendig: "ich" as const } : {}),
     ...(typeof search["suche"] === "string" && search["suche"].trim()
       ? { suche: search["suche"].trim().slice(0, 100) }
       : {}),
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
 });
 
 function WaitlistPage() {
-  const { tab, programm, suche } = Route.useSearch();
+  const { tab, programm, suche, zustaendig } = Route.useSearch();
   return (
     <Tabs defaultValue={tab ?? "waiting"} className="space-y-6">
       <TabsList>
@@ -43,6 +44,7 @@ function WaitlistPage() {
         <WaitlistAdmin
           initialProgramIds={programm ? programm.split(",") : undefined}
           initialSearch={suche}
+          initialMine={zustaendig === "ich"}
         />
       </TabsContent>
 
