@@ -86,6 +86,56 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         .eq("status", "new"),
     ]);
 
+    // „Anfrageliste: zu prüfen“ = offene Rückfragen („Warteliste behalten?“) + Familien, bei denen
+    // der Sperrvorschlag (ab 3 Absagen gesamt) offen ist. Gleiche Regel wie in listWaitlist.
+    const { data: declinedRows } = await supabaseAdmin
+      .from("waitlist_entries")
+      .select("parent_email,child_name,child_dob,status,decline_count,block_review_dismissed_at");
+    const { data: activeBlocks } = await supabaseAdmin
+      .from("booking_blocklist")
+      .select("email_norm,child_name_norm,child_dob")
+      .eq("active", true);
+    const norm = (v: string | null | undefined) =>
+      (v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+    const rows = declinedRows ?? [];
+    const followups = rows.filter((r) => ["declined", "expired"].includes(r.status)).length;
+    const byEmail = new Map<string, number>();
+    const byChild = new Map<string, number>();
+    const dismissedEmail = new Set<string>();
+    const dismissedChild = new Set<string>();
+    const ck = (r: { child_name: string | null; child_dob: string | null }) =>
+      `${norm(r.child_name)}|${r.child_dob ?? ""}`;
+    for (const r of rows) {
+      const n = Number(r.decline_count ?? 0);
+      const em = norm(r.parent_email);
+      if (em) byEmail.set(em, (byEmail.get(em) ?? 0) + n);
+      byChild.set(ck(r), (byChild.get(ck(r)) ?? 0) + n);
+      if (r.block_review_dismissed_at) {
+        if (em) dismissedEmail.add(em);
+        dismissedChild.add(ck(r));
+      }
+    }
+    const suggestedFamilies = new Set<string>();
+    for (const r of rows) {
+      if (Number(r.decline_count ?? 0) < 1) continue;
+      const em = norm(r.parent_email);
+      const total = Math.max(em ? (byEmail.get(em) ?? 0) : 0, byChild.get(ck(r)) ?? 0);
+      const blocked = (activeBlocks ?? []).some(
+        (b) =>
+          (b.email_norm && b.email_norm === em) ||
+          (b.child_name_norm &&
+            b.child_name_norm === norm(r.child_name) &&
+            (!b.child_dob || b.child_dob === r.child_dob)),
+      );
+      if (
+        total >= 3 &&
+        !blocked &&
+        !(em && dismissedEmail.has(em)) &&
+        !dismissedChild.has(ck(r))
+      )
+        suggestedFamilies.add(em || ck(r));
+    }
+
     const teamBySession = new Map<string, Set<string>>();
     assignments.forEach((a) => {
       const set = teamBySession.get(a.session_id as string) ?? new Set<string>();
@@ -117,6 +167,14 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         to: "/admin/warteliste",
         tone: "urgent",
         hint: "in den nächsten 48 Stunden",
+      },
+      {
+        key: "waitlist-review",
+        label: "Anfrageliste: zu prüfen",
+        count: followups + suggestedFamilies.size,
+        to: "/admin/warteliste",
+        tone: "attention",
+        hint: `${followups} offene Rückfrage(n), ${suggestedFamilies.size} Sperrvorschlag/-vorschläge`,
       },
       {
         key: "memberships",

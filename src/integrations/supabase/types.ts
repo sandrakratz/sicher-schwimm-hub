@@ -1552,6 +1552,7 @@ export type Database = {
           child_name: string | null
           course_id: string | null
           created_at: string
+          block_review_dismissed_at: string | null
           decline_count: number
           followup_expires_at: string | null
           followup_token: string | null
@@ -1583,6 +1584,7 @@ export type Database = {
           child_name?: string | null
           course_id?: string | null
           created_at?: string
+          block_review_dismissed_at?: string | null
           decline_count?: number
           followup_expires_at?: string | null
           followup_token?: string | null
@@ -1614,6 +1616,7 @@ export type Database = {
           child_name?: string | null
           course_id?: string | null
           created_at?: string
+          block_review_dismissed_at?: string | null
           decline_count?: number
           followup_expires_at?: string | null
           followup_token?: string | null

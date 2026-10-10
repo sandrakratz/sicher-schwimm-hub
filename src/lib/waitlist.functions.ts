@@ -448,11 +448,33 @@ export const listWaitlist = createServerFn({ method: "GET" })
       dupCount.set(key, (dupCount.get(key) ?? 0) + 1);
     }
 
+    // Absagen je E-Mail bzw. je Kind (Name + Geburtsdatum) über ALLE Einträge summieren,
+    // damit ein neuer Eintrag den Zähler nicht zurücksetzt.
+    const declinesByEmail = new Map<string, number>();
+    const declinesByChild = new Map<string, number>();
+    const dismissedEmail = new Set<string>();
+    const dismissedChild = new Set<string>();
+    const childKey = (e: WaitlistRow) => `${norm(e.child_name)}|${e.child_dob ?? ""}`;
+    for (const e of entries) {
+      const n = Number((e as Record<string, unknown>)["decline_count"] ?? 0);
+      const em = norm(e.parent_email);
+      if (em) declinesByEmail.set(em, (declinesByEmail.get(em) ?? 0) + n);
+      declinesByChild.set(childKey(e), (declinesByChild.get(childKey(e)) ?? 0) + n);
+      if ((e as Record<string, unknown>)["block_review_dismissed_at"]) {
+        if (em) dismissedEmail.add(em);
+        dismissedChild.add(childKey(e));
+      }
+    }
+
     return {
       entries: entries.map((e) => {
         const req = e.request_id ? (requests.get(e.request_id) ?? null) : null;
         const emailNorm = norm(e.parent_email);
         const childNorm = norm(e.child_name);
+        const declinesTotal = Math.max(
+          emailNorm ? (declinesByEmail.get(emailNorm) ?? 0) : 0,
+          declinesByChild.get(childKey(e)) ?? 0,
+        );
         const block = (blocklist ?? []).find(
           (b) =>
             (b.email_norm && b.email_norm === emailNorm) ||
@@ -477,6 +499,12 @@ export const listWaitlist = createServerFn({ method: "GET" })
           desired_course: (req?.["desired_course"] as string | null) ?? null,
           request: req,
           blocked_reason: block?.reason ?? null,
+          declines_total: declinesTotal,
+          block_suggestion:
+            !block &&
+            declinesTotal >= 3 &&
+            !(emailNorm && dismissedEmail.has(emailNorm)) &&
+            !dismissedChild.has(childKey(e)),
           duplicate: (dupCount.get(`${emailNorm}|${childNorm}`) ?? 0) > 1,
           booking: part
             ? {
@@ -637,6 +665,7 @@ const updateSchema = z.object({
   isMember: z.boolean().nullable().optional(),
   notes: z.string().max(4000).nullable().optional(),
   blocklist: z.boolean().optional(),
+  dismissBlockSuggestion: z.boolean().optional(),
   availableFrom: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -675,6 +704,7 @@ export const updateWaitlistEntry = createServerFn({ method: "POST" })
       patch["followup_expires_at"] = null;
     }
     if (data.declineCount !== undefined) patch["decline_count"] = data.declineCount;
+    if (data.dismissBlockSuggestion) patch["block_review_dismissed_at"] = new Date().toISOString();
     if (data.adminNotes !== undefined) patch["admin_notes"] = data.adminNotes;
     if (data.appendNote) {
       const { formatDateTimeBerlin } = await import("@/lib/format");

@@ -467,7 +467,9 @@ function NotesCell({
 
 export function WaitlistAdmin() {
   const qc = useQueryClient();
-  const [view, setView] = useState<"waiting" | "offered" | "done">("waiting");
+  const [view, setView] = useState<"waiting" | "offered" | "followup" | "declined" | "done">(
+    "waiting",
+  );
   const [detail, setDetail] = useState<WaitlistEntry | null>(null);
   const [declineFor, setDeclineFor] = useState<WaitlistEntry | null>(null);
   const [declineStay, setDeclineStay] = useState(true);
@@ -573,6 +575,7 @@ export function WaitlistAdmin() {
       notes?: string | null;
       blocklist?: boolean;
       blocklistReason?: string;
+      dismissBlockSuggestion?: boolean;
       declineCount?: number;
     }) => updateWaitlistEntry({ data: v }),
 
@@ -599,20 +602,36 @@ export function WaitlistAdmin() {
     (data?.courses ?? []).find((c) => c.id === id)?.name ?? "Kurs";
 
   const allEntries = data?.entries ?? [];
-  const tabCounts = {
-    waiting: allEntries.filter((e) => e.status === "waiting").length,
-    offered: allEntries.filter((e) => e.status === "offered").length,
-    done: allEntries.filter((e) => !["waiting", "offered"].includes(e.status)).length,
+  const declineCountOf = (e: unknown) =>
+    Number((e as Record<string, unknown>)["decline_count"] ?? 0);
+  const inView = (e: { status: string }, v: typeof view) => {
+    switch (v) {
+      case "waiting":
+        return e.status === "waiting";
+      case "offered":
+        return e.status === "offered";
+      case "followup":
+        return ["declined", "expired"].includes(e.status);
+      // Nachhalte-Liste: jeder Eintrag mit mindestens einer Absage, egal in welchem Status
+      case "declined":
+        return declineCountOf(e) > 0;
+      default:
+        return !["waiting", "offered", "declined", "expired"].includes(e.status);
+    }
   };
+  const tabCounts = {
+    waiting: allEntries.filter((e) => inView(e, "waiting")).length,
+    offered: allEntries.filter((e) => inView(e, "offered")).length,
+    followup: allEntries.filter((e) => inView(e, "followup")).length,
+    declined: allEntries.filter((e) => inView(e, "declined")).length,
+    done: allEntries.filter((e) => inView(e, "done")).length,
+  };
+  const blockSuggestions = allEntries.filter(
+    (e) => (e as { block_suggestion?: boolean }).block_suggestion && declineCountOf(e) > 0,
+  );
 
   const grouped = useMemo(() => {
-    const entries = allEntries.filter((e) =>
-      view === "waiting"
-        ? e.status === "waiting"
-        : view === "offered"
-          ? e.status === "offered"
-          : !["waiting", "offered"].includes(e.status),
-    );
+    const entries = allEntries.filter((e) => inView(e, view));
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
       const key = e.program_id ?? "none";
@@ -646,7 +665,7 @@ export function WaitlistAdmin() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-bold text-primary-deep">Warteliste</h2>
+          <h2 className="font-display text-2xl font-bold text-primary-deep">Anfrageliste</h2>
           <p className="text-sm text-muted-foreground">
             Automatische Platzvergabe: Mitglieder zuerst, danach nach Eingangsdatum. Angeboten wird
             nur, wenn das Kind zum Kursbeginn das Mindestalter erreicht. Angebote laufen nach der im
@@ -668,7 +687,7 @@ export function WaitlistAdmin() {
       <CollapsibleCard
         storageKey="waitlist-rules-info"
         defaultOpen={false}
-        title="ℹ️ Leitfaden: Fristen, Regeln & Folgen der Warteliste"
+        title="ℹ️ Leitfaden: Fristen, Regeln & Folgen der Anfrageliste"
         subtitle="Für den Vorstand – so arbeitet die Warteliste automatisch"
       >
         <div className="space-y-3 text-sm">
@@ -711,16 +730,23 @@ export function WaitlistAdmin() {
                 Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage
                 erfassen“ klicken – der Platz wird dann freigegeben.
               </li>
+              <li>
+                Alle Familien mit mindestens einer Absage stehen zum Nachhalten im Reiter „Abgesagt
+                – nachhalten“ (zusätzlich zu ihrem eigentlichen Reiter).
+              </li>
             </ul>
           </div>
           <div>
             <p className="font-semibold">4. Frist ohne Antwort abgelaufen</p>
             <ul className="ml-5 list-disc text-muted-foreground">
               <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
-              <li>Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist.</li>
               <li>
-                Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Status
-                „Entfernt“). Keine automatische Sperrliste.
+                Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist; solange sie
+                läuft, steht der Eintrag im Reiter „Rückfrage offen“.
+              </li>
+              <li>
+                Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Reiter
+                „Entfernt / Archiv“). Keine automatische Sperrliste.
               </li>
             </ul>
           </div>
@@ -735,6 +761,12 @@ export function WaitlistAdmin() {
                 Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.
               </li>
               <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
+              <li>
+                Der Zähler gilt je Eltern-E-Mail bzw. Kind (Name + Geburtsdatum) über alle Einträge:
+                ein neuer Eintrag setzt ihn nicht zurück. Ab 3 Absagen gesamt erscheint „Sperrliste
+                prüfen“; gesperrt wird nie automatisch, sondern nur per Klick auf „Sperren“.
+                „Ignorieren“ blendet den Vorschlag dauerhaft aus.
+              </li>
             </ul>
           </div>
           <div>
@@ -747,8 +779,8 @@ export function WaitlistAdmin() {
                 Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.
               </li>
               <li>
-                Familien, die Angebote wiederholt ablaufen lassen, bewusst manuell auf die
-                Sperrliste setzen.
+                Familien, die Angebote wiederholt ablaufen lassen, über den Sperrvorschlag oder
+                manuell auf die Sperrliste setzen.
               </li>
             </ul>
           </div>
@@ -760,7 +792,9 @@ export function WaitlistAdmin() {
           [
             ["waiting", "Wartend auf Platz"],
             ["offered", "Laufende Angebote"],
-            ["done", "Erledigt / Archiv"],
+            ["followup", "Rückfrage offen"],
+            ["declined", "Abgesagt – nachhalten"],
+            ["done", "Entfernt / Archiv"],
           ] as const
         ).map(([key, label]) => (
           <Button
@@ -773,6 +807,37 @@ export function WaitlistAdmin() {
           </Button>
         ))}
       </div>
+
+      {blockSuggestions.length > 0 && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm">
+          <p className="font-semibold text-red-900">
+            Sperrliste prüfen: {new Set(blockSuggestions.map((e) => e.parent_email)).size} Familie(n)
+            mit mindestens 3 Absagen
+          </p>
+          <p className="text-red-900/80">
+            Zeilen sind im Reiter „Abgesagt – nachhalten“ markiert. Dort können Sie sperren oder den
+            Vorschlag ignorieren.
+          </p>
+          {view !== "declined" && (
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => setView("declined")}>
+              Zu „Abgesagt – nachhalten“
+            </Button>
+          )}
+        </div>
+      )}
+
+      {view === "followup" && (
+        <p className="text-sm text-muted-foreground">
+          Die Familien haben „Warteliste behalten?“ erhalten. Ohne Antwort innerhalb der Frist wird
+          der Platz automatisch gestrichen.
+        </p>
+      )}
+      {view === "declined" && (
+        <p className="text-sm text-muted-foreground">
+          Alle Einträge mit mindestens einer Absage, egal in welchem Status (Zähler, Grund und
+          Verlauf stehen in den Notizen). Der Zähler zählt je E-Mail bzw. Kind über alle Einträge.
+        </p>
+      )}
 
       {view === "waiting" && (data?.courses ?? []).some((c) => c.max_participants != null) && (
         <div className="flex flex-wrap gap-2 text-xs">
@@ -986,6 +1051,57 @@ export function WaitlistAdmin() {
                             </div>
                           );
                         })()}
+                      {Number((e as Record<string, unknown>)["declines_total"] ?? 0) >
+                        declineCountOf(e) && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Gesamt {String((e as Record<string, unknown>)["declines_total"])} Absagen
+                          (alle Einträge)
+                        </div>
+                      )}
+                      {(e as { block_suggestion?: boolean }).block_suggestion &&
+                        declineCountOf(e) > 0 && (
+                          <div className="mt-2 rounded-md border border-red-300 bg-red-50 p-2 text-xs">
+                            <p className="font-semibold text-red-900">Sperrliste prüfen</p>
+                            <div className="mt-1 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="text-red-900 underline"
+                                onClick={() => {
+                                  if (
+                                    !confirm(
+                                      `${e.child_name} / ${e.parent_email} auf die Sperrliste setzen? Buchung und Warteliste sind dann gesperrt.`,
+                                    )
+                                  )
+                                    return;
+                                  update.mutate(
+                                    {
+                                      entryId: e.id,
+                                      blocklist: true,
+                                      blocklistReason: `Wiederholte Absagen (${String((e as Record<string, unknown>)["declines_total"])})`,
+                                      appendNote: "Wegen wiederholter Absagen auf die Sperrliste gesetzt.",
+                                    },
+                                    { onSuccess: () => toast.success("Auf die Sperrliste gesetzt") },
+                                  );
+                                }}
+                              >
+                                Sperren
+                              </button>
+                              <button
+                                type="button"
+                                className="text-muted-foreground underline"
+                                onClick={() =>
+                                  update.mutate({
+                                    entryId: e.id,
+                                    dismissBlockSuggestion: true,
+                                    appendNote: "Sperrvorschlag geprüft und ignoriert.",
+                                  })
+                                }
+                              >
+                                Ignorieren
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       {!!(e as Record<string, unknown>)["followup_expires_at"] &&
                         ["declined", "expired"].includes(e.status) && (
                           <div className="mt-1 text-xs text-muted-foreground">

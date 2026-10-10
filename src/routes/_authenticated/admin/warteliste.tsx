@@ -24,7 +24,7 @@ function WaitlistPage() {
   return (
     <Tabs defaultValue={tab ?? "waiting"} className="space-y-6">
       <TabsList>
-        <TabsTrigger value="waiting">Warteliste</TabsTrigger>
+        <TabsTrigger value="waiting">Anfrageliste</TabsTrigger>
         <TabsTrigger value="archive">Frühere Kursanfragen</TabsTrigger>
       </TabsList>
 

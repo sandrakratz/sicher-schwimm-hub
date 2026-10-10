@@ -146,7 +146,7 @@ export const adminNav: (AppNavItem & { group?: string[] })[] = [
   { to: "/admin/suche", icon: Search, label: "Suche", allow: ["admin", "board"] },
   { to: "/admin/kurse", icon: BookOpen, label: "Kurse", allow: ["admin", "board"] },
   { to: "/admin/zahlungen", icon: Euro, label: "Offene Zahlungen", allow: ["admin", "board"] },
-  { to: "/admin/warteliste", icon: Hourglass, label: "Warteliste", allow: ["admin", "board"] },
+  { to: "/admin/warteliste", icon: Hourglass, label: "Anfrageliste", allow: ["admin", "board"] },
   { to: "/admin/kalender", icon: CalendarCheck, label: "Kurskalender", allow: ["admin", "board"] },
   {
     to: "/admin/benutzer",
