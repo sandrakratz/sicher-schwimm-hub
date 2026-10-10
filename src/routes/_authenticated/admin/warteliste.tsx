@@ -4,9 +4,15 @@ import { WaitlistAdmin } from "@/components/admin/WaitlistAdmin";
 import { CourseRequestsAdmin } from "@/components/admin/CourseRequestsAdmin";
 
 export const Route = createFileRoute("/_authenticated/admin/warteliste")({
-  // ?tab=archive öffnet direkt „Frühere Kursanfragen“ (Links aus Posteingang und Dashboard)
-  validateSearch: (search: Record<string, unknown>): { tab?: "archive" } =>
-    search["tab"] === "archive" ? { tab: "archive" } : {},
+  // ?tab=archive öffnet direkt „Frühere Kursanfragen“ (Links aus Posteingang und Dashboard);
+  // ?programm=<id>[,<id>] öffnet „Wartend“ gefiltert auf diese Angebote (Link aus der Kursverwaltung)
+  validateSearch: (search: Record<string, unknown>): { tab?: "archive"; programm?: string } => ({
+    ...(search["tab"] === "archive" ? { tab: "archive" as const } : {}),
+    ...(typeof search["programm"] === "string" &&
+    /^[0-9a-f-]{36}(,[0-9a-f-]{36})*$/i.test(search["programm"])
+      ? { programm: search["programm"] }
+      : {}),
+  }),
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -20,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
 });
 
 function WaitlistPage() {
-  const { tab } = Route.useSearch();
+  const { tab, programm } = Route.useSearch();
   return (
     <Tabs defaultValue={tab ?? "waiting"} className="space-y-6">
       <TabsList>
@@ -29,7 +35,7 @@ function WaitlistPage() {
       </TabsList>
 
       <TabsContent value="waiting" className="space-y-10">
-        <WaitlistAdmin />
+        <WaitlistAdmin initialProgramIds={programm ? programm.split(",") : undefined} />
       </TabsContent>
 
       <TabsContent value="archive" className="space-y-4">
