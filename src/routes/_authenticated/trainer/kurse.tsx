@@ -141,6 +141,14 @@ function Page() {
     })();
   }, []);
 
+  // Erledigt: Kurs abgelaufen oder keine aktiven Teilnehmenden
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
+  const isDone = (c: TrainerCourse) =>
+    (c.ends_on != null && c.ends_on.slice(0, 10) < today) ||
+    !c.participants.some((p) => p.status !== "cancelled");
+  const activeCourses = courses.filter((c) => !isDone(c));
+  const doneCourses = courses.filter(isDone);
+
   return (
     <div className="space-y-4">
       <div>
@@ -176,161 +184,176 @@ function Page() {
         }}
       />
 
-      {courses.map((c, i) => {
-        const beltNo = buildBeltNumbers(c.participants);
-        return (
-          <CollapsibleCard
-            key={c.id}
-            defaultOpen={i === 0}
-            storageKey={`trainer-kurs-${c.id}`}
-            title={c.name}
-            subtitle={[
-              c.location,
-              c.schedule,
-              c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-            meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
-            contentClassName="px-0"
-          >
-            <div className="px-4 pb-2 sm:px-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => downloadProtocol(c.id)}
-                disabled={exporting === c.id}
-              >
-                {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="ml-2"
-                onClick={() => setBroadcast({ id: c.id, name: c.name })}
-              >
-                📢 Eilnachricht an alle Eltern
-              </Button>
-            </div>
+      {activeCourses.map((c, i) => renderCourse(c, i === 0))}
 
-            {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
-            <div className="space-y-2 px-4 pb-4 sm:px-6">
-              <h3 className="text-sm font-semibold">Anwesenheit &amp; Zeitnahme</h3>
-              <Tabs defaultValue="kinder">
-                <TabsList>
-                  <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
-                  <TabsTrigger value="zeitnahme">Zeitnahme</TabsTrigger>
-                  <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
-                </TabsList>
-                <TabsContent value="kinder" className="mt-3">
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den
-                    Prüfungsnachweis zu öffnen.
-                  </p>
-                  <AttendanceBoard
-                    courseId={c.id}
-                    participants={c.participants
-                      .filter((p) => p.status !== "cancelled")
-                      .map((p) => ({
-                        id: p.id,
-                        name: p.name || "—",
-                        no: beltNo.get(p.id) ?? null,
-                        hint: combineChildHint(p.notes, p.health_info),
-                        paid: p.paid,
-                      }))}
-                    editableHints
-                    onHintSaved={(id, hint) =>
-                      setCourses((prev) =>
-                        prev.map((cc) => ({
-                          ...cc,
-                          participants: cc.participants.map((pp) =>
-                            pp.id === id ? { ...pp, notes: hint } : pp,
-                          ),
-                        })),
-                      )
-                    }
-                    renderDetails={(id) => {
-                      const p = c.participants.find((x) => x.id === id);
-                      if (!p) return null;
-                      return (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mb-2 min-h-11"
-                            onClick={() =>
-                              setTransferPart({
-                                id: p.id,
-                                participant_name: p.name,
-                                participant_email: p.email,
-                                course_id: c.id,
-                              })
-                            }
-                          >
-                            ↔ Kind umbuchen
-                          </Button>
-                          <ParticipantDetails
-                            p={p}
-                            editablePhone
-                            onPhoneSaved={applyPhone}
-                            editableResult
-                            onResultSaved={applyResult}
-                            onBeltSaved={applyBelt}
-                          />
-                        </>
-                      );
-                    }}
-                  />
-                </TabsContent>
-                <TabsContent value="zeitnahme" className="mt-3">
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Bis zu 4 Kinder gleichzeitig stoppen und die Bahnen je Lage zählen.
-                  </p>
-                  <MultiWatch
-                    location={c.location}
-                    participants={c.participants
-                      .filter((p) => p.status !== "cancelled")
-                      .map((p) => ({
-                        id: p.id,
-                        name: p.name || "—",
-                        no: beltNo.get(p.id) ?? null,
-                        result: {
-                          goal_reached: p.goal_reached,
-                          badge: p.badge,
-                          achievement: p.achievement,
-                          exam_level: p.exam_level,
-                          exam_criteria: p.exam_criteria,
-                          exam_date: p.exam_date,
-                          exam_pass_no: p.exam_pass_no,
-                        },
-                      }))}
-                    onSaved={applyResult}
-                  />
-                </TabsContent>
-                <TabsContent value="trainer" className="mt-3">
-                  <p className="mb-2 text-xs text-muted-foreground">
-                    Dein eigener Nachweis für die Übungsleiterpauschale.
-                  </p>
-                  <TrainerAttendancePanel courseId={c.id} />
-                </TabsContent>
-              </Tabs>
-            </div>
-
-            {c.participants.some((p) => p.status === "cancelled") && (
-              <div className="border-t pt-2">
-                <h3 className="px-4 py-2 text-sm font-semibold text-muted-foreground">
-                  Stornierte Anmeldungen
-                </h3>
-                {c.participants
-                  .filter((p) => p.status === "cancelled")
-                  .map((p) => (
-                    <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
-                  ))}
-              </div>
-            )}
-          </CollapsibleCard>
-        );
-      })}
+      {doneCourses.length > 0 && (
+        <CollapsibleCard
+          storageKey="trainer-kurse-erledigt"
+          title="Erledigte Kurse"
+          subtitle="Abgelaufene Kurse und Kurse ohne Teilnehmende"
+          meta={<Badge variant="outline">{doneCourses.length}</Badge>}
+        >
+          <div className="space-y-4 px-4 pb-4 sm:px-6">
+            {doneCourses.map((c) => renderCourse(c, false))}
+          </div>
+        </CollapsibleCard>
+      )}
     </div>
   );
+
+  function renderCourse(c: TrainerCourse, open: boolean) {
+    const beltNo = buildBeltNumbers(c.participants);
+    return (
+      <CollapsibleCard
+        key={c.id}
+        defaultOpen={open}
+        storageKey={`trainer-kurs-${c.id}`}
+        title={c.name}
+        subtitle={[
+          c.location,
+          c.schedule,
+          c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
+        contentClassName="px-0"
+      >
+        <div className="px-4 pb-2 sm:px-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadProtocol(c.id)}
+            disabled={exporting === c.id}
+          >
+            {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="ml-2"
+            onClick={() => setBroadcast({ id: c.id, name: c.name })}
+          >
+            📢 Eilnachricht an alle Eltern
+          </Button>
+        </div>
+
+        {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
+        <div className="space-y-2 px-4 pb-4 sm:px-6">
+          <h3 className="text-sm font-semibold">Anwesenheit &amp; Zeitnahme</h3>
+          <Tabs defaultValue="kinder">
+            <TabsList>
+              <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
+              <TabsTrigger value="zeitnahme">Zeitnahme</TabsTrigger>
+              <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
+            </TabsList>
+            <TabsContent value="kinder" className="mt-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den
+                Prüfungsnachweis zu öffnen.
+              </p>
+              <AttendanceBoard
+                courseId={c.id}
+                participants={c.participants
+                  .filter((p) => p.status !== "cancelled")
+                  .map((p) => ({
+                    id: p.id,
+                    name: p.name || "—",
+                    no: beltNo.get(p.id) ?? null,
+                    hint: combineChildHint(p.notes, p.health_info),
+                    paid: p.paid,
+                  }))}
+                editableHints
+                onHintSaved={(id, hint) =>
+                  setCourses((prev) =>
+                    prev.map((cc) => ({
+                      ...cc,
+                      participants: cc.participants.map((pp) =>
+                        pp.id === id ? { ...pp, notes: hint } : pp,
+                      ),
+                    })),
+                  )
+                }
+                renderDetails={(id) => {
+                  const p = c.participants.find((x) => x.id === id);
+                  if (!p) return null;
+                  return (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mb-2 min-h-11"
+                        onClick={() =>
+                          setTransferPart({
+                            id: p.id,
+                            participant_name: p.name,
+                            participant_email: p.email,
+                            course_id: c.id,
+                          })
+                        }
+                      >
+                        ↔ Kind umbuchen
+                      </Button>
+                      <ParticipantDetails
+                        p={p}
+                        editablePhone
+                        onPhoneSaved={applyPhone}
+                        editableResult
+                        onResultSaved={applyResult}
+                        onBeltSaved={applyBelt}
+                      />
+                    </>
+                  );
+                }}
+              />
+            </TabsContent>
+            <TabsContent value="zeitnahme" className="mt-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                Bis zu 4 Kinder gleichzeitig stoppen und die Bahnen je Lage zählen.
+              </p>
+              <MultiWatch
+                location={c.location}
+                participants={c.participants
+                  .filter((p) => p.status !== "cancelled")
+                  .map((p) => ({
+                    id: p.id,
+                    name: p.name || "—",
+                    no: beltNo.get(p.id) ?? null,
+                    result: {
+                      goal_reached: p.goal_reached,
+                      badge: p.badge,
+                      achievement: p.achievement,
+                      exam_level: p.exam_level,
+                      exam_criteria: p.exam_criteria,
+                      exam_date: p.exam_date,
+                      exam_pass_no: p.exam_pass_no,
+                    },
+                  }))}
+                onSaved={applyResult}
+              />
+            </TabsContent>
+            <TabsContent value="trainer" className="mt-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                Dein eigener Nachweis für die Übungsleiterpauschale.
+              </p>
+              <TrainerAttendancePanel courseId={c.id} />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {c.participants.some((p) => p.status === "cancelled") && (
+          <div className="border-t pt-2">
+            <h3 className="px-4 py-2 text-sm font-semibold text-muted-foreground">
+              Stornierte Anmeldungen
+            </h3>
+            {c.participants
+              .filter((p) => p.status === "cancelled")
+              .map((p) => (
+                <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
+              ))}
+          </div>
+        )}
+      </CollapsibleCard>
+    );
+  }
 }
