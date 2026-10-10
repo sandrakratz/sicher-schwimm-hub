@@ -687,7 +687,7 @@ export function WaitlistAdmin() {
       <CollapsibleCard
         storageKey="waitlist-rules-info"
         defaultOpen={false}
-        title="ℹ️ Leitfaden: Fristen, Regeln & Folgen der Warteliste"
+        title="ℹ️ Leitfaden: Fristen, Regeln & Folgen der Anfrageliste"
         subtitle="Für den Vorstand – so arbeitet die Warteliste automatisch"
       >
         <div className="space-y-3 text-sm">
@@ -730,16 +730,23 @@ export function WaitlistAdmin() {
                 Kam die Absage per Telefon oder E-Mail, im Reiter „Laufende Angebote“ auf „Absage
                 erfassen“ klicken – der Platz wird dann freigegeben.
               </li>
+              <li>
+                Alle Familien mit mindestens einer Absage stehen zum Nachhalten im Reiter „Abgesagt
+                – nachhalten“ (zusätzlich zu ihrem eigentlichen Reiter).
+              </li>
             </ul>
           </div>
           <div>
             <p className="font-semibold">4. Frist ohne Antwort abgelaufen</p>
             <ul className="ml-5 list-disc text-muted-foreground">
               <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
-              <li>Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist.</li>
               <li>
-                Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Status
-                „Entfernt“). Keine automatische Sperrliste.
+                Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist; solange sie
+                läuft, steht der Eintrag im Reiter „Rückfrage offen“.
+              </li>
+              <li>
+                Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Reiter
+                „Entfernt / Archiv“). Keine automatische Sperrliste.
               </li>
             </ul>
           </div>
@@ -754,6 +761,12 @@ export function WaitlistAdmin() {
                 Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.
               </li>
               <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
+              <li>
+                Der Zähler gilt je Eltern-E-Mail bzw. Kind (Name + Geburtsdatum) über alle Einträge:
+                ein neuer Eintrag setzt ihn nicht zurück. Ab 3 Absagen gesamt erscheint „Sperrliste
+                prüfen“; gesperrt wird nie automatisch, sondern nur per Klick auf „Sperren“.
+                „Ignorieren“ blendet den Vorschlag dauerhaft aus.
+              </li>
             </ul>
           </div>
           <div>
@@ -766,8 +779,8 @@ export function WaitlistAdmin() {
                 Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.
               </li>
               <li>
-                Familien, die Angebote wiederholt ablaufen lassen, bewusst manuell auf die
-                Sperrliste setzen.
+                Familien, die Angebote wiederholt ablaufen lassen, über den Sperrvorschlag oder
+                manuell auf die Sperrliste setzen.
               </li>
             </ul>
           </div>
