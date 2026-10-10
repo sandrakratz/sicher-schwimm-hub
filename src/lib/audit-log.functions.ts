@@ -116,13 +116,19 @@ export const listAuditLog = createServerFn({ method: "POST" })
     }>;
 
     // Bezugsobjekte nachladen
+    // Nicht jeder Bezug ist eine Kennung (Exporte tragen z. B. „2026“): nur echte UUIDs nachschlagen
+    const isUuid = (v: unknown): v is string =>
+      typeof v === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
     const ids = (entity: string) => [
-      ...new Set(list.filter((r) => r.entity === entity && r.entity_id).map((r) => r.entity_id!)),
+      ...new Set(
+        list
+          .filter((r) => r.entity === entity && isUuid(r.entity_id))
+          .map((r) => r.entity_id as string),
+      ),
     ];
     const metaCourseIds = list.flatMap((r) =>
-      [r.metadata?.["course_id"], r.metadata?.["to"]].filter(
-        (v): v is string => typeof v === "string",
-      ),
+      [r.metadata?.["course_id"], r.metadata?.["to"]].filter(isUuid),
     );
 
     const [parts, entries, requests, members, profilesAbout, msgs, sessions] = await Promise.all([
@@ -194,7 +200,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
     );
     const courseName = new Map(courseRows.map((c) => [c.id, c.name]));
 
-    const actorIds = [...new Set(list.map((r) => r.actor_id).filter((v): v is string => !!v))];
+    const actorIds = [...new Set(list.map((r) => r.actor_id).filter(isUuid))];
     const actorRows = await fetchIn<any>(actorIds, (c, f, t) =>
       supabaseAdmin
         .from("profiles")
