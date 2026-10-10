@@ -77,6 +77,7 @@ import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedTrainerKurseRouteImport } from './routes/_authenticated/trainer/kurse'
 import { Route as AuthenticatedTrainerMitgliederRouteImport } from './routes/_authenticated/trainer/mitglieder'
 import { Route as AuthenticatedTrainerVerfuegbarkeitRouteImport } from './routes/_authenticated/trainer/verfuegbarkeit'
+import { Route as ApiPublicCourseIcsRouteImport } from './routes/api/public/course-ics'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
@@ -457,6 +458,11 @@ const AuthenticatedTrainerVerfuegbarkeitRoute =
     path: '/trainer/verfuegbarkeit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCourseIcsRoute = ApiPublicCourseIcsRouteImport.update({
+  id: '/api/public/course-ics',
+  path: '/api/public/course-ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotifyAdminRoute = ApiPublicNotifyAdminRouteImport.update({
   id: '/api/public/notify-admin',
   path: '/api/public/notify-admin',
@@ -581,6 +587,7 @@ export interface FileRoutesByFullPath {
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
+  '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
@@ -659,6 +666,7 @@ export interface FileRoutesByTo {
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
+  '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
@@ -740,6 +748,7 @@ export interface FileRoutesById {
   '/_authenticated/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/_authenticated/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/_authenticated/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
+  '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
@@ -821,6 +830,7 @@ export interface FileRouteTypes {
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/verfuegbarkeit'
+    | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
@@ -899,6 +909,7 @@ export interface FileRouteTypes {
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/verfuegbarkeit'
+    | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
@@ -979,6 +990,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trainer/kurse'
     | '/_authenticated/trainer/mitglieder'
     | '/_authenticated/trainer/verfuegbarkeit'
+    | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
@@ -1027,6 +1039,7 @@ export interface RootRouteChildren {
   RatgeberSeepferdchenAnforderungenRoute: typeof RatgeberSeepferdchenAnforderungenRoute
   WartelisteAntwortRoute: typeof WartelisteAntwortRoute
   WartelisteRueckfrageRoute: typeof WartelisteRueckfrageRoute
+  ApiPublicCourseIcsRoute: typeof ApiPublicCourseIcsRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
@@ -1517,6 +1530,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainerVerfuegbarkeitRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/course-ics': {
+      id: '/api/public/course-ics'
+      path: '/api/public/course-ics'
+      fullPath: '/api/public/course-ics'
+      preLoaderRoute: typeof ApiPublicCourseIcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notify-admin': {
       id: '/api/public/notify-admin'
       path: '/api/public/notify-admin'
@@ -1722,6 +1742,7 @@ const rootRouteChildren: RootRouteChildren = {
     RatgeberSeepferdchenAnforderungenRoute,
   WartelisteAntwortRoute: WartelisteAntwortRoute,
   WartelisteRueckfrageRoute: WartelisteRueckfrageRoute,
+  ApiPublicCourseIcsRoute: ApiPublicCourseIcsRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,

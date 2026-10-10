@@ -12,6 +12,7 @@ import {
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
 import { formatDateBerlin } from "@/lib/format";
+import { ORG } from "@/lib/billing-config";
 
 interface Props {
   parent_name?: string;
@@ -36,7 +37,7 @@ const Email = (p: Props) => {
       >
         <Container style={{ padding: "24px", maxWidth: "600px" }}>
           <Heading style={{ color: "#0c4a6e" }}>Bald geht&apos;s los!</Heading>
-          <Text>{p.parent_name ? `Hallo ${p.parent_name},` : "Hallo,"}</Text>
+          <Text>Liebe Eltern,</Text>
           <Text>
             in wenigen Tagen startet der Kurs
             {p.child_name ? (
@@ -82,11 +83,10 @@ const Email = (p: Props) => {
 
           <Hr />
           <Text>Bei Fragen antworten Sie einfach auf diese E-Mail.</Text>
-          <Text>
-            Wir freuen uns auf Sie!
-            <br />
-            Ihr Team von Sicher Schwimmen e.V.
-          </Text>
+          <Text>Wir freuen uns auf Sie!</Text>
+          <Text style={{ marginTop: "16px" }}>Herzliche Grüße</Text>
+          <Text style={{ margin: "3px 0" }}>{ORG.signatory}</Text>
+          <Text style={{ margin: "3px 0", fontSize: "12px", color: "#475569" }}>{ORG.name}</Text>
         </Container>
       </Body>
     </Html>

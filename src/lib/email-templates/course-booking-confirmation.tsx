@@ -15,6 +15,7 @@ import {
 import type { TemplateEntry } from "./registry";
 import { buildConfirmationDoc } from "@/lib/course-confirmation";
 import { PushHint } from "./push-hint";
+import { CancellationInfo, SessionList, type MailSession } from "./course-blocks";
 
 interface Props {
   parent_name?: string;
@@ -39,6 +40,8 @@ interface Props {
   payer_city?: string;
   site_base_url?: string;
   push_url?: string;
+  sessions?: MailSession[] | null;
+  ics_url?: string | null;
 }
 
 const row = { margin: "3px 0" as const };
@@ -86,7 +89,7 @@ const Email = (p: Props) => {
         >
           <Container style={{ padding: "24px", maxWidth: "640px" }}>
             <Heading style={{ color: "#0c4a6e" }}>Ihre Anmeldung auf der Warteliste</Heading>
-            <Text>Hallo {p.parent_name || ""},</Text>
+            <Text>Liebe Eltern,</Text>
             <Text>
               vielen Dank für Ihre Anmeldung. Der gewünschte Kurszeitraum ist aktuell ausgebucht –
               wir haben {p.child_name ? <strong>{p.child_name}</strong> : "die Anmeldung"} auf die
@@ -101,11 +104,9 @@ const Email = (p: Props) => {
             </Section>
             <Hr />
             <Text>Bei Fragen antworten Sie einfach auf diese E-Mail.</Text>
-            <Text>
-              Mit besten Grüßen,
-              <br />
-              Ihr Team von Sicher-Schwimmen
-            </Text>
+            <Text>Herzliche Grüße</Text>
+            <Text style={row}>{d.org.signatory}</Text>
+            <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.name}</Text>
           </Container>
         </Body>
       </Html>
@@ -224,7 +225,9 @@ const Email = (p: Props) => {
               }}
             >
               <Text style={{ margin: "0 0 8px", fontWeight: "bold", color: "#9a3412" }}>
-                QR-Code für die Echtzeit-/Sofortüberweisung
+                {d.immediatePayment
+                  ? "QR-Code für die Echtzeit-/Sofortüberweisung"
+                  : "QR-Code für die Überweisung"}
               </Text>
               <Img
                 src={d.payQrUrl}
@@ -242,6 +245,8 @@ const Email = (p: Props) => {
               </Text>
             </Section>
           )}
+
+          <SessionList sessions={p.sessions} icsUrl={p.ics_url} />
 
           <Text style={{ marginTop: "16px" }}>
             <strong>Hinweis zur Umsatzsteuer:</strong>
@@ -266,6 +271,8 @@ const Email = (p: Props) => {
           )}
 
           {!waitlist && p.push_url && <PushHint url={p.push_url} />}
+
+          <CancellationInfo startsOn={p.course_starts_on} base={base} />
 
           <Text style={{ marginTop: "16px" }}>
             Vielen Dank für Ihre Anmeldung. Wir freuen uns auf die Teilnahme am Schwimmkurs.
