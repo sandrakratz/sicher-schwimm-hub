@@ -378,10 +378,42 @@ export const listAuditLog = createServerFn({ method: "POST" })
             return `hat das Benutzerkonto von ${t} gelöscht`;
           case "user.status_changed":
             return `hat den Status von ${t} geändert${m["status"] ? ` (${String(m["status"])})` : ""}`;
-          default:
-            if (r.action.endsWith("_exported"))
-              return `hat eine Liste exportiert (${r.action.replace(/_exported$/, "").replace(/_/g, " ")})`;
+          case "attendance_recorded":
+          case "trainer_attendance_recorded":
+            return `hat die Anwesenheit erfasst${target ? ` (${q(target)})` : ""}`;
+          case "user.role_granted":
+            return `hat ${t} eine Rolle zugewiesen${m["role"] ? ` (${String(m["role"])})` : ""}`;
+          case "user.role_revoked":
+            return `hat ${t} eine Rolle entzogen${m["role"] ? ` (${String(m["role"])})` : ""}`;
+          default: {
+            if (r.action.startsWith("membership.")) {
+              const status: Record<string, string> = {
+                pending: "„wartet auf Freigabe“",
+                active: "„aktiv“",
+                suspended: "„pausiert“",
+                terminated: "„beendet“",
+              };
+              const s = r.action.replace("membership.", "");
+              return `hat die Mitgliedschaft von ${t} auf ${status[s] ?? q(s)} gesetzt`;
+            }
+            if (r.action === "trainer.payout.listed")
+              return "hat die Auszahlungsdaten der Übungsleitergelder eingesehen";
+            if (r.action.startsWith("trainer.payout."))
+              return "hat Auszahlungsdaten der Übungsleitergelder geändert";
+            const exports: Record<string, string> = {
+              course_list: "Kursliste",
+              tax_participant_list: "Teilnehmerliste für das Finanzamt",
+              exam_protocol: "Prüfungsprotokoll",
+              trainer_proof: "Trainer-Nachweis",
+              course_confirmations: "Kursbestätigungen",
+              meinverein_csv: "MeinVerein-Datei",
+            };
+            if (r.action.endsWith("_exported")) {
+              const key = r.action.replace(/_exported$/, "");
+              return `hat eine Liste exportiert: ${exports[key] ?? key.replace(/_/g, " ")}`;
+            }
             return `hat „${r.action}“ ausgeführt${target ? ` (${q(target)})` : ""}`;
+          }
         }
       })();
 

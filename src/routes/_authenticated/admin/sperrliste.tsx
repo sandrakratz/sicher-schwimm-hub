@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -192,7 +192,24 @@ function Page() {
               <TableBody>
                 {entries.map((e) => (
                   <TableRow key={e.id} className={e.active ? "" : "opacity-60"}>
-                    <TableCell className="capitalize">{e.child_name_norm || "—"}</TableCell>
+                    <TableCell className="capitalize">
+                      {e.email_norm || e.child_name_norm ? (
+                        <Link
+                          to="/admin/familie"
+                          search={
+                            e.email_norm
+                              ? { email: e.email_norm }
+                              : { name: e.child_name_norm ?? "" }
+                          }
+                          className="text-primary underline underline-offset-2"
+                          title="Familie öffnen"
+                        >
+                          {e.child_name_norm || "Familie öffnen"}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                     <TableCell>{e.child_dob ? formatDateBerlin(e.child_dob) : "—"}</TableCell>
                     <TableCell>{e.email_norm || "—"}</TableCell>
                     <TableCell>{e.reason || "—"}</TableCell>

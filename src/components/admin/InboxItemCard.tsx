@@ -143,6 +143,13 @@ export function InboxItemCard({ item, showAge }: { item: InboxItem; showAge?: bo
                 Vorgang öffnen
               </Link>
             </Button>
+            {item.email && (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/admin/familie" search={{ email: item.email }}>
+                  Familie öffnen
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 

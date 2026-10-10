@@ -480,12 +480,15 @@ function NotesCell({
   );
 }
 
-export function WaitlistAdmin({ initialProgramIds }: { initialProgramIds?: string[] } = {}) {
+export function WaitlistAdmin({
+  initialProgramIds,
+  initialSearch,
+}: { initialProgramIds?: string[]; initialSearch?: string } = {}) {
   const qc = useQueryClient();
   const [view, setView] = useState<
     "today" | "report" | "waiting" | "offered" | "followup" | "declined" | "done"
   >(initialProgramIds?.length ? "waiting" : "today");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch ?? "");
   const [programFilter, setProgramFilter] = useState<string[] | null>(
     initialProgramIds?.length ? initialProgramIds : null,
   );

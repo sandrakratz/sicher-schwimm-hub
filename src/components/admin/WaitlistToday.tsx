@@ -280,7 +280,14 @@ export function WaitlistToday({
           {t.suggestions.map((s) => (
             <li key={s.key} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span>
-                <span className="font-medium">{s.childName ?? "–"}</span>{" "}
+                <Link
+                  to="/admin/familie"
+                  search={s.email ? { email: s.email } : { name: s.childName ?? "" }}
+                  className="font-medium text-primary underline underline-offset-2"
+                  title="Familie öffnen: Verlauf, Absagen, Buchungen"
+                >
+                  {s.childName ?? "–"}
+                </Link>
                 <span className="text-muted-foreground">{s.email}</span>{" "}
                 <Badge variant="secondary" className="bg-red-100 text-red-900">
                   {s.total}×

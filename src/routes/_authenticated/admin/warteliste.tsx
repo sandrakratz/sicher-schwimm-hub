@@ -6,7 +6,12 @@ import { CourseRequestsAdmin } from "@/components/admin/CourseRequestsAdmin";
 export const Route = createFileRoute("/_authenticated/admin/warteliste")({
   // ?tab=archive öffnet direkt „Frühere Kursanfragen“ (Links aus Posteingang und Dashboard);
   // ?programm=<id>[,<id>] öffnet „Wartend“ gefiltert auf diese Angebote (Link aus der Kursverwaltung)
-  validateSearch: (search: Record<string, unknown>): { tab?: "archive"; programm?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: "archive"; programm?: string; suche?: string } => ({
+    ...(typeof search["suche"] === "string" && search["suche"].trim()
+      ? { suche: search["suche"].trim().slice(0, 100) }
+      : {}),
     ...(search["tab"] === "archive" ? { tab: "archive" as const } : {}),
     ...(typeof search["programm"] === "string" &&
     /^[0-9a-f-]{36}(,[0-9a-f-]{36})*$/i.test(search["programm"])
@@ -26,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
 });
 
 function WaitlistPage() {
-  const { tab, programm } = Route.useSearch();
+  const { tab, programm, suche } = Route.useSearch();
   return (
     <Tabs defaultValue={tab ?? "waiting"} className="space-y-6">
       <TabsList>
@@ -35,7 +40,10 @@ function WaitlistPage() {
       </TabsList>
 
       <TabsContent value="waiting" className="space-y-10">
-        <WaitlistAdmin initialProgramIds={programm ? programm.split(",") : undefined} />
+        <WaitlistAdmin
+          initialProgramIds={programm ? programm.split(",") : undefined}
+          initialSearch={suche}
+        />
       </TabsContent>
 
       <TabsContent value="archive" className="space-y-4">

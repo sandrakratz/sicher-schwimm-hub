@@ -91,6 +91,17 @@ function FamilyPage() {
     },
     onError: (e: Error) => toast.error(e.message || "Aktion fehlgeschlagen"),
   });
+  const dismiss = useMutation({
+    mutationFn: () =>
+      resolveBlockSuggestion({
+        data: { action: "dismiss", email: email ?? null, childName: name ?? null },
+      }),
+    onSuccess: () => {
+      toast.success("Sperrvorschlag ignoriert");
+      qc.invalidateQueries({ queryKey: ["admin-family"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Aktion fehlgeschlagen"),
+  });
 
   if (!email && !name) {
     return (
@@ -161,6 +172,17 @@ function FamilyPage() {
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/sperrliste">Sperrliste</Link>
           </Button>
+          {data.blockSuggestion && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={dismiss.isPending}
+              onClick={() => dismiss.mutate()}
+              title="Sperrvorschlag verwerfen; die Familie bleibt ungesperrt"
+            >
+              Sperrvorschlag ignorieren
+            </Button>
+          )}
           {!data.blocked && (
             <Button
               size="sm"
@@ -223,6 +245,14 @@ function FamilyPage() {
                       {e.decline_count}× abgesagt
                     </Badge>
                   )}
+                  <Link
+                    to="/admin/warteliste"
+                    search={{ suche: e.child_name }}
+                    className="ml-1 text-xs text-primary underline"
+                    title="In der Anfrageliste öffnen: Platz anbieten, Absage erfassen, Notiz, Zuständigkeit"
+                  >
+                    Bearbeiten
+                  </Link>
                 </span>
               </div>
             ))}
