@@ -64,6 +64,7 @@ import { Route as AuthenticatedAdminVersandstatusRouteImport } from './routes/_a
 import { Route as AuthenticatedAdminWartelisteRouteImport } from './routes/_authenticated/admin/warteliste'
 import { Route as AuthenticatedAdminWiderrufeRouteImport } from './routes/_authenticated/admin/widerrufe'
 import { Route as AuthenticatedAdminZahlungenRouteImport } from './routes/_authenticated/admin/zahlungen'
+import { Route as AuthenticatedAdminZustaendigkeitenRouteImport } from './routes/_authenticated/admin/zustaendigkeiten'
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
 import { Route as AuthenticatedPortalDokumenteRouteImport } from './routes/_authenticated/portal/dokumente'
 import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal/events'
@@ -377,6 +378,12 @@ const AuthenticatedAdminZahlungenRoute =
     path: '/zahlungen',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminZustaendigkeitenRoute =
+  AuthenticatedAdminZustaendigkeitenRouteImport.update({
+    id: '/zustaendigkeiten',
+    path: '/zustaendigkeiten',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedPortalIndexRoute =
   AuthenticatedPortalIndexRouteImport.update({
     id: '/portal/',
@@ -549,6 +556,7 @@ export interface FileRoutesByFullPath {
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/admin/zahlungen': typeof AuthenticatedAdminZahlungenRoute
+  '/admin/zustaendigkeiten': typeof AuthenticatedAdminZustaendigkeitenRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -624,6 +632,7 @@ export interface FileRoutesByTo {
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/admin/zahlungen': typeof AuthenticatedAdminZahlungenRoute
+  '/admin/zustaendigkeiten': typeof AuthenticatedAdminZustaendigkeitenRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -702,6 +711,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/_authenticated/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
   '/_authenticated/admin/zahlungen': typeof AuthenticatedAdminZahlungenRoute
+  '/_authenticated/admin/zustaendigkeiten': typeof AuthenticatedAdminZustaendigkeitenRoute
   '/_authenticated/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
   '/_authenticated/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
@@ -780,6 +790,7 @@ export interface FileRouteTypes {
     | '/admin/warteliste'
     | '/admin/widerrufe'
     | '/admin/zahlungen'
+    | '/admin/zustaendigkeiten'
     | '/portal/dokumente'
     | '/portal/events'
     | '/portal/kontakt'
@@ -855,6 +866,7 @@ export interface FileRouteTypes {
     | '/admin/warteliste'
     | '/admin/widerrufe'
     | '/admin/zahlungen'
+    | '/admin/zustaendigkeiten'
     | '/portal/dokumente'
     | '/portal/events'
     | '/portal/kontakt'
@@ -932,6 +944,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/warteliste'
     | '/_authenticated/admin/widerrufe'
     | '/_authenticated/admin/zahlungen'
+    | '/_authenticated/admin/zustaendigkeiten'
     | '/_authenticated/portal/dokumente'
     | '/_authenticated/portal/events'
     | '/_authenticated/portal/kontakt'
@@ -1386,6 +1399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminZahlungenRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/zustaendigkeiten': {
+      id: '/_authenticated/admin/zustaendigkeiten'
+      path: '/zustaendigkeiten'
+      fullPath: '/admin/zustaendigkeiten'
+      preLoaderRoute: typeof AuthenticatedAdminZustaendigkeitenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/portal/': {
       id: '/_authenticated/portal/'
       path: '/portal'
@@ -1551,6 +1571,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminWartelisteRoute: typeof AuthenticatedAdminWartelisteRoute
   AuthenticatedAdminWiderrufeRoute: typeof AuthenticatedAdminWiderrufeRoute
   AuthenticatedAdminZahlungenRoute: typeof AuthenticatedAdminZahlungenRoute
+  AuthenticatedAdminZustaendigkeitenRoute: typeof AuthenticatedAdminZustaendigkeitenRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1580,6 +1601,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminWartelisteRoute: AuthenticatedAdminWartelisteRoute,
     AuthenticatedAdminWiderrufeRoute: AuthenticatedAdminWiderrufeRoute,
     AuthenticatedAdminZahlungenRoute: AuthenticatedAdminZahlungenRoute,
+    AuthenticatedAdminZustaendigkeitenRoute:
+      AuthenticatedAdminZustaendigkeitenRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
 

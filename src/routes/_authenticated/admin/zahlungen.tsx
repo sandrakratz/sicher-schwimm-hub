@@ -9,6 +9,11 @@ import { toast } from "sonner";
 import { Check, Euro } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
+import {
+  AssignControl,
+  effectiveAssignee,
+  useAssignmentContext,
+} from "@/components/admin/AssignControl";
 
 export const Route = createFileRoute("/_authenticated/admin/zahlungen")({
   ssr: false,
@@ -43,6 +48,7 @@ type Row = {
   payment_note: string | null;
   payment_method: string | null;
   payment_due_date: string | null;
+  assigned_to: string | null;
   created_at: string;
   courses: {
     name: string;
@@ -83,13 +89,15 @@ function Page() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("due");
+  const ctx = useAssignmentContext();
+  const [who, setWho] = useState("");
 
   async function load() {
     setLoading(true);
     const { data, error } = await supabase
       .from("course_participants")
       .select(
-        "id,participant_name,participant_email,participant_phone,price_amount,payment_note,payment_method,payment_due_date,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on,payment_due_days,location)",
+        "id,participant_name,participant_email,participant_phone,assigned_to,price_amount,payment_note,payment_method,payment_due_date,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on,payment_due_days,location)",
       )
       .eq("status", "confirmed")
       .eq("paid", false);
@@ -114,7 +122,13 @@ function Page() {
       return cmp(na[key], nb[key]) || cmp(na[other], nb[other]) || byDue(a, b);
     });
   }, [rows, sortBy]);
-  const total = sorted.reduce((s, r) => s + (Number(r.price_amount) || 0), 0);
+  const visible = (r: Row) => {
+    if (who === "") return true;
+    const e = effectiveAssignee(r.assigned_to, "payments", ctx.data?.rules);
+    return who === "__none" ? !e : e === who;
+  };
+  const shownRows = sorted.filter(visible);
+  const total = shownRows.reduce((s, r) => s + (Number(r.price_amount) || 0), 0);
 
   async function undoPaid(r: Row) {
     const { error } = await supabase
@@ -167,10 +181,25 @@ function Page() {
           </p>
           {!loading && (
             <p className="text-sm font-medium">
-              {sorted.length} offen · insgesamt {total.toFixed(2).replace(".", ",")} €
+              {shownRows.length} offen · insgesamt {total.toFixed(2).replace(".", ",")} €
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-sm text-muted-foreground">Zuständig:</span>
+            <select
+              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+              value={who}
+              onChange={(e) => setWho(e.target.value)}
+            >
+              <option value="">Alle</option>
+              <option value="__none">Nicht zugewiesen</option>
+              {(ctx.data?.staff ?? []).map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                  {s === ctx.data?.me ? " (ich)" : ""}
+                </option>
+              ))}
+            </select>
             <span className="text-sm text-muted-foreground">Sortieren nach:</span>
             {SORT_OPTIONS.map((o) => (
               <Button
@@ -189,14 +218,16 @@ function Page() {
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Lädt …</p>
-      ) : sorted.length === 0 ? (
+      ) : shownRows.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Keine offenen Zahlungen – alles bezahlt. 🎉
+            {who
+              ? "Keine offenen Zahlungen für diese Auswahl."
+              : "Keine offenen Zahlungen – alles bezahlt. 🎉"}
           </CardContent>
         </Card>
       ) : (
-        sorted.map((r) => {
+        shownRows.map((r) => {
           const st = paymentState({
             paid: false,
             bookedAt: r.created_at,
@@ -231,6 +262,16 @@ function Page() {
                     <div className="text-xs whitespace-pre-line">Notiz: {r.payment_note}</div>
                   )}
                 </div>
+                <AssignControl
+                  kind="payment"
+                  id={r.id}
+                  area="payments"
+                  current={r.assigned_to}
+                  label={`Offene Zahlung – ${r.participant_name ?? "Teilnehmer"}`}
+                  onDone={(a) =>
+                    setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, assigned_to: a } : x)))
+                  }
+                />
                 <div className="font-semibold whitespace-nowrap">
                   {r.price_amount != null
                     ? `${Number(r.price_amount).toFixed(2).replace(".", ",")} €`

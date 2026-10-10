@@ -44,6 +44,11 @@ import {
   type TodayEntry,
 } from "@/components/admin/WaitlistToday";
 import { checkFit } from "@/lib/swim-fit";
+import {
+  AssignControl,
+  effectiveAssignee,
+  useAssignmentContext,
+} from "@/components/admin/AssignControl";
 import { WaitlistReport } from "@/components/admin/WaitlistReport";
 import { DeclineReasonFields } from "@/components/admin/DeclineReasonFields";
 import { categorizeReason, combineReason } from "@/lib/decline-reasons";
@@ -877,9 +882,11 @@ export function WaitlistAdmin({
                 manuell auf die Sperrliste setzen.
               </li>
               <li>
-                Zuständigkeit und Wiedervorlage: in der aufgeklappten Zeile („Kurswunsch, Notiz,
-                Zahlung“) „Bearbeitet von“ und „Wiedervorlage am“ setzen. Fällige Wiedervorlagen
-                stehen im Reiter „Heute“.
+                Zuständigkeit: Der Knopf „Zuweisen“ (in „Heute“ an jedem Namen, in der Tabelle in
+                der aufgeklappten Zeile) weist einem Vorstandsmitglied zu oder gibt mit einer Notiz
+                weiter; die Person bekommt eine E-Mail. Standard-Zuständigkeiten stehen unter
+                „Mitglieder“ → „Zuständigkeiten“. Wiedervorlage am: in der aufgeklappten Zeile;
+                fällige stehen in „Heute“.
               </li>
               <li>
                 „Familie, Verlauf“ zeigt alle Kinder, Buchungen, Absagen, E-Mails und Sperrliste
@@ -1760,28 +1767,21 @@ export function WaitlistAdmin({
                               <p className="text-xs font-semibold uppercase text-muted-foreground">
                                 Zuständigkeit
                               </p>
-                              <label className="block text-xs text-muted-foreground">
-                                Bearbeitet von
-                                <select
-                                  className="mt-1 h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
-                                  value={String(
-                                    (e as Record<string, unknown>)["assigned_to"] ?? "",
-                                  )}
-                                  onChange={(ev) =>
-                                    update.mutate({
-                                      entryId: e.id,
-                                      assignedTo: ev.target.value || null,
-                                    })
-                                  }
-                                >
-                                  <option value="">Niemand</option>
-                                  {(data?.staff ?? []).map((n) => (
-                                    <option key={n} value={n}>
-                                      {n}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
+                              <div className="space-y-1 text-xs text-muted-foreground">
+                                <span>Zuständig</span>
+                                <div>
+                                  <AssignControl
+                                    kind="waitlist"
+                                    id={e.id}
+                                    area="waitlist"
+                                    current={
+                                      (e as Record<string, unknown>)["assigned_to"] as string | null
+                                    }
+                                    label={`Anfrageliste – ${e.child_name}`}
+                                    onDone={() => invalidate()}
+                                  />
+                                </div>
+                              </div>
                               <label className="block text-xs text-muted-foreground">
                                 Wiedervorlage am
                                 <Input

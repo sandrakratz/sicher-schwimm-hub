@@ -41,6 +41,11 @@ import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 import { InboxItemCard } from "@/components/admin/InboxItemCard";
 import { listInbox, type InboxItem, type InboxSummary } from "@/lib/inbox.functions";
 import { AgeBadge } from "@/components/admin/AgeBadge";
+import {
+  AssignControl,
+  effectiveAssignee,
+  useAssignmentContext,
+} from "@/components/admin/AssignControl";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   beforeLoad: async () => {
@@ -81,12 +86,17 @@ type Msg = {
   body: string;
   status: string;
   internal_notes: string | null;
+  assigned_to: string | null;
   created_at: string;
 };
 
 function Page() {
   const [rows, setRows] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
+  const ctx = useAssignmentContext();
+  const [who, setWho] = useState("");
+  const assigned = (id: string, assignee: string | null) =>
+    setRows((r) => r.map((m) => (m.id === id ? { ...m, assigned_to: assignee } : m)));
   const [tab, setTab] = useState<"open" | "done">("open");
 
   async function load() {
@@ -143,7 +153,14 @@ function Page() {
   // die am längsten wartenden zuerst.
   const needReply = [
     ...rows
-      .filter((m) => ["new", "read"].includes(m.status))
+      .filter(
+        (m) =>
+          ["new", "read"].includes(m.status) &&
+          (who === "" ||
+            (who === "__none"
+              ? !effectiveAssignee(m.assigned_to, "messages", ctx.data?.rules)
+              : effectiveAssignee(m.assigned_to, "messages", ctx.data?.rules) === who)),
+      )
       .map((m) => ({
         key: `msg-${m.id}`,
         when: m.created_at,
@@ -156,6 +173,7 @@ function Page() {
             onStatus={updateStatus}
             onNotes={saveNotes}
             onDelete={deleteMsg}
+            onAssigned={assigned}
           />
         ),
       })),
@@ -208,6 +226,26 @@ function Page() {
               Kontaktformular und neue Kursanfragen. Beschwerden stehen oben, danach die am längsten
               wartenden.
             </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <label className="text-muted-foreground" htmlFor="inbox-who">
+                Zuständig:
+              </label>
+              <select
+                id="inbox-who"
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                value={who}
+                onChange={(e) => setWho(e.target.value)}
+              >
+                <option value="">Alle</option>
+                <option value="__none">Nicht zugewiesen</option>
+                {(ctx.data?.staff ?? []).map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                    {s === ctx.data?.me ? " (ich)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
             {needReply.length === 0 ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-900">
                 Alles beantwortet.
@@ -273,6 +311,7 @@ function Page() {
                 m={m}
                 onStatus={updateStatus}
                 onNotes={saveNotes}
+                onAssigned={assigned}
                 onDelete={deleteMsg}
               />
             ))
@@ -286,6 +325,7 @@ function Page() {
 function MessageCard({
   m,
   showAge,
+  onAssigned,
   onStatus,
   onNotes,
   onDelete,
@@ -295,6 +335,7 @@ function MessageCard({
   onStatus: (id: string, s: string) => void;
   onNotes: (id: string, n: string) => void;
   onDelete: (id: string) => void;
+  onAssigned: (id: string, assignee: string | null) => void;
 }) {
   const [notes, setNotes] = useState(m.internal_notes || "");
   const [replyOpen, setReplyOpen] = useState(false);
@@ -370,6 +411,14 @@ function MessageCard({
               </div>
             </div>
           </button>
+          <AssignControl
+            kind="message"
+            id={m.id}
+            area="messages"
+            current={m.assigned_to}
+            label={`Nachricht von ${m.from_name}${m.subject ? `: ${m.subject}` : ""}`}
+            onDone={(a) => onAssigned(m.id, a)}
+          />
           <div className={`items-center gap-2 ${open ? "flex" : "hidden"}`}>
             <Select value={m.status} onValueChange={(v) => onStatus(m.id, v)}>
               <SelectTrigger className="w-40">

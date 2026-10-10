@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { AssignControl, useAssignmentContext } from "@/components/admin/AssignControl";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +17,12 @@ export type TodayView = "waiting" | "offered" | "followup" | "declined" | "done"
 
 type Suggestion = { key: string; childName: string | null; email: string | null; total: number };
 
-export function buildTodo(data: Data | undefined, assignee = "") {
+export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitlist?: string }) {
   // Zuständigkeitsfilter gilt für Einträge der Anfrageliste (nicht für Sperrvorschläge und Kurse)
   const entries = (data?.entries ?? []).filter((e) => {
-    const who = ((e as Record<string, unknown>)["assigned_to"] as string | null) ?? "";
+    // Ausdrückliche Zuweisung vor Standard-Zuständigkeit des Bereichs
+    const who =
+      ((e as Record<string, unknown>)["assigned_to"] as string | null) || rules?.waitlist || "";
     return assignee === "" ? true : assignee === "__none" ? !who : who === assignee;
   });
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -172,7 +176,9 @@ export function WaitlistToday({
 }) {
   const [assignee, setAssignee] = useState("");
   const [openCourse, setOpenCourse] = useState<string | null>(null);
-  const t = buildTodo(data, assignee);
+  const ctx = useAssignmentContext();
+  const qc = useQueryClient();
+  const t = buildTodo(data, assignee, ctx.data?.rules);
   const nameBtn = (e: TodayEntry) => (
     <span className="inline-flex items-center gap-2">
       <button
@@ -189,6 +195,14 @@ export function WaitlistToday({
       >
         Familie
       </Link>
+      <AssignControl
+        kind="waitlist"
+        id={e.id}
+        area="waitlist"
+        current={(e as Record<string, unknown>)["assigned_to"] as string | null}
+        label={`Anfrageliste – ${e.child_name}`}
+        onDone={() => qc.invalidateQueries({ queryKey: ["admin-waitlist"] })}
+      />
     </span>
   );
 
@@ -206,9 +220,10 @@ export function WaitlistToday({
         >
           <option value="">Alle</option>
           <option value="__none">Nicht zugewiesen</option>
-          {(data?.staff ?? []).map((n) => (
+          {(ctx.data?.staff ?? data?.staff ?? []).map((n) => (
             <option key={n} value={n}>
               {n}
+              {n === ctx.data?.me ? " (ich)" : ""}
             </option>
           ))}
         </select>

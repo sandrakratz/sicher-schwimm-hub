@@ -13,7 +13,10 @@ export const AUDIT_AREAS = {
     entities: ["waitlist_entries", "course_requests", "cancellation_request"],
   },
   blocklist: { label: "Sperrliste", entities: ["booking_blocklist"] },
-  members: { label: "Mitglieder & Benutzer", entities: ["memberships", "profiles", "user_roles"] },
+  members: {
+    label: "Mitglieder & Benutzer",
+    entities: ["memberships", "profiles", "user_roles", "assignment_rules"],
+  },
   comms: { label: "Kommunikation", entities: ["messages"] },
   money: { label: "Übungsleitergelder", entities: ["trainer_payout_details"] },
 } as const;
@@ -394,6 +397,19 @@ export const listAuditLog = createServerFn({ method: "POST" })
             return `hat das Benutzerkonto von ${t} gelöscht`;
           case "user.status_changed":
             return `hat den Status von ${t} geändert${m["status"] ? ` (${String(m["status"])})` : ""}`;
+          case "assignment.changed": {
+            const to = norm(m["to"]);
+            const from = norm(m["from"]);
+            const note = norm(m["note"]);
+            const base = to
+              ? from
+                ? `hat ${t} von ${from} an ${to} weitergegeben`
+                : `hat ${t} an ${to} zugewiesen`
+              : `hat die Zuweisung von ${t} aufgehoben`;
+            return `${base}${note ? ` (Notiz: ${note})` : ""}`;
+          }
+          case "assignment.rule_changed":
+            return `hat die Standard-Zuständigkeit „${norm(m["area"])}“ auf ${norm(m["assignee"]) || "niemanden"} gesetzt`;
           case "attendance_recorded":
           case "trainer_attendance_recorded":
             return `hat die Anwesenheit erfasst${target ? ` (${q(target)})` : ""}`;
