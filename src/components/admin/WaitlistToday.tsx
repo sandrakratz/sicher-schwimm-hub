@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { checkFit } from "@/lib/swim-fit";
 import type { listWaitlist } from "@/lib/waitlist.functions";
@@ -13,7 +13,31 @@ import type { listWaitlist } from "@/lib/waitlist.functions";
 type Data = Awaited<ReturnType<typeof listWaitlist>>;
 export type TodayEntry = Data["entries"][number];
 
-export type TodayView = "waiting" | "offered" | "followup" | "declined" | "done";
+export type TodayView = "waiting" | "offered" | "followup" | "declined" | "done" | "report";
+
+/** Einzelbereich, der von einer Kachel geöffnet wird (statt der Kachelübersicht). */
+export type TodayOnly =
+  "fit" | "due" | "suggestions" | "expiring" | "followups" | "free" | "new" | "min";
+
+/** Warum wartet ein Eintrag? aktuell / Voraussetzung nicht erfüllt / auf Elternwunsch später. */
+export type WaitingKind = "now" | "unmet" | "later";
+
+export function waitingKindOf(e: TodayEntry, data: Data | undefined): WaitingKind {
+  const af = (e as Record<string, unknown>)["available_from"] as string | null;
+  if (af && af > todayBerlinIso()) return "later";
+  const program = data?.programs.find((p) => p.id === e.program_id) ?? null;
+  if (program && !checkFit(e.notes, program).ok) return "unmet";
+  return "now";
+}
+
+const STATUS_WORD: Record<string, string> = {
+  waiting: "wartend",
+  offered: "Angebot offen",
+  accepted: "gebucht",
+  declined: "abgesagt",
+  expired: "Frist abgelaufen",
+  removed: "entfernt",
+};
 
 type Suggestion = { key: string; childName: string | null; email: string | null; total: number };
 
@@ -85,7 +109,22 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
     .filter((x) => x.waiting > 0);
 
   const weekAgo = now - 7 * 24 * 3600 * 1000;
-  const newEntries = waiting.filter((e) => new Date(e.created_at).getTime() >= weekAgo);
+  // Alle Eingänge der Woche, egal in welchem Status (z. B. sofort gebucht oder angeboten)
+  const newEntries = entries
+    .filter((e) => new Date(e.created_at).getTime() >= weekAgo)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const todayLabel = formatDateBerlin(new Date().toISOString());
+  const newToday = newEntries.filter((e) => formatDateBerlin(e.created_at) === todayLabel);
+  const newUnassigned = newEntries.filter(
+    (e) => !((e as Record<string, unknown>)["assigned_to"] || rules?.waitlist),
+  );
+  const waitNow: TodayEntry[] = [];
+  const waitUnmet: TodayEntry[] = [];
+  const waitLater: TodayEntry[] = [];
+  for (const e of waiting) {
+    const k = waitingKindOf(e, data);
+    (k === "later" ? waitLater : k === "unmet" ? waitUnmet : waitNow).push(e);
+  }
   const fitChecks = waiting
     .map((e) => ({ e, issues: fitProblems(e, data) }))
     .filter((x): x is { e: TodayEntry; issues: string[] } => !!x.issues);
@@ -100,13 +139,29 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
       ),
     );
 
+  // Kurse, die noch starten und die Mindestteilnehmerzahl (noch) nicht erreicht haben
+  const minCourses = courses
+    .filter(
+      (c) =>
+        c.min_participants != null &&
+        c.status !== "completed" &&
+        (!c.starts_on || c.starts_on >= todayIso) &&
+        c.confirmed < c.min_participants,
+    )
+    .sort((a, b) => String(a.starts_on ?? "9999").localeCompare(String(b.starts_on ?? "9999")));
   const suggestions = [...suggestionMap.values()];
   return {
     suggestions,
     expiringOffers,
     followups,
     freeCourses,
+    minCourses,
     newEntries,
+    newToday,
+    newUnassigned,
+    waitNow,
+    waitUnmet,
+    waitLater,
     dueFollowUps,
     fitChecks,
     count:
@@ -163,7 +218,20 @@ export function WaitlistToday({
   onDismiss,
   onOffer,
   initialMine,
+  only,
+  onOnly,
+  onWaitingKind,
+  onGuide,
+  counts,
 }: {
+  /** Zählungen der Detailreiter für die Kacheln */
+  counts: { offered: number; followup: number; declined: number; done: number };
+  /** Geöffneter Einzelbereich; null = Kachelübersicht */
+  only: TodayOnly | null;
+  onOnly: (o: TodayOnly | null) => void;
+  /** Öffnet „Wartend“ gefiltert nach Grund des Wartens */
+  onWaitingKind: (k: WaitingKind) => void;
+  onGuide: () => void;
   data: Data | undefined;
   courseName: (id: unknown) => string;
   onGoto: (v: TodayView) => void;
@@ -233,15 +301,235 @@ export function WaitlistToday({
             </option>
           ))}
         </select>
+        <Button size="sm" variant="outline" className="h-8" onClick={onGuide}>
+          Leitfaden
+        </Button>
+        {only && (
+          <Button size="sm" variant="ghost" className="h-8" onClick={() => onOnly(null)}>
+            ← Zurück zur Übersicht
+          </Button>
+        )}
       </div>
 
-      {t.count === 0 && t.newEntries.length === 0 && (
-        <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
-          Heute ist nichts zu tun. Alle Angebote, Rückfragen und Sperrvorschläge sind erledigt.
+      {!only && (
+        <div className="space-y-5">
+          <TileRow title="Eingang · neu in den letzten 7 Tagen">
+            <Tile
+              n={t.newEntries.length}
+              label="Neu eingegangen"
+              hint={
+                t.newToday.length > 0
+                  ? `heute: ${t.newToday.map((e) => e.child_name).join(", ")}`
+                  : "heute noch nichts"
+              }
+              tone={t.newToday.length > 0 ? "warn" : "normal"}
+              action="Öffnen"
+              onClick={() => onOnly("new")}
+            />
+            <Tile
+              n={t.newUnassigned.length}
+              label="Davon nicht zugewiesen"
+              hint="noch niemand zuständig"
+              tone={t.newUnassigned.length > 0 ? "warn" : "normal"}
+              action="Zuweisen"
+              onClick={() => onOnly("new")}
+            />
+          </TileRow>
+
+          <TileRow title="Wartend · wer wartet warum">
+            <Tile
+              n={t.waitNow.length}
+              label="Wartet auf einen Platz"
+              hint="Niveau und Wunsch passen"
+              action="Öffnen"
+              onClick={() => onWaitingKind("now")}
+            />
+            <Tile
+              n={t.waitUnmet.length}
+              label="Voraussetzung nicht erfüllt"
+              hint="Niveau oder Wunschtag passt nicht"
+              tone={t.waitUnmet.length > 0 ? "warn" : "normal"}
+              action="Prüfen"
+              onClick={() => onWaitingKind("unmet")}
+            />
+            <Tile
+              n={t.waitLater.length}
+              label="Später gewünscht"
+              hint="auf Elternwunsch ab einem Datum"
+              action="Öffnen"
+              onClick={() => onWaitingKind("later")}
+            />
+          </TileRow>
+
+          <TileRow title="Angebote und Fristen">
+            <Tile
+              n={t.expiringOffers.length}
+              label="Laufen in 48 Std. ab"
+              hint="Absage erfassen oder abwarten"
+              tone={t.expiringOffers.length > 0 ? "urgent" : "normal"}
+              action="Öffnen"
+              onClick={() => onOnly("expiring")}
+            />
+            <Tile
+              n={counts.offered}
+              label="Angebote offen"
+              hint="Antwort der Eltern steht aus"
+              action="Öffnen"
+              onClick={() => onGoto("offered")}
+            />
+            <Tile
+              n={counts.followup}
+              label="Rückfrage offen"
+              hint="„Warteliste behalten?“"
+              tone={counts.followup > 0 ? "warn" : "normal"}
+              action="Öffnen"
+              onClick={() => onGoto("followup")}
+            />
+            <Tile
+              n={t.dueFollowUps.length}
+              label="Wiedervorlage fällig"
+              hint="heute nachfassen"
+              tone={t.dueFollowUps.length > 0 ? "urgent" : "normal"}
+              action="Öffnen"
+              onClick={() => onOnly("due")}
+            />
+          </TileRow>
+
+          <TileRow title="Plätze und Kurse">
+            <Tile
+              n={t.freeCourses.length}
+              label="Freie Plätze mit Familien"
+              hint={
+                t.freeCourses.length > 0
+                  ? t.freeCourses
+                      .slice(0, 3)
+                      .map(
+                        (x) =>
+                          `${x.course.name.replace(/^Schwimmabzeichen /, "")} ${x.course.free}`,
+                      )
+                      .join(" · ")
+                  : "keine passenden Familien"
+              }
+              tone={t.freeCourses.length > 0 ? "warn" : "normal"}
+              action="Plätze vergeben"
+              onClick={() => onOnly("free")}
+            />
+            <Tile
+              n={t.fitChecks.length}
+              label="Passt das? Manuell prüfen"
+              hint="freier Platz, aber nichts passt automatisch"
+              tone={t.fitChecks.length > 0 ? "urgent" : "normal"}
+              action="Prüfen"
+              onClick={() => onOnly("fit")}
+            />
+            <Tile
+              n={t.minCourses.length}
+              label="Mindestzahl nicht erreicht"
+              hint={
+                t.minCourses.length > 0
+                  ? t.minCourses
+                      .slice(0, 2)
+                      .map(
+                        (c) =>
+                          `${c.name.replace(/^Schwimmabzeichen /, "")} ${c.confirmed}/${c.min_participants}`,
+                      )
+                      .join(" · ")
+                  : "alle Kurse über der Mindestzahl"
+              }
+              tone={t.minCourses.length > 0 ? "warn" : "normal"}
+              action="Öffnen"
+              onClick={() => onOnly("min")}
+            />
+            <Tile
+              n={null}
+              label="Nachfrage je Angebot"
+              hint="wo ein zusätzlicher Kurs lohnt"
+              action="Öffnen"
+              onClick={() => onGoto("report")}
+            />
+          </TileRow>
+
+          <TileRow title="Klärung und Verlauf">
+            <Tile
+              n={t.suggestions.length}
+              label="Sperrliste prüfen"
+              hint="ab 3 Absagen oder Stornos"
+              tone={t.suggestions.length > 0 ? "urgent" : "normal"}
+              action="Öffnen"
+              onClick={() => onOnly("suggestions")}
+            />
+            <Tile
+              n={counts.declined}
+              label="Absagen und Stornos"
+              hint="zum Nachhalten"
+              action="Öffnen"
+              onClick={() => onGoto("declined")}
+            />
+            <Tile
+              n={counts.done}
+              label="Archiv"
+              hint="erledigte Einträge"
+              action="Öffnen"
+              onClick={() => onGoto("done")}
+            />
+          </TileRow>
         </div>
       )}
 
-      {t.fitChecks.length > 0 && (
+      {only === "new" && (
+        <Section title="Neu eingegangen in den letzten 7 Tagen" count={t.newEntries.length}>
+          {t.newEntries.length === 0 && (
+            <li className="py-2 text-muted-foreground">Nichts Neues in den letzten 7 Tagen.</li>
+          )}
+          {[...t.newEntries]
+            .sort(
+              (a, b) =>
+                Number(!!(a as Record<string, unknown>)["assigned_to"]) -
+                Number(!!(b as Record<string, unknown>)["assigned_to"]),
+            )
+            .map((e) => (
+              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span>
+                  {nameBtn(e)} <span className="text-muted-foreground">{e.parent_email}</span>
+                </span>
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="secondary">{STATUS_WORD[e.status] ?? e.status}</Badge>
+                  eingegangen {formatDateBerlin(e.created_at)}
+                </span>
+              </li>
+            ))}
+        </Section>
+      )}
+
+      {only === "fit" && t.fitChecks.length === 0 && <EmptyOnly />}
+      {only === "due" && t.dueFollowUps.length === 0 && <EmptyOnly />}
+      {only === "suggestions" && t.suggestions.length === 0 && <EmptyOnly />}
+      {only === "expiring" && t.expiringOffers.length === 0 && <EmptyOnly />}
+      {only === "followups" && t.followups.length === 0 && <EmptyOnly />}
+      {only === "free" && t.freeCourses.length === 0 && <EmptyOnly />}
+      {only === "min" && t.minCourses.length === 0 && <EmptyOnly />}
+      {only === "min" && t.minCourses.length > 0 && (
+        <Section title="Mindestzahl nicht erreicht" count={t.minCourses.length}>
+          {t.minCourses.map((c) => (
+            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span>
+                <span className="font-medium">{c.name}</span>
+                <span className="text-muted-foreground">
+                  {c.starts_on ? ` · Start ${formatDateBerlin(c.starts_on)}` : ""}
+                </span>
+              </span>
+              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary">
+                  {c.confirmed} von mindestens {c.min_participants} gebucht
+                </Badge>
+                {c.held > 0 ? `${c.held} Angebot(e) offen` : ""}
+              </span>
+            </li>
+          ))}
+        </Section>
+      )}
+
+      {only === "fit" && t.fitChecks.length > 0 && (
         <Section
           title="Passt das? – manuell prüfen"
           count={t.fitChecks.length}
@@ -265,7 +553,7 @@ export function WaitlistToday({
         </Section>
       )}
 
-      {t.dueFollowUps.length > 0 && (
+      {only === "due" && t.dueFollowUps.length > 0 && (
         <Section
           title="Wiedervorlage fällig"
           count={t.dueFollowUps.length}
@@ -291,7 +579,7 @@ export function WaitlistToday({
         </Section>
       )}
 
-      {t.suggestions.length > 0 && (
+      {only === "suggestions" && t.suggestions.length > 0 && (
         <Section
           title="Sperrliste prüfen (ab 3 Absagen/Stornierungen)"
           count={t.suggestions.length}
@@ -331,7 +619,7 @@ export function WaitlistToday({
         </Section>
       )}
 
-      {t.expiringOffers.length > 0 && (
+      {only === "expiring" && t.expiringOffers.length > 0 && (
         <Section
           title="Angebote laufen in 48 Std. ab"
           count={t.expiringOffers.length}
@@ -355,7 +643,7 @@ export function WaitlistToday({
         </Section>
       )}
 
-      {t.followups.length > 0 && (
+      {only === "followups" && t.followups.length > 0 && (
         <Section
           title="Rückfrage „Warteliste behalten?“ offen"
           count={t.followups.length}
@@ -377,7 +665,7 @@ export function WaitlistToday({
         </Section>
       )}
 
-      {t.freeCourses.length > 0 && (
+      {only === "free" && t.freeCourses.length > 0 && (
         <Section
           title="Freie Plätze mit wartenden Familien"
           count={t.freeCourses.length}
@@ -448,25 +736,6 @@ export function WaitlistToday({
           </li>
         </Section>
       )}
-
-      {t.newEntries.length > 0 && (
-        <Section
-          title="Neu in den letzten 7 Tagen"
-          count={t.newEntries.length}
-          onAll={() => onGoto("waiting")}
-        >
-          {t.newEntries.slice(0, 8).map((e) => (
-            <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span>
-                {nameBtn(e)} <span className="text-muted-foreground">{e.parent_email}</span>
-              </span>
-              <span className="text-xs text-muted-foreground">
-                eingegangen {formatDateBerlin(e.created_at)}
-              </span>
-            </li>
-          ))}
-        </Section>
-      )}
     </div>
   );
 }
@@ -497,4 +766,59 @@ export function fitProblems(e: TodayEntry, data: Data | undefined): string[] | n
     fit.issues.forEach((i) => issues.add(i));
   }
   return [...issues];
+}
+
+function TileRow({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h3 className="mb-2 text-xs font-medium tracking-wide text-muted-foreground">{title}</h3>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{children}</div>
+    </section>
+  );
+}
+
+/** Kachel der Übersicht: Zahl, Titel, ein erklärender Satz und die Aktion. */
+function Tile({
+  n,
+  label,
+  hint,
+  action,
+  onClick,
+  tone = "normal",
+}: {
+  n: number | null;
+  label: string;
+  hint: string;
+  action: string;
+  onClick: () => void;
+  tone?: "normal" | "warn" | "urgent";
+}) {
+  const border =
+    tone === "urgent"
+      ? "border-red-300 bg-red-50"
+      : tone === "warn"
+        ? "border-amber-300 bg-amber-50"
+        : "bg-card";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-[112px] flex-col gap-0.5 rounded-lg border p-4 text-left transition hover:shadow-soft ${border} ${
+        n === 0 ? "opacity-60" : ""
+      }`}
+    >
+      {n != null && <span className="text-3xl font-semibold leading-tight">{n}</span>}
+      <span className="text-sm font-semibold text-primary-deep">{label}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+      <span className="mt-auto pt-2 text-xs text-primary">{action} →</span>
+    </button>
+  );
+}
+
+function EmptyOnly() {
+  return (
+    <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">
+      Hier ist gerade nichts zu tun.
+    </div>
+  );
 }

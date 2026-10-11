@@ -397,7 +397,9 @@ export const listWaitlist = createServerFn({ method: "GET" })
           .order("sort_order"),
         supabaseAdmin
           .from("courses")
-          .select("id,name,program_id,starts_on,max_participants,status,archived_at")
+          .select(
+            "id,name,program_id,starts_on,max_participants,min_participants,status,archived_at",
+          )
           .is("archived_at", null)
           .order("starts_on"),
         supabaseAdmin
