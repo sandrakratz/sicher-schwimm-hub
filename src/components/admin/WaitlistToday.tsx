@@ -493,14 +493,25 @@ export function WaitlistToday({
           )}
           {t.newDirect.map((b) => (
             <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span>
+              <span className="inline-flex flex-wrap items-center gap-2">
+                {b.request_id ? (
+                  <Link
+                    to="/admin/archiv"
+                    search={{ anfrage: b.request_id }}
+                    className="font-medium text-primary underline underline-offset-2"
+                  >
+                    {b.child_name}
+                  </Link>
+                ) : (
+                  <span className="font-medium">{b.child_name}</span>
+                )}
                 <Link
                   to="/admin/familie"
                   search={{ email: b.parent_email ?? "" }}
-                  className="font-medium text-primary underline underline-offset-2"
+                  className="text-xs text-muted-foreground underline"
                 >
-                  {b.child_name}
-                </Link>{" "}
+                  Familie
+                </Link>
                 <span className="text-muted-foreground">{b.parent_email}</span>
               </span>
               <span className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -2,6 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CourseRequestsAdmin } from "@/components/admin/CourseRequestsAdmin";
 
 export const Route = createFileRoute("/_authenticated/admin/archiv")({
+  // ?anfrage=<id> öffnet diese Anfrage direkt (Link aus dem Eingang der Anfrageliste)
+  validateSearch: (search: Record<string, unknown>): { anfrage?: string } =>
+    typeof search["anfrage"] === "string" && /^[0-9a-f-]{36}$/i.test(search["anfrage"])
+      ? { anfrage: search["anfrage"] }
+      : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -21,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin/archiv")({
 });
 
 function ArchivePage() {
+  const { anfrage } = Route.useSearch();
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
@@ -30,7 +36,7 @@ function ArchivePage() {
           Kursanfragen sowie die automatisch erzeugten Buchungsbelege.
         </p>
       </div>
-      <CourseRequestsAdmin mode="all" />
+      <CourseRequestsAdmin mode="all" openId={anfrage} />
     </div>
   );
 }

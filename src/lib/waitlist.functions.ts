@@ -512,6 +512,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
       )
       .map((p) => ({
         id: p.id,
+        request_id: p.request_id,
         child_name: p.participant_name,
         parent_email: p.participant_email,
         course_name: directCourseNames.get(p.course_id) ?? "Kurs",
