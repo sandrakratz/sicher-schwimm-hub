@@ -115,6 +115,11 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
   const todayLabel = formatDateBerlin(new Date().toISOString());
   const newToday = newEntries.filter((e) => formatDateBerlin(e.created_at) === todayLabel);
+  // Direktbuchungen über die Website (kein Wartelisten-Eintrag), nicht vom Zuständigkeitsfilter betroffen
+  const newDirect = (data?.directBookings ?? []).filter(
+    (b) => new Date(b.created_at).getTime() >= weekAgo,
+  );
+  const newDirectToday = newDirect.filter((b) => formatDateBerlin(b.created_at) === todayLabel);
   const newUnassigned = newEntries.filter(
     (e) => !((e as Record<string, unknown>)["assigned_to"] || rules?.waitlist),
   );
@@ -158,6 +163,8 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
     minCourses,
     newEntries,
     newToday,
+    newDirect,
+    newDirectToday,
     newUnassigned,
     waitNow,
     waitUnmet,
@@ -315,14 +322,14 @@ export function WaitlistToday({
         <div className="space-y-5">
           <TileRow title="Eingang · neu in den letzten 7 Tagen">
             <Tile
-              n={t.newEntries.length}
+              n={t.newEntries.length + t.newDirect.length}
               label="Neu eingegangen"
               hint={
-                t.newToday.length > 0
-                  ? `heute: ${t.newToday.map((e) => e.child_name).join(", ")}`
+                t.newToday.length + t.newDirectToday.length > 0
+                  ? `heute: ${[...t.newToday, ...t.newDirectToday].map((e) => e.child_name).join(", ")}`
                   : "heute noch nichts"
               }
-              tone={t.newToday.length > 0 ? "warn" : "normal"}
+              tone={t.newToday.length + t.newDirectToday.length > 0 ? "warn" : "normal"}
               action="Öffnen"
               onClick={() => onOnly("new")}
             />
@@ -477,10 +484,27 @@ export function WaitlistToday({
       )}
 
       {only === "new" && (
-        <Section title="Neu eingegangen in den letzten 7 Tagen" count={t.newEntries.length}>
-          {t.newEntries.length === 0 && (
+        <Section
+          title="Neu eingegangen in den letzten 7 Tagen"
+          count={t.newEntries.length + t.newDirect.length}
+        >
+          {t.newEntries.length + t.newDirect.length === 0 && (
             <li className="py-2 text-muted-foreground">Nichts Neues in den letzten 7 Tagen.</li>
           )}
+          {t.newDirect.map((b) => (
+            <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span>
+                <span className="font-medium">{b.child_name}</span>{" "}
+                <span className="text-muted-foreground">{b.parent_email}</span>
+              </span>
+              <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary">
+                  {b.status === "confirmed" ? "direkt gebucht" : b.status} · {b.course_name}
+                </Badge>
+                eingegangen {formatDateBerlin(b.created_at)}
+              </span>
+            </li>
+          ))}
           {[...t.newEntries]
             .sort(
               (a, b) =>
