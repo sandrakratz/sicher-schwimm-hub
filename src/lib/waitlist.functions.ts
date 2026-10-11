@@ -21,6 +21,7 @@ type BookedPart = Pick<
   | "payment_due_date"
   | "status"
   | "created_at"
+  | "online_booking"
 >;
 
 const SITE_BASE_URL = "https://sicher-schwimmen.com";
@@ -457,7 +458,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("course_participants")
         .select(
-          "id,course_id,request_id,participant_email,participant_name,paid,paid_at,price_amount,payment_method,payment_due_date,status,created_at",
+          "id,course_id,request_id,participant_email,participant_name,paid,paid_at,price_amount,payment_method,payment_due_date,status,created_at,online_booking",
         )
         .neq("status", "cancelled")
         .order("id")
@@ -475,6 +476,49 @@ export const listWaitlist = createServerFn({ method: "GET" })
       const key = `${norm(e.parent_email)}|${norm(e.child_name)}`;
       dupCount.set(key, (dupCount.get(key) ?? 0) + 1);
     }
+
+    // Direktbuchungen über die Website (ohne Wartelisten-Eintrag) für den „Eingang“ der letzten 7 Tage.
+    // Buchungen, die aus einem Platzangebot entstanden sind, gehören zu ihrem Wartelisten-Eintrag.
+    const directSince = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const entryRequestIds = new Set(entries.map((e) => e.request_id).filter(Boolean));
+    const entryOfferKeys = new Set(
+      entries
+        .filter((e) => e.status === "accepted" && e.offer_course_id)
+        .map((e) => `${e.offer_course_id}|${norm(e.parent_email)}|${norm(e.child_name)}`),
+    );
+    const directCourseIds = [
+      ...new Set(
+        bookedParts
+          .filter((p) => p.created_at >= directSince && p.online_booking)
+          .map((p) => p.course_id),
+      ),
+    ];
+    const directCourseNames = new Map<string, string>();
+    if (directCourseIds.length) {
+      const named = await fetchIn<{ id: string; name: string }>(directCourseIds, (chunk, f, t) =>
+        supabaseAdmin.from("courses").select("id,name").in("id", chunk).order("id").range(f, t),
+      );
+      for (const c of named) directCourseNames.set(c.id, c.name);
+    }
+    const directBookings = bookedParts
+      .filter(
+        (p) =>
+          p.created_at >= directSince &&
+          p.online_booking &&
+          !(p.request_id && entryRequestIds.has(p.request_id)) &&
+          !entryOfferKeys.has(
+            `${p.course_id}|${norm(p.participant_email)}|${norm(p.participant_name)}`,
+          ),
+      )
+      .map((p) => ({
+        id: p.id,
+        child_name: p.participant_name,
+        parent_email: p.participant_email,
+        course_name: directCourseNames.get(p.course_id) ?? "Kurs",
+        status: p.status,
+        created_at: p.created_at,
+      }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
     // Absagen (Anfrageliste) und Stornierungen (gebuchte Plätze) je E-Mail bzw. Kind über ALLE
     // Einträge summieren, damit ein neuer Eintrag den Zähler nicht zurücksetzt.
@@ -583,6 +627,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
       }),
 
       cancellations,
+      directBookings,
       staff,
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => {
