@@ -494,7 +494,13 @@ export function WaitlistToday({
           {t.newDirect.map((b) => (
             <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span>
-                <span className="font-medium">{b.child_name}</span>{" "}
+                <Link
+                  to="/admin/familie"
+                  search={{ email: b.parent_email ?? "" }}
+                  className="font-medium text-primary underline underline-offset-2"
+                >
+                  {b.child_name}
+                </Link>{" "}
                 <span className="text-muted-foreground">{b.parent_email}</span>
               </span>
               <span className="flex items-center gap-2 text-xs text-muted-foreground">
