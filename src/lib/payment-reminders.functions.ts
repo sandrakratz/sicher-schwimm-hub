@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { todayBerlinIso } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 
 /**
  * Versendet Zahlungserinnerungen an alle bestätigten, unbezahlten Teilnehmer,
@@ -10,7 +10,8 @@ import { todayBerlinIso } from "@/lib/format";
 export const sendPaymentReminders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
-    (input: { dryRun?: boolean; courseId?: string | null } | undefined) => input ?? {},
+    (input: { dryRun?: boolean; courseId?: string | null; participantId?: string } | undefined) =>
+      input ?? {},
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -29,6 +30,8 @@ export const sendPaymentReminders = createServerFn({ method: "POST" })
       .eq("status", "confirmed")
       .eq("paid", false);
     if (data.courseId) query = query.eq("course_id", data.courseId);
+    // Einzelversand: gezielt eine Person, unabhängig davon, ob sie schon überfällig ist.
+    if (data.participantId) query = query.eq("id", data.participantId);
 
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
@@ -47,7 +50,7 @@ export const sendPaymentReminders = createServerFn({ method: "POST" })
         method: r.payment_method,
         dueDate: r.payment_due_date,
       });
-      if (state.key !== "immediate" && state.key !== "overdue") continue;
+      if (!data.participantId && state.key !== "immediate" && state.key !== "overdue") continue;
 
       const email = (r.participant_email || "").trim();
       const name = r.participant_name || "—";
@@ -88,8 +91,20 @@ export const sendPaymentReminders = createServerFn({ method: "POST" })
         metadata: { participant_id: r.id, kind: state.key },
       });
 
-      if (res.queued) sent.push({ name, email, kind: state.key });
-      else skipped.push({ name, reason: res.reason || "nicht versendet" });
+      if (res.queued) {
+        sent.push({ name, email, kind: state.key });
+        // Vermerk an der Anmeldung, damit nachvollziehbar ist, dass erinnert wurde.
+        const { data: cur } = await supabaseAdmin
+          .from("course_participants")
+          .select("payment_note")
+          .eq("id", r.id)
+          .maybeSingle();
+        const entry = `Zahlungserinnerung per E-Mail versendet am ${formatDateBerlin(`${today}T12:00:00`)}`;
+        await supabaseAdmin
+          .from("course_participants")
+          .update({ payment_note: cur?.payment_note ? `${cur.payment_note}\n${entry}` : entry })
+          .eq("id", r.id);
+      } else skipped.push({ name, reason: res.reason || "nicht versendet" });
     }
 
     if (data.dryRun) return { dryRun: true, candidates: sent.length, sent: [], skipped };

@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Check, Euro } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { useServerFn } from "@tanstack/react-start";
+import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
+import { CalendarClock, Check, Euro, Mail } from "lucide-react";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
 import {
@@ -88,10 +90,13 @@ function nameParts(name: string | null): [string, string] {
 }
 
 function Page() {
+  const remindFn = useServerFn(sendPaymentReminders);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  // Zeilen, bei denen gerade ein neues Fristdatum (YYYY-MM-DD) eingegeben wird
+  const [extend, setExtend] = useState<Record<string, string>>({});
   const [sortBy, setSortBy] = useState<SortKey>("due");
   const ctx = useAssignmentContext();
   const [who, setWho] = useState("");
@@ -152,6 +157,69 @@ function Page() {
     if (error) return toast.error(error.message);
     toast.info(`Zahlung von ${r.participant_name ?? "Teilnehmer"} wieder auf „offen“ gesetzt`);
     await load();
+  }
+
+  async function saveNote(r: Row) {
+    const note = notes[r.id]?.trim();
+    if (!note) return;
+    const merged = r.payment_note ? `${r.payment_note}\n${note}` : note;
+    setBusy(r.id);
+    const { error } = await supabase
+      .from("course_participants")
+      .update({ payment_note: merged })
+      .eq("id", r.id);
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, payment_note: merged } : x)));
+    setNotes((n) => ({ ...n, [r.id]: "" }));
+    toast.success("Notiz gespeichert");
+  }
+
+  async function remind(r: Row) {
+    if (!r.participant_email?.trim()) return toast.error("Keine E-Mail-Adresse hinterlegt.");
+    if (!window.confirm(`Zahlungserinnerung an ${r.participant_email} senden?`)) return;
+    setBusy(r.id);
+    try {
+      const res: any = await remindFn({ data: { participantId: r.id } });
+      if (res?.sentCount) {
+        toast.success(`Erinnerung an ${r.participant_name ?? "Teilnehmer"} versendet`);
+        await load();
+      } else {
+        toast.info(res?.skipped?.[0]?.reason ?? "Es wurde keine Erinnerung versendet.");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Versand fehlgeschlagen");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function extendDue(r: Row) {
+    const newDate = extend[r.id];
+    if (!newDate) return;
+    const oldLabel = formatDateBerlin(dueOf(r));
+    const newLabel = formatDateBerlin(`${newDate}T12:00:00`);
+    const reason = notes[r.id]?.trim();
+    const entry = `Zahlungsfrist verlängert: ${oldLabel} → ${newLabel}${reason ? ` (${reason})` : ""}`;
+    const merged = r.payment_note ? `${r.payment_note}\n${entry}` : entry;
+    setBusy(r.id);
+    const { error } = await supabase
+      .from("course_participants")
+      .update({ payment_due_date: newDate, payment_note: merged })
+      .eq("id", r.id);
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    setRows((rs) =>
+      rs.map((x) =>
+        x.id === r.id ? { ...x, payment_due_date: newDate, payment_note: merged } : x,
+      ),
+    );
+    setExtend((e) => {
+      const { [r.id]: _, ...rest } = e;
+      return rest;
+    });
+    setNotes((n) => ({ ...n, [r.id]: "" }));
+    toast.success(`Frist für ${r.participant_name ?? "Teilnehmer"} bis ${newLabel} verlängert`);
   }
 
   async function markPaid(r: Row) {
@@ -289,15 +357,75 @@ function Page() {
                     ? `${Number(r.price_amount).toFixed(2).replace(".", ",")} €`
                     : "–"}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 md:w-80">
-                  <Input
-                    placeholder="Notiz (optional, z. B. Überweisung)"
-                    value={notes[r.id] ?? ""}
-                    onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                  />
-                  <Button onClick={() => markPaid(r)} disabled={busy === r.id}>
-                    <Check className="h-4 w-4 mr-1" /> Bezahlt
-                  </Button>
+                <div className="flex flex-col gap-2 md:w-96">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      placeholder="Notiz (z. B. Überweisung, Absprache)"
+                      value={notes[r.id] ?? ""}
+                      onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+                    />
+                    <Button onClick={() => markPaid(r)} disabled={busy === r.id}>
+                      <Check className="h-4 w-4 mr-1" /> Bezahlt
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveNote(r)}
+                      disabled={busy === r.id || !notes[r.id]?.trim()}
+                    >
+                      Notiz speichern
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => remind(r)}
+                      disabled={busy === r.id}
+                    >
+                      <Mail className="h-4 w-4 mr-1" /> Erinnerung senden
+                    </Button>
+                    {extend[r.id] === undefined ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          setExtend((e) => ({ ...e, [r.id]: todayBerlinIso() }))
+                        }
+                      >
+                        <CalendarClock className="h-4 w-4 mr-1" /> Frist verlängern
+                      </Button>
+                    ) : (
+                      <>
+                        <Input
+                          type="date"
+                          className="h-8 w-40"
+                          value={extend[r.id]}
+                          min={todayBerlinIso()}
+                          onChange={(e) => setExtend((x) => ({ ...x, [r.id]: e.target.value }))}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => extendDue(r)}
+                          disabled={busy === r.id || !extend[r.id]}
+                        >
+                          Frist setzen
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            setExtend((e) => {
+                              const { [r.id]: _, ...rest } = e;
+                              return rest;
+                            })
+                          }
+                        >
+                          Abbrechen
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
