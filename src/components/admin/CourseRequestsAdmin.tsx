@@ -105,6 +105,7 @@ type CourseOpt = {
   starts_on: string | null;
   price_member: number | null;
   price_non_member: number | null;
+  program_id: string | null;
 };
 
 type CourseInfo = { id: string; name: string; starts_on: string | null; ends_on: string | null };
@@ -245,10 +246,17 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
     setRows((data as Item[]) || []);
     const { data: cs } = await supabase
       .from("courses")
-      .select("id,name,status,max_participants,starts_on,price_member,price_non_member")
+      .select("id,name,status,max_participants,starts_on,price_member,price_non_member,program_id")
       .is("archived_at", null)
       .order("starts_on", { ascending: true, nullsFirst: false });
-    setCourses((cs as CourseOpt[]) || []);
+    const { data: progs } = await supabase.from("course_programs").select("id,sort_order");
+    const rank = new Map((progs ?? []).map((p) => [p.id, p.sort_order]));
+    // Nach Angebot (leicht → schwer, interne am Ende); innerhalb eines Angebots bleibt die Terminfolge.
+    const sorted = [...((cs as CourseOpt[]) || [])].sort(
+      (a, b) =>
+        (rank.get(a.program_id ?? "") ?? Infinity) - (rank.get(b.program_id ?? "") ?? Infinity),
+    );
+    setCourses(sorted);
     const { data: allCs } = await supabase.from("courses").select("id,name,starts_on,ends_on");
     setAllCourses((allCs as CourseInfo[]) || []);
   }
