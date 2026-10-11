@@ -787,7 +787,7 @@ const updateSchema = z.object({
   assignedTo: z.string().trim().max(120).nullable().optional(),
   followUpOn: z
     .string()
-    .regex(/^d{4}-d{2}-d{2}$/)
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .optional(),
   availableFrom: z

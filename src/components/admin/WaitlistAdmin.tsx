@@ -1837,7 +1837,15 @@ export function WaitlistAdmin({
                                     if (
                                       v !== ((e as Record<string, unknown>)["follow_up_on"] ?? null)
                                     )
-                                      update.mutate({ entryId: e.id, followUpOn: v });
+                                      update.mutate(
+                                        { entryId: e.id, followUpOn: v },
+                                        {
+                                          onSuccess: () =>
+                                            toast.success(
+                                              v ? "Wiedervorlage gespeichert" : "Wiedervorlage entfernt",
+                                            ),
+                                        },
+                                      );
                                   }}
                                 />
                               </label>
