@@ -108,11 +108,25 @@ export const getFamilyOverview = createServerFn({ method: "POST" })
       ),
     ];
     const courseNames = new Map<string, string>();
+    const courseDates = new Map<string, { starts_on: string | null; ends_on: string | null }>();
     if (courseIds.length) {
-      const named = await fetchIn<{ id: string; name: string }>(courseIds, (chunk, f, t) =>
-        supabaseAdmin.from("courses").select("id,name").in("id", chunk).order("id").range(f, t),
+      const named = await fetchIn<{
+        id: string;
+        name: string;
+        starts_on: string | null;
+        ends_on: string | null;
+      }>(courseIds, (chunk, f, t) =>
+        supabaseAdmin
+          .from("courses")
+          .select("id,name,starts_on,ends_on")
+          .in("id", chunk)
+          .order("id")
+          .range(f, t),
       );
-      for (const c of named) courseNames.set(c.id, c.name);
+      for (const c of named) {
+        courseNames.set(c.id, c.name);
+        courseDates.set(c.id, { starts_on: c.starts_on, ends_on: c.ends_on });
+      }
     }
     const programIds = [...new Set(entries.map((e) => e.program_id).filter(Boolean))] as string[];
     const programNames = new Map<string, string>();
@@ -270,6 +284,8 @@ export const getFamilyOverview = createServerFn({ method: "POST" })
           id: p.id as string,
           child_name: p.participant_name as string | null,
           course: courseNames.get(p.course_id) ?? "Kurs",
+          starts_on: courseDates.get(p.course_id)?.starts_on ?? null,
+          ends_on: courseDates.get(p.course_id)?.ends_on ?? null,
           status: p.status as string,
           paid: !!p.paid,
           paid_at: (p.paid_at as string | null) ?? null,
