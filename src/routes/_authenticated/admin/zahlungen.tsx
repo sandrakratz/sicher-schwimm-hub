@@ -389,9 +389,7 @@ function Page() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          setExtend((e) => ({ ...e, [r.id]: todayBerlinIso() }))
-                        }
+                        onClick={() => setExtend((e) => ({ ...e, [r.id]: todayBerlinIso() }))}
                       >
                         <CalendarClock className="h-4 w-4 mr-1" /> Frist verlängern
                       </Button>
