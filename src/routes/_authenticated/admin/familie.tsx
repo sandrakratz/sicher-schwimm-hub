@@ -282,7 +282,17 @@ function FamilyPage() {
                 {data.bookings.map((b) => (
                   <tr key={b.id} className="border-b align-top">
                     <td className="py-2 pr-3 font-medium">{b.child_name ?? "–"}</td>
-                    <td className="py-2 pr-3">{b.course}</td>
+                    <td className="py-2 pr-3">
+                      {b.course}
+                      {b.starts_on && (
+                        <div className="text-xs text-muted-foreground">
+                          {formatDateBerlin(b.starts_on)}
+                          {b.ends_on && b.ends_on !== b.starts_on
+                            ? ` – ${formatDateBerlin(b.ends_on)}`
+                            : ""}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-2 pr-3">
                       <Badge variant="secondary">{BOOKING_STATUS[b.status] ?? b.status}</Badge>
                     </td>
