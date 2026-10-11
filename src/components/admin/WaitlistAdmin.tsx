@@ -41,6 +41,9 @@ import {
   WaitlistToday,
   buildTodo,
   fitProblems,
+  waitingKindOf,
+  type TodayOnly,
+  type WaitingKind,
   type TodayEntry,
 } from "@/components/admin/WaitlistToday";
 import { checkFit } from "@/lib/swim-fit";
@@ -494,6 +497,9 @@ export function WaitlistAdmin({
   const [view, setView] = useState<
     "today" | "report" | "waiting" | "offered" | "followup" | "declined" | "done"
   >(initialProgramIds?.length ? "waiting" : "today");
+  const [todayOnly, setTodayOnly] = useState<TodayOnly | null>(null);
+  const [waitingKind, setWaitingKind] = useState<WaitingKind | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [search, setSearch] = useState(initialSearch ?? "");
   const [programFilter, setProgramFilter] = useState<string[] | null>(
     initialProgramIds?.length ? initialProgramIds : null,
@@ -521,6 +527,8 @@ export function WaitlistAdmin({
   } = useQuery({
     queryKey: ["admin-waitlist"],
     queryFn: () => listWaitlist(),
+    // Neue Eingänge sollen ohne manuelles Neuladen auftauchen
+    refetchInterval: 120_000,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-waitlist"] });
@@ -714,7 +722,9 @@ export function WaitlistAdmin({
         ? []
         : allEntries.filter(
             (e) =>
-              inView(e, view) && (!programFilter || programFilter.includes(e.program_id ?? "none")),
+              inView(e, view) &&
+              (!programFilter || programFilter.includes(e.program_id ?? "none")) &&
+              (view !== "waiting" || !waitingKind || waitingKindOf(e, data) === waitingKind),
           );
     const map = new Map<string, typeof entries>();
     for (const e of entries) {
@@ -723,7 +733,7 @@ export function WaitlistAdmin({
     }
     return [...map.entries()];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, view, q, programFilter]);
+  }, [data, view, q, programFilter, waitingKind]);
 
   // Freie Plätze der Kurse, die zu einem Programm gehören (für den Gruppenkopf der Wartenden)
   const freeForProgram = (programId: string) =>
@@ -776,128 +786,131 @@ export function WaitlistAdmin({
         </div>
       </div>
 
-      <CollapsibleCard
-        storageKey="waitlist-rules-info"
-        defaultOpen={false}
-        title="ℹ️ Leitfaden: Fristen, Regeln & Folgen der Anfrageliste"
-        subtitle="Für den Vorstand – so arbeitet die Warteliste automatisch"
-      >
-        <div className="space-y-3 text-sm">
-          <div>
-            <p className="font-semibold">1. Reihenfolge der Platzvergabe</p>
-            <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Aktive Vereinsmitglieder zuerst, danach nach Eingangsdatum.</li>
-              <li>Nur Kinder, die zum Kursbeginn das Mindestalter erreichen.</li>
-              <li>Kinder mit „Erst zuteilen ab“ erst für Kurse ab diesem Datum.</li>
-              <li>Programme mit ausgeschalteter Warteliste nehmen keine neuen Einträge an.</li>
-              <li>
-                „Passt das?“: Automatisch angeboten wird nur, wenn Schwimmniveau (Mindest-Niveau des
-                Angebots) und Wunschtag zum Kurs passen. Andere Fälle erscheinen in „Heute“ unter
-                „Passt das?“ mit Begründung; der Vorstand bietet dann von Hand an. Mindest-Niveau
-                und Kurstag stellen Sie je Angebot in der Kursverwaltung ein.
-              </li>
-            </ul>
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Leitfaden: Fristen, Regeln und Folgen der Anfrageliste</DialogTitle>
+            <DialogDescription>
+              Für den Vorstand – so arbeitet die Warteliste automatisch
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="font-semibold">1. Reihenfolge der Platzvergabe</p>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>Aktive Vereinsmitglieder zuerst, danach nach Eingangsdatum.</li>
+                <li>Nur Kinder, die zum Kursbeginn das Mindestalter erreichen.</li>
+                <li>Kinder mit „Erst zuteilen ab“ erst für Kurse ab diesem Datum.</li>
+                <li>Programme mit ausgeschalteter Warteliste nehmen keine neuen Einträge an.</li>
+                <li>
+                  „Passt das?“: Automatisch angeboten wird nur, wenn Schwimmniveau (Mindest-Niveau
+                  des Angebots) und Wunschtag zum Kurs passen. Andere Fälle erscheinen in „Heute“
+                  unter „Passt das?“ mit Begründung; der Vorstand bietet dann von Hand an.
+                  Mindest-Niveau und Kurstag stellen Sie je Angebot in der Kursverwaltung ein.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">2. Platzangebot</p>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>
+                  Eltern erhalten eine E-Mail mit Zusage-/Absage-Link. Frist: laut Programm
+                  (Standard 3 Tage).
+                </li>
+                <li>Offene Angebote zählen als reservierte Plätze.</li>
+                <li>
+                  Zusage = verbindliche Buchung mit Zahlungsfrist; der Absage-Zähler wird auf 0
+                  gesetzt.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">3. Absage durch die Eltern</p>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>Der Platz wird frei und geht sofort an das nächste passende Kind.</li>
+                <li>
+                  Eltern entscheiden direkt: auf der Warteliste bleiben oder abmelden. Wer bleibt,
+                  fällt auf die Warteliste zurück und wird frühestens für den nächsten Kurs (Start
+                  nach dem abgelehnten Kurs) wieder berücksichtigt, ggf. erst ab einem Wunschdatum.
+                </li>
+                <li>
+                  Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.
+                </li>
+                <li>
+                  Kam die Absage per Telefon oder E-Mail, im Reiter „Angebote“ auf „Absage erfassen“
+                  klicken – der Platz wird dann freigegeben.
+                </li>
+                <li>
+                  Alle Familien mit mindestens einer Absage stehen zum Nachhalten im Reiter
+                  „Absagen“ (zusätzlich zu ihrem eigentlichen Reiter). Der Reiter „Heute“ zeigt, was
+                  gerade zu tun ist; die Suche findet eine Familie in allen Reitern.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">4. Frist ohne Antwort abgelaufen</p>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
+                <li>
+                  Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist; solange
+                  sie läuft, steht der Eintrag im Reiter „Rückfragen“.
+                </li>
+                <li>
+                  Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Reiter
+                  „Archiv“). Keine automatische Sperrliste.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">5. Die 3-Absagen-Regel</p>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>
+                  Beim 3. abgesagten oder unbeantworteten Angebot wird der Wartelistenplatz
+                  automatisch deaktiviert.
+                </li>
+                <li>
+                  Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.
+                </li>
+                <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
+                <li>
+                  Der Zähler gilt je Eltern-E-Mail bzw. Kind über alle Einträge und zählt auch
+                  Stornierungen gebuchter Plätze (Umbuchung, „zurück auf die Warteliste“) mit: ein
+                  neuer Eintrag setzt ihn nicht zurück. Ab 3 Absagen/Stornierungen gesamt erscheint
+                  „Sperrliste prüfen“; gesperrt wird nie automatisch, sondern nur per Klick auf
+                  „Sperren“. „Ignorieren“ blendet den Vorschlag dauerhaft aus.
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">6. Was der Vorstand jederzeit tun kann</p>
+              <ul className="ml-5 list-disc text-muted-foreground">
+                <li>
+                  Zähler zurücksetzen (z. B. bei Krankheit) über den Button „Zähler zurücksetzen“.
+                </li>
+                <li>
+                  Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.
+                </li>
+                <li>
+                  Familien, die Angebote wiederholt ablaufen lassen, über den Sperrvorschlag oder
+                  manuell auf die Sperrliste setzen.
+                </li>
+                <li>
+                  Zuständigkeit: Der Knopf „Zuweisen“ (in „Heute“ an jedem Namen, in der Tabelle in
+                  der Spalte „Zuständig“) weist einem Vorstandsmitglied zu oder gibt mit einer Notiz
+                  weiter; die Person bekommt eine E-Mail. Standard-Zuständigkeiten stehen unter
+                  „Mitglieder“ → „Zuständigkeiten“. Wiedervorlage am: in der aufgeklappten Zeile;
+                  fällige stehen in „Heute“.
+                </li>
+                <li>
+                  „Familie, Verlauf“ zeigt alle Kinder, Buchungen, Absagen, E-Mails und Sperrliste
+                  einer Familie auf einer Seite. Der Reiter „Nachfrage“ zeigt, wo sich ein
+                  zusätzlicher Kurs lohnt.
+                </li>
+              </ul>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold">2. Platzangebot</p>
-            <ul className="ml-5 list-disc text-muted-foreground">
-              <li>
-                Eltern erhalten eine E-Mail mit Zusage-/Absage-Link. Frist: laut Programm (Standard
-                3 Tage).
-              </li>
-              <li>Offene Angebote zählen als reservierte Plätze.</li>
-              <li>
-                Zusage = verbindliche Buchung mit Zahlungsfrist; der Absage-Zähler wird auf 0
-                gesetzt.
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">3. Absage durch die Eltern</p>
-            <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Der Platz wird frei und geht sofort an das nächste passende Kind.</li>
-              <li>
-                Eltern entscheiden direkt: auf der Warteliste bleiben oder abmelden. Wer bleibt,
-                fällt auf die Warteliste zurück und wird frühestens für den nächsten Kurs (Start
-                nach dem abgelehnten Kurs) wieder berücksichtigt, ggf. erst ab einem Wunschdatum.
-              </li>
-              <li>
-                Absage-Zähler +1, Grund und Entscheidung werden in den internen Notizen vermerkt.
-              </li>
-              <li>
-                Kam die Absage per Telefon oder E-Mail, im Reiter „Angebote“ auf „Absage erfassen“
-                klicken – der Platz wird dann freigegeben.
-              </li>
-              <li>
-                Alle Familien mit mindestens einer Absage stehen zum Nachhalten im Reiter „Absagen“
-                (zusätzlich zu ihrem eigentlichen Reiter). Der Reiter „Heute“ zeigt, was gerade zu
-                tun ist; die Suche findet eine Familie in allen Reitern.
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">4. Frist ohne Antwort abgelaufen</p>
-            <ul className="ml-5 list-disc text-muted-foreground">
-              <li>Zählt wie eine Absage (Zähler +1), der Platz geht an das nächste Kind.</li>
-              <li>
-                Eltern erhalten eine Rückfrage „Warteliste behalten?“ mit 7 Tagen Frist; solange sie
-                läuft, steht der Eintrag im Reiter „Rückfragen“.
-              </li>
-              <li>
-                Keine Antwort auf die Rückfrage → Wartelistenplatz wird gestrichen (Reiter
-                „Archiv“). Keine automatische Sperrliste.
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">5. Die 3-Absagen-Regel</p>
-            <ul className="ml-5 list-disc text-muted-foreground">
-              <li>
-                Beim 3. abgesagten oder unbeantworteten Angebot wird der Wartelistenplatz
-                automatisch deaktiviert.
-              </li>
-              <li>
-                Die Eltern werden per E-Mail informiert: erneute Buchung nur über den Vorstand.
-              </li>
-              <li>In der Tabelle: 1× grau, 2× gelb, 3× rot.</li>
-              <li>
-                Der Zähler gilt je Eltern-E-Mail bzw. Kind über alle Einträge und zählt auch
-                Stornierungen gebuchter Plätze (Umbuchung, „zurück auf die Warteliste“) mit: ein
-                neuer Eintrag setzt ihn nicht zurück. Ab 3 Absagen/Stornierungen gesamt erscheint
-                „Sperrliste prüfen“; gesperrt wird nie automatisch, sondern nur per Klick auf
-                „Sperren“. „Ignorieren“ blendet den Vorschlag dauerhaft aus.
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p className="font-semibold">6. Was der Vorstand jederzeit tun kann</p>
-            <ul className="ml-5 list-disc text-muted-foreground">
-              <li>
-                Zähler zurücksetzen (z. B. bei Krankheit) über den Button „Zähler zurücksetzen“.
-              </li>
-              <li>
-                Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.
-              </li>
-              <li>
-                Familien, die Angebote wiederholt ablaufen lassen, über den Sperrvorschlag oder
-                manuell auf die Sperrliste setzen.
-              </li>
-              <li>
-                Zuständigkeit: Der Knopf „Zuweisen“ (in „Heute“ an jedem Namen, in der Tabelle in
-                der Spalte „Zuständig“) weist einem Vorstandsmitglied zu oder gibt mit einer Notiz
-                weiter; die Person bekommt eine E-Mail. Standard-Zuständigkeiten stehen unter
-                „Mitglieder“ → „Zuständigkeiten“. Wiedervorlage am: in der aufgeklappten Zeile;
-                fällige stehen in „Heute“.
-              </li>
-              <li>
-                „Familie, Verlauf“ zeigt alle Kinder, Buchungen, Absagen, E-Mails und Sperrliste
-                einer Familie auf einer Seite. Der Reiter „Nachfrage“ zeigt, wo sich ein
-                zusätzlicher Kurs lohnt.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </CollapsibleCard>
+        </DialogContent>
+      </Dialog>
       <div className="flex flex-wrap items-center gap-3">
         <Input
           value={search}
@@ -915,7 +928,7 @@ export function WaitlistAdmin({
       <div className="flex flex-wrap gap-2 border-b pb-2">
         {(
           [
-            ["today", "Heute"],
+            ["today", "Übersicht"],
             ["waiting", "Wartend"],
             ["offered", "Angebote"],
             ["followup", "Rückfragen"],
@@ -931,6 +944,8 @@ export function WaitlistAdmin({
             onClick={() => {
               setSearch("");
               setView(key);
+              setTodayOnly(null);
+              setWaitingKind(null);
             }}
           >
             {label}
@@ -997,6 +1012,20 @@ export function WaitlistAdmin({
           </button>
         </p>
       )}
+      {waitingKind && shown === "waiting" && (
+        <p className="text-sm text-muted-foreground">
+          Gefiltert auf:{" "}
+          {waitingKind === "now"
+            ? "wartet auf einen Platz"
+            : waitingKind === "unmet"
+              ? "Voraussetzung nicht erfüllt"
+              : "später gewünscht"}
+          .{" "}
+          <button type="button" className="underline" onClick={() => setWaitingKind(null)}>
+            Filter aufheben
+          </button>
+        </p>
+      )}
 
       {q && (
         <p className="text-sm text-muted-foreground">
@@ -1012,7 +1041,23 @@ export function WaitlistAdmin({
         <WaitlistToday
           data={data}
           courseName={courseName}
-          onGoto={(v) => setView(v)}
+          only={todayOnly}
+          onOnly={setTodayOnly}
+          counts={{
+            offered: tabCounts.offered,
+            followup: tabCounts.followup,
+            declined: tabCounts.declined,
+            done: tabCounts.done,
+          }}
+          onGuide={() => setGuideOpen(true)}
+          onWaitingKind={(k) => {
+            setWaitingKind(k);
+            setView("waiting");
+          }}
+          onGoto={(v) => {
+            setWaitingKind(null);
+            setView(v);
+          }}
           onOpenDetail={(e) => setDetail(e as unknown as WaitlistEntry)}
           onDeclineOffer={(e) => {
             setDeclineStay(true);
