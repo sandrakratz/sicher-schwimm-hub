@@ -171,7 +171,14 @@ function SharkyButton({
   );
 }
 
-export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting" }) {
+export function CourseRequestsAdmin({
+  mode = "all",
+  openId,
+}: {
+  mode?: "all" | "waiting";
+  /** Anfrage, die nach dem Laden direkt geöffnet wird (Link aus dem Eingang der Anfrageliste). */
+  openId?: string;
+}) {
   const [rows, setRows] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
   const [courses, setCourses] = useState<CourseOpt[]>([]);
@@ -244,6 +251,10 @@ export function CourseRequestsAdmin({ mode = "all" }: { mode?: "all" | "waiting"
       .select("*")
       .order("created_at", { ascending: false });
     setRows((data as Item[]) || []);
+    if (openId) {
+      const hit = ((data as Item[]) || []).find((r) => r.id === openId);
+      if (hit) setSelected((s) => s ?? hit);
+    }
     const { data: cs } = await supabase
       .from("courses")
       .select("id,name,status,max_participants,starts_on,price_member,price_non_member,program_id")
