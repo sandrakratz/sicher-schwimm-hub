@@ -103,6 +103,7 @@ import { ProgramFitFields } from "@/components/admin/ProgramFitFields";
 import { combineReason } from "@/lib/decline-reasons";
 import { listTransferConsents } from "@/lib/course-transfer-consent.functions";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
+import { OfferDeadlinesDialog } from "@/components/admin/OfferDeadlinesDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { Megaphone, ChevronDown, MoreHorizontal, Smartphone } from "lucide-react";
 import { sendPushInvites } from "@/lib/push.functions";
@@ -147,6 +148,7 @@ function Page() {
   const [editingProg, setEditingProg] = useState<Partial<ProgramRow>>({});
   const [detailId, setDetailId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [deadlinesOpen, setDeadlinesOpen] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
@@ -1739,6 +1741,9 @@ function Page() {
               <Smartphone className="h-4 w-4" />{" "}
               {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
             </Button>
+            <Button variant="outline" onClick={() => setDeadlinesOpen(true)}>
+              <CalendarDays className="h-4 w-4" /> Angebotsfristen
+            </Button>
             <Button onClick={startNewProgram}>
               <Plus className="h-4 w-4" /> Neuer Kurs
             </Button>
@@ -2775,6 +2780,7 @@ function Page() {
         removing={removing}
         onConfirm={confirmRemovePart}
       />
+      {canManage && <OfferDeadlinesDialog open={deadlinesOpen} onOpenChange={setDeadlinesOpen} />}
     </div>
   );
 }

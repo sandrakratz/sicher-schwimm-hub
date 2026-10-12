@@ -4,6 +4,7 @@
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { meetsMinAge, withinMaxAge } from "@/lib/waitlist-age";
 import { checkFit } from "@/lib/swim-fit";
+import { DEFAULT_OFFER_DEADLINES, offerDays } from "@/lib/offer-deadline";
 
 const SITE_BASE_URL = "https://sicher-schwimmen.com";
 
@@ -135,7 +136,12 @@ async function createOffer(entry: any, course: any, program: any) {
   const { queueTemplateEmail } = await import("@/lib/email-send.server");
 
   await refreshWaitlistMember(entry);
-  const days = program?.waitlist_offer_days ?? 3;
+  const { data: dl } = await supabaseAdmin
+    .from("offer_deadline_settings")
+    .select("far_weeks,days_far,days_near")
+    .eq("id", true)
+    .maybeSingle();
+  const days = offerDays(course, dl ?? DEFAULT_OFFER_DEADLINES, todayBerlinIso());
   const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
 
