@@ -69,6 +69,21 @@ const STATUS_WORD: Record<string, string> = {
   removed: "entfernt",
 };
 
+/** Farbe des Status-Badges: gelb wartend, blau Angebot offen, grün gebucht, rot abgesagt/entfernt. */
+const STATUS_TONE: Record<string, string> = {
+  waiting: "bg-amber-100 text-amber-900",
+  offered: "bg-blue-100 text-blue-900",
+  accepted: "bg-emerald-100 text-emerald-900",
+  declined: "bg-red-100 text-red-900",
+  removed: "bg-red-100 text-red-900",
+};
+const STATUS_LEGEND: Array<[string, string]> = [
+  ["wartend", STATUS_TONE["waiting"]!],
+  ["Angebot offen", STATUS_TONE["offered"]!],
+  ["gebucht", STATUS_TONE["accepted"]!],
+  ["abgesagt / entfernt", STATUS_TONE["removed"]!],
+];
+
 type Suggestion = { key: string; childName: string | null; email: string | null; total: number };
 
 export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitlist?: string }) {
@@ -576,7 +591,10 @@ export function WaitlistToday({
                       <span className="text-muted-foreground">{b.parent_email}</span>
                     </span>
                     <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary">
+                      <Badge
+                        variant="secondary"
+                        className={b.status === "confirmed" ? STATUS_TONE["accepted"] : undefined}
+                      >
                         {b.status === "confirmed" ? "Online gebucht" : b.status} · {b.course_name}
                       </Badge>
                       {formatDateTimeBerlin(b.created_at)}
@@ -605,7 +623,9 @@ export function WaitlistToday({
                       >
                         {act.what} · {entryTarget(e)}
                       </Badge>
-                      <Badge variant="outline">{STATUS_WORD[e.status] ?? e.status}</Badge>
+                      <Badge variant="secondary" className={STATUS_TONE[e.status]}>
+                        {STATUS_WORD[e.status] ?? e.status}
+                      </Badge>
                       <span title={`Eingegangen ${formatDateBerlin(e.created_at)}`}>
                         {formatDateTimeBerlin(act.at)}
                       </span>
@@ -661,6 +681,15 @@ export function WaitlistToday({
                 </li>
               );
             })}
+          <li className="flex flex-wrap items-center gap-2 pt-3 text-xs text-muted-foreground">
+            Farben:
+            {STATUS_LEGEND.map(([label, tone]) => (
+              <Badge key={label} variant="secondary" className={tone}>
+                {label}
+              </Badge>
+            ))}
+            <Badge variant="secondary">sonstiges</Badge>
+          </li>
         </Section>
       )}
 
