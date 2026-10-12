@@ -263,9 +263,7 @@ export function WaitlistToday({
   const entryTarget = (e: TodayEntry) => {
     const offerId = (e as Record<string, unknown>)["offer_course_id"];
     const offered = offerId ? data?.courses.find((c) => c.id === offerId)?.name : null;
-    return (
-      offered ?? data?.programs.find((p) => p.id === e.program_id)?.name ?? "ohne Zuordnung"
-    );
+    return offered ?? data?.programs.find((p) => p.id === e.program_id)?.name ?? "ohne Zuordnung";
   };
   const t = buildTodo(data, assignee, ctx.data?.rules);
   const nameBtn = (e: TodayEntry) => (
