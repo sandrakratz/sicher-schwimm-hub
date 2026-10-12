@@ -521,6 +521,76 @@ export const listWaitlist = createServerFn({ method: "GET" })
       }))
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
+    // Weitere Aktionen der Eltern in den letzten 7 Tagen, die nicht an einem Wartelisten-Eintrag
+    // oder einer Buchung hängen: Kursanfragen, Nachrichten, Mitgliedsanträge, Volljährigkeits-Bestätigungen.
+    const bookedRequestIds = new Set(bookedParts.map((p) => p.request_id).filter(Boolean));
+    const [recentRequests, recentMessages, recentMembers, recentMajority] = await Promise.all([
+      supabaseAdmin
+        .from("course_requests")
+        .select("id,parent_name,parent_email,child_name,desired_course,created_at")
+        .gte("created_at", directSince),
+      supabaseAdmin
+        .from("messages")
+        .select("id,from_name,from_email,subject,category,created_at")
+        .gte("created_at", directSince),
+      supabaseAdmin
+        .from("memberships")
+        .select("id,first_name,last_name,email,created_at")
+        .gte("created_at", directSince),
+      supabaseAdmin
+        .from("majority_confirmations")
+        .select("id,first_name,last_name,email,confirmed_at")
+        .gte("confirmed_at", directSince),
+    ]);
+    type ActivityKind = "request" | "message" | "membership" | "majority";
+    const activity: Array<{
+      id: string;
+      kind: ActivityKind;
+      at: string;
+      name: string;
+      email: string | null;
+      detail: string | null;
+      request_id?: string;
+    }> = [
+      ...(recentRequests.data ?? [])
+        .filter((r) => !entryRequestIds.has(r.id) && !bookedRequestIds.has(r.id))
+        .map((r) => ({
+          id: r.id,
+          kind: "request" as const,
+          at: r.created_at,
+          name: r.child_name ?? r.parent_name,
+          email: r.parent_email,
+          detail: r.desired_course,
+          request_id: r.id,
+        })),
+      ...(recentMessages.data ?? []).map((m) => ({
+        id: m.id,
+        kind: "message" as const,
+        at: m.created_at,
+        name: m.from_name,
+        email: m.from_email,
+        detail: m.subject ?? m.category,
+      })),
+      ...(recentMembers.data ?? []).map((m) => ({
+        id: m.id,
+        kind: "membership" as const,
+        at: m.created_at,
+        name: `${m.first_name} ${m.last_name}`.trim(),
+        email: m.email,
+        detail: null,
+      })),
+      ...(recentMajority.data ?? [])
+        .filter((m) => !!m.confirmed_at)
+        .map((m) => ({
+          id: m.id,
+          kind: "majority" as const,
+          at: m.confirmed_at as string,
+          name: `${m.first_name} ${m.last_name}`.trim(),
+          email: m.email,
+          detail: null,
+        })),
+    ].sort((a, b) => b.at.localeCompare(a.at));
+
     // Absagen (Anfrageliste) und Stornierungen (gebuchte Plätze) je E-Mail bzw. Kind über ALLE
     // Einträge summieren, damit ein neuer Eintrag den Zähler nicht zurücksetzt.
     const { loadCancellations, buildDeclineStats } = await import("@/lib/decline-stats.server");
@@ -621,6 +691,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
                 payment_method: part.payment_method,
                 payment_due_date: part.payment_due_date,
                 booked_at: part.created_at,
+                online: !!part.online_booking,
               }
             : null,
           payment_status: paymentStatus as "none" | "open" | "overdue" | "paid",
@@ -629,6 +700,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
 
       cancellations,
       directBookings,
+      activity,
       staff,
       programs: programs ?? [],
       courses: (courses ?? []).map((c) => {

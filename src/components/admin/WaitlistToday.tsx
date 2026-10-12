@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, Loader2, RefreshCw } from "lucide-react";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { checkFit } from "@/lib/swim-fit";
 import type { listWaitlist } from "@/lib/waitlist.functions";
@@ -21,6 +21,36 @@ export type TodayOnly =
 
 /** Warum wartet ein Eintrag? aktuell / Voraussetzung nicht erfüllt / auf Elternwunsch später. */
 export type WaitingKind = "now" | "unmet" | "later";
+
+/** Letzte Aktion der Eltern an einem Wartelisten-Eintrag: Eintrag, Rückmeldung oder Online-Buchung. */
+export function parentActionOf(e: TodayEntry): {
+  at: string;
+  what: string;
+  detail: string | null;
+} {
+  const r = e as Record<string, unknown>;
+  const lastNote =
+    String(r["admin_notes"] ?? "")
+      .split("\n")
+      .map((l) => l.replace(/^\[[^\]]*\]\s*/, "").trim())
+      .filter(Boolean)
+      .pop() ?? null;
+  let best = {
+    at: e.created_at,
+    what: "Auf die Warteliste eingetragen",
+    detail: null as string | null,
+  };
+  const responded = r["responded_at"];
+  if (
+    typeof responded === "string" &&
+    ["waiting", "removed", "accepted"].includes(e.status) &&
+    responded > best.at
+  )
+    best = { at: responded, what: "Rückmeldung der Familie", detail: lastNote };
+  if (e.booking?.online && e.booking.booked_at && e.booking.booked_at > best.at)
+    best = { at: e.booking.booked_at, what: "Online gebucht", detail: null };
+  return best;
+}
 
 export function waitingKindOf(e: TodayEntry, data: Data | undefined): WaitingKind {
   const af = (e as Record<string, unknown>)["available_from"] as string | null;
@@ -111,10 +141,13 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
   const weekAgo = now - 7 * 24 * 3600 * 1000;
   // Alle Eingänge der Woche, egal in welchem Status (z. B. sofort gebucht oder angeboten)
   const newEntries = entries
-    .filter((e) => new Date(e.created_at).getTime() >= weekAgo)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    .filter((e) => new Date(parentActionOf(e).at).getTime() >= weekAgo)
+    .sort((a, b) => parentActionOf(b).at.localeCompare(parentActionOf(a).at));
   const todayLabel = formatDateBerlin(new Date().toISOString());
-  const newToday = newEntries.filter((e) => formatDateBerlin(e.created_at) === todayLabel);
+  const newToday = newEntries.filter((e) => formatDateBerlin(parentActionOf(e).at) === todayLabel);
+  // Weitere Aktionen der Eltern: Kursanfragen, Nachrichten, Mitgliedsanträge, Volljährigkeits-Bestätigungen
+  const newOther = (data?.activity ?? []).filter((a) => new Date(a.at).getTime() >= weekAgo);
+  const newOtherToday = newOther.filter((a) => formatDateBerlin(a.at) === todayLabel);
   // Direktbuchungen über die Website (kein Wartelisten-Eintrag), nicht vom Zuständigkeitsfilter betroffen
   const newDirect = (data?.directBookings ?? []).filter(
     (b) => new Date(b.created_at).getTime() >= weekAgo,
@@ -165,6 +198,8 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
     newToday,
     newDirect,
     newDirectToday,
+    newOther,
+    newOtherToday,
     newUnassigned,
     waitNow,
     waitUnmet,
@@ -328,14 +363,20 @@ export function WaitlistToday({
         <div className="space-y-5">
           <TileRow title="Eingang · neu in den letzten 7 Tagen">
             <Tile
-              n={t.newEntries.length + t.newDirect.length}
-              label="Neu eingegangen"
+              n={t.newEntries.length + t.newDirect.length + t.newOther.length}
+              label="Aktionen der Eltern"
               hint={
-                t.newToday.length + t.newDirectToday.length > 0
-                  ? `heute: ${[...t.newToday, ...t.newDirectToday].map((e) => e.child_name).join(", ")}`
+                t.newToday.length + t.newDirectToday.length + t.newOtherToday.length > 0
+                  ? `heute: ${[...t.newToday, ...t.newDirectToday, ...t.newOtherToday]
+                      .map((e) => ("name" in e ? e.name : e.child_name))
+                      .join(", ")}`
                   : "heute noch nichts"
               }
-              tone={t.newToday.length + t.newDirectToday.length > 0 ? "warn" : "normal"}
+              tone={
+                t.newToday.length + t.newDirectToday.length + t.newOtherToday.length > 0
+                  ? "warn"
+                  : "normal"
+              }
               action="Öffnen"
               onClick={() => onOnly("new")}
             />
@@ -491,69 +532,135 @@ export function WaitlistToday({
 
       {only === "new" && (
         <Section
-          title="Neu eingegangen in den letzten 7 Tagen"
-          count={t.newEntries.length + t.newDirect.length}
+          title="Aktionen der Eltern in den letzten 7 Tagen"
+          count={t.newEntries.length + t.newDirect.length + t.newOther.length}
         >
-          {t.newEntries.length + t.newDirect.length === 0 && (
-            <li className="py-2 text-muted-foreground">Nichts Neues in den letzten 7 Tagen.</li>
-          )}
-          {t.newDirect.map((b) => (
-            <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span className="inline-flex flex-wrap items-center gap-2">
-                {b.request_id ? (
-                  <Link
-                    to="/admin/archiv"
-                    search={{ anfrage: b.request_id }}
-                    className="font-medium text-primary underline underline-offset-2"
-                  >
-                    {b.child_name}
-                  </Link>
-                ) : (
-                  <span className="font-medium">{b.child_name}</span>
-                )}
-                <Link
-                  to="/admin/familie"
-                  search={{ email: b.parent_email ?? "" }}
-                  className="text-xs text-muted-foreground underline"
-                >
-                  Familie
-                </Link>
-                <span className="text-muted-foreground">{b.parent_email}</span>
-              </span>
-              <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="secondary">
-                  {b.status === "confirmed" ? "direkt gebucht" : b.status} · {b.course_name}
-                </Badge>
-                eingegangen {formatDateBerlin(b.created_at)}
-              </span>
+          {t.newEntries.length + t.newDirect.length + t.newOther.length === 0 && (
+            <li className="py-2 text-muted-foreground">
+              Keine Aktionen der Eltern in den letzten 7 Tagen.
             </li>
-          ))}
-          {[...t.newEntries]
-            .sort(
-              (a, b) =>
-                Number(!!(a as Record<string, unknown>)["assigned_to"]) -
-                Number(!!(b as Record<string, unknown>)["assigned_to"]),
-            )
-            .map((e) => (
-              <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span>
-                  {nameBtn(e)} <span className="text-muted-foreground">{e.parent_email}</span>
-                </span>
-                <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge
-                    variant="secondary"
-                    title={
-                      e.status === "waiting"
-                        ? "Wartend: kein Platz zugeteilt, die Familie steht auf der Warteliste."
-                        : undefined
-                    }
+          )}
+          {[
+            ...t.newDirect.map((b) => ({ at: b.created_at, kind: "direct" as const, b })),
+            ...t.newEntries.map((e) => ({ at: parentActionOf(e).at, kind: "entry" as const, e })),
+            ...t.newOther.map((a) => ({ at: a.at, kind: "other" as const, a })),
+          ]
+            .sort((x, y) => y.at.localeCompare(x.at))
+            .map((item) => {
+              if (item.kind === "direct") {
+                const b = item.b;
+                return (
+                  <li
+                    key={`d-${b.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2"
                   >
-                    {STATUS_WORD[e.status] ?? e.status} · {entryTarget(e)}
-                  </Badge>
-                  eingegangen {formatDateBerlin(e.created_at)}
-                </span>
-              </li>
-            ))}
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      {b.request_id ? (
+                        <Link
+                          to="/admin/archiv"
+                          search={{ anfrage: b.request_id }}
+                          className="font-medium text-primary underline underline-offset-2"
+                        >
+                          {b.child_name}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{b.child_name}</span>
+                      )}
+                      <Link
+                        to="/admin/familie"
+                        search={{ email: b.parent_email ?? "" }}
+                        className="text-xs text-muted-foreground underline"
+                      >
+                        Familie
+                      </Link>
+                      <span className="text-muted-foreground">{b.parent_email}</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="secondary">
+                        {b.status === "confirmed" ? "Online gebucht" : b.status} · {b.course_name}
+                      </Badge>
+                      {formatDateTimeBerlin(b.created_at)}
+                    </span>
+                  </li>
+                );
+              }
+              if (item.kind === "entry") {
+                const e = item.e;
+                const act = parentActionOf(e);
+                return (
+                  <li
+                    key={`e-${e.id}`}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2"
+                  >
+                    <span>
+                      {nameBtn(e)} <span className="text-muted-foreground">{e.parent_email}</span>
+                      {act.detail && (
+                        <span className="block text-xs text-muted-foreground">{act.detail}</span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge
+                        variant="secondary"
+                        title={`${act.what} · Stand jetzt: ${STATUS_WORD[e.status] ?? e.status}`}
+                      >
+                        {act.what} · {entryTarget(e)}
+                      </Badge>
+                      <Badge variant="outline">{STATUS_WORD[e.status] ?? e.status}</Badge>
+                      <span title={`Eingegangen ${formatDateBerlin(e.created_at)}`}>
+                        {formatDateTimeBerlin(act.at)}
+                      </span>
+                    </span>
+                  </li>
+                );
+              }
+              const a = item.a;
+              const label = {
+                request: "Kursanfrage",
+                message: "Nachricht",
+                membership: "Mitgliedsantrag",
+                majority: "Volljährigkeit bestätigt",
+              }[a.kind];
+              const linkClass = "font-medium text-primary underline underline-offset-2";
+              return (
+                <li
+                  key={`o-${a.kind}-${a.id}`}
+                  className="flex flex-wrap items-center justify-between gap-2 py-2"
+                >
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    {a.kind === "request" ? (
+                      <Link to="/admin/archiv" search={{ anfrage: a.id }} className={linkClass}>
+                        {a.name}
+                      </Link>
+                    ) : a.kind === "message" ? (
+                      <Link to="/admin/nachrichten" className={linkClass}>
+                        {a.name}
+                      </Link>
+                    ) : (
+                      <Link to="/admin/mitglieder" className={linkClass}>
+                        {a.name}
+                      </Link>
+                    )}
+                    {a.email && (
+                      <Link
+                        to="/admin/familie"
+                        search={{ email: a.email }}
+                        className="text-xs text-muted-foreground underline"
+                      >
+                        Familie
+                      </Link>
+                    )}
+                    <span className="text-muted-foreground">{a.email}</span>
+                  </span>
+                  <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="secondary">
+                      {label}
+                      {a.detail ? ` · ${a.detail}` : ""}
+                    </Badge>
+                    {formatDateTimeBerlin(a.at)}
+                  </span>
+                </li>
+              );
+            })}
         </Section>
       )}
 

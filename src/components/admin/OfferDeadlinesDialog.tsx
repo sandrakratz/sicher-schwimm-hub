@@ -146,8 +146,8 @@ export function OfferDeadlinesDialog({
         <div className="space-y-2">
           <div className="text-sm font-semibold">Kurszeiträume</div>
           <p className="text-xs text-muted-foreground">
-            „Frist laut Regel“ zeigt, was heute gelten würde. Nur eintragen, wenn ein Zeitraum
-            davon abweichen soll; leer lassen = Regel.
+            „Frist laut Regel“ zeigt, was heute gelten würde. Nur eintragen, wenn ein Zeitraum davon
+            abweichen soll; leer lassen = Regel.
           </p>
           {loading ? (
             <p className="text-sm text-muted-foreground py-6 text-center">Lade…</p>
