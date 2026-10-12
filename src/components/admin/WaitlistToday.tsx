@@ -259,6 +259,14 @@ export function WaitlistToday({
     if (initialMine && ctx.data?.me) setAssignee(ctx.data.me);
   }, [initialMine, ctx.data?.me]);
   const qc = useQueryClient();
+  // Wofür der Eintrag gilt: angebotener Kurs, sonst das gewünschte Angebot (Programm)
+  const entryTarget = (e: TodayEntry) => {
+    const offerId = (e as Record<string, unknown>)["offer_course_id"];
+    const offered = offerId ? data?.courses.find((c) => c.id === offerId)?.name : null;
+    return (
+      offered ?? data?.programs.find((p) => p.id === e.program_id)?.name ?? "ohne Zuordnung"
+    );
+  };
   const t = buildTodo(data, assignee, ctx.data?.rules);
   const nameBtn = (e: TodayEntry) => (
     <span className="inline-flex items-center gap-2">
@@ -534,7 +542,16 @@ export function WaitlistToday({
                   {nameBtn(e)} <span className="text-muted-foreground">{e.parent_email}</span>
                 </span>
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="secondary">{STATUS_WORD[e.status] ?? e.status}</Badge>
+                  <Badge
+                    variant="secondary"
+                    title={
+                      e.status === "waiting"
+                        ? "Wartend: kein Platz zugeteilt, die Familie steht auf der Warteliste."
+                        : undefined
+                    }
+                  >
+                    {STATUS_WORD[e.status] ?? e.status} · {entryTarget(e)}
+                  </Badge>
                   eingegangen {formatDateBerlin(e.created_at)}
                 </span>
               </li>
