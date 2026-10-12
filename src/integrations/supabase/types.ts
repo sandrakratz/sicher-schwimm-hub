@@ -725,6 +725,7 @@ export type Database = {
           max_participants: number | null
           min_participants: number | null
           name: string
+          offer_days_override: number | null
           payment_due_days: number
           price_member: number | null
           price_non_member: number | null
@@ -757,6 +758,7 @@ export type Database = {
           max_participants?: number | null
           min_participants?: number | null
           name: string
+          offer_days_override?: number | null
           payment_due_days?: number
           price_member?: number | null
           price_non_member?: number | null
@@ -789,6 +791,7 @@ export type Database = {
           max_participants?: number | null
           min_participants?: number | null
           name?: string
+          offer_days_override?: number | null
           payment_due_days?: number
           price_member?: number | null
           price_non_member?: number | null
@@ -1393,6 +1396,33 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      offer_deadline_settings: {
+        Row: {
+          days_far: number
+          days_near: number
+          far_weeks: number
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          days_far?: number
+          days_near?: number
+          far_weeks?: number
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          days_far?: number
+          days_near?: number
+          far_weeks?: number
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
