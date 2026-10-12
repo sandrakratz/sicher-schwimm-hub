@@ -144,9 +144,7 @@ export function buildTodo(data: Data | undefined, assignee = "", rules?: { waitl
     .filter((e) => new Date(parentActionOf(e).at).getTime() >= weekAgo)
     .sort((a, b) => parentActionOf(b).at.localeCompare(parentActionOf(a).at));
   const todayLabel = formatDateBerlin(new Date().toISOString());
-  const newToday = newEntries.filter(
-    (e) => formatDateBerlin(parentActionOf(e).at) === todayLabel,
-  );
+  const newToday = newEntries.filter((e) => formatDateBerlin(parentActionOf(e).at) === todayLabel);
   // Weitere Aktionen der Eltern: Kursanfragen, Nachrichten, Mitgliedsanträge, Volljährigkeits-Bestätigungen
   const newOther = (data?.activity ?? []).filter((a) => new Date(a.at).getTime() >= weekAgo);
   const newOtherToday = newOther.filter((a) => formatDateBerlin(a.at) === todayLabel);

@@ -71,14 +71,12 @@ export const saveOfferDeadlines = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertManager(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("offer_deadline_settings")
-      .upsert({
-        id: true,
-        ...data.settings,
-        updated_at: new Date().toISOString(),
-        updated_by: context.userId,
-      });
+    const { error } = await supabaseAdmin.from("offer_deadline_settings").upsert({
+      id: true,
+      ...data.settings,
+      updated_at: new Date().toISOString(),
+      updated_by: context.userId,
+    });
     if (error) throw new Error(error.message);
     for (const o of data.overrides) {
       const { error: e } = await supabaseAdmin
