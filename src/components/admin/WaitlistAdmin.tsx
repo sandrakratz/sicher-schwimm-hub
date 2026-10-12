@@ -1842,7 +1842,9 @@ export function WaitlistAdmin({
                                         {
                                           onSuccess: () =>
                                             toast.success(
-                                              v ? "Wiedervorlage gespeichert" : "Wiedervorlage entfernt",
+                                              v
+                                                ? "Wiedervorlage gespeichert"
+                                                : "Wiedervorlage entfernt",
                                             ),
                                         },
                                       );
