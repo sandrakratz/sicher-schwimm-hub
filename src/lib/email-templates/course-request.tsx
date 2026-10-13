@@ -24,6 +24,8 @@ interface Props {
   /** Nur zur Erkennung, ob Gesundheitsangaben vorliegen – der Text selbst wird nie in die E-Mail geschrieben. */
   health_info?: string;
   has_health_info?: boolean;
+  /** Freitext-Anmerkungen der Eltern (Warteliste) – keine Gesundheitsangabe, Text steht nur im Admin-Bereich. */
+  has_parent_notes?: boolean;
   /** Zustimmungen aus dem Formular (nur anzeigen, wenn bekannt). */
   terms_accepted?: boolean;
   privacy_accepted?: boolean;
@@ -121,6 +123,11 @@ const Email = (p: Props) => {
                 ? 'JA – es wurden Gesundheitsangaben vermerkt. Aus Datenschutzgründen stehen sie nicht in dieser E-Mail, sondern nur im Admin-Bereich unter „Kursanfragen".'
                 : "keine Angaben gemacht"}
             </Text>
+            {p.has_parent_notes && (
+              <Text style={{ margin: "8px 0 0" }}>
+                <strong>Anmerkungen der Eltern:</strong> ja – der Text steht nur im Admin-Bereich.
+              </Text>
+            )}
           </Section>
           <Section
             style={{

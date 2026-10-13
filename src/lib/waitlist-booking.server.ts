@@ -141,7 +141,8 @@ export async function bookWaitlistEntry(
         child_dob: entry.child_dob,
         desired_course: program?.name ?? course.name,
         swimming_level: swimmingLevel,
-        health_info: freeText,
+        // Freitext der Warteliste (Wunschzeiten o. Ä.) ist keine Gesundheitsangabe
+        message: freeText,
         gdpr_consent: true,
         contact_permission: true,
         status: "accepted",
@@ -227,7 +228,7 @@ export async function bookWaitlistEntry(
         child_dob: entry.child_dob || "",
         desired_course: `${program?.name ?? course.name} – ${course.name}`,
         swimming_level: swimmingLevel ?? undefined,
-        has_health_info: Boolean(freeText),
+        has_parent_notes: Boolean(freeText),
         message: `${label} – Platz verbindlich gebucht`,
         submitted_at: issuedAt,
         created_at: issuedAt,
