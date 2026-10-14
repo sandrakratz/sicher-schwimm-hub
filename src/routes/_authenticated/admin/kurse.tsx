@@ -14,6 +14,7 @@ import {
   fmtDate,
   slugify,
   Hint,
+  courseLabel,
   ENROLL_STATUS,
   ENROLL_STATUS_LABEL,
   REQUEST_STATUS_LABEL,
@@ -2273,6 +2274,11 @@ function Page() {
         <DialogContent className="w-[95vw] max-w-[1400px] sm:max-w-[1400px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Teilnehmer: {partCourse?.name}</DialogTitle>
+            {partCourse && (
+              <div className="text-sm font-medium text-muted-foreground">
+                Kurs: {courseLabel(partCourse)}
+              </div>
+            )}
           </DialogHeader>
           {partCourse &&
             (() => {

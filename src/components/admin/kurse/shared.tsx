@@ -106,6 +106,23 @@ export function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
 }
 
+/** Kursbezeichnung mit Zeitraum, z. B. „Wasserzeit für Kinder & Eltern · 15.11.2026 – 10.01.2027 · sonntags 12:00 Uhr“. */
+export function courseLabel(
+  c: {
+    name: string;
+    starts_on: string | null;
+    ends_on: string | null;
+    schedule: string | null;
+  } | null,
+) {
+  if (!c) return "";
+  const range = [c.starts_on, c.ends_on]
+    .filter(Boolean)
+    .map((d) => fmtDate(d))
+    .join(" – ");
+  return [c.name, range, c.schedule].filter(Boolean).join(" · ");
+}
+
 export type Course = {
   id: string;
   name: string;
