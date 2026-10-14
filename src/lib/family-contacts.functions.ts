@@ -40,9 +40,7 @@ export const updateOwnFamilyContacts = createServerFn({ method: "POST" })
     });
     if (Array.isArray(m.family_members)) {
       const list = data.list ?? [];
-      const nextList = (m.family_members as any[]).map((p, i) =>
-        list[i] ? apply(p, list[i]) : p,
-      );
+      const nextList = (m.family_members as any[]).map((p, i) => (list[i] ? apply(p, list[i]) : p));
       const { error: listErr } = await supabaseAdmin
         .from("memberships")
         .update({ family_members: nextList })

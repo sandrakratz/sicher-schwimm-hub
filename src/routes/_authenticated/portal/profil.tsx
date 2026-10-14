@@ -202,9 +202,7 @@ function Profile() {
                   <div className="flex justify-between">
                     <span className="font-medium">
                       {f.name || "Ohne Namen"}{" "}
-                      <span className="text-xs text-muted-foreground font-normal">
-                        ({f.role})
-                      </span>
+                      <span className="text-xs text-muted-foreground font-normal">({f.role})</span>
                     </span>
                     <span className="text-muted-foreground">
                       {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
