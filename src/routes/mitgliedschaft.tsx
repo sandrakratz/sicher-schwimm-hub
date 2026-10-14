@@ -123,7 +123,13 @@ const schema = z.object({
   accepted_privacy: z.boolean().refine((v) => v),
 });
 
-type FamilyMember = { name: string; last_name: string; date_of_birth: string; email?: string; phone?: string };
+type FamilyMember = {
+  name: string;
+  last_name: string;
+  date_of_birth: string;
+  email?: string;
+  phone?: string;
+};
 
 function isMinorDob(dob?: string | null) {
   if (!dob) return false;
