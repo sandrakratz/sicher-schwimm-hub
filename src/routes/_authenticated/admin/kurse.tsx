@@ -2449,6 +2449,16 @@ function Page() {
                             {p.participant_phone}
                           </>
                         )}
+                        {canManage && (p.payer_street || p.payer_zip || p.payer_city) && (
+                          <div
+                            className="mt-1 text-muted-foreground"
+                            title="Rechnungsanschrift der Eltern"
+                          >
+                            {p.payer_street}
+                            <br />
+                            {[p.payer_zip, p.payer_city].filter(Boolean).join(" ")}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Select value={p.status} onValueChange={(v: any) => updatePartStatus(p, v)}>
@@ -2716,6 +2726,17 @@ function Page() {
         onOpenChange={setReqOpen}
         loading={reqLoading}
         request={reqRow}
+        address={
+          canManage && reqRow
+            ? (() => {
+                const p = participants.find((x) => x.request_id === reqRow.id);
+                if (!p || !(p.payer_street || p.payer_zip || p.payer_city)) return null;
+                return [p.payer_street, [p.payer_zip, p.payer_city].filter(Boolean).join(" ")]
+                  .filter(Boolean)
+                  .join(", ");
+              })()
+            : null
+        }
       />
       <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
 

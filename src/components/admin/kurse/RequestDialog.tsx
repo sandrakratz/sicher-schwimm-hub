@@ -16,11 +16,14 @@ export function RequestDialog({
   onOpenChange,
   loading,
   request,
+  address,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   loading: boolean;
   request: CourseRequest | null;
+  /** Rechnungsanschrift aus der Buchung (liegt am Teilnehmer, nicht an der Anfrage). */
+  address?: string | null;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,6 +50,12 @@ export function RequestDialog({
                 <div className="text-xs text-muted-foreground">Eltern / Kontakt</div>
                 <div className="font-medium">{request.parent_name}</div>
               </div>
+              {address && (
+                <div className="sm:col-span-2">
+                  <div className="text-xs text-muted-foreground">Rechnungsanschrift</div>
+                  <div className="font-medium">{address}</div>
+                </div>
+              )}
               <div>
                 <div className="text-xs text-muted-foreground">E-Mail</div>
                 <div className="font-medium break-all">{request.parent_email}</div>
