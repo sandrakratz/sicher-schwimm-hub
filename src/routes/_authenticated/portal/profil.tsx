@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PayoutIbanCard } from "@/components/trainer/PayoutIbanCard";
+import { useServerFn } from "@tanstack/react-start";
+import { updateOwnFamilyContacts } from "@/lib/family-contacts.functions";
 
 export const Route = createFileRoute("/_authenticated/portal/profil")({
   component: Profile,
@@ -16,8 +18,19 @@ function Profile() {
   const [p, setP] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [family, setFamily] = useState<
-    Array<{ name?: string; date_of_birth?: string; role?: string }>
+    Array<{
+      name?: string;
+      date_of_birth?: string;
+      role?: string;
+      email?: string | null;
+      phone?: string | null;
+      membership_id?: string;
+      slot?: "partner" | "child" | "item";
+      index?: number;
+    }>
   >([]);
+  const [savingFamily, setSavingFamily] = useState(false);
+  const updateContacts = useServerFn(updateOwnFamilyContacts);
   const [isTrainer, setIsTrainer] = useState(false);
 
   useEffect(() => {
@@ -36,24 +49,74 @@ function Profile() {
       setP(profile);
       const { data: ms } = await supabase
         .from("memberships")
-        .select("family_members,status")
+        .select("id,family_members,status")
         .eq("user_id", data.user.id)
         .order("created_at", { ascending: false });
       const fm = (ms || []).flatMap((m: any) => {
         const f = m.family_members;
         if (!f) return [];
-        if (Array.isArray(f)) return f.map((x: any) => ({ ...x, role: "Familienmitglied" }));
+        if (Array.isArray(f))
+          return f.map((x: any, i: number) => ({
+            ...x,
+            role: "Familienmitglied",
+            membership_id: m.id,
+            slot: "item",
+            index: i,
+          }));
         const out: any[] = [];
-        if (f.partner?.name) out.push({ ...f.partner, role: "Partner:in" });
+        if (f.partner?.name)
+          out.push({ ...f.partner, role: "Partner:in", membership_id: m.id, slot: "partner" });
         if (Array.isArray(f.children))
-          f.children
-            .filter((c: any) => c?.name)
-            .forEach((c: any) => out.push({ ...c, role: "Kind" }));
+          f.children.forEach((c: any, i: number) => {
+            if (c?.name)
+              out.push({ ...c, role: "Kind", membership_id: m.id, slot: "child", index: i });
+          });
         return out;
       });
       setFamily(fm);
     });
   }, []);
+
+  function updateFamily(i: number, patch: { email?: string; phone?: string }) {
+    setFamily((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+
+  async function saveFamily() {
+    const ids = Array.from(new Set(family.map((f) => f.membership_id).filter(Boolean)));
+    setSavingFamily(true);
+    try {
+      for (const id of ids as string[]) {
+        const mine = family.filter((f) => f.membership_id === id);
+        const partner = mine.find((f) => f.slot === "partner");
+        const children: Array<{ email: string; phone: string }> = [];
+        mine
+          .filter((f) => f.slot === "child")
+          .forEach((f) => {
+            children[f.index as number] = { email: f.email ?? "", phone: f.phone ?? "" };
+          });
+        const list: Array<{ email: string; phone: string }> = [];
+        mine
+          .filter((f) => f.slot === "item")
+          .forEach((f) => {
+            list[f.index as number] = { email: f.email ?? "", phone: f.phone ?? "" };
+          });
+        await updateContacts({
+          data: {
+            membership_id: id,
+            list: Array.from(list, (c) => c ?? { email: "", phone: "" }),
+            partner: partner ? { email: partner.email ?? "", phone: partner.phone ?? "" } : null,
+            // Einträge ohne Namen (werden nicht angezeigt) bleiben leer
+            children: Array.from(children, (c) => c ?? { email: "", phone: "" }),
+          },
+        });
+      }
+      toast.success("Kontaktdaten der Familienmitglieder gespeichert");
+    } catch (e: any) {
+      toast.error(e?.message || "Speichern fehlgeschlagen");
+    } finally {
+      setSavingFamily(false);
+    }
+  }
 
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -135,21 +198,57 @@ function Profile() {
             </h2>
             <ul className="divide-y">
               {family.map((f, i) => (
-                <li key={i} className="py-2 flex justify-between text-sm">
-                  <span className="font-medium">
-                    {f.name || "Ohne Namen"}{" "}
-                    <span className="text-xs text-muted-foreground font-normal">
-                      ({(f as any).role})
+                <li key={i} className="py-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">
+                      {f.name || "Ohne Namen"}{" "}
+                      <span className="text-xs text-muted-foreground font-normal">
+                        ({f.role})
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
-                  </span>
+                    <span className="text-muted-foreground">
+                      {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
+                    </span>
+                  </div>
+                  {f.slot ? (
+                    <div className="grid sm:grid-cols-2 gap-3 mt-2">
+                      <div>
+                        <Label className="text-xs">E-Mail</Label>
+                        <Input
+                          type="email"
+                          value={f.email ?? ""}
+                          onChange={(e) => updateFamily(i, { email: e.target.value })}
+                          maxLength={255}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Telefon</Label>
+                        <Input
+                          type="tel"
+                          value={f.phone ?? ""}
+                          onChange={(e) => updateFamily(i, { phone: e.target.value })}
+                          maxLength={40}
+                        />
+                      </div>
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
+            {family.some((f) => f.slot) && (
+              <Button
+                type="button"
+                variant="accent"
+                className="mt-3"
+                onClick={saveFamily}
+                disabled={savingFamily}
+              >
+                {savingFamily ? "Speichern…" : "Kontaktdaten speichern"}
+              </Button>
+            )}
             <p className="text-xs text-muted-foreground mt-3">
-              Änderungen bitte an info@sicher-schwimmen.com melden.
+              Telefon und E-Mail können Sie hier selbst ergänzen. Änderungen an Namen oder
+              Geburtsdaten bitte an info@sicher-schwimmen.com melden.
             </p>
           </CardContent>
         </Card>

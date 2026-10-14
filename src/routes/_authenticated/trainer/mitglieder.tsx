@@ -70,7 +70,13 @@ function Page() {
     const q = query.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((r) =>
-      [r.name, r.email ?? "", r.partner?.name ?? "", ...r.children.map((c) => c.name)]
+      [
+        r.name,
+        r.email ?? "",
+        r.partner?.name ?? "",
+        r.partner?.email ?? "",
+        ...r.children.flatMap((c) => [c.name, c.email ?? ""]),
+      ]
         .join(" ")
         .toLowerCase()
         .includes(q),
@@ -186,8 +192,8 @@ function Page() {
                       <TableCell>
                         {m.partner.date_of_birth ? formatDateBerlin(m.partner.date_of_birth) : "—"}
                       </TableCell>
-                      <TableCell>{m.phone || "—"}</TableCell>
-                      <TableCell>{m.email || "—"}</TableCell>
+                      <TableCell>{m.partner.phone || "—"}</TableCell>
+                      <TableCell>{m.partner.email || "—"}</TableCell>
                       <TableCell colSpan={2} className="text-xs text-muted-foreground">
                         über {m.name}
                       </TableCell>
@@ -202,8 +208,8 @@ function Page() {
                       <TableCell>
                         {c.date_of_birth ? formatDateBerlin(c.date_of_birth) : "—"}
                       </TableCell>
-                      <TableCell>{m.phone || "—"}</TableCell>
-                      <TableCell>{m.email || "—"}</TableCell>
+                      <TableCell>{c.phone || "—"}</TableCell>
+                      <TableCell>{c.email || "—"}</TableCell>
                       <TableCell colSpan={2} className="text-xs text-muted-foreground">
                         über {m.name}
                       </TableCell>

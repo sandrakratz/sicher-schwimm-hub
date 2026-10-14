@@ -51,7 +51,12 @@ const STATUS_LABEL: Record<string, string> = {
   terminated: "Beendet",
 };
 
-type Member = { name: string; date_of_birth: string | null; email?: string | null };
+type Member = {
+  name: string;
+  date_of_birth: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
 
 function majorityBadge(dob?: string | null): string | null {
   if (!dob) return null;
@@ -95,6 +100,8 @@ function FamilyEditor({
   const [partner, setPartner] = useState<Member>({
     name: value?.partner?.name || "",
     date_of_birth: value?.partner?.date_of_birth || "",
+    email: value?.partner?.email ?? null,
+    phone: value?.partner?.phone ?? null,
   });
   const [children, setChildren] = useState<Member[]>(
     value?.children?.length
@@ -102,6 +109,7 @@ function FamilyEditor({
           name: c.name || "",
           date_of_birth: c.date_of_birth || "",
           email: c.email ?? null,
+          phone: c.phone ?? null,
         }))
       : [],
   );
@@ -116,14 +124,20 @@ function FamilyEditor({
     setSaving(true);
     const cleaned: FamilyMembers = {
       partner: partner.name.trim()
-        ? { name: partner.name.trim(), date_of_birth: partner.date_of_birth || null }
+        ? {
+            name: partner.name.trim(),
+            date_of_birth: partner.date_of_birth || null,
+            ...(partner.email?.trim() ? { email: partner.email.trim() } : {}),
+            ...(partner.phone?.trim() ? { phone: partner.phone.trim() } : {}),
+          }
         : null,
       children: children
         .filter((c) => c.name.trim())
         .map((c) => ({
           name: c.name.trim(),
           date_of_birth: c.date_of_birth || null,
-          ...(c.email ? { email: c.email } : {}),
+          ...(c.email?.trim() ? { email: c.email.trim() } : {}),
+          ...(c.phone?.trim() ? { phone: c.phone.trim() } : {}),
         })),
     };
     await onSave(cleaned);
@@ -149,6 +163,24 @@ function FamilyEditor({
               type="date"
               value={partner.date_of_birth || ""}
               onChange={(e) => setPartner((p) => ({ ...p, date_of_birth: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">E-Mail</Label>
+            <Input
+              type="email"
+              value={partner.email || ""}
+              onChange={(e) => setPartner((p) => ({ ...p, email: e.target.value }))}
+              maxLength={255}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Telefon</Label>
+            <Input
+              type="tel"
+              value={partner.phone || ""}
+              onChange={(e) => setPartner((p) => ({ ...p, phone: e.target.value }))}
+              maxLength={40}
             />
           </div>
         </div>
@@ -177,6 +209,24 @@ function FamilyEditor({
                 type="date"
                 value={c.date_of_birth || ""}
                 onChange={(e) => updateChild(i, { date_of_birth: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">E-Mail</Label>
+              <Input
+                type="email"
+                value={c.email || ""}
+                onChange={(e) => updateChild(i, { email: e.target.value })}
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Telefon</Label>
+              <Input
+                type="tel"
+                value={c.phone || ""}
+                onChange={(e) => updateChild(i, { phone: e.target.value })}
+                maxLength={40}
               />
             </div>
           </div>
@@ -476,14 +526,14 @@ function Page() {
                     {fm?.partner?.name && (
                       <Row
                         label="Partner/in"
-                        value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${fmtDate(fm.partner.date_of_birth)})` : ""}`}
+                        value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${fmtDate(fm.partner.date_of_birth)})` : ""}${fm.partner.email ? ` · ${fm.partner.email}` : ""}${fm.partner.phone ? ` · ${fm.partner.phone}` : ""}`}
                       />
                     )}
                     {(fm?.children || []).map((c, i) => (
                       <Row
                         key={i}
                         label={`Kind ${i + 1}`}
-                        value={`${c.name}${c.date_of_birth ? ` (geb. ${fmtDate(c.date_of_birth)})` : ""}${c.email ? ` · ${c.email}` : ""}`}
+                        value={`${c.name}${c.date_of_birth ? ` (geb. ${fmtDate(c.date_of_birth)})` : ""}${c.email ? ` · ${c.email}` : ""}${c.phone ? ` · ${c.phone}` : ""}`}
                       />
                     ))}
                   </>
