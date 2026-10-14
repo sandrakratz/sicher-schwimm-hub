@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ENROLL_STATUS,
   ageAt,
+  courseLabel,
   fmtDate,
   type Course,
   type Participant,
@@ -51,6 +52,11 @@ export function EditParticipantDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Teilnehmer bearbeiten</DialogTitle>
+          {course && (
+            <div className="text-sm font-medium text-muted-foreground">
+              Kurs: {courseLabel(course)}
+            </div>
+          )}
         </DialogHeader>
         {editPart && (
           <div className="space-y-3">
