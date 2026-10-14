@@ -4,7 +4,32 @@ import { ChevronDown, Mail, Phone } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Person = { name: string; date_of_birth?: string | null };
+type Person = {
+  name: string;
+  date_of_birth?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
+
+function PersonContact({ p }: { p: Person }) {
+  return (
+    <>
+      {p.phone && (
+        <a href={`tel:${p.phone}`} className="mt-1 flex min-h-8 items-center gap-2 text-primary">
+          <Phone className="h-3.5 w-3.5" /> {p.phone}
+        </a>
+      )}
+      {p.email && (
+        <a
+          href={`mailto:${p.email}`}
+          className="flex min-h-8 items-center gap-2 break-all text-primary"
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0" /> {p.email}
+        </a>
+      )}
+    </>
+  );
+}
 
 export type MemberCardData = {
   id: string;
@@ -84,6 +109,7 @@ export function MemberCard({ m }: { m: MemberCardData }) {
                   geb. {formatDateBerlin(m.partner.date_of_birth)}
                 </div>
               )}
+              <PersonContact p={m.partner} />
             </div>
           )}
 
@@ -98,6 +124,7 @@ export function MemberCard({ m }: { m: MemberCardData }) {
                   geb. {formatDateBerlin(c.date_of_birth)}
                 </div>
               )}
+              <PersonContact p={c} />
             </div>
           ))}
         </div>

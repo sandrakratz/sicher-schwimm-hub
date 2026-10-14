@@ -1,7 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type FamilyPerson = { name: string; date_of_birth: string | null };
+export type FamilyPerson = {
+  name: string;
+  date_of_birth: string | null;
+  email: string | null;
+  phone: string | null;
+};
 
 export type ActiveMember = {
   id: string;
@@ -21,7 +26,9 @@ function toPerson(v: unknown): FamilyPerson | null {
   const name = typeof o["name"] === "string" ? o["name"].trim() : "";
   if (!name) return null;
   const dob = typeof o["date_of_birth"] === "string" ? o["date_of_birth"] : null;
-  return { name, date_of_birth: dob };
+  const email = typeof o["email"] === "string" && o["email"].trim() ? o["email"].trim() : null;
+  const phone = typeof o["phone"] === "string" && o["phone"].trim() ? o["phone"].trim() : null;
+  return { name, date_of_birth: dob, email, phone };
 }
 
 /**

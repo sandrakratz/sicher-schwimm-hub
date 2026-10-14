@@ -123,7 +123,7 @@ const schema = z.object({
   accepted_privacy: z.boolean().refine((v) => v),
 });
 
-type FamilyMember = { name: string; last_name: string; date_of_birth: string; email?: string };
+type FamilyMember = { name: string; last_name: string; date_of_birth: string; email?: string; phone?: string };
 
 function isMinorDob(dob?: string | null) {
   if (!dob) return false;
@@ -277,6 +277,8 @@ function Page() {
               ? {
                   name: `${partner.name.trim()} ${partner.last_name.trim() || String(fd.get("last_name") || "").trim()}`.trim(),
                   date_of_birth: partner.date_of_birth || null,
+                  email: partner.email?.trim() || null,
+                  phone: partner.phone?.trim() || null,
                 }
               : null,
             children: children
@@ -285,6 +287,7 @@ function Page() {
                 name: `${c.name.trim()} ${c.last_name.trim() || String(fd.get("last_name") || "").trim()}`.trim(),
                 date_of_birth: c.date_of_birth || null,
                 email: c.email?.trim() || null,
+                phone: c.phone?.trim() || null,
               })),
           }
         : null;
@@ -782,6 +785,24 @@ function Page() {
                               }
                             />
                           </div>
+                          <div className="md:col-span-2">
+                            <Label>E-Mail (optional)</Label>
+                            <Input
+                              type="email"
+                              value={partner.email ?? ""}
+                              onChange={(e) => setPartner((p) => ({ ...p, email: e.target.value }))}
+                              maxLength={255}
+                            />
+                          </div>
+                          <div>
+                            <Label>Telefon (optional)</Label>
+                            <Input
+                              type="tel"
+                              value={partner.phone ?? ""}
+                              onChange={(e) => setPartner((p) => ({ ...p, phone: e.target.value }))}
+                              maxLength={40}
+                            />
+                          </div>
                         </div>
                       </div>
                       {children.map((c, i) => (
@@ -814,13 +835,22 @@ function Page() {
                                 onChange={(e) => updateChild(i, { date_of_birth: e.target.value })}
                               />
                             </div>
-                            <div className="md:col-span-3">
+                            <div className="md:col-span-2">
                               <Label>E-Mail des Kindes (optional, v. a. für Jugendliche)</Label>
                               <Input
                                 type="email"
                                 value={c.email ?? ""}
                                 onChange={(e) => updateChild(i, { email: e.target.value })}
                                 maxLength={255}
+                              />
+                            </div>
+                            <div>
+                              <Label>Telefon (optional)</Label>
+                              <Input
+                                type="tel"
+                                value={c.phone ?? ""}
+                                onChange={(e) => updateChild(i, { phone: e.target.value })}
+                                maxLength={40}
                               />
                             </div>
                           </div>
