@@ -96,9 +96,9 @@ export function CancellationInfo({ startsOn, base }: { startsOn?: string | null;
         <Link href="mailto:kurse@sicher-schwimmen.com" style={{ color: "#0c4a6e" }}>
           kurse@sicher-schwimmen.com
         </Link>
-        . Ein Wechsel in einen anderen Kurs zählt als Rücktritt
-        mit Neuanmeldung (bei freiem Platz). Bei ärztlich attestierter Krankheit entscheidet der
-        Vorstand im Einzelfall – melden Sie sich bitte rechtzeitig. Alle Einzelheiten:{" "}
+        . Ein Wechsel in einen anderen Kurs zählt als Rücktritt mit Neuanmeldung (bei freiem Platz).
+        Bei ärztlich attestierter Krankheit entscheidet der Vorstand im Einzelfall – melden Sie sich
+        bitte rechtzeitig. Alle Einzelheiten:{" "}
         <Link href={`${base}/kursbedingungen`} style={{ color: "#0c4a6e" }}>
           Kursteilnahmebedingungen
         </Link>
