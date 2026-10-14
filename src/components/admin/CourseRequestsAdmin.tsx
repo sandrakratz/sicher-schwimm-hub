@@ -204,6 +204,27 @@ export function CourseRequestsAdmin({
   const unassignFn = useServerFn(unassignRequestFromCourse);
   const [unassignStatus, setUnassignStatus] = useState<"waiting_list" | "new">("waiting_list");
   const [unassignBusy, setUnassignBusy] = useState(false);
+  const [payerAddress, setPayerAddress] = useState<string | null>(null);
+  const selectedId = selected?.id ?? null;
+  useEffect(() => {
+    setPayerAddress(null);
+    if (!selectedId) return;
+    let cancelled = false;
+    supabase
+      .from("course_participants")
+      .select("payer_street,payer_zip,payer_city")
+      .eq("request_id", selectedId)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const city = [data.payer_zip, data.payer_city].filter(Boolean).join(" ");
+        setPayerAddress([data.payer_street, city].filter(Boolean).join(", ") || null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
   const [notesDraft, setNotesDraft] = useState("");
   const [notesBusy, setNotesBusy] = useState(false);
 
@@ -789,6 +810,7 @@ export function CourseRequestsAdmin({
                 }
               />
               <Row label="Telefon" value={selected.parent_phone || "—"} />
+              <Row label="Rechnungsanschrift" value={payerAddress || "—"} />
               <hr />
               <h3 className="font-semibold">Kind</h3>
               <Row label="Name" value={selected.child_name || "—"} />
