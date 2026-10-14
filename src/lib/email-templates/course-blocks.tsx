@@ -85,12 +85,20 @@ export function CancellationInfo({ startsOn, base }: { startsOn?: string | null;
       </Text>
       <Text style={{ margin: "8px 0 0" }}>
         Schreiben Sie uns dafür einfach eine E-Mail an{" "}
+        <Link href="mailto:widerruf@sicher-schwimmen.com" style={{ color: "#0c4a6e" }}>
+          widerruf@sicher-schwimmen.com
+        </Link>{" "}
+        (oder nutzen Sie unser{" "}
+        <Link href={`${base}/widerruf`} style={{ color: "#0c4a6e" }}>
+          Widerrufsformular
+        </Link>
+        ); maßgeblich ist der Eingang bei uns. Rückfragen und Umbuchungen richten Sie bitte an{" "}
         <Link href="mailto:kurse@sicher-schwimmen.com" style={{ color: "#0c4a6e" }}>
           kurse@sicher-schwimmen.com
         </Link>
-        ; maßgeblich ist der Eingang bei uns. Ein Wechsel in einen anderen Kurs zählt als Rücktritt
-        mit Neuanmeldung (bei freiem Platz). Bei ärztlich attestierter Krankheit entscheidet der
-        Vorstand im Einzelfall – melden Sie sich bitte rechtzeitig. Alle Einzelheiten:{" "}
+        . Ein Wechsel in einen anderen Kurs zählt als Rücktritt mit Neuanmeldung (bei freiem Platz).
+        Bei ärztlich attestierter Krankheit entscheidet der Vorstand im Einzelfall – melden Sie sich
+        bitte rechtzeitig. Alle Einzelheiten:{" "}
         <Link href={`${base}/kursbedingungen`} style={{ color: "#0c4a6e" }}>
           Kursteilnahmebedingungen
         </Link>

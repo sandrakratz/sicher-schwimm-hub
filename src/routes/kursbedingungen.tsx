@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
 import { BankDetails } from "@/components/BankDetails";
 
@@ -68,11 +68,20 @@ function KursbedingungenPage() {
         </li>
       </ul>
       <p>
-        Der Rücktritt muss schriftlich per E-Mail an{" "}
+        Rücktritte und Widerrufe müssen schriftlich per E-Mail an{" "}
+        <a href="mailto:widerruf@sicher-schwimmen.com" className="text-primary underline">
+          widerruf@sicher-schwimmen.com
+        </a>{" "}
+        erfolgen, damit sie korrekt bearbeitet werden können; maßgeblich ist der Eingang beim
+        Verein. Für den Widerruf steht zusätzlich unser{" "}
+        <Link to="/widerruf" className="text-primary underline">
+          Widerrufsformular
+        </Link>{" "}
+        zur Verfügung. Für Rückfragen und Umbuchungen nutzen Sie bitte{" "}
         <a href="mailto:kurse@sicher-schwimmen.com" className="text-primary underline">
           kurse@sicher-schwimmen.com
-        </a>{" "}
-        erfolgen; maßgeblich ist der Eingang beim Verein.
+        </a>
+        .
       </p>
       <p>
         <strong>Umbuchung:</strong> Der Wechsel in einen anderen Kurs gilt als Rücktritt vom
@@ -166,10 +175,22 @@ function KursbedingungenPage() {
 
       <h2 className="font-display text-2xl font-bold text-primary-deep mt-8">Kontakt</h2>
       <p>
-        Bei Fragen zu diesen Bedingungen oder zu einem konkreten Kurs wenden Sie sich bitte an:{" "}
+        Bei Rückfragen zu diesen Bedingungen oder zu einem konkreten Kurs sowie für Umbuchungen
+        wenden Sie sich bitte an:{" "}
         <a href="mailto:kurse@sicher-schwimmen.com" className="text-primary underline">
           kurse@sicher-schwimmen.com
         </a>
+      </p>
+      <p>
+        <strong>Rücktritte und Widerrufe</strong> senden Sie bitte ausschließlich an:{" "}
+        <a href="mailto:widerruf@sicher-schwimmen.com" className="text-primary underline">
+          widerruf@sicher-schwimmen.com
+        </a>{" "}
+        – alternativ über unser{" "}
+        <Link to="/widerruf" className="text-primary underline">
+          Widerrufsformular
+        </Link>
+        .
       </p>
     </LegalPage>
   );
