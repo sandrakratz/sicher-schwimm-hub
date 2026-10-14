@@ -158,6 +158,7 @@ function Page() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   /** Gesundheitsangaben aus der Anmeldung je Anfrage-ID (siehe combineChildHint) */
   const [requestHealth, setRequestHealth] = useState<Record<string, string | null>>({});
+  const [requestParent, setRequestParent] = useState<Record<string, string | null>>({});
   const listConsentsFn = useServerFn(listTransferConsents);
   const [transferConsents, setTransferConsents] = useState<
     Record<
@@ -952,11 +953,13 @@ function Page() {
     if (requestIds.length > 0) {
       const { data: reqs } = await supabase
         .from("course_requests")
-        .select("id,health_info")
+        .select("id,health_info,parent_name")
         .in("id", requestIds);
       setRequestHealth(Object.fromEntries((reqs || []).map((r) => [r.id, r.health_info])));
+      setRequestParent(Object.fromEntries((reqs || []).map((r) => [r.id, r.parent_name])));
     } else {
       setRequestHealth({});
+      setRequestParent({});
     }
     const { data: wl } = await supabase
       .from("waitlist_entries")
@@ -1250,6 +1253,9 @@ function Page() {
           : null,
         price_amount: editPart.price_amount,
         parent_user_id: editPart.parent_user_id || null,
+        payer_street: editPart.payer_street?.trim() || null,
+        payer_zip: editPart.payer_zip?.trim() || null,
+        payer_city: editPart.payer_city?.trim() || null,
       })
       .eq("id", editPart.id);
     if (error) return toast.error(error.message);
@@ -2741,6 +2747,7 @@ function Page() {
         course={partCourse}
         canManage={canManage}
         requestHealth={requestHealth}
+        requestParent={requestParent}
         onSave={savePart}
       />
 

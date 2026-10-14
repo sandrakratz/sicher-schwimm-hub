@@ -35,6 +35,7 @@ export function EditParticipantDialog({
   course,
   canManage,
   requestHealth,
+  requestParent,
   onSave,
 }: {
   editPart: Participant | null;
@@ -42,6 +43,7 @@ export function EditParticipantDialog({
   course: Course | null;
   canManage: boolean;
   requestHealth: Record<string, string | null>;
+  requestParent: Record<string, string | null>;
   onSave: () => void;
 }) {
   return (
@@ -171,6 +173,43 @@ export function EditParticipantDialog({
                     setEditPart((p) => p && { ...p, internal_notes: e.target.value })
                   }
                 />
+              </div>
+            )}
+
+            {canManage && (
+              <div className="border-t pt-3 mt-2">
+                <div className="font-semibold text-sm mb-2">Rechnungsanschrift</div>
+                <div className="text-sm mb-2">
+                  <span className="text-muted-foreground">Erziehungsberechtigte:r: </span>
+                  {(editPart.request_id && requestParent[editPart.request_id]) || "—"}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-3">
+                    <Label>Straße und Hausnummer</Label>
+                    <Input
+                      value={editPart.payer_street || ""}
+                      onChange={(e) =>
+                        setEditPart((p) => p && { ...p, payer_street: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>PLZ</Label>
+                    <Input
+                      value={editPart.payer_zip || ""}
+                      onChange={(e) => setEditPart((p) => p && { ...p, payer_zip: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Ort</Label>
+                    <Input
+                      value={editPart.payer_city || ""}
+                      onChange={(e) =>
+                        setEditPart((p) => p && { ...p, payer_city: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
