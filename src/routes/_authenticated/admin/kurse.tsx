@@ -2448,6 +2448,11 @@ function Page() {
                         )}
                       </TableCell>
                       <TableCell className="text-xs">
+                        {canManage && p.request_id && requestParent[p.request_id] && (
+                          <div className="font-medium" title="Erziehungsberechtigte:r">
+                            {requestParent[p.request_id]}
+                          </div>
+                        )}
                         {p.participant_email || "—"}
                         {p.participant_phone && (
                           <>
