@@ -42,6 +42,9 @@ export type Participant = {
   payment_due_date?: string | null;
   parent_user_id: string | null;
   request_id: string | null;
+  payer_street?: string | null;
+  payer_zip?: string | null;
+  payer_city?: string | null;
 };
 
 export type CourseRequest = {
