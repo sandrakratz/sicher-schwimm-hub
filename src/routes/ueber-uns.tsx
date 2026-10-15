@@ -201,7 +201,7 @@ function Page() {
               name: "Sandra Kratz",
               photo: sandraKratzPhoto,
               objectPosition: "center",
-              bio: "Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung.",
+              bio: "Kindertagespflegeperson und Fachkraft für Kleinkindpädagogik mit langjähriger Erfahrung in der Arbeit mit Kindern und in der Schwimmausbildung. Seit Oktober 2026 zusätzlich ausgebildete Trainerin für Baby- und Kleinkinderschwimmen (AQUAcademy, 16 Stunden).",
             },
             {
               role: "Kassenwartin",
