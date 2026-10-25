@@ -15,7 +15,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminCalendar, type CalendarEntry } from "@/lib/calendar.functions";
 import { listTrainers } from "@/lib/trainers.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { applyAssignments } from "@/lib/dienstplan.functions";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, RefreshCw, Users, HandHelping, X, Plus } from "lucide-react";
@@ -114,32 +114,32 @@ function Page() {
       .catch(() => {}); /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
-  // Trainer:in direkt am Termin ein- oder austeilen (ohne Neuladen).
+  // Trainer:in direkt am Termin ein- oder austeilen (ohne Neuladen). Läuft über den Server: Protokoll + Mail.
+  const applyFn = useServerFn(applyAssignments);
   async function toggle(e: CalendarEntry, trainerId: string, on: boolean) {
-    const res = on
-      ? await supabase
-          .from("course_session_assignments")
-          .insert({ session_id: e.id, trainer_id: trainerId })
-      : await supabase
-          .from("course_session_assignments")
-          .delete()
-          .eq("session_id", e.id)
-          .eq("trainer_id", trainerId);
-    if (res.error) return toast.error(res.error.message);
-    const name = trainers.find((t) => t.id === trainerId)?.name ?? "Unbekannt";
-    setEntries((prev) =>
-      prev.map((x) => {
-        if (x.kind !== "session" || x.id !== e.id) return x;
-        const assigned = new Set(x.assignedIds ?? []);
-        const tr = x.trainers.filter((t) => t.id !== trainerId);
-        if (on) {
-          assigned.add(trainerId);
-          tr.push({ id: trainerId, name });
-        } else assigned.delete(trainerId);
-        return { ...x, assignedIds: [...assigned], trainers: tr };
-      }),
-    );
-    toast.success(on ? `${name} eingeteilt` : `${name} ausgeteilt`);
+    try {
+      const res = await applyFn({
+        data: { changes: [{ sessionId: e.id, trainerId, on }], notify: true },
+      });
+      const name = trainers.find((t) => t.id === trainerId)?.name ?? "Unbekannt";
+      setEntries((prev) =>
+        prev.map((x) => {
+          if (x.kind !== "session" || x.id !== e.id) return x;
+          const assigned = new Set(x.assignedIds ?? []);
+          const tr = x.trainers.filter((t) => t.id !== trainerId);
+          if (on) {
+            assigned.add(trainerId);
+            tr.push({ id: trainerId, name });
+          } else assigned.delete(trainerId);
+          return { ...x, assignedIds: [...assigned], trainers: tr };
+        }),
+      );
+      toast.success(
+        `${name} ${on ? "eingeteilt" : "ausgeteilt"}${res.mailed ? " und per Mail informiert" : ""}`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Änderung fehlgeschlagen");
+    }
   }
 
   async function refresh() {
@@ -239,7 +239,14 @@ function Page() {
           </h1>
           <p className="text-sm text-muted-foreground">
             Dienstplan: Trainer:innen direkt am Termin einteilen. Nur Eingeteilte sehen den Kurs im
-            Trainerbereich.
+            Trainerbereich. Lücken, Ersatzsuche und Wochenplan findest du im{" "}
+            <Link
+              to="/admin/dienstplan"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Dienstplan
+            </Link>
+            .
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>

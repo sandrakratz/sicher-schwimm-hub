@@ -185,7 +185,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         key: "unstaffed",
         label: "Termine nicht voll besetzt",
         count: unstaffed,
-        to: "/admin/kalender",
+        to: "/admin/dienstplan",
         tone: "info",
         hint: "in den nächsten 14 Tagen",
       },

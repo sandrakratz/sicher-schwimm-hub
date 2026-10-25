@@ -29,6 +29,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "message-reply": "Antwort auf eine Nachricht",
   "waitlist-reply": "Rückfrage zu einem Wartelisten-Eintrag",
   "task-assigned": "Vorgang zugewiesen (intern, an das zuständige Vorstandsmitglied)",
+  "dienstplan-trainer": "Dienstplan: Einteilung, Änderung oder Ersatzanfrage (an Trainer:in)",
+  "dienstplan-intern": "Dienstplan: Absage oder Übernahme (intern, an den Vorstand)",
   "daily-digest": "Tägliche Zusammenfassung „Das liegt heute bei dir“ (intern)",
   signup: "Registrierung – E-Mail-Bestätigung",
   recovery: "Passwort zurücksetzen",
