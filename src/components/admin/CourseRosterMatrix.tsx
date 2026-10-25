@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { applyAssignments } from "@/lib/dienstplan.functions";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { CalendarEntry } from "@/lib/calendar.functions";
@@ -28,7 +30,9 @@ export function CourseRosterMatrix({
   trainers: Trainer[];
   onChanged: (sessionId: string, trainerId: string, on: boolean) => void;
 }) {
+  const apply = useServerFn(applyAssignments);
   const [busy, setBusy] = useState(false);
+  const [notify, setNotify] = useState(true);
   const sorted = [...sessions].sort((a, b) =>
     (a.date + (a.startTime ?? "")).localeCompare(b.date + (b.startTime ?? "")),
   );
@@ -42,18 +46,28 @@ export function CourseRosterMatrix({
     ? team
     : team.filter((t) => t.count > 0 || sorted.some((s) => avail(s, t.id) === true));
 
+  // Einteilen läuft über den Server: Protokoll im Dienstplan und (optional) Mail an die Trainer:in
+  async function change(targets: CalendarEntry[], t: Trainer, on: boolean) {
+    setBusy(true);
+    try {
+      const res = await apply({
+        data: {
+          changes: targets.map((s) => ({ sessionId: s.id, trainerId: t.id, on })),
+          notify,
+        },
+      });
+      targets.forEach((s) => onChanged(s.id, t.id, on));
+      return res;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Änderung fehlgeschlagen");
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function toggle(s: CalendarEntry, t: Trainer, on: boolean) {
-    const res = on
-      ? await supabase
-          .from("course_session_assignments")
-          .insert({ session_id: s.id, trainer_id: t.id })
-      : await supabase
-          .from("course_session_assignments")
-          .delete()
-          .eq("session_id", s.id)
-          .eq("trainer_id", t.id);
-    if (res.error) return toast.error(res.error.message);
-    onChanged(s.id, t.id, on);
+    await change([s], t, on);
   }
 
   async function setAll(t: Trainer, on: boolean) {
@@ -61,22 +75,8 @@ export function CourseRosterMatrix({
       (s) => has(s, t.id) !== on && (on ? avail(s, t.id) !== false : true),
     );
     if (!targets.length) return;
-    setBusy(true);
-    const res = on
-      ? await supabase
-          .from("course_session_assignments")
-          .insert(targets.map((s) => ({ session_id: s.id, trainer_id: t.id })))
-      : await supabase
-          .from("course_session_assignments")
-          .delete()
-          .eq("trainer_id", t.id)
-          .in(
-            "session_id",
-            targets.map((s) => s.id),
-          );
-    setBusy(false);
-    if (res.error) return toast.error(res.error.message);
-    targets.forEach((s) => onChanged(s.id, t.id, on));
+    const res = await change(targets, t, on);
+    if (!res) return;
     toast.success(
       on
         ? `${t.name} für ${targets.length} Termin(e) eingeteilt`
@@ -167,6 +167,10 @@ export function CourseRosterMatrix({
       </div>
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span>✓ eingeteilt · „·“ verfügbar · ✕ abgesagt (wird bei „Alle“ übersprungen)</span>
+        <label className="flex items-center gap-1.5">
+          <Checkbox checked={notify} onCheckedChange={(v) => setNotify(!!v)} />
+          Trainer:in per Mail informieren
+        </label>
         <Button size="sm" variant="link" onClick={() => setShowAll((v) => !v)}>
           {showAll
             ? "Nur Team & Verfügbare zeigen"

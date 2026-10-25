@@ -23,6 +23,9 @@ import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { buildIcs, googleCalendarUrl, parseTimeRange, type CalendarItem } from "@/lib/ics";
 import { EventShiftSignups } from "@/components/admin/EventShiftSignups";
+import { MyShifts } from "@/components/trainer/MyShifts";
+import { Blackouts } from "@/components/trainer/Blackouts";
+import { blackoutOn, type PlanBlackout } from "@/lib/dienstplan";
 
 type SessionRow = {
   id: string;
@@ -32,6 +35,7 @@ type SessionRow = {
   start_time: string | null;
   end_time: string | null;
   assigned_trainer_id: string | null;
+  replacement_requested_at: string | null;
 };
 
 type CourseRow = {
@@ -41,6 +45,7 @@ type CourseRow = {
   schedule: string | null;
   duration: string | null;
   trainers_needed: number | null;
+  trainer_id: string | null;
 };
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
@@ -77,6 +82,7 @@ export function AvailabilityBoard() {
   const [avail, setAvail] = useState<Avail[]>([]);
   const [assign, setAssign] = useState<Assign[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
+  const [blackouts, setBlackouts] = useState<PlanBlackout[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [view, setView] = useState<"course" | "date" | "calendar">("course");
@@ -90,8 +96,9 @@ export function AvailabilityBoard() {
 
   const trainersFn = useServerFn(listTrainers);
 
-  async function load() {
-    setLoading(true);
+  // `silent`: nach einer Aktion neu laden, ohne die Seite kurz auszublenden
+  async function load(silent = false) {
+    if (!silent) setLoading(true);
     const { data: userData } = await supabase.auth.getUser();
     setMe(userData.user?.id || "");
 
@@ -100,7 +107,9 @@ export function AvailabilityBoard() {
     const sessionRows = await fetchAll<SessionRow>((f, t) =>
       supabase
         .from("course_sessions")
-        .select("id,course_id,session_index,session_date,start_time,end_time,assigned_trainer_id")
+        .select(
+          "id,course_id,session_index,session_date,start_time,end_time,assigned_trainer_id,replacement_requested_at",
+        )
         .gte("session_date", today)
         .order("session_date", { ascending: true })
         .order("id")
@@ -111,7 +120,7 @@ export function AvailabilityBoard() {
     const cs = await fetchAll<CourseRow>((f, t) =>
       supabase
         .from("courses")
-        .select("id,name,location,schedule,duration,trainers_needed")
+        .select("id,name,location,schedule,duration,trainers_needed,trainer_id")
         .order("id")
         .range(f, t),
     );
@@ -151,12 +160,37 @@ export function AvailabilityBoard() {
     } catch {
       /* Namen optional */
     }
+    // Eigene Sperrzeiten (neue Tabelle, daher ohne generierte Typen)
+    if (userData.user?.id) {
+      const { data: bo } = await (supabase as any)
+        .from("trainer_blackouts")
+        .select("id,trainer_id,date_from,date_to,weekdays,note")
+        .eq("trainer_id", userData.user.id)
+        .gte("date_to", today);
+      setBlackouts(
+        (bo ?? []).map((b: any) => ({
+          id: b.id,
+          trainerId: b.trainer_id,
+          from: b.date_from,
+          to: b.date_to,
+          weekdays: b.weekdays ?? null,
+          note: b.note ?? null,
+        })),
+      );
+    }
     setLoading(false);
   }
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
+
+  const teamBySession = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const a of assign)
+      m.set(a.session_id, (m.get(a.session_id) ?? new Set()).add(a.trainer_id));
+    return m;
+  }, [assign]);
 
   const trainerName = (id: string | null | undefined) =>
     (id && trainers.find((t) => t.id === id)?.name) || "Unbekannt";
@@ -404,6 +438,11 @@ export function AvailabilityBoard() {
                 Du bist eingeteilt
               </Badge>
             )}
+            {blackoutOn(blackouts, me, s.session_date) && (
+              <Badge variant="outline" title="In deiner Sperrzeit – du wirst nicht eingeplant">
+                Sperrzeit
+              </Badge>
+            )}
             {others.length > 0 && <span>Eingeteilt: {others.join(", ")}</span>}
             {!opts.compact && (
               <span>Zusagen: {yes.length > 0 ? yes.join(", ") : "noch keine"}</span>
@@ -487,6 +526,24 @@ export function AvailabilityBoard() {
           familywall.com importieren.
         </span>
       </div>
+
+      {me && !loading && (
+        <>
+          <MyShifts
+            me={me}
+            sessions={sessions}
+            courses={courses}
+            team={teamBySession}
+            onChanged={() => void load(true)}
+          />
+          <Blackouts
+            me={me}
+            blackouts={blackouts}
+            assignedDates={sessions.filter((s) => isAssignedToMe(s.id)).map((s) => s.session_date)}
+            onChanged={() => void load(true)}
+          />
+        </>
+      )}
 
       {me && <EventShiftSignups me={me} trainers={trainers} />}
 

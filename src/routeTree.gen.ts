@@ -47,6 +47,7 @@ import { Route as AuthenticatedAdminAnfragenRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminArchivRouteImport } from './routes/_authenticated/admin/archiv'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin/audit'
 import { Route as AuthenticatedAdminBenutzerRouteImport } from './routes/_authenticated/admin/benutzer'
+import { Route as AuthenticatedAdminDienstplanRouteImport } from './routes/_authenticated/admin/dienstplan'
 import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authenticated/admin/dokumente'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin/emails'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
@@ -280,6 +281,12 @@ const AuthenticatedAdminBenutzerRoute =
   AuthenticatedAdminBenutzerRouteImport.update({
     id: '/benutzer',
     path: '/benutzer',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminDienstplanRoute =
+  AuthenticatedAdminDienstplanRouteImport.update({
+    id: '/dienstplan',
+    path: '/dienstplan',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminDokumenteRoute =
@@ -559,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/admin/archiv': typeof AuthenticatedAdminArchivRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
+  '/admin/dienstplan': typeof AuthenticatedAdminDienstplanRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
@@ -638,6 +646,7 @@ export interface FileRoutesByTo {
   '/admin/archiv': typeof AuthenticatedAdminArchivRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
+  '/admin/dienstplan': typeof AuthenticatedAdminDienstplanRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
@@ -720,6 +729,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/archiv': typeof AuthenticatedAdminArchivRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/benutzer': typeof AuthenticatedAdminBenutzerRoute
+  '/_authenticated/admin/dienstplan': typeof AuthenticatedAdminDienstplanRoute
   '/_authenticated/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
@@ -802,6 +812,7 @@ export interface FileRouteTypes {
     | '/admin/archiv'
     | '/admin/audit'
     | '/admin/benutzer'
+    | '/admin/dienstplan'
     | '/admin/dokumente'
     | '/admin/emails'
     | '/admin/events'
@@ -881,6 +892,7 @@ export interface FileRouteTypes {
     | '/admin/archiv'
     | '/admin/audit'
     | '/admin/benutzer'
+    | '/admin/dienstplan'
     | '/admin/dokumente'
     | '/admin/emails'
     | '/admin/events'
@@ -962,6 +974,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/archiv'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/benutzer'
+    | '/_authenticated/admin/dienstplan'
     | '/_authenticated/admin/dokumente'
     | '/_authenticated/admin/emails'
     | '/_authenticated/admin/events'
@@ -1320,6 +1333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminBenutzerRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/dienstplan': {
+      id: '/_authenticated/admin/dienstplan'
+      path: '/dienstplan'
+      fullPath: '/admin/dienstplan'
+      preLoaderRoute: typeof AuthenticatedAdminDienstplanRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/dokumente': {
       id: '/_authenticated/admin/dokumente'
       path: '/dokumente'
@@ -1615,6 +1635,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminArchivRoute: typeof AuthenticatedAdminArchivRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminBenutzerRoute: typeof AuthenticatedAdminBenutzerRoute
+  AuthenticatedAdminDienstplanRoute: typeof AuthenticatedAdminDienstplanRoute
   AuthenticatedAdminDokumenteRoute: typeof AuthenticatedAdminDokumenteRoute
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
@@ -1643,6 +1664,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminArchivRoute: AuthenticatedAdminArchivRoute,
     AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
     AuthenticatedAdminBenutzerRoute: AuthenticatedAdminBenutzerRoute,
+    AuthenticatedAdminDienstplanRoute: AuthenticatedAdminDienstplanRoute,
     AuthenticatedAdminDokumenteRoute: AuthenticatedAdminDokumenteRoute,
     AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
     AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
