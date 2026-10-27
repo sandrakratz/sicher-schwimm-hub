@@ -97,7 +97,7 @@ export function FollowupChildDialog({
           ? `Platzangebot für „${res.courseName}“ verschickt`
           : `Verbindlich gebucht: ${res.courseName}. Zahlung bis ${formatDateBerlin(res.paymentDueDate)}${
               res.immediatePayment ? " (Sofortüberweisung)" : ""
-            }.`,
+            }. ${res.addressFrom ? "Rechnungsadresse aus den vorhandenen Daten übernommen." : "Achtung: keine Rechnungsadresse hinterlegt."}`,
       );
       setPending(null);
       onDone();
@@ -168,7 +168,8 @@ export function FollowupChildDialog({
               <p className="text-muted-foreground">
                 Erst mit den Eltern sprechen. „Platz anbieten“ schickt ihnen die übliche E-Mail mit
                 Zusage-Link. „Direkt zubuchen“ bucht verbindlich und verschickt sofort die
-                Buchungsbestätigung mit Zahlungsfrist.
+                Buchungsbestätigung mit Zahlungsfrist. Die Rechnungsadresse wird aus der früheren
+                Buchung (sonst der Mitgliedschaft) übernommen.
               </p>
               <select
                 className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"

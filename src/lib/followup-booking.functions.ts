@@ -84,6 +84,10 @@ export const placeFollowupChild = createServerFn({ method: "POST" })
       created = true;
     }
 
+    // Rechnungsadresse nur einmal erfragen: aus der letzten Buchung der Familie, sonst aus der Mitgliedschaft
+    const { findPayerAddress } = await import("@/lib/payer-address.server");
+    const { address, addressFrom } = await findPayerAddress(data.parentEmail);
+
     const { logAudit } = await import("@/lib/audit.server");
     const audit = (action: string, metadata: Record<string, unknown>) =>
       logAudit(context.supabase, context.userId, {
@@ -108,7 +112,7 @@ export const placeFollowupChild = createServerFn({ method: "POST" })
         return { ok: true as const, mode: "offer" as const, courseName: course.name };
       }
       const { bookWaitlistEntry } = await import("@/lib/waitlist-booking.server");
-      const booking = await bookWaitlistEntry(entry, course.id, {}, "admin");
+      const booking = await bookWaitlistEntry(entry, course.id, address, "admin");
       await audit("waitlist.booked_directly", {
         child: entry.child_name,
         email: entry.parent_email,
@@ -121,6 +125,7 @@ export const placeFollowupChild = createServerFn({ method: "POST" })
         courseName: booking.courseName,
         paymentDueDate: booking.paymentDueDate,
         immediatePayment: booking.immediatePayment,
+        addressFrom,
       };
     } catch (err) {
       if (created) await supabaseAdmin.from("waitlist_entries").delete().eq("id", entry.id);
