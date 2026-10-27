@@ -340,16 +340,28 @@ function OfferResponsePage() {
                 name="street"
                 required
                 maxLength={160}
-                defaultValue={defaults.street}
+                defaultValue={data.address?.street ?? defaults.street}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="zip">PLZ *</Label>
-              <Input id="zip" name="zip" required maxLength={12} defaultValue={defaults.zip} />
+              <Input
+                id="zip"
+                name="zip"
+                required
+                maxLength={12}
+                defaultValue={data.address?.zip ?? defaults.zip}
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="city">Ort *</Label>
-              <Input id="city" name="city" required maxLength={120} defaultValue={defaults.city} />
+              <Input
+                id="city"
+                name="city"
+                required
+                maxLength={120}
+                defaultValue={data.address?.city ?? defaults.city}
+              />
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">

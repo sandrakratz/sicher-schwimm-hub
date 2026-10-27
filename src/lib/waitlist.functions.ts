@@ -210,6 +210,9 @@ export const getWaitlistOffer = createServerFn({ method: "GET" })
     if (!entry) return { found: false as const };
 
     const course = (entry as any).courses ?? null;
+    // Der Link ist nur den Eltern bekannt: bereits hinterlegte Rechnungsadresse vorbelegen
+    const { findPayerAddress } = await import("@/lib/payer-address.server");
+    const known = (await findPayerAddress(entry.parent_email)).address;
     const expired = entry.offer_expires_at
       ? new Date(entry.offer_expires_at).getTime() < Date.now()
       : true;
@@ -219,6 +222,7 @@ export const getWaitlistOffer = createServerFn({ method: "GET" })
       expired,
       childName: entry.child_name,
       needsDob: !entry.child_dob,
+      address: known.street ? known : null,
       parentName: entry.parent_name,
       expiresAt: entry.offer_expires_at,
       course: course

@@ -12,6 +12,7 @@ import { Download } from "lucide-react";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { fetchAll } from "@/lib/fetch-all";
 import { beltLabel } from "@/lib/belt";
+import { FollowupChildDialog, type CourseOption } from "@/components/admin/FollowupChildDialog";
 import {
   buildCandidates,
   GROUP_LABEL,
@@ -57,6 +58,7 @@ type Raw = {
   goal_reached: boolean | null;
   badge: string | null;
   belt_blocks: number | null;
+  course_id: string;
   courses: { name: string; starts_on: string | null; ends_on: string | null } | null;
   course_requests: {
     parent_name: string | null;
@@ -89,14 +91,17 @@ function Page() {
   // Gurt-Filter (nur Wasserzeit/Schwimmstarter): höchstens so viele Klötzchen; "" = alle
   const [maxBelt, setMaxBelt] = useState("");
 
-  useEffect(() => {
-    (async () => {
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [selected, setSelected] = useState<Candidate | null>(null);
+
+  async function load() {
+    {
       try {
         const raw = await fetchAll<Raw>((from, to) =>
           supabase
             .from("course_participants")
             .select(
-              "id,participant_name,date_of_birth,participant_email,participant_phone,status,exam_level,goal_reached,badge,belt_blocks,courses!course_participants_course_id_fkey(name,starts_on,ends_on),course_requests(parent_name,contact_permission,swimming_level)",
+              "id,participant_name,date_of_birth,participant_email,participant_phone,status,exam_level,goal_reached,badge,belt_blocks,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on),course_requests(parent_name,contact_permission,swimming_level)",
             )
             .order("id")
             .range(from, to),
@@ -128,13 +133,42 @@ function Page() {
           contact_permission: r.course_requests?.contact_permission ?? null,
           request_level: r.course_requests?.swimming_level ?? null,
         }));
-        setCandidates(buildCandidates(rows, waiting, todayBerlinIso()));
+        const today = todayBerlinIso();
+        setCandidates(buildCandidates(rows, waiting, today));
+
+        // Kommende Kurse mit freien Plätzen für „anbieten/zubuchen“
+        const booked = new Map<string, number>();
+        for (const r of raw)
+          if (r.status === "confirmed") booked.set(r.course_id, (booked.get(r.course_id) ?? 0) + 1);
+        const { data: upcoming, error } = await supabase
+          .from("courses")
+          .select("id,name,starts_on,ends_on,schedule,max_participants")
+          .is("archived_at", null)
+          .gt("starts_on", today)
+          .order("starts_on");
+        if (error) throw new Error(error.message);
+        setCourses(
+          (upcoming ?? []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            starts_on: c.starts_on as string,
+            ends_on: c.ends_on,
+            schedule: c.schedule,
+            free:
+              c.max_participants == null
+                ? null
+                : Math.max(0, c.max_participants - (booked.get(c.id) ?? 0)),
+          })),
+        );
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Laden fehlgeschlagen");
       } finally {
         setLoading(false);
       }
-    })();
+    }
+  }
+  useEffect(() => {
+    load();
   }, []);
 
   const counts = useMemo(
@@ -200,7 +234,7 @@ function Page() {
           c.phase,
           LEVEL_LABEL[c.level],
           c.levelSource,
-          BELT_GROUPS.includes(g) ? beltLabel(c.belt) : "",
+          beltLabel(c.belt),
           c.onWaitlist ? "ja" : "",
           c.courses.join(" | "),
         ]);
@@ -226,7 +260,9 @@ function Page() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">
           Kinder, die bei uns einen Kurs hatten oder gerade haben, aber noch keinen späteren Kurs
-          gebucht haben – nach Stand des Kindes in drei Gruppen. Stornierte Buchungen zählen nicht.
+          gebucht haben – nach Stand des Kindes in fünf Gruppen. Ein Klick auf den Namen zeigt den
+          Verlauf und lässt dich einen Kursplatz anbieten oder direkt zubuchen. Stornierte Buchungen
+          zählen nicht.
         </p>
         <Button variant="outline" onClick={download} disabled={loading || !candidates.length}>
           <Download className="mr-2 h-4 w-4" /> Excel herunterladen
@@ -264,7 +300,7 @@ function Page() {
             Nur Eltern mit Kontakt-Erlaubnis
           </Label>
         </div>
-        {BELT_GROUPS.includes(group) && (
+        {
           <div className="flex items-center gap-2">
             <Label htmlFor="max-belt" className="text-sm">
               Gurt-Stand
@@ -283,7 +319,7 @@ function Page() {
               <option value="0">ohne Gurt</option>
             </select>
           </div>
-        )}
+        }
       </div>
 
       {loading ? (
@@ -310,7 +346,13 @@ function Page() {
               {visible.map((c) => (
                 <tr key={c.key} className="border-t border-border align-top">
                   <td className="p-2">
-                    <div className="font-semibold">{c.name}</div>
+                    <button
+                      type="button"
+                      className="text-left font-semibold text-primary underline-offset-2 hover:underline"
+                      onClick={() => setSelected(c)}
+                    >
+                      {c.name}
+                    </button>
                     <div className="text-xs text-muted-foreground">
                       {c.age != null ? `${c.age} Jahre` : "Alter unbekannt"}
                     </div>
@@ -328,19 +370,19 @@ function Page() {
                     <Badge variant={c.phase === "läuft" ? "default" : "secondary"}>{c.phase}</Badge>
                   </td>
                   <td className="p-2">
-                    {BELT_GROUPS.includes(c.group) ? (
-                      <>
-                        <div>Gurt: {beltLabel(c.belt)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          aus Wasserzeit/Schwimmstarter, Stand der Trainer:in
-                        </div>
-                      </>
-                    ) : (
+                    {!BELT_GROUPS.includes(c.group) && (
                       <>
                         <div>{LEVEL_LABEL[c.level]}</div>
                         <div className="text-xs text-muted-foreground">{c.levelSource}</div>
                       </>
                     )}
+                    <div
+                      className={
+                        BELT_GROUPS.includes(c.group) ? "" : "text-xs text-muted-foreground"
+                      }
+                    >
+                      Gurt: {beltLabel(c.belt)}
+                    </div>
                     {c.courses.length > 1 && (
                       <div className="text-xs text-muted-foreground">
                         {c.courses.length} Kurse bei uns
@@ -357,6 +399,13 @@ function Page() {
           </table>
         </div>
       )}
+
+      <FollowupChildDialog
+        candidate={selected}
+        courses={courses}
+        onClose={() => setSelected(null)}
+        onDone={load}
+      />
 
       <p className="text-xs text-muted-foreground">
         Der Stand stammt aus den Prüfungen, die Trainer:innen im Kurs eintragen, sonst aus der
