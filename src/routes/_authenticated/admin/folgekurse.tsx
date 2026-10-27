@@ -200,7 +200,7 @@ function Page() {
           c.phase,
           LEVEL_LABEL[c.level],
           c.levelSource,
-          BELT_GROUPS.includes(g) ? beltLabel(c.belt) : "",
+          beltLabel(c.belt),
           c.onWaitlist ? "ja" : "",
           c.courses.join(" | "),
         ]);
@@ -264,7 +264,7 @@ function Page() {
             Nur Eltern mit Kontakt-Erlaubnis
           </Label>
         </div>
-        {BELT_GROUPS.includes(group) && (
+        {
           <div className="flex items-center gap-2">
             <Label htmlFor="max-belt" className="text-sm">
               Gurt-Stand
@@ -283,7 +283,7 @@ function Page() {
               <option value="0">ohne Gurt</option>
             </select>
           </div>
-        )}
+        }
       </div>
 
       {loading ? (
@@ -328,19 +328,19 @@ function Page() {
                     <Badge variant={c.phase === "läuft" ? "default" : "secondary"}>{c.phase}</Badge>
                   </td>
                   <td className="p-2">
-                    {BELT_GROUPS.includes(c.group) ? (
-                      <>
-                        <div>Gurt: {beltLabel(c.belt)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          aus Wasserzeit/Schwimmstarter, Stand der Trainer:in
-                        </div>
-                      </>
-                    ) : (
+                    {!BELT_GROUPS.includes(c.group) && (
                       <>
                         <div>{LEVEL_LABEL[c.level]}</div>
                         <div className="text-xs text-muted-foreground">{c.levelSource}</div>
                       </>
                     )}
+                    <div
+                      className={
+                        BELT_GROUPS.includes(c.group) ? "" : "text-xs text-muted-foreground"
+                      }
+                    >
+                      Gurt: {beltLabel(c.belt)}
+                    </div>
                     {c.courses.length > 1 && (
                       <div className="text-xs text-muted-foreground">
                         {c.courses.length} Kurse bei uns

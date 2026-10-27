@@ -70,6 +70,29 @@ export type Candidate = {
 
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 
+/** Name zum Vergleichen: ohne Groß-/Kleinschreibung, Akzente und ß (ß = ss). */
+function nameKey(name: string | null | undefined): string {
+  return norm(name)
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z ]/g, "");
+}
+
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]!;
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j]!;
+      row[j] = Math.min(row[j]! + 1, row[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return row[b.length]!;
+}
+
 const EXAM_RANK: Record<string, SwimLevel> = {
   seepferdchen: 2,
   seeraeuber: 2,
@@ -113,8 +136,19 @@ export function buildCandidates(
   waiting: WaitingRow[],
   today: string,
 ): Candidate[] {
-  const kidKey = (name: string | null, dob: string | null) => `${norm(name)}|${dob ?? ""}`;
-  const waitKeys = new Set(waiting.map((w) => kidKey(w.child_name, w.child_dob)));
+  // Dasselbe Kind kann mit leicht anderer Schreibweise gebucht sein (Koßmann/Kossmann, Goschnik/Goschnick):
+  // gleiches Geburtsdatum und fast gleicher Name gelten als dasselbe Kind.
+  const known: { key: string; name: string; dob: string | null }[] = [];
+  const kidKey = (name: string | null, dob: string | null) => {
+    const n = nameKey(name);
+    const hit = known.find(
+      (k) => k.dob === dob && (dob ? editDistance(k.name, n) <= 2 : k.name === n),
+    );
+    if (hit) return hit.key;
+    const key = `${n}|${dob ?? ""}`;
+    known.push({ key, name: n, dob });
+    return key;
+  };
 
   const byKid = new Map<string, BookingRow[]>();
   for (const r of rows) {
@@ -122,6 +156,8 @@ export function buildCandidates(
     const k = kidKey(r.participant_name, r.date_of_birth);
     byKid.set(k, [...(byKid.get(k) ?? []), r]);
   }
+
+  const waitKeys = new Set(waiting.map((w) => kidKey(w.child_name, w.child_dob)));
 
   const out: Candidate[] = [];
   for (const [key, list] of byKid) {
