@@ -5,9 +5,10 @@ import { Loader2, ShieldBan } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getFamilyOverview, type FamilyEvent } from "@/lib/family.functions";
+import { FamilyTimeline } from "@/components/admin/FamilyTimeline";
+import { getFamilyOverview } from "@/lib/family.functions";
 import { resolveBlockSuggestion } from "@/lib/waitlist.functions";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/familie")({
   validateSearch: (search: Record<string, unknown>): { email?: string; name?: string } => ({
@@ -45,27 +46,6 @@ const BOOKING_STATUS: Record<string, string> = {
   waiting: "Warteliste",
   cancelled: "Abgesagt / storniert",
 };
-const EVENT_STYLE: Record<FamilyEvent["kind"], string> = {
-  request: "bg-slate-100 text-slate-800",
-  waitlist: "bg-amber-100 text-amber-900",
-  booking: "bg-emerald-100 text-emerald-900",
-  payment: "bg-emerald-100 text-emerald-900",
-  cancel: "bg-red-100 text-red-900",
-  mail: "bg-sky-100 text-sky-900",
-  block: "bg-red-100 text-red-900",
-  note: "bg-muted text-foreground",
-};
-const EVENT_LABEL: Record<FamilyEvent["kind"], string> = {
-  request: "Anfrage",
-  waitlist: "Anfrageliste",
-  booking: "Buchung",
-  payment: "Zahlung",
-  cancel: "Absage",
-  mail: "E-Mail",
-  block: "Sperrliste",
-  note: "Notiz",
-};
-
 function FamilyPage() {
   const { email, name } = Route.useSearch();
   const qc = useQueryClient();
@@ -323,33 +303,7 @@ function FamilyPage() {
           <CardTitle className="text-base">Verlauf</CardTitle>
         </CardHeader>
         <CardContent>
-          {data.events.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Ereignisse.</p>
-          ) : (
-            <ol className="space-y-3">
-              {data.events.map((ev, i) => (
-                <li
-                  key={i}
-                  className="grid grid-cols-[9.5rem_6.5rem_1fr] items-start gap-3 text-sm"
-                >
-                  <span className="text-muted-foreground">
-                    {ev.whenLabel ?? formatDateTimeBerlin(ev.at)}
-                  </span>
-                  <Badge variant="secondary" className={`justify-center ${EVENT_STYLE[ev.kind]}`}>
-                    {EVENT_LABEL[ev.kind]}
-                  </Badge>
-                  <span>
-                    <span className="font-medium">{ev.title}</span>
-                    {ev.detail && (
-                      <span className="block whitespace-pre-wrap text-muted-foreground">
-                        {ev.detail}
-                      </span>
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
+          <FamilyTimeline events={data.events} />
         </CardContent>
       </Card>
     </div>

@@ -63,6 +63,14 @@ export type Candidate = {
   phase: "beendet" | "läuft";
   onWaitlist: boolean;
   courses: string[];
+  /** Alle bisherigen Buchungen (ohne Storno) in zeitlicher Reihenfolge */
+  history: {
+    id: string;
+    course: string;
+    starts_on: string;
+    ends_on: string;
+    belt: number | null;
+  }[];
   group: Group;
   /** Klötzchen am Gurt im letzten Kurs mit erfasstem Stand (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst */
   belt: number | null;
@@ -220,6 +228,13 @@ export function buildCandidates(
       phase: (last.ends_on ?? "") < today ? "beendet" : "läuft",
       onWaitlist: waitKeys.has(key),
       courses: list.map((r) => r.course_name),
+      history: list.map((r) => ({
+        id: r.id,
+        course: r.course_name,
+        starts_on: r.starts_on ?? "",
+        ends_on: r.ends_on ?? "",
+        belt: r.belt_blocks,
+      })),
       group,
       belt,
     });
