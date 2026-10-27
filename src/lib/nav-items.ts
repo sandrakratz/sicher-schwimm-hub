@@ -49,6 +49,7 @@ export type AppNavItem = {
     | "/admin/sperrliste"
     | "/admin/zustaendigkeiten"
     | "/admin/archiv"
+    | "/admin/folgekurse"
     | "/admin/uebungsleitergelder"
     | "/admin/news"
     | "/admin/dokumente"
@@ -127,6 +128,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
     label: "Kurse",
     tabs: [
       { to: "/admin/kurse", label: "Kurse & Teilnehmer" },
+      { to: "/admin/folgekurse", label: "Folgekurse" },
       { to: "/admin/kalender", label: "Kurskalender" },
       { to: "/admin/dienstplan", label: "Dienstplan" },
     ],
