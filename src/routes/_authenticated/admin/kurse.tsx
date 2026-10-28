@@ -1592,7 +1592,7 @@ function Page() {
             title="Trainerteam für alle Termine dieses Kurses einteilen"
           >
             <a href={`/admin/kalender?kurs=${c.id}`}>
-              <Users className="h-4 w-4" /> Dienstplan
+              <Users className="h-4 w-4" /> Trainer einteilen
             </a>
           </Button>
           {canManage && (

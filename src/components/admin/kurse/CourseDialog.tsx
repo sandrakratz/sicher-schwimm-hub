@@ -217,7 +217,7 @@ export function CourseDialog({
                   }))
                 }
               />
-              <Hint>Maßgeblich für Dienstplan und Kurskalender (Ampel „unterbesetzt“).</Hint>
+              <Hint>Maßgeblich für Dienstplan und Kurse & Termine (Ampel „unterbesetzt“).</Hint>
             </div>
             <div>
               <Label>Anzahl der Einheiten</Label>

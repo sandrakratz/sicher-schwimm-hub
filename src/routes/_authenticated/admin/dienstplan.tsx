@@ -79,7 +79,7 @@ function Page() {
           </h1>
           <p className="text-sm text-muted-foreground">
             Wo fehlt jemand, wer kann einspringen, wer ist wann eingeteilt? Einzelne Kurse
-            bearbeitest du weiterhin im Kurskalender.
+            bearbeitest du unter „Kurse & Termine“.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>

@@ -158,6 +158,13 @@ export function GapList({
                       })}
                     </Badge>
                   )}
+                  <a
+                    href={`/admin/kalender?kurs=${s.courseId}`}
+                    className="text-xs text-primary underline-offset-2 hover:underline"
+                    title="Alle Termine dieses Kurses einteilen"
+                  >
+                    Ganzen Kurs bearbeiten
+                  </a>
                   <Button size="sm" onClick={() => onPick(s.id)}>
                     Besetzen
                   </Button>

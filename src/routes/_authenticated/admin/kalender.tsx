@@ -5,6 +5,7 @@ import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -15,10 +16,8 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { listAdminCalendar, type CalendarEntry } from "@/lib/calendar.functions";
 import { listTrainers } from "@/lib/trainers.functions";
-import { applyAssignments } from "@/lib/dienstplan.functions";
-import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, RefreshCw, Users, HandHelping, X, Plus } from "lucide-react";
+import { CalendarDays, RefreshCw, HandHelping } from "lucide-react";
 import { CourseRosterMatrix } from "@/components/admin/CourseRosterMatrix";
 
 function shortDate(d: string) {
@@ -41,7 +40,7 @@ export const Route = createFileRoute("/_authenticated/admin/kalender")({
   },
   head: () => ({
     meta: [
-      { title: "Kurskalender & Dienstplan – Verwaltung" },
+      { title: "Kurse & Termine – Verwaltung" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -92,18 +91,17 @@ function Page() {
   const load = useServerFn(listAdminCalendar);
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [kind, setKind] = useState<"all" | "session" | "event">("all");
+  const [tab, setTab] = useState("kurse");
   const [scope, setScope] = useState<"upcoming" | "all">("upcoming");
   const [q, setQ] = useState("");
-  const [onlyOpen, setOnlyOpen] = useState(false);
-  const [picker, setPicker] = useState<string | null>(null);
-  const [view, setView] = useState<"course" | "date">("course");
-  const [focusCourse, setFocusCourse] = useState<string | null>(null);
+  const [courseId, setCourseId] = useState<string | null>(null);
   useEffect(() => {
+    // Aus der Kursakte: ?kurs=… öffnet direkt die Einteilung dieses Kurses (auch wenn er schon läuft)
     const k = new URLSearchParams(window.location.search).get("kurs");
     if (k) {
-      setFocusCourse(k);
-      setView("course");
+      setCourseId(k);
+      setScope("all");
+      setTab("kurse");
     }
   }, []);
   const trainersFn = useServerFn(listTrainers);
@@ -113,34 +111,6 @@ function Page() {
       .then((t: any) => setTrainers(t || []))
       .catch(() => {}); /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
-
-  // Trainer:in direkt am Termin ein- oder austeilen (ohne Neuladen). Läuft über den Server: Protokoll + Mail.
-  const applyFn = useServerFn(applyAssignments);
-  async function toggle(e: CalendarEntry, trainerId: string, on: boolean) {
-    try {
-      const res = await applyFn({
-        data: { changes: [{ sessionId: e.id, trainerId, on }], notify: true },
-      });
-      const name = trainers.find((t) => t.id === trainerId)?.name ?? "Unbekannt";
-      setEntries((prev) =>
-        prev.map((x) => {
-          if (x.kind !== "session" || x.id !== e.id) return x;
-          const assigned = new Set(x.assignedIds ?? []);
-          const tr = x.trainers.filter((t) => t.id !== trainerId);
-          if (on) {
-            assigned.add(trainerId);
-            tr.push({ id: trainerId, name });
-          } else assigned.delete(trainerId);
-          return { ...x, assignedIds: [...assigned], trainers: tr };
-        }),
-      );
-      toast.success(
-        `${name} ${on ? "eingeteilt" : "ausgeteilt"}${res.mailed ? " und per Mail informiert" : ""}`,
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Änderung fehlgeschlagen");
-    }
-  }
 
   async function refresh() {
     setLoading(true);
@@ -159,48 +129,35 @@ function Page() {
     [],
   );
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return entries.filter((e) => {
-      if (kind !== "all" && e.kind !== kind) return false;
-      if (scope === "upcoming" && e.date < today) return false;
-      if (onlyOpen && !(e.kind === "session" && e.trainers.length < need(e))) return false;
-      if (!needle) return true;
-      const hay = [
-        e.title,
-        e.subtitle ?? "",
-        e.location ?? "",
-        ...e.trainers.map((t) => t.name),
-        ...e.helpers,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(needle);
-    });
-  }, [entries, kind, scope, q, today, onlyOpen]);
-
-  const byMonth = useMemo(() => {
-    const map = new Map<string, Map<string, CalendarEntry[]>>();
-    filtered.forEach((e) => {
-      const mk = monthKey(e.date);
-      const days = map.get(mk) ?? new Map<string, CalendarEntry[]>();
-      days.set(e.date, [...(days.get(e.date) ?? []), e]);
-      map.set(mk, days);
-    });
-    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [filtered]);
-
-  const byCourse = useMemo(() => {
+  // Kurse mit ihren Terminen im gewählten Zeitraum
+  const courses = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
-    filtered.forEach((e) => {
+    entries.forEach((e) => {
       if (e.kind !== "session" || !e.courseId) return;
-      if (focusCourse && e.courseId !== focusCourse) return;
+      if (scope === "upcoming" && e.date < today) return;
       map.set(e.courseId, [...(map.get(e.courseId) ?? []), e]);
     });
     return [...map.entries()]
-      .map(([k, l]) => [k, l.sort((a, b) => a.date.localeCompare(b.date))] as const)
-      .sort((a, b) => a[1][0].date.localeCompare(b[1][0].date));
-  }, [filtered, focusCourse]);
+      .map(([id, l]) => ({ id, list: l.sort((a, b) => a.date.localeCompare(b.date)) }))
+      .sort((a, b) => a.list[0].date.localeCompare(b.list[0].date));
+  }, [entries, scope, today]);
+
+  const needle = q.trim().toLowerCase();
+  const courseOptions = useMemo(
+    () =>
+      courses.filter(
+        (c) =>
+          c.id === courseId ||
+          !needle ||
+          `${c.list[0].title} ${c.list[0].location ?? ""}`.toLowerCase().includes(needle),
+      ),
+    [courses, needle, courseId],
+  );
+  const selected = courses.find((c) => c.id === courseId) ?? null;
+  // Ohne Auswahl (oder wenn der Kurs im Zeitraum nicht vorkommt) den ersten Kurs zeigen
+  useEffect(() => {
+    if (!loading && !selected && courses.length > 0) setCourseId(courses[0].id);
+  }, [loading, selected, courses]);
 
   function applyChange(sessionId: string, trainerId: string, on: boolean) {
     const name = trainers.find((t) => t.id === trainerId)?.name ?? "Unbekannt";
@@ -218,28 +175,44 @@ function Page() {
     );
   }
 
-  const openHelperSlots = filtered.reduce(
-    (sum, e) => sum + e.helperNeed.reduce((s, g) => s + Math.max(0, g.needed - g.filled), 0),
-    0,
-  );
-  const withoutTrainer = filtered.filter(
-    (e) => e.kind === "session" && e.trainers.length === 0,
-  ).length;
-  const understaffed = filtered.filter(
-    (e) => e.kind === "session" && e.trainers.length > 0 && e.trainers.length < need(e),
-  ).length;
-  const withoutTime = filtered.filter((e) => !e.startTime).length;
+  // Vereinstermine nach Monat und Tag
+  const byMonth = useMemo(() => {
+    const map = new Map<string, Map<string, CalendarEntry[]>>();
+    entries
+      .filter((e) => e.kind === "event")
+      .filter((e) => scope === "all" || e.date >= today)
+      .filter((e) => {
+        if (!needle) return true;
+        return [e.title, e.subtitle ?? "", e.location ?? "", ...e.helpers]
+          .join(" ")
+          .toLowerCase()
+          .includes(needle);
+      })
+      .forEach((e) => {
+        const mk = monthKey(e.date);
+        const days = map.get(mk) ?? new Map<string, CalendarEntry[]>();
+        days.set(e.date, [...(days.get(e.date) ?? []), e]);
+        map.set(mk, days);
+      });
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [entries, scope, needle, today]);
+
+  const incomplete = selected
+    ? selected.list.filter((s) => (s.assignedIds ?? []).length < need(s)).length
+    : 0;
+  const withoutTime = selected ? selected.list.filter((s) => !s.startTime).length : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CalendarDays className="h-6 w-6" /> Kurskalender &amp; Dienstplan
+            <CalendarDays className="h-6 w-6" /> Kurse &amp; Termine
           </h1>
           <p className="text-sm text-muted-foreground">
-            Dienstplan: Trainer:innen direkt am Termin einteilen. Nur Eingeteilte sehen den Kurs im
-            Trainerbereich. Lücken, Ersatzsuche und Wochenplan findest du im{" "}
+            Hier teilst du die Trainer:innen eines Kurses für alle Termine ein und siehst die
+            Vereinstermine mit Helfern. Den Überblick über Lücken, Ersatzsuche und Wochenplan
+            findest du im{" "}
             <Link
               to="/admin/dienstplan"
               className="text-primary underline-offset-2 hover:underline"
@@ -254,293 +227,163 @@ function Page() {
         </Button>
       </div>
 
-      {(withoutTrainer > 0 || understaffed > 0) && (
-        <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 p-3 text-sm">
-          ⚠️{" "}
-          {withoutTrainer > 0 && (
-            <>
-              <b>{withoutTrainer}</b> Termin(e) ohne Trainer:in
-            </>
-          )}
-          {withoutTrainer > 0 && understaffed > 0 && " · "}
-          {understaffed > 0 && (
-            <>
-              <b>{understaffed}</b> Termin(e) mit zu wenigen Trainer:innen
-            </>
-          )}
-          {!onlyOpen && (
-            <Button size="sm" variant="outline" className="ml-3" onClick={() => setOnlyOpen(true)}>
-              Nur diese anzeigen
-            </Button>
-          )}
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="kurse">Kurse einteilen</TabsTrigger>
+          <TabsTrigger value="verein">Vereinstermine &amp; Helfer</TabsTrigger>
+        </TabsList>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Select value={scope} onValueChange={(v: "upcoming" | "all") => setScope(v)}>
+            <SelectTrigger className="w-52">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upcoming">Ab heute</SelectItem>
+              <SelectItem value="all">Alle Termine</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            className="w-64"
+            placeholder={tab === "kurse" ? "Kurs suchen…" : "Suche (Termin, Ort, Person)…"}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
         </div>
-      )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{filtered.length}</div>
-            <div className="text-xs text-muted-foreground">Termine im Zeitraum</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{withoutTrainer}</div>
-            <div className="text-xs text-muted-foreground">Kurstermine ohne Trainer:in</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-2xl font-bold">{openHelperSlots}</div>
-            <div className="text-xs text-muted-foreground">Offene Helferplätze</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-md border p-0.5">
-          <Button
-            size="sm"
-            variant={view === "course" ? "default" : "ghost"}
-            onClick={() => setView("course")}
-          >
-            Nach Kursen
-          </Button>
-          <Button
-            size="sm"
-            variant={view === "date" ? "default" : "ghost"}
-            onClick={() => setView("date")}
-          >
-            Nach Terminen
-          </Button>
-        </div>
-        {focusCourse && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setFocusCourse(null);
-              window.history.replaceState(null, "", "/admin/kalender");
-            }}
-          >
-            Nur ein Kurs – alle zeigen
-          </Button>
+        {loading && (
+          <div className="mt-4 text-sm text-muted-foreground">Kalender wird geladen…</div>
         )}
-        <Select value={scope} onValueChange={(v: "upcoming" | "all") => setScope(v)}>
-          <SelectTrigger className="w-52">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="upcoming">Ab heute</SelectItem>
-            <SelectItem value="all">Alle Termine</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={kind} onValueChange={(v: "all" | "session" | "event") => setKind(v)}>
-          <SelectTrigger className="w-52">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Kurse & Vereinstermine</SelectItem>
-            <SelectItem value="session">Nur Kurstermine</SelectItem>
-            <SelectItem value="event">Nur Vereinstermine</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          size="sm"
-          variant={onlyOpen ? "default" : "outline"}
-          onClick={() => setOnlyOpen((v) => !v)}
-        >
-          Nur unvollständig besetzte
-        </Button>
-        <Input
-          className="w-64"
-          placeholder="Suche (Kurs, Ort, Person)…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        {withoutTime > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {withoutTime} Termin(e) ohne Uhrzeit – Uhrzeit unter „Kurse → Termine“ eintragen.
-          </span>
-        )}
-      </div>
 
-      {loading && <div className="text-sm text-muted-foreground">Kalender wird geladen…</div>}
-      {!loading && (view === "date" ? byMonth.length === 0 : byCourse.length === 0) && (
-        <div className="text-sm text-muted-foreground">Keine Termine gefunden.</div>
-      )}
-
-      {view === "course" &&
-        byCourse.map(([cid, list]) => {
-          const incomplete = list.filter((s) => (s.assignedIds ?? []).length < need(s)).length;
-          return (
-            <CollapsibleCard
-              key={cid}
-              storageKey={`cal-course-${cid}`}
-              title={list[0].title}
-              subtitle={`${list.length} Termin(e) · ${shortDate(list[0].date)} – ${shortDate(list[list.length - 1].date)}${list[0].location ? ` · ${list[0].location}` : ""}${incomplete ? ` · ⚠️ ${incomplete} unvollständig` : " · ✓ besetzt"}`}
-            >
-              <CourseRosterMatrix sessions={list} trainers={trainers} onChanged={applyChange} />
-            </CollapsibleCard>
-          );
-        })}
-
-      {view === "date" &&
-        byMonth.map(([mk, days]) => (
-          <CollapsibleCard
-            key={mk}
-            storageKey={`cal-${mk}`}
-            title={fmtMonth(mk)}
-            subtitle={`${[...days.values()].reduce((s, l) => s + l.length, 0)} Termin(e)`}
-          >
-            <div className="space-y-4">
-              {[...days.entries()]
-                .sort((a, b) => a[0].localeCompare(b[0]))
-                .map(([day, list]) => (
-                  <div key={day}>
-                    <div className="mb-2 text-sm font-semibold">
-                      {fmtDay(day)}
-                      {day === today && <Badge className="ml-2">heute</Badge>}
-                    </div>
-                    <div className="space-y-2">
-                      {list.map((e) => (
-                        <div key={`${e.kind}-${e.id}`} className="rounded-lg border p-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="w-32 shrink-0 text-sm font-medium tabular-nums">
-                              {timeLabel(e)}
-                            </span>
-                            <span className="font-medium">{e.title}</span>
-                            <Badge variant={e.kind === "session" ? "secondary" : "outline"}>
-                              {e.kind === "session" ? "Kurstermin" : "Vereinstermin"}
-                            </Badge>
-                            {e.location && (
-                              <span className="text-xs text-muted-foreground">{e.location}</span>
-                            )}
-                          </div>
-                          {e.subtitle && (
-                            <div className="mt-1 text-xs text-muted-foreground">{e.subtitle}</div>
-                          )}
-                          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                            {e.kind === "session" && (
-                              <SessionRoster
-                                e={e}
-                                trainers={trainers}
-                                open={picker === e.id}
-                                setOpen={(v) => setPicker(v ? e.id : null)}
-                                onToggle={toggle}
-                              />
-                            )}
-                            {(e.helpers.length > 0 || e.helperNeed.length > 0) && (
-                              <span className="flex items-center gap-1">
-                                <HandHelping className="h-3.5 w-3.5" />
-                                {e.helpers.length > 0 ? e.helpers.join(", ") : "noch keine Zusagen"}
-                              </span>
-                            )}
-                            {e.helperNeed.map((g) => (
-                              <Badge
-                                key={g.name}
-                                variant={g.filled >= g.needed ? "secondary" : "outline"}
-                                className={
-                                  g.filled >= g.needed ? "" : "border-destructive text-destructive"
-                                }
-                              >
-                                {g.name}: {g.filled}/{g.needed}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+        <TabsContent value="kurse" className="mt-4 space-y-4">
+          {!loading && courses.length === 0 && (
+            <div className="text-sm text-muted-foreground">Keine Kurstermine gefunden.</div>
+          )}
+          {courses.length > 0 && (
+            <Select value={courseId ?? ""} onValueChange={setCourseId}>
+              <SelectTrigger className="w-full max-w-xl">
+                <SelectValue placeholder="Kurs wählen…" />
+              </SelectTrigger>
+              <SelectContent>
+                {courseOptions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.list[0].title} · {shortDate(c.list[0].date)} –{" "}
+                    {shortDate(c.list[c.list.length - 1].date)}
+                  </SelectItem>
                 ))}
-            </div>
-          </CollapsibleCard>
-        ))}
-    </div>
-  );
-}
+                {courseOptions.length === 0 && (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    Kein Kurs passt zur Suche.
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          )}
+          {selected && (
+            <Card>
+              <CardContent className="space-y-3 pt-4">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                  <span className="font-semibold">{selected.list[0].title}</span>
+                  <span className="text-muted-foreground">
+                    {selected.list.length} Termin(e)
+                    {selected.list[0].location ? ` · ${selected.list[0].location}` : ""}
+                  </span>
+                  {incomplete > 0 ? (
+                    <span className="text-destructive">
+                      ⚠️ {incomplete} Termin(e) nicht voll besetzt –{" "}
+                      <Link to="/admin/dienstplan" className="underline-offset-2 hover:underline">
+                        im Dienstplan ansehen
+                      </Link>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">✓ besetzt</span>
+                  )}
+                </div>
+                {withoutTime > 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    {withoutTime} Termin(e) ohne Uhrzeit – Uhrzeit unter „Kurse → Termine“
+                    eintragen.
+                  </div>
+                )}
+                <CourseRosterMatrix
+                  key={selected.id}
+                  sessions={selected.list}
+                  trainers={trainers}
+                  onChanged={applyChange}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-function SessionRoster({
-  e,
-  trainers,
-  open,
-  setOpen,
-  onToggle,
-}: {
-  e: CalendarEntry;
-  trainers: { id: string; name: string }[];
-  open: boolean;
-  setOpen: (v: boolean) => void;
-  onToggle: (e: CalendarEntry, id: string, on: boolean) => void;
-}) {
-  const n = e.trainers.length;
-  const required = need(e);
-  const light = n === 0 ? "🔴" : n < required ? "🟡" : "🟢";
-  const assigned = new Set(e.assignedIds ?? []);
-  const av = new Map((e.availability ?? []).map((a) => [a.id, a.available]));
-  const rank = (id: string) => (av.get(id) === true ? 0 : av.get(id) === false ? 2 : 1);
-  return (
-    <div className="w-full space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <span title="Besetzung">{light}</span>
-        <Users className="h-3.5 w-3.5" />
-        <span className={n < required ? "font-medium text-destructive" : "text-muted-foreground"}>
-          {n} von {required}
-        </span>
-        {n === 0 && <span className="text-destructive">keine Trainer:in eingeteilt</span>}
-        {e.trainers.map((t) => (
-          <Badge key={t.id} variant="secondary" className="gap-1">
-            {t.name}
-            {assigned.has(t.id) && (
-              <button
-                type="button"
-                aria-label={`${t.name} austeilen`}
-                onClick={() => onToggle(e, t.id, false)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </Badge>
-        ))}
-        <Button size="sm" variant="outline" className="h-7" onClick={() => setOpen(!open)}>
-          <Plus className="h-3.5 w-3.5" /> Trainer einteilen
-        </Button>
-        {e.courseId && (
-          <Link to="/admin/kurse" className="text-primary underline-offset-2 hover:underline">
-            Zur Kursakte
-          </Link>
-        )}
-      </div>
-      {open && (
-        <div className="rounded-md border bg-muted/30 p-2">
-          <div className="mb-1 text-muted-foreground">
-            🟢 kann · ⚪ keine Rückmeldung · 🔴 kann nicht – Klick teilt ein bzw. aus
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {trainers
-              .slice()
-              .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de"))
-              .map((t) => {
-                const on = assigned.has(t.id);
-                const dot = av.get(t.id) === true ? "🟢" : av.get(t.id) === false ? "🔴" : "⚪";
-                return (
-                  <Button
-                    key={t.id}
-                    size="sm"
-                    variant={on ? "default" : "outline"}
-                    className="h-7"
-                    onClick={() => onToggle(e, t.id, !on)}
-                  >
-                    {dot} {t.name}
-                  </Button>
-                );
-              })}
-            {trainers.length === 0 && (
-              <span className="text-muted-foreground">Keine Trainer gefunden</span>
-            )}
-          </div>
-        </div>
-      )}
+        <TabsContent value="verein" className="mt-4 space-y-4">
+          {!loading && byMonth.length === 0 && (
+            <div className="text-sm text-muted-foreground">Keine Vereinstermine gefunden.</div>
+          )}
+          {byMonth.map(([mk, days]) => (
+            <CollapsibleCard
+              key={mk}
+              storageKey={`cal-${mk}`}
+              title={fmtMonth(mk)}
+              subtitle={`${[...days.values()].reduce((s, l) => s + l.length, 0)} Termin(e)`}
+            >
+              <div className="space-y-4">
+                {[...days.entries()]
+                  .sort((a, b) => a[0].localeCompare(b[0]))
+                  .map(([day, list]) => (
+                    <div key={day}>
+                      <div className="mb-2 text-sm font-semibold">
+                        {fmtDay(day)}
+                        {day === today && <Badge className="ml-2">heute</Badge>}
+                      </div>
+                      <div className="space-y-2">
+                        {list.map((e) => (
+                          <div key={`${e.kind}-${e.id}`} className="rounded-lg border p-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="w-32 shrink-0 text-sm font-medium tabular-nums">
+                                {timeLabel(e)}
+                              </span>
+                              <span className="font-medium">{e.title}</span>
+                              {e.location && (
+                                <span className="text-xs text-muted-foreground">{e.location}</span>
+                              )}
+                            </div>
+                            {e.subtitle && (
+                              <div className="mt-1 text-xs text-muted-foreground">{e.subtitle}</div>
+                            )}
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                              {(e.helpers.length > 0 || e.helperNeed.length > 0) && (
+                                <span className="flex items-center gap-1">
+                                  <HandHelping className="h-3.5 w-3.5" />
+                                  {e.helpers.length > 0
+                                    ? e.helpers.join(", ")
+                                    : "noch keine Zusagen"}
+                                </span>
+                              )}
+                              {e.helperNeed.map((g) => (
+                                <Badge
+                                  key={g.name}
+                                  variant={g.filled >= g.needed ? "secondary" : "outline"}
+                                  className={
+                                    g.filled >= g.needed
+                                      ? ""
+                                      : "border-destructive text-destructive"
+                                  }
+                                >
+                                  {g.name}: {g.filled}/{g.needed}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </CollapsibleCard>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
