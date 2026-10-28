@@ -98,9 +98,9 @@ export function SessionsDialog({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen im Kurskalender, das
-          Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden ihre
-          Verfügbarkeit unter „Verfügbarkeit“.
+          Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen unter „Kurse &
+          Termine“, das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden
+          ihre Verfügbarkeit unter „Verfügbarkeit“.
         </p>
         <div className="space-y-3">
           {sessions.length === 0 && (

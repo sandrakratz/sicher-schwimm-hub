@@ -129,7 +129,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
     tabs: [
       { to: "/admin/kurse", label: "Kurse & Teilnehmer" },
       { to: "/admin/folgekurse", label: "Folgekurse" },
-      { to: "/admin/kalender", label: "Kurskalender" },
+      { to: "/admin/kalender", label: "Kurse & Termine" },
       { to: "/admin/dienstplan", label: "Dienstplan" },
     ],
   },
