@@ -85,7 +85,7 @@ export function Kursplanung() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [taken, setTaken] = useState<Record<string, TakenSession[]>>({});
   const [crewOn, setCrewOn] = useState<
-    Record<string, { name: string; ids: string[]; needed: number }[]>
+    Record<string, { name: string; ids: string[]; needed: number; start: string; end: string }[]>
   >({});
   const [slots, setSlots] = useState<StoredSlot[]>([]);
   const [meta, setMeta] = useState<{ file: string | null; at: string | null }>({
@@ -103,6 +103,8 @@ export function Kursplanung() {
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [kindsPool, setKindsPool] = useState("");
   const [pause, setPause] = useState(15);
+  const [publish, setPublish] = useState(false);
+  const saveReady = useRef(false);
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
 
@@ -169,6 +171,8 @@ export function Kursplanung() {
         name: string;
         needed: number;
         fixed: string | null;
+        start: string;
+        end: string;
       }[] = [];
       for (const r of rows) {
         if (r.courses?.archived_at) continue;
@@ -196,6 +200,8 @@ export function Kursplanung() {
           name,
           needed: r.courses?.trainers_needed ?? 2,
           fixed: r.assigned_trainer_id ?? null,
+          start: entry.start,
+          end: entry.end,
         });
       }
       setTaken(map);
@@ -214,7 +220,13 @@ export function Kursplanung() {
       for (const m of metas) {
         const ids = new Set(assigned.filter((a) => a.session_id === m.id).map((a) => a.trainer_id));
         if (m.fixed) ids.add(m.fixed);
-        (crewMap[m.date] ??= []).push({ name: m.name, ids: [...ids], needed: m.needed });
+        (crewMap[m.date] ??= []).push({
+          name: m.name,
+          ids: [...ids],
+          needed: m.needed,
+          start: m.start,
+          end: m.end,
+        });
       }
       setCrewOn(crewMap);
     } catch {
@@ -318,10 +330,30 @@ export function Kursplanung() {
         count: 1,
       }));
     const blocks = autoBlocks(base, cfg.lanes);
-    setKinds(base.map((k) => ({ ...k, block: blocks[k.id], max: null })));
+    // Zuletzt verwendete Einstellungen dieses Bades, soweit die Kursangebote noch existieren.
+    let saved: { kinds?: Kind[]; pause?: number } = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(`kursplanung-${pool}`) ?? "{}");
+    } catch {
+      /* ohne gespeicherte Werte starten */
+    }
+    const keep = (saved.kinds ?? []).filter((k) => programs.some((p) => p.id === k.id));
+    if (typeof saved.pause === "number") setPause(saved.pause);
+    setKinds(keep.length ? keep : base.map((k) => ({ ...k, block: blocks[k.id], max: null })));
     setToggled({});
+    saveReady.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs, pool, kindsPool, courses]);
+
+  // Einstellungen je Bad merken (nur in diesem Browser).
+  useEffect(() => {
+    if (!saveReady.current || kindsPool !== pool) return;
+    try {
+      localStorage.setItem(`kursplanung-${pool}`, JSON.stringify({ kinds, pause }));
+    } catch {
+      /* nicht schlimm */
+    }
+  }, [kinds, pause, pool, kindsPool]);
 
   function skipReason(s: StoredSlot): string | undefined {
     if (s.mode === "familie") return "Familienschwimmen";
@@ -349,17 +381,31 @@ export function Kursplanung() {
 
   const need = trainersNeeded(kinds, cfg.lanes);
   const surveyed = availRows.length > 0;
-  function staffing(date: string) {
+  /**
+   * Zusagen, Absagen und offene Antworten für einen Termin. Mit Zeitfenster (von/bis) zählen
+   * Trainer, die in dieser Zeit schon in einem anderen Kurs eingeteilt sind, als „busy“ und nicht als frei.
+   */
+  function staffing(date: string, from?: string, to?: string) {
     let yes = 0;
     let no = 0;
     let unknown = 0;
+    let busy = 0;
+    const occupied = new Set<string>();
+    if (from && to)
+      for (const c of crewOn[date] ?? [])
+        if (toMin(c.start) < toMin(to) && toMin(c.end) > toMin(from))
+          for (const id of c.ids) occupied.add(id);
     for (const m of team) {
+      if (occupied.has(m.id)) {
+        busy++;
+        continue;
+      }
       const a = availRows.find((r) => r.d === date && r.t === m.id);
       if (blackoutOn(blackouts, m.id, date) || a?.ok === false) no++;
       else if (a?.ok) yes++;
       else unknown++;
     }
-    return { yes, no, unknown };
+    return { yes, no, unknown, busy };
   }
 
   function overlap(t: PlannedTerm): string | null {
@@ -375,10 +421,37 @@ export function Kursplanung() {
     );
     return hit ? `${hit.name} (${short(hit.starts_on!)}–${short(hit.ends_on!)})` : null;
   }
-  const thin = (t: PlannedTerm) =>
-    t.sessions.map((s) => s.date).filter((d) => staffing(d).yes < need);
+  // Trainerbedarf zur selben Zeit: alle Vorschläge, die an diesem Tag überlappen (ohne die abgewählten).
+  const needAt = (date: string, from: string, to: string) =>
+    terms
+      .filter((x) => toggled[x.id] !== false)
+      .reduce(
+        (n, x) =>
+          n +
+          (x.sessions.some(
+            (s) => s.date === date && toMin(s.start) < toMin(to) && toMin(s.end) > toMin(from),
+          )
+            ? (kinds.find((k) => k.id === x.track.kindId)?.trainers ?? 2)
+            : 0),
+        0,
+      );
+  /**
+   * Termine eines Vorschlags, an denen die Trainer nicht reichen: „hart“, wenn selbst mit allen offenen
+   * Antworten zu wenige frei sind (bereits eingeteilte Trainer zählen nicht), sonst nur zu wenige Zusagen.
+   */
+  const staffGaps = (t: PlannedTerm) => {
+    if (!team.length) return [];
+    const own = kinds.find((k) => k.id === t.track.kindId)?.trainers ?? 2;
+    return t.sessions
+      .map((s) => {
+        const st = staffing(s.date, s.start, s.end);
+        const req = Math.max(own, needAt(s.date, s.start, s.end));
+        return { date: s.date, st, req, hard: st.yes + st.unknown < req };
+      })
+      .filter((c) => c.hard || (surveyed && c.st.yes < c.req));
+  };
   const isSelected = (t: PlannedTerm) =>
-    toggled[t.id] ?? (t.complete && !overlap(t) && !(surveyed && thin(t).length > 0));
+    toggled[t.id] ?? (t.complete && !overlap(t) && staffGaps(t).length === 0);
   const chosen = terms.filter(isSelected);
 
   // Bereits vergebene und vorgeschlagene Kurse je Termin.
@@ -619,7 +692,7 @@ export function Kursplanung() {
           starts_on: first.date,
           ends_on: last.date,
           schedule: `${wd(first.date)} ${first.start}–${first.end} Uhr`,
-          is_public: true,
+          is_public: publish,
           price_member: p.price_member,
           price_non_member: p.price_non_member,
           payment_due_days: p.payment_due_days,
@@ -1151,9 +1224,19 @@ export function Kursplanung() {
                   du ankreuzt, siehst du im Terminplan gestrichelt.
                 </p>
               </div>
-              <Button disabled={busy || !chosen.length} onClick={createTerms}>
-                <CalendarPlus className="h-4 w-4" /> {chosen.length} anlegen
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                <Button disabled={busy || !chosen.length} onClick={createTerms}>
+                  <CalendarPlus className="h-4 w-4" /> {chosen.length} anlegen
+                </Button>
+                <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={publish}
+                    onChange={(e) => setPublish(e.target.checked)}
+                  />
+                  gleich auf der Webseite zeigen
+                </label>
+              </div>
             </div>
             {!terms.length && (
               <p className="text-sm text-muted-foreground">
@@ -1166,7 +1249,7 @@ export function Kursplanung() {
                 const first = t.sessions[0];
                 const last = t.sessions[t.sessions.length - 1];
                 const k = kinds.find((x) => x.id === t.track.kindId)!;
-                const th = surveyed ? thin(t) : [];
+                const th = staffGaps(t);
                 const isFirst = terms.find((x) => x.track.id === t.track.id) === t;
                 const odd = t.sessions.filter((s) => s.start !== first.start);
                 return (
@@ -1212,9 +1295,18 @@ export function Kursplanung() {
                           </Badge>
                         )}
                         {th.length > 0 && (
-                          <Badge variant="outline" className="text-amber-700">
-                            zu wenig Trainer:{" "}
-                            {th.map((d) => `${short(d)} ${staffing(d).yes}/${need}`).join(", ")}
+                          <Badge
+                            variant="outline"
+                            className={th.some((c) => c.hard) ? "text-red-600" : "text-amber-700"}
+                            title="frei / benötigt; „schon eingeteilt“ = Trainer sind zur selben Zeit in einem anderen Kurs"
+                          >
+                            Trainer:{" "}
+                            {th
+                              .map(
+                                (c) =>
+                                  `${short(c.date)} ${c.st.yes + (surveyed ? 0 : c.st.unknown)}/${c.req}${c.st.busy ? ` (${c.st.busy} schon eingeteilt)` : ""}`,
+                              )
+                              .join(", ")}
                           </Badge>
                         )}
                         {ov && (
