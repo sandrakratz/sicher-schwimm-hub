@@ -3,6 +3,8 @@ import { z } from "zod";
 import { escapeLike } from "@/lib/like";
 import { todayBerlinIso } from "@/lib/format";
 import { meetsMinAge, withinMaxAge } from "@/lib/waitlist-age";
+import { decideMember, priceFor } from "@/lib/member-claim";
+import { isAdultProgram } from "@/lib/adult-course";
 
 const SITE_BASE_URL = "https://sicher-schwimmen.com";
 
@@ -274,6 +276,69 @@ const bookingSchema = z
     path: ["healthConsent"],
   });
 
+/** Buchung durch Erwachsene für sich selbst: nur die dafür nötigen Angaben (keine Kind-/Gesundheitsangaben). */
+const adultBookingSchema = z.object({
+  audience: z.literal("adult"),
+  courseId: z.string().uuid(),
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().min(5).max(60),
+  street: z.string().trim().min(3).max(160),
+  zip: z.string().trim().min(4).max(12),
+  city: z.string().trim().min(2).max(120),
+  message: z.string().trim().max(2000).optional().or(z.literal("")),
+  /** Selbstangabe; Mitgliedspreis gilt erst nach Prüfung durch das System bzw. den Vorstand */
+  isMember: z.boolean().default(false),
+  ageConfirmed: z.literal(true),
+  acceptTerms: z.literal(true),
+  gdprConsent: z.literal(true),
+  website: z.string().max(0).optional(),
+});
+
+const bookingInputSchema = z.union([adultBookingSchema, bookingSchema]);
+
+/** Beide Formulare auf eine gemeinsame Form bringen (Erwachsene: Teilnehmer = zahlende Person, ohne Geburtsdatum). */
+function normalizeBookingInput(input: z.infer<typeof bookingInputSchema>) {
+  if ("audience" in input) {
+    const name = `${input.firstName} ${input.lastName}`.trim();
+    return {
+      adult: true as const,
+      courseId: input.courseId,
+      parentName: name,
+      parentEmail: input.email,
+      parentPhone: input.phone,
+      parentStreet: input.street,
+      parentZip: input.zip,
+      parentCity: input.city,
+      childName: name,
+      childDob: null as string | null,
+      healthInfo: "",
+      healthConsent: undefined as boolean | undefined,
+      message: input.message ?? "",
+      isMember: input.isMember,
+      website: input.website,
+    };
+  }
+  return {
+    adult: false as const,
+    courseId: input.courseId,
+    parentName: input.parentName,
+    parentEmail: input.parentEmail,
+    parentPhone: input.parentPhone,
+    parentStreet: input.parentStreet,
+    parentZip: input.parentZip,
+    parentCity: input.parentCity,
+    childName: input.childName,
+    childDob: input.childDob as string | null,
+    healthInfo: input.healthInfo ?? "",
+    healthConsent: input.healthConsent as boolean | undefined,
+    message: input.message ?? "",
+    isMember: input.isMember,
+    website: input.website,
+  };
+}
+
 /** Nachweis der Einwilligung (Art. 7 Abs. 1 DSGVO), wird in den internen Notizen der Anfrage vermerkt. */
 function healthConsentNote(healthInfo: string | undefined): string {
   return healthInfo
@@ -282,8 +347,9 @@ function healthConsentNote(healthInfo: string | undefined): string {
 }
 
 export const bookCourseTerm = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => bookingSchema.parse(input))
-  .handler(async ({ data }) => {
+  .inputValidator((input: unknown) => bookingInputSchema.parse(input))
+  .handler(async ({ data: input }) => {
+    const data = normalizeBookingInput(input);
     if (data.website) return { status: "confirmed" as const, ok: true };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -391,33 +457,77 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
       payment_due_days: number;
     } | null;
 
+    // Angebote für Erwachsene und für Kinder haben je ein eigenes Formular; der Server prüft, dass das richtige benutzt wurde.
+    const adultProgram = program ? isAdultProgram(program) : false;
+    if (adultProgram !== data.adult) {
+      throw new Error(
+        adultProgram
+          ? "Dieses Angebot richtet sich an Erwachsene. Bitte nutzen Sie das Anmeldeformular für Erwachsene."
+          : "Dieses Angebot ist für Kinder. Bitte nutzen Sie das Anmeldeformular für Kinder.",
+      );
+    }
+
     // Alter zu Kursbeginn (gleiche Rechenregel wie bei der Warteliste, siehe waitlist-age.ts)
     const minAge = program?.min_age_years ?? null;
-    if (minAge != null && !meetsMinAge(data.childDob, course.starts_on, minAge)) {
+    if (
+      !data.adult &&
+      data.childDob &&
+      minAge != null &&
+      !meetsMinAge(data.childDob, course.starts_on, minAge)
+    ) {
       throw new Error(
         `Für diesen Kurs ist ein Mindestalter von ${minAge} Jahren zu Kursbeginn erforderlich. Bitte stellen Sie stattdessen eine Kursanfrage.`,
       );
     }
     const maxAge = program?.max_age_years ?? null;
-    if (maxAge != null && !withinMaxAge(data.childDob, course.starts_on, maxAge)) {
+    if (
+      !data.adult &&
+      data.childDob &&
+      maxAge != null &&
+      !withinMaxAge(data.childDob, course.starts_on, maxAge)
+    ) {
       throw new Error(
         `Dieser Kurs ist für Kinder bis ${maxAge} Jahre zu Kursbeginn. Bitte stellen Sie stattdessen eine Kursanfrage.`,
       );
     }
 
-    // Bestehende aktive Mitgliedschaft hat Vorrang vor der Angabe im Formular
-    let isMember = data.isMember;
+    // Mitgliedspreis nur mit bestätigter Mitgliedschaft: Die Angabe im Formular allein reicht nicht.
+    // Wird sie vom System nicht bestätigt, gilt zunächst der Normalpreis und die Verwaltung prüft
+    // (member_check = pending); Zahlungsmails gehen erst nach dieser Prüfung raus.
+    let verified: boolean | null = null;
     try {
       const { resolveMembership } = await import("@/lib/membership-lookup.server");
       const found = await resolveMembership({ email: data.parentEmail, childName: data.childName });
-      if (found.isMember === true) isMember = true;
+      verified = found.isMember;
     } catch (err) {
       console.error("membership lookup failed", err);
     }
+    const decision = decideMember({ claimed: data.isMember, verified });
+    const isMember = decision.isMember;
+    const memberCheckPending = decision.check === "pending";
 
-    const price = isMember
-      ? (course.price_member ?? program?.price_member ?? null)
-      : (course.price_non_member ?? program?.price_non_member ?? null);
+    const price = priceFor(isMember, {
+      member: course.price_member ?? program?.price_member ?? null,
+      nonMember: course.price_non_member ?? program?.price_non_member ?? null,
+    });
+
+    // Erwachsene: Doppelbuchung (kein Geburtsdatum für die Datenbankprüfung vorhanden) selbst abfangen
+    if (data.adult) {
+      const { data: dup } = await supabaseAdmin
+        .from("course_participants")
+        .select("id")
+        .eq("course_id", course.id)
+        .neq("status", "cancelled")
+        .ilike("participant_email", escapeLike(emailNorm))
+        .ilike("participant_name", escapeLike(data.childName.trim()))
+        .limit(1)
+        .maybeSingle();
+      if (dup) {
+        throw new Error(
+          "Für Sie liegt bereits eine Buchung für diesen Kurs vor. Bitte prüfen Sie Ihr E-Mail-Postfach oder melden Sie sich bei uns.",
+        );
+      }
+    }
 
     const issuedAt = new Date().toISOString();
 
@@ -474,6 +584,11 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
       throw new Error("Dieser Kurs ist ausgebucht, die Warteliste ist derzeit geschlossen.");
     }
     const documentNo = seat.result === "booked" ? seat.documentNo : null;
+    const pendingCheck = memberCheckPending && !isFull;
+    if (pendingCheck && seat.result === "booked") {
+      const { markMemberCheckPending } = await import("@/lib/member-check.server");
+      await markMemberCheckPending(seat.participantId);
+    }
     const paymentMethod = isFull ? null : terms.immediate ? "immediate" : "transfer";
     const paymentDueDate = isFull ? null : terms.dueDateIso;
 
@@ -526,6 +641,7 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
           parent_email: data.parentEmail,
           parent_phone: data.parentPhone || null,
           is_member: isMember,
+          member_claimed: memberCheckPending,
           notes: [data.message, data.healthInfo].filter(Boolean).join("\n") || null,
           gdpr_consent: true,
           status: "waiting",
@@ -564,6 +680,10 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
         ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
         unit_count: course.unit_count ?? null,
         waitlist: isFull,
+        member_check_pending: pendingCheck,
+        price_member: course.price_member ?? program?.price_member ?? null,
+        price_non_member: course.price_non_member ?? program?.price_non_member ?? null,
+        adult: data.adult,
         is_member: isMember,
         price_amount: price,
         payment_due_days: dueDays,
@@ -591,7 +711,7 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
         health_consent: data.healthInfo ? true : undefined,
         terms_accepted: true,
         privacy_accepted: true,
-        message: `Online-Buchung (${isFull ? "Warteliste" : "verbindlich gebucht"})${data.message ? ` – ${data.message}` : ""}`,
+        message: `Online-Buchung (${isFull ? "Warteliste" : "verbindlich gebucht"})${pendingCheck ? " – MITGLIEDSCHAFT PRÜFEN (Normalpreis, keine Zahlungsmail bis zur Prüfung, siehe Offene Zahlungen)" : ""}${data.message ? ` – ${data.message}` : ""}`,
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         program_name: program?.name ?? course.name,
@@ -605,7 +725,7 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
     });
 
     // Sofortzahlung: zusätzliche interne Warnung an Admins/Trainer
-    if (!isFull && terms.immediate) {
+    if (!isFull && terms.immediate && !pendingCheck) {
       await queueTemplateEmail({
         templateName: "immediate-payment-alert",
         idempotencyKey: `immediate-payment-${bookingRef}-${emailNorm}`,
@@ -637,5 +757,6 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
       paymentMethod,
       paymentDueDate,
       immediatePayment: !isFull && terms.immediate,
+      memberCheckPending: pendingCheck,
     };
   });

@@ -247,6 +247,7 @@ export type Database = {
           id: string
           internal_notes: string | null
           is_member: boolean | null
+          member_check: string | null
           member_confirmed: boolean
           member_confirmed_at: string | null
           member_confirmed_by: string | null
@@ -299,6 +300,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           is_member?: boolean | null
+          member_check?: string | null
           member_confirmed?: boolean
           member_confirmed_at?: string | null
           member_confirmed_by?: string | null
@@ -351,6 +353,7 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           is_member?: boolean | null
+          member_check?: string | null
           member_confirmed?: boolean
           member_confirmed_at?: string | null
           member_confirmed_by?: string | null
@@ -1648,6 +1651,7 @@ export type Database = {
           gdpr_consent: boolean
           id: string
           is_member: boolean | null
+          member_claimed: boolean
           last_decline_reason: string | null
           membership_id: string | null
           notes: string | null
@@ -1682,6 +1686,7 @@ export type Database = {
           gdpr_consent?: boolean
           id?: string
           is_member?: boolean | null
+          member_claimed?: boolean
           last_decline_reason?: string | null
           membership_id?: string | null
           notes?: string | null
@@ -1716,6 +1721,7 @@ export type Database = {
           gdpr_consent?: boolean
           id?: string
           is_member?: boolean | null
+          member_claimed?: boolean
           last_decline_reason?: string | null
           membership_id?: string | null
           notes?: string | null

@@ -353,7 +353,13 @@ function OriginalRequestDialog({
                   <Row label="Schwimmniveau" value={g("swimming_level")} />
                   <Row label="Gesundheitliche Hinweise" value={g("health_info")} />
                   <Row label="Angaben der Eltern" value={entry["notes"] ?? g("message")} />
-                  <Row label="Mitglied" value={entry["is_member"]} />
+                  <Row
+                    label="Mitglied"
+                    value={
+                      entry["is_member"] ??
+                      (entry["member_claimed"] ? "angegeben, nicht bestätigt – bitte prüfen" : null)
+                    }
+                  />
                   <Row
                     label="Erst zuteilen ab"
                     value={
@@ -1859,7 +1865,13 @@ export function WaitlistAdmin({
                               <div>Eingang: {formatDateBerlin(e.created_at)}</div>
                               <div>
                                 Mitglied:{" "}
-                                {e.is_member ? "Ja" : e.is_member === false ? "Nein" : "–"}
+                                {e.is_member
+                                  ? "Ja"
+                                  : e.is_member === false
+                                    ? "Nein"
+                                    : (e as { member_claimed?: boolean }).member_claimed
+                                      ? "angegeben, nicht bestätigt – bitte prüfen"
+                                      : "–"}
                               </div>
                               {e.parent_phone && <div>Telefon: {e.parent_phone}</div>}
                               <div>

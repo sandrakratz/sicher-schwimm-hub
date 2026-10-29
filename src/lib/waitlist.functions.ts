@@ -83,12 +83,18 @@ export const joinWaitlist = createServerFn({ method: "POST" })
       .maybeSingle();
     if (existing) return { ok: true as const, duplicate: true as const };
 
-    const { data: mem } = await supabaseAdmin
-      .from("memberships")
-      .select("status")
-      .ilike("email", escapeLike(emailNorm))
-      .limit(1)
-      .maybeSingle();
+    // Mitglied nur mit bestätigter Mitgliedschaft (Vorrang bei der Platzvergabe, Mitgliedspreis).
+    // Die bloße Angabe im Formular wird vermerkt (member_claimed) und von der Verwaltung geprüft.
+    let verified: boolean | null = null;
+    try {
+      const { resolveMembership } = await import("@/lib/membership-lookup.server");
+      verified = (await resolveMembership({ email: emailNorm, childName: data.childName }))
+        .isMember;
+    } catch (err) {
+      console.error("waitlist: membership lookup failed", err);
+    }
+    const { decideMember } = await import("@/lib/member-claim");
+    const memberDecision = decideMember({ claimed: data.isMember, verified });
 
     let programId = data.programId ?? null;
     let courseName: string | null = null;
@@ -128,7 +134,8 @@ export const joinWaitlist = createServerFn({ method: "POST" })
         parent_name: data.parentName,
         parent_email: data.parentEmail,
         parent_phone: data.parentPhone || null,
-        is_member: mem ? mem.status === "active" : data.isMember,
+        is_member: memberDecision.isMember,
+        member_claimed: memberDecision.check === "pending",
         notes: [
           `Schwimmlevel: ${data.swimmingLevel}`,
           // Beide Tage angekreuzt = egal; dann keine Einschränkung
@@ -173,7 +180,7 @@ export const joinWaitlist = createServerFn({ method: "POST" })
         // nur Hinweis, Text steht im Admin-Bereich
         has_parent_notes: Boolean(data.notes),
         privacy_accepted: true,
-        message: `Neue Eintragung auf der Warteliste über die Webseite (Mitglied: ${data.isMember ? "ja" : "nein"})`,
+        message: `Neue Eintragung auf der Warteliste über die Webseite (Mitglied: ${memberDecision.isMember ? "ja" : memberDecision.check === "pending" ? "angegeben, ungeprüft" : "nein"})`,
         submitted_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         program_name: programName,

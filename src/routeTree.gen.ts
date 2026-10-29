@@ -50,6 +50,7 @@ import { Route as AuthenticatedAdminBenutzerRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminDienstplanRouteImport } from './routes/_authenticated/admin/dienstplan'
 import { Route as AuthenticatedAdminDokumenteRouteImport } from './routes/_authenticated/admin/dokumente'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin/emails'
+import { Route as AuthenticatedAdminErwachsenenkursRouteImport } from './routes/_authenticated/admin/erwachsenenkurs'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
 import { Route as AuthenticatedAdminFamilieRouteImport } from './routes/_authenticated/admin/familie'
 import { Route as AuthenticatedAdminFolgekurseRouteImport } from './routes/_authenticated/admin/folgekurse'
@@ -301,6 +302,12 @@ const AuthenticatedAdminEmailsRoute =
   AuthenticatedAdminEmailsRouteImport.update({
     id: '/emails',
     path: '/emails',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminErwachsenenkursRoute =
+  AuthenticatedAdminErwachsenenkursRouteImport.update({
+    id: '/erwachsenenkurs',
+    path: '/erwachsenenkurs',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminEventsRoute =
@@ -583,6 +590,7 @@ export interface FileRoutesByFullPath {
   '/admin/dienstplan': typeof AuthenticatedAdminDienstplanRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
+  '/admin/erwachsenenkurs': typeof AuthenticatedAdminErwachsenenkursRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/familie': typeof AuthenticatedAdminFamilieRoute
   '/admin/folgekurse': typeof AuthenticatedAdminFolgekurseRoute
@@ -665,6 +673,7 @@ export interface FileRoutesByTo {
   '/admin/dienstplan': typeof AuthenticatedAdminDienstplanRoute
   '/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
+  '/admin/erwachsenenkurs': typeof AuthenticatedAdminErwachsenenkursRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/familie': typeof AuthenticatedAdminFamilieRoute
   '/admin/folgekurse': typeof AuthenticatedAdminFolgekurseRoute
@@ -750,6 +759,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/dienstplan': typeof AuthenticatedAdminDienstplanRoute
   '/_authenticated/admin/dokumente': typeof AuthenticatedAdminDokumenteRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
+  '/_authenticated/admin/erwachsenenkurs': typeof AuthenticatedAdminErwachsenenkursRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/familie': typeof AuthenticatedAdminFamilieRoute
   '/_authenticated/admin/folgekurse': typeof AuthenticatedAdminFolgekurseRoute
@@ -835,6 +845,7 @@ export interface FileRouteTypes {
     | '/admin/dienstplan'
     | '/admin/dokumente'
     | '/admin/emails'
+    | '/admin/erwachsenenkurs'
     | '/admin/events'
     | '/admin/familie'
     | '/admin/folgekurse'
@@ -917,6 +928,7 @@ export interface FileRouteTypes {
     | '/admin/dienstplan'
     | '/admin/dokumente'
     | '/admin/emails'
+    | '/admin/erwachsenenkurs'
     | '/admin/events'
     | '/admin/familie'
     | '/admin/folgekurse'
@@ -1001,6 +1013,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dienstplan'
     | '/_authenticated/admin/dokumente'
     | '/_authenticated/admin/emails'
+    | '/_authenticated/admin/erwachsenenkurs'
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/familie'
     | '/_authenticated/admin/folgekurse'
@@ -1380,6 +1393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEmailsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/erwachsenenkurs': {
+      id: '/_authenticated/admin/erwachsenenkurs'
+      path: '/erwachsenenkurs'
+      fullPath: '/admin/erwachsenenkurs'
+      preLoaderRoute: typeof AuthenticatedAdminErwachsenenkursRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/events': {
       id: '/_authenticated/admin/events'
       path: '/events'
@@ -1678,6 +1698,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminDienstplanRoute: typeof AuthenticatedAdminDienstplanRoute
   AuthenticatedAdminDokumenteRoute: typeof AuthenticatedAdminDokumenteRoute
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
+  AuthenticatedAdminErwachsenenkursRoute: typeof AuthenticatedAdminErwachsenenkursRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminFamilieRoute: typeof AuthenticatedAdminFamilieRoute
   AuthenticatedAdminFolgekurseRoute: typeof AuthenticatedAdminFolgekurseRoute
@@ -1709,6 +1730,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminDienstplanRoute: AuthenticatedAdminDienstplanRoute,
     AuthenticatedAdminDokumenteRoute: AuthenticatedAdminDokumenteRoute,
     AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
+    AuthenticatedAdminErwachsenenkursRoute:
+      AuthenticatedAdminErwachsenenkursRoute,
     AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
     AuthenticatedAdminFamilieRoute: AuthenticatedAdminFamilieRoute,
     AuthenticatedAdminFolgekurseRoute: AuthenticatedAdminFolgekurseRoute,

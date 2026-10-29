@@ -30,6 +30,14 @@ interface Props {
   course_info?: string;
   unit_count?: number | null;
   waitlist?: boolean;
+  /** Angabe "Mitglied" wird noch geprüft: keine Zahlungsaufforderung, Zahlungsmail folgt nach der Prüfung */
+  member_check_pending?: boolean;
+  /** Mitgliedschaft nicht bestätigt: Hinweis auf den Normalpreis in der Zahlungsaufforderung */
+  member_rejected?: boolean;
+  price_member?: number | null;
+  price_non_member?: number | null;
+  /** Erwachsene buchen für sich selbst (Anrede, Wortwahl) */
+  adult?: boolean;
   is_member?: boolean | null;
   price_amount?: number | null;
   payment_due_days?: number | null;
@@ -89,7 +97,7 @@ const Email = (p: Props) => {
         >
           <Container style={{ padding: "24px", maxWidth: "640px" }}>
             <Heading style={{ color: "#0c4a6e" }}>Ihre Anmeldung auf der Warteliste</Heading>
-            <Text>Liebe Eltern,</Text>
+            <Text>{p.adult ? "Guten Tag," : "Liebe Eltern,"}</Text>
             <Text>
               vielen Dank für Ihre Anmeldung. Der gewünschte Kurszeitraum ist aktuell ausgebucht –
               wir haben {p.child_name ? <strong>{p.child_name}</strong> : "die Anmeldung"} auf die
@@ -105,6 +113,58 @@ const Email = (p: Props) => {
             <Hr />
             <Text>Bei Fragen antworten Sie einfach auf diese E-Mail.</Text>
             <Text>Herzliche Grüße</Text>
+            <Text style={row}>{d.org.signatory}</Text>
+            <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.name}</Text>
+          </Container>
+        </Body>
+      </Html>
+    );
+  }
+
+  const money = (v?: number | null) =>
+    v == null ? "–" : `${v.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €`;
+
+  if (p.member_check_pending) {
+    return (
+      <Html lang="de">
+        <Head />
+        <Preview>Anmeldung eingegangen – Mitgliedschaft wird geprüft</Preview>
+        <Body
+          style={{ backgroundColor: "#ffffff", fontFamily: "Arial, sans-serif", color: "#0f172a" }}
+        >
+          <Container style={{ padding: "24px", maxWidth: "640px" }}>
+            <Heading style={{ color: "#0c4a6e" }}>Ihre Anmeldung ist eingegangen</Heading>
+            <Text>{p.adult ? "Guten Tag," : "Liebe Eltern,"}</Text>
+            <Text>
+              vielen Dank für Ihre verbindliche Anmeldung
+              {p.child_name ? (
+                <>
+                  {" "}
+                  von <strong>{p.child_name}</strong>
+                </>
+              ) : null}
+              . Der Platz ist für Sie gebucht.
+            </Text>
+            <Text>
+              Sie haben angegeben, Mitglied im Verein zu sein. Wir konnten die Mitgliedschaft noch
+              nicht zuordnen und prüfen sie jetzt.{" "}
+              <strong>Danach erhalten Sie die Zahlungsaufforderung</strong> mit dem gültigen Preis.
+              Bitte überweisen Sie bis dahin noch nichts.
+            </Text>
+            <Section style={{ backgroundColor: "#f0f9ff", padding: "16px", borderRadius: "8px" }}>
+              <Line label="Kurs:" value={d.courseTitle} />
+              <Line label="Kurszeitraum:" value={d.periodLabel} />
+              <Line label="Kurstage:" value={d.scheduleLabel} />
+              <Line label="Kursort:" value={d.locationLabel} />
+              <Line label="Preis Mitglieder:" value={money(p.price_member)} />
+              <Line label="Preis Nichtmitglieder:" value={money(p.price_non_member)} />
+            </Section>
+            <Text>
+              Wenn Sie noch kein Mitglied sind, gilt der Preis für Nichtmitglieder. Bei Fragen
+              antworten Sie einfach auf diese E-Mail.
+            </Text>
+            <SessionList sessions={p.sessions} icsUrl={p.ics_url} />
+            <Hr />
             <Text style={row}>{d.org.signatory}</Text>
             <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.name}</Text>
           </Container>
@@ -163,6 +223,12 @@ const Email = (p: Props) => {
             <strong style={labelStyle}>Kursgebühr:</strong>
             <strong style={{ color: "#0c4a6e" }}>{d.priceLabel}</strong>
           </Text>
+          {p.member_rejected && (
+            <Text style={row}>
+              Wir konnten keine Vereinsmitgliedschaft feststellen, daher gilt der Preis für
+              Nichtmitglieder. Sollte das nicht stimmen, antworten Sie bitte auf diese E-Mail.
+            </Text>
+          )}
 
           <Section
             style={{

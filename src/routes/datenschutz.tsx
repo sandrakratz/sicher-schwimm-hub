@@ -173,6 +173,18 @@ function Page() {
         technische Anmeldedaten einschließlich der IP-Adresse.
       </p>
       <p>
+        Bei der unverbindlichen Interessenbekundung für den geplanten Erwachsenen-Schwimmkurs
+        speichern wir Name, E-Mail-Adresse, optional Telefonnummer und Nachricht sowie Ihre Angaben
+        zu Schwimmstand, Samstags-Verfügbarkeit und Preiseinschätzung. Zweck ist ausschließlich die
+        Planung des Kurses und die Information über die spätere Anmeldung (Art. 6 Abs. 1 lit. a
+        DSGVO, Ihre Einwilligung durch Absenden des Formulars). Es entsteht keine Anmeldung und
+        keine Mitgliedschaft; die Angaben werden nicht für Werbung verwendet. Wir speichern sie nur
+        so lange, wie es für diesen Zweck erforderlich ist, und löschen sie, sobald der Kurs
+        begonnen hat oder abgesagt wurde, Sie nicht mehr interessiert sind oder Sie Ihre
+        Einwilligung widerrufen. Melden Sie sich anschließend verbindlich an, gelten die Angaben zur
+        Kursbuchung.
+      </p>
+      <p>
         Zur Bestätigung, Terminabstimmung, Zahlungserinnerung und Beantwortung Ihrer Anfragen
         versenden wir E-Mails über Resend. Versandzeitpunkt, Empfänger, Betreff, Zustellstatus und
         Inhalt werden zu Nachweiszwecken in unserer Datenbank protokolliert. Adressen, bei denen

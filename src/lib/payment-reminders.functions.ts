@@ -25,7 +25,7 @@ export const sendPaymentReminders = createServerFn({ method: "POST" })
     let query = supabaseAdmin
       .from("course_participants")
       .select(
-        "id, participant_name, participant_email, price_amount, paid, status, created_at, document_no, document_issued_at, payment_method, payment_due_date, payer_street, payer_zip, payer_city, course_id, courses!course_participants_course_id_fkey(name, starts_on, ends_on, schedule, location, unit_count, payment_due_days, program_id, course_programs(name))",
+        "id, participant_name, participant_email, member_check, price_amount, paid, status, created_at, document_no, document_issued_at, payment_method, payment_due_date, payer_street, payer_zip, payer_city, course_id, courses!course_participants_course_id_fkey(name, starts_on, ends_on, schedule, location, unit_count, payment_due_days, program_id, course_programs(name))",
       )
       .eq("status", "confirmed")
       .eq("paid", false);
@@ -54,6 +54,10 @@ export const sendPaymentReminders = createServerFn({ method: "POST" })
 
       const email = (r.participant_email || "").trim();
       const name = r.participant_name || "—";
+      if ((r as any).member_check === "pending") {
+        skipped.push({ name, reason: "Mitgliedschaft noch zu prüfen (Offene Zahlungen)" });
+        continue;
+      }
       if (!email) {
         skipped.push({ name, reason: "keine E-Mail hinterlegt" });
         continue;
