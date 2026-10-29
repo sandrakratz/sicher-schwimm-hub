@@ -27,7 +27,10 @@ export function parsePoolSlots(lines: string[], weekday?: number): PoolSlot[] {
   const out: PoolSlot[] = [];
   for (const raw of lines) {
     const line = raw.replace(/\s+/g, " ").trim();
-    const m = line.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})(.*)$/);
+    // Nur Zeilen, die mit dem Datum beginnen (optional Wochentag davor): Datumsangaben im Vertragstext zählen nicht.
+    const m = line.match(
+      /^(?:(?:Mo|Di|Mi|Do|Fr|Sa|So)[a-z]*\.?,?\s+)?(\d{1,2})\.(\d{1,2})\.(\d{4})(.*)$/,
+    );
     if (!m) continue;
     let year = Number(m[3]);
     const month = Number(m[2]);
@@ -63,7 +66,13 @@ export function parsePoolSlots(lines: string[], weekday?: number): PoolSlot[] {
       slot.note = [slot.note, "anderer Wochentag als üblich"].filter(Boolean).join(" · ");
     out.push(slot);
   }
-  return out;
+  // Ein Datum nur einmal (die Datenbank lehnt doppelte ab); bei Doppelungen gewinnt der Eintrag mit Uhrzeit.
+  const byDate = new Map<string, PoolSlot>();
+  for (const s of out) {
+    const prev = byDate.get(s.date);
+    if (!prev || (prev.closed && !s.closed)) byDate.set(s.date, s);
+  }
+  return [...byDate.values()];
 }
 
 /** Ostersonntag (Gregorianischer Kalender). */
