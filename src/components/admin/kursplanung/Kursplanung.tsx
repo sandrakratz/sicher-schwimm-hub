@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CalendarPlus, FileUp, RefreshCw, Wand2 } from "lucide-react";
+import { AlertTriangle, CalendarPlus, FileUp, RefreshCw, Trash2, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -261,6 +261,9 @@ export function Kursplanung() {
   const trainersFor = (id: string) => latest(id, (c) => c.trainers_needed)?.trainers_needed ?? 2;
   const maxFor = (k: Kind): number | null =>
     k.max ?? latest(k.id, (c) => c.max_participants)?.max_participants ?? null;
+  // Einheiten je Zeitraum wie beim letzten Zeitraum desselben Angebots (z. B. 8), sonst 10.
+  const unitsFor = (id: string): number =>
+    Math.min(30, latest(id, (c) => c.unit_count)?.unit_count ?? 10);
 
   // Standard-Kursarten je Bad: Seepferdchen, Bronze je 1 Bahn, Aufbaukurs 2 Bahnen, 45 Minuten, 10 Einheiten.
   useEffect(() => {
@@ -272,7 +275,7 @@ export function Kursplanung() {
         id: p.id,
         lanes: Math.min(cfg.lanes, /aufbau/i.test(p.name) ? 2 : 1),
         minutes: 45,
-        units: 10,
+        units: unitsFor(p.id),
         trainers: trainersFor(p.id),
         count: 1,
       }));
@@ -367,7 +370,15 @@ export function Kursplanung() {
   const typical = future.find((s) => !s.closed && s.start);
   const blockMinutes = kinds[0]?.minutes ?? 45;
   const nBlocks = Math.min(4, Math.max(1, typical ? blocksFit(typical, blockMinutes, pause) : 2));
-  const noFit = typical ? kinds.filter((k) => blocksFit(typical, k.minutes, pause) <= k.block) : [];
+  // Wie viele Kurse einer Art pro Tag in die Badezeit passen (ab ihrem Zeitblock, nebeneinander oder nacheinander).
+  const noFit = kinds
+    .filter((k) => k.count > 0)
+    .map((k) => {
+      const perBlock = Math.max(1, Math.floor(cfg.lanes / k.lanes));
+      const blocksLeft = typical ? Math.max(0, blocksFit(typical, k.minutes, pause) - k.block) : 0;
+      return { k, fit: blocksLeft * perBlock };
+    })
+    .filter((x) => x.fit < x.k.count);
   const usage = laneUsage(kinds, cfg.lanes);
 
   const demandFor = (programId: string, byDate: string | null) =>
@@ -910,15 +921,26 @@ export function Kursplanung() {
                   >
                     <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
                       <span className="text-sm font-semibold">{programName(k.id)}</span>
-                      <span className="text-xs">
+                      <span className="flex items-center gap-2 text-xs">
                         {waiting === null
                           ? ""
                           : `${dem} wartend${mx ? ` (≈ ${(dem / mx).toFixed(1)} Kurse)` : ""}`}
+                        <button
+                          type="button"
+                          title="Dieses Kursangebot aus der Planung entfernen"
+                          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => {
+                            setKinds((all) => all.filter((x) => x.id !== k.id));
+                            setToggled({});
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {field(
-                        "Anzahl",
+                        "Kurse pro Tag",
                         <Input
                           className="h-8"
                           type="number"
@@ -945,7 +967,7 @@ export function Kursplanung() {
                         />,
                       )}
                       {field(
-                        "Einheiten",
+                        "Termine je Kurs",
                         <Input
                           className="h-8"
                           type="number"
@@ -997,7 +1019,7 @@ export function Kursplanung() {
               })}
             </div>
 
-            {poolPrograms.some((p) => !kinds.some((k) => k.id === p.id)) && (
+            {programs.some((p) => !kinds.some((k) => k.id === p.id)) && (
               <Select
                 value=""
                 onValueChange={(id) =>
@@ -1007,7 +1029,7 @@ export function Kursplanung() {
                       id,
                       lanes: Math.min(cfg.lanes, /aufbau/i.test(programName(id)) ? 2 : 1),
                       minutes: 45,
-                      units: 10,
+                      units: unitsFor(id),
                       trainers: trainersFor(id),
                       count: 1,
                       block: 0,
@@ -1017,14 +1039,21 @@ export function Kursplanung() {
                 }
               >
                 <SelectTrigger className="h-8 w-72">
-                  <SelectValue placeholder="Weiteres Kursangebot hinzufügen…" />
+                  <SelectValue placeholder="Kursangebot hinzufügen…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {poolPrograms
+                  {/* Alle Angebote, die zum Bad passenden zuerst */}
+                  {programs
                     .filter((p) => !kinds.some((k) => k.id === p.id))
+                    .sort(
+                      (a, b) =>
+                        Number(cfg.match.test(`${b.location ?? ""} ${b.name}`)) -
+                        Number(cfg.match.test(`${a.location ?? ""} ${a.name}`)),
+                    )
                     .map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
+                        {p.location ? ` · ${p.location}` : ""}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -1040,10 +1069,10 @@ export function Kursplanung() {
                   Block {Number(b) + 1}: {n}/{cfg.lanes} Bahnen{n > cfg.lanes ? " – zu viele!" : ""}
                 </span>
               ))}
-              {noFit.map((k) => (
+              {noFit.map(({ k, fit }) => (
                 <span key={k.id} className="font-semibold text-red-600">
-                  {programName(k.id)}: Block {k.block + 1} passt nicht in die Badezeit (
-                  {time(typical)})
+                  {programName(k.id)}: nur {fit} von {k.count} Kursen pro Tag passen in die Badezeit
+                  ({time(typical)})
                 </span>
               ))}
               <label className="flex items-center gap-1">
