@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { slugify, type Course, type ProgramRow } from "@/components/admin/kurse/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { blackoutOn, type PlanBlackout } from "@/lib/dienstplan";
-import { fetchAll } from "@/lib/fetch-all";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { todayBerlinIso } from "@/lib/format";
 import { extractPlanLines } from "@/lib/pool-file";
 import {
@@ -84,6 +84,9 @@ export function Kursplanung() {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [taken, setTaken] = useState<Record<string, TakenSession[]>>({});
+  const [crewOn, setCrewOn] = useState<
+    Record<string, { name: string; ids: string[]; needed: number }[]>
+  >({});
   const [slots, setSlots] = useState<StoredSlot[]>([]);
   const [meta, setMeta] = useState<{ file: string | null; at: string | null }>({
     file: null,
@@ -152,12 +155,21 @@ export function Kursplanung() {
       const rows = await fetchAll<any>((f, t) =>
         supabase
           .from("course_sessions")
-          .select("session_date,start_time,end_time,courses(name,lanes,archived_at,schedule)")
+          .select(
+            "id,session_date,start_time,end_time,assigned_trainer_id,courses(name,lanes,archived_at,schedule,trainers_needed)",
+          )
           .gte("session_date", today)
           .order("id")
           .range(f, t),
       );
       const map: Record<string, TakenSession[]> = {};
+      const metas: {
+        id: string;
+        date: string;
+        name: string;
+        needed: number;
+        fixed: string | null;
+      }[] = [];
       for (const r of rows) {
         if (r.courses?.archived_at) continue;
         if (new Date(`${r.session_date}T12:00:00Z`).getUTCDay() !== cfg.weekday) continue;
@@ -178,10 +190,36 @@ export function Kursplanung() {
           ? { start, end: end ?? hhmm(toMin(start) + 45), lanes, name }
           : { start: "00:00", end: "23:59", lanes: cfg.lanes, name, noTime: true };
         (map[r.session_date] ??= []).push(entry);
+        metas.push({
+          id: r.id,
+          date: r.session_date,
+          name,
+          needed: r.courses?.trainers_needed ?? 2,
+          fixed: r.assigned_trainer_id ?? null,
+        });
       }
       setTaken(map);
+      // Wer ist bereits eingeteilt? (Einteilungen im Dienstplan plus feste Zuordnung am Termin)
+      const assigned = await fetchIn<{ session_id: string; trainer_id: string }>(
+        metas.map((m) => m.id),
+        (chunk, f, t) =>
+          (supabase as any)
+            .from("course_session_assignments")
+            .select("session_id,trainer_id")
+            .in("session_id", chunk)
+            .order("id")
+            .range(f, t),
+      );
+      const crewMap: typeof crewOn = {};
+      for (const m of metas) {
+        const ids = new Set(assigned.filter((a) => a.session_id === m.id).map((a) => a.trainer_id));
+        if (m.fixed) ids.add(m.fixed);
+        (crewMap[m.date] ??= []).push({ name: m.name, ids: [...ids], needed: m.needed });
+      }
+      setCrewOn(crewMap);
     } catch {
       setTaken({});
+      setCrewOn({});
     }
   }, [cfg.weekday, today]);
 
@@ -862,14 +900,31 @@ export function Kursplanung() {
                             ) : (
                               Array.from({ length: nBlocks }, (_, b) => blockCell(s, b))
                             )}
-                            <td className="whitespace-nowrap border-l p-1.5 text-xs">
-                              {reason || !surveyed ? (
-                                "–"
-                              ) : (
-                                <span className={trainerColor}>
-                                  {st.yes} zu · {st.unknown} offen
-                                </span>
+                            <td className="min-w-[12rem] border-l p-1.5 text-xs">
+                              {(crewOn[s.date] ?? []).map((c, i) => {
+                                const names = c.ids.map(
+                                  (id) => team.find((m) => m.id === id)?.name ?? "?",
+                                );
+                                const gap = Math.max(0, c.needed - c.ids.length);
+                                return (
+                                  <div key={`${c.name}${i}`} className="mb-0.5 leading-tight">
+                                    <span className="text-muted-foreground">{c.name}: </span>
+                                    {names.length ? names.join(", ") : "niemand"}
+                                    {gap > 0 && (
+                                      <span className="font-semibold text-red-600">
+                                        {" "}
+                                        – {gap} fehlt
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {!reason && surveyed && (
+                                <div className={trainerColor}>
+                                  Abfrage: {st.yes} zu · {st.unknown} offen
+                                </div>
                               )}
+                              {!(crewOn[s.date] ?? []).length && (reason || !surveyed) && "–"}
                             </td>
                           </tr>
                         );
