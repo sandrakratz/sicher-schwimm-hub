@@ -272,7 +272,14 @@ export function suggestByDemand(
 }
 
 /** Termin eines bereits angelegten Kurses im Bad. */
-export type TakenSession = { start: string; end: string; lanes: number; name: string };
+export type TakenSession = {
+  start: string;
+  end: string;
+  lanes: number;
+  name: string;
+  /** Für den Kurs ist keine Uhrzeit hinterlegt. */
+  noTime?: boolean;
+};
 
 export type PlannedSession = { date: string; start: string; end: string };
 export type PlannedTerm = {
