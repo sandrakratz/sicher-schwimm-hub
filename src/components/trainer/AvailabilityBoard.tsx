@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { SlotAvailability } from "@/components/trainer/SlotAvailability";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -536,6 +537,7 @@ export function AvailabilityBoard() {
             team={teamBySession}
             onChanged={() => void load(true)}
           />
+          <SlotAvailability me={me} blackouts={blackouts} />
           <Blackouts
             me={me}
             blackouts={blackouts}
