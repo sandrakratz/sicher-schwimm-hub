@@ -271,6 +271,9 @@ export function suggestByDemand(
   return count;
 }
 
+/** Termin eines bereits angelegten Kurses im Bad. */
+export type TakenSession = { start: string; end: string; lanes: number; name: string };
+
 export type PlannedSession = { date: string; start: string; end: string };
 export type PlannedTerm = {
   id: string;
@@ -292,6 +295,7 @@ export function planTerms(
   kinds: KindSetting[],
   pause: number,
   poolLanes: number,
+  taken: Record<string, TakenSession[]> = {},
 ): PlannedTerm[] {
   const out: PlannedTerm[] = [];
   for (const kind of kinds) {
@@ -302,8 +306,18 @@ export function planTerms(
       let pendingBreaks: { date: string; note: string }[] = [];
       let n = 0;
       for (const s of slots) {
-        const reason = s.closed ? "Hallenbad geschlossen" : skip[s.date];
         const fits = blocksFit(s, k.minutes, pause) > k.block;
+        // Bereits angelegte Kurse belegen Bahnen: ist im Zeitblock nicht genug frei, entfällt der Termin.
+        let busy: string | undefined;
+        if (!s.closed && fits && s.start) {
+          const from = toMin(s.start) + k.block * (k.minutes + pause);
+          const clash = (taken[s.date] ?? []).filter(
+            (t) => toMin(t.start) < from + k.minutes && toMin(t.end) > from,
+          );
+          if (clash.reduce((n, t) => n + t.lanes, 0) + k.lanes > poolLanes)
+            busy = `belegt durch ${[...new Set(clash.map((t) => t.name))].join(", ")}`;
+        }
+        const reason = s.closed ? "Hallenbad geschlossen" : (skip[s.date] ?? busy);
         if (reason || !fits) {
           if (cur) pendingBreaks.push({ date: s.date, note: reason || "zu wenig Zeit im Bad" });
           continue;

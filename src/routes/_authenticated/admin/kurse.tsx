@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
 import { CourseDialog } from "@/components/admin/kurse/CourseDialog";
-import { PoolPlanDialog } from "@/components/admin/kurse/PoolPlanDialog";
 import { EditParticipantDialog } from "@/components/admin/kurse/EditParticipantDialog";
 import { RequestDialog } from "@/components/admin/kurse/RequestDialog";
 import {
@@ -151,7 +150,6 @@ function Page() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [deadlinesOpen, setDeadlinesOpen] = useState(false);
-  const [poolPlanOpen, setPoolPlanOpen] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<Course>>({});
@@ -1753,8 +1751,10 @@ function Page() {
             <Button variant="outline" onClick={() => setDeadlinesOpen(true)}>
               <CalendarDays className="h-4 w-4" /> Angebotsfristen
             </Button>
-            <Button variant="outline" onClick={() => setPoolPlanOpen(true)}>
-              <CalendarDays className="h-4 w-4" /> Zeiträume aus Nutzungsplan
+            <Button variant="outline" asChild>
+              <Link to="/admin/kursplanung">
+                <CalendarDays className="h-4 w-4" /> Kursplanung
+              </Link>
             </Button>
             <Button onClick={startNewProgram}>
               <Plus className="h-4 w-4" /> Neuer Kurs
@@ -2825,15 +2825,6 @@ function Page() {
         onConfirm={confirmRemovePart}
       />
       {canManage && <OfferDeadlinesDialog open={deadlinesOpen} onOpenChange={setDeadlinesOpen} />}
-      {canManage && (
-        <PoolPlanDialog
-          open={poolPlanOpen}
-          onOpenChange={setPoolPlanOpen}
-          programs={programs}
-          courses={rows}
-          onCreated={load}
-        />
-      )}
     </div>
   );
 }
