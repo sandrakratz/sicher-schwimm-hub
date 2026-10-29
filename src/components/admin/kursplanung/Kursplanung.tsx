@@ -41,7 +41,7 @@ type StoredSlot = PoolSlot & { mode: Mode };
 type Kind = KindSetting & { max: number | null };
 type Diff = { date: string; kind: "neu" | "geändert" | "entfällt"; was: string; now: string };
 type Pending = { file: string; parsed: PoolSlot[]; diff: Diff[]; removed: string[] };
-type Entry = { start: string; end: string; label: string; isNew: boolean };
+type Entry = { start: string; end: string; label: string; isNew: boolean; noTime?: boolean };
 
 const wd = (d: string) =>
   new Date(`${d}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short" }).replace(".", "");
@@ -99,7 +99,7 @@ export function Kursplanung() {
 
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [kindsPool, setKindsPool] = useState("");
-  const [pause, setPause] = useState(0);
+  const [pause, setPause] = useState(15);
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
 
@@ -152,23 +152,32 @@ export function Kursplanung() {
       const rows = await fetchAll<any>((f, t) =>
         supabase
           .from("course_sessions")
-          .select("session_date,start_time,end_time,courses(name,lanes,archived_at)")
+          .select("session_date,start_time,end_time,courses(name,lanes,archived_at,schedule)")
           .gte("session_date", today)
           .order("id")
           .range(f, t),
       );
       const map: Record<string, TakenSession[]> = {};
       for (const r of rows) {
-        if (!r.start_time || r.courses?.archived_at) continue;
+        if (r.courses?.archived_at) continue;
         if (new Date(`${r.session_date}T12:00:00Z`).getUTCDay() !== cfg.weekday) continue;
-        const start = String(r.start_time).slice(0, 5);
-        const end = r.end_time ? String(r.end_time).slice(0, 5) : hhmm(toMin(start) + 45);
-        (map[r.session_date] ??= []).push({
-          start,
-          end,
-          lanes: r.courses?.lanes ?? 1,
-          name: r.courses?.name ?? "Kurs",
-        });
+        const lanes = r.courses?.lanes ?? 1;
+        const name = r.courses?.name ?? "Kurs";
+        // Ältere Kurse haben die Uhrzeit nur im Text („samstags 12:00 - 12:45 Uhr“), nicht am Termin.
+        const fromText = String(r.courses?.schedule ?? "").match(
+          /(\d{1,2})[:.](\d{2})\s*(?:[-–]|bis)\s*(\d{1,2})[:.](\d{2})/,
+        );
+        let start: string | null = r.start_time ? String(r.start_time).slice(0, 5) : null;
+        let end: string | null = r.end_time ? String(r.end_time).slice(0, 5) : null;
+        if (!start && fromText) {
+          start = hhmm(Number(fromText[1]) * 60 + Number(fromText[2]));
+          end = hhmm(Number(fromText[3]) * 60 + Number(fromText[4]));
+        }
+        // Ganz ohne Uhrzeit: der Kurs belegt vorsichtshalber das ganze Bad und wird als „Uhrzeit fehlt“ gezeigt.
+        const entry: TakenSession = start
+          ? { start, end: end ?? hhmm(toMin(start) + 45), lanes, name }
+          : { start: "00:00", end: "23:59", lanes: cfg.lanes, name, noTime: true };
+        (map[r.session_date] ??= []).push(entry);
       }
       setTaken(map);
     } catch {
@@ -336,7 +345,13 @@ export function Kursplanung() {
     const m: Record<string, Entry[]> = {};
     for (const [d, list] of Object.entries(taken))
       for (const t of list)
-        (m[d] ??= []).push({ start: t.start, end: t.end, label: t.name, isNew: false });
+        (m[d] ??= []).push({
+          start: t.start,
+          end: t.end,
+          label: t.name,
+          isNew: false,
+          noTime: t.noTime,
+        });
     for (const t of chosen)
       for (const s of t.sessions)
         (m[s.date] ??= []).push({
@@ -627,7 +642,7 @@ export function Kursplanung() {
           : "border-slate-300 bg-slate-100 text-slate-800"
       }`}
     >
-      {e.start} {e.label}
+      {e.noTime ? `${e.label} (Uhrzeit fehlt)` : `${e.start} ${e.label}`}
     </div>
   );
 
