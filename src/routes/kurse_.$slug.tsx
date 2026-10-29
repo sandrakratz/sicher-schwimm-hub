@@ -88,6 +88,9 @@ import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin } from "@/lib/format";
 import { NOT_BOOKABLE_NOTE, parseRequirementLines } from "@/lib/upcoming-programs";
+import { AdultCoursePage } from "@/components/AdultCoursePage";
+import { AdultBookingDialog } from "@/components/AdultBookingDialog";
+import { ADULT_COURSE_SLUG, isAdultProgram } from "@/lib/adult-course";
 import { PaymentSummary } from "@/components/PaymentSummary";
 import {
   getCourseProgram,
@@ -162,6 +165,9 @@ export const Route = createFileRoute("/kurse_/$slug")({
 
 function ProgramPage() {
   const data = Route.useLoaderData() as CourseProgram;
+  // Erwachsenenschwimmen: eigene Seite mit Interessenformular, solange nicht buchbar
+  if (data.bookable === false && data.slug === ADULT_COURSE_SLUG)
+    return <AdultCoursePage program={data} />;
   if (data.bookable === false) return <UpcomingProgramPage up={data} />;
   return <BookableProgramPage program={data} />;
 }
@@ -274,6 +280,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
     startsOn: string | null;
     paymentDueDays: number | null;
     amount: number | null;
+    memberCheck?: boolean;
   } | null>(null);
   const [blockedNotice, setBlockedNotice] = useState(false);
 
@@ -718,19 +725,36 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
         </aside>
       </section>
 
-      <BookingDialog
-        program={program}
-        term={bookingTerm}
-        onClose={() => setBookingTerm(null)}
-        onSuccess={(r) => {
-          setBookingTerm(null);
-          setResult(r);
-        }}
-        onBlocked={() => {
-          setBookingTerm(null);
-          setBlockedNotice(true);
-        }}
-      />
+      {/* Je Kursart das passende Formular: Angebote für Erwachsene fragen keine Kinderangaben ab */}
+      {isAdultProgram(program) ? (
+        <AdultBookingDialog
+          program={program}
+          term={bookingTerm}
+          onClose={() => setBookingTerm(null)}
+          onSuccess={(r) => {
+            setBookingTerm(null);
+            setResult(r);
+          }}
+          onBlocked={() => {
+            setBookingTerm(null);
+            setBlockedNotice(true);
+          }}
+        />
+      ) : (
+        <BookingDialog
+          program={program}
+          term={bookingTerm}
+          onClose={() => setBookingTerm(null)}
+          onSuccess={(r) => {
+            setBookingTerm(null);
+            setResult(r);
+          }}
+          onBlocked={() => {
+            setBookingTerm(null);
+            setBlockedNotice(true);
+          }}
+        />
+      )}
 
       <AlertDialog
         open={blockedNotice}
@@ -780,10 +804,12 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
             <AlertDialogDescription>
               {result?.status === "waiting"
                 ? `Der Kurs „${result?.courseName}“ ist inzwischen ausgebucht. Wir haben Sie auf die Warteliste gesetzt und melden uns, sobald ein Platz frei wird. Eine Bestätigung per E-Mail ist unterwegs.`
-                : `Ihre Buchung für „${result?.courseName}“ ist verbindlich eingegangen. Sie erhalten in Kürze eine Bestätigung per E-Mail mit allen Zahlungsinformationen.`}
+                : result?.memberCheck
+                  ? `Ihre Buchung für „${result?.courseName}“ ist verbindlich eingegangen. Wir prüfen Ihre Angabe zur Vereinsmitgliedschaft und schicken Ihnen danach die Zahlungsaufforderung per E-Mail. Bitte überweisen Sie bis dahin noch nichts.`
+                  : `Ihre Buchung für „${result?.courseName}“ ist verbindlich eingegangen. Sie erhalten in Kürze eine Bestätigung per E-Mail mit allen Zahlungsinformationen.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {result?.status === "confirmed" && (
+          {result?.status === "confirmed" && !result.memberCheck && (
             <PaymentSummary
               startsOn={result.startsOn}
               paymentDueDays={result.paymentDueDays}
@@ -822,6 +848,7 @@ function BookingDialog({
     startsOn: string | null;
     paymentDueDays: number | null;
     amount: number | null;
+    memberCheck?: boolean;
   }) => void;
   onBlocked: () => void;
 }) {
@@ -960,6 +987,7 @@ function BookingDialog({
         startsOn: term.starts_on,
         paymentDueDays: program.payment_due_days,
         amount: price != null && confirmed.length ? price * confirmed.length : null,
+        memberCheck: Boolean(res?.memberCheckPending),
       });
     } catch (err) {
       toast.error(
@@ -1220,6 +1248,13 @@ function BookingDialog({
               {program.price_member != null ? ` ${formatPrice(program.price_member)}` : ""})
             </Label>
           </div>
+          {form.isMember && (
+            <p className="text-xs text-muted-foreground">
+              Wir prüfen die Mitgliedschaft. Wird sie nicht sofort im System gefunden, erhalten Sie
+              die Zahlungsaufforderung erst nach unserer Prüfung; ohne Mitgliedschaft gilt der
+              Normalpreis.
+            </p>
+          )}
           <PaymentSummary
             startsOn={term?.starts_on}
             paymentDueDays={program.payment_due_days}

@@ -32,6 +32,8 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
           .eq('online_booking', true)
           .eq('status', 'confirmed')
           .eq('paid', false)
+          // Angabe "Mitglied" noch nicht geprüft: keine Zahlungsmails vor der Entscheidung der Verwaltung
+          .or('member_check.is.null,member_check.neq.pending')
           .in('payment_due_date', [inThreeDays, tomorrow])
 
         if (error) {

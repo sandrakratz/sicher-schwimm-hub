@@ -58,7 +58,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
           .range(f, t),
     );
 
-    const [overdue, offers, memberships, messages, requests] = await Promise.all([
+    const [overdue, offers, memberships, messages, requests, memberChecks] = await Promise.all([
       supabaseAdmin
         .from("course_participants")
         .select("id", { count: "exact", head: true })
@@ -84,6 +84,11 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         .from("course_requests")
         .select("id", { count: "exact", head: true })
         .eq("status", "new"),
+      supabaseAdmin
+        .from("course_participants")
+        .select("id", { count: "exact", head: true })
+        .eq("member_check", "pending")
+        .eq("status", "confirmed"),
     ]);
 
     // „Anfrageliste: zu prüfen“ = offene Rückfragen („Warteliste behalten?“) + Familien, bei denen
@@ -136,6 +141,14 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     }).length;
 
     const tasks: AdminTask[] = [
+      {
+        key: "member-check",
+        label: "Mitgliedschaft prüfen (vor Zahlungsmail)",
+        count: memberChecks.count ?? 0,
+        to: "/admin/zahlungen",
+        tone: "urgent",
+        hint: "„Mitglied“ angegeben, aber nicht im System gefunden – Zahlungsmail erst nach Prüfung",
+      },
       {
         key: "overdue",
         label: "Zahlungen überfällig",

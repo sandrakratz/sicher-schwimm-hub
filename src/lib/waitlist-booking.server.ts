@@ -78,6 +78,8 @@ export async function bookWaitlistEntry(
   const { refreshWaitlistMember } = await import("@/lib/waitlist.server");
   await refreshWaitlistMember(entry);
 
+  // Mitgliedspreis nur bei bestätigter Mitgliedschaft; reine Selbstangabe → Normalpreis und Prüfung durch die Verwaltung
+  const memberCheckPending = entry.member_claimed === true && entry.is_member !== true;
   const price =
     entry.is_member === true
       ? (course.price_member ?? program?.price_member ?? null)
@@ -126,6 +128,10 @@ export async function bookWaitlistEntry(
   });
   if (seat.result !== "booked") throw new BookingRefused(seat.result);
   const documentNo = seat.documentNo;
+  if (memberCheckPending) {
+    const { markMemberCheckPending } = await import("@/lib/member-check.server");
+    await markMemberCheckPending(seat.participantId);
+  }
 
   const { swimmingLevel, rest: freeText } = splitWaitlistNotes(entry.notes);
 
@@ -202,6 +208,9 @@ export async function bookWaitlistEntry(
         ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
         unit_count: course.unit_count ?? null,
         waitlist: false,
+        member_check_pending: memberCheckPending,
+        price_member: course.price_member ?? program?.price_member ?? null,
+        price_non_member: course.price_non_member ?? program?.price_non_member ?? null,
         is_member: entry.is_member,
         price_amount: price,
         payment_due_days: dueDays,
@@ -229,7 +238,7 @@ export async function bookWaitlistEntry(
         desired_course: `${program?.name ?? course.name} – ${course.name}`,
         swimming_level: swimmingLevel ?? undefined,
         has_parent_notes: Boolean(freeText),
-        message: `${label} – Platz verbindlich gebucht`,
+        message: `${label} – Platz verbindlich gebucht${memberCheckPending ? " – MITGLIEDSCHAFT PRÜFEN (Normalpreis, keine Zahlungsmail bis zur Prüfung, siehe Offene Zahlungen)" : ""}`,
         submitted_at: issuedAt,
         created_at: issuedAt,
         program_name: program?.name ?? course.name,

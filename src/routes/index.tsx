@@ -21,6 +21,12 @@ import kids from "@/assets/kids-swimming.jpg";
 import beaver from "@/assets/sicher-schwimmen-rund.png";
 import { COURSE_LOCATION } from "@/lib/billing-config";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
+import {
+  ADULT_COURSE_PRICE_MEMBER,
+  ADULT_COURSE_PRICE_NON_MEMBER,
+  ADULT_COURSE_SLUG,
+  ADULT_COURSE_START_LABEL,
+} from "@/lib/adult-course";
 
 const CARD_ICONS = [Waves, Heart, GraduationCap, Sparkles];
 
@@ -74,7 +80,10 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const featured = ((Route.useLoaderData() ?? []) as Array<CourseProgram>).slice(0, 4);
+  const programs = (Route.useLoaderData() ?? []) as Array<CourseProgram>;
+  // Das Erwachsenen-Angebot hat einen eigenen Teaser und erscheint nicht zusätzlich in den Kurskarten
+  const adult = programs.find((p) => p.slug === ADULT_COURSE_SLUG);
+  const featured = programs.filter((p) => p.slug !== ADULT_COURSE_SLUG).slice(0, 4);
   return (
     <PublicLayout>
       {/* Hero */}
@@ -260,6 +269,48 @@ function Home() {
           </p>
         </div>
       </section>
+
+      {/* Erwachsenenschwimmen (geplant, unverbindliche Interessenabfrage) */}
+      {adult && (
+        <section className="container mx-auto px-4 pt-20" aria-labelledby="adult-teaser">
+          <div className="rounded-3xl border bg-card p-8 shadow-soft md:p-12">
+            <div className="text-accent font-semibold uppercase tracking-wider text-sm mb-3">
+              Neu · geplant
+            </div>
+            <h2 id="adult-teaser" className="text-3xl md:text-4xl font-bold text-primary-deep">
+              Schwimmen lernen kennt kein Alter.
+            </h2>
+            <p className="mt-4 max-w-3xl text-muted-foreground text-lg leading-relaxed">
+              Du bist erwachsen und kannst noch nicht richtig schwimmen? Oder du fühlst dich im
+              Wasser unsicher? Bei Sicher Schwimmen e. V. begleiten wir dich Schritt für Schritt zu
+              mehr Sicherheit im Wasser – individuell, wertschätzend und ohne Leistungsdruck.
+            </p>
+            <ul className="mt-6 grid gap-2 text-sm sm:grid-cols-2">
+              {[
+                `Geplanter Start: ${ADULT_COURSE_START_LABEL}`,
+                "Samstags in der Sportschule Hennef",
+                "10 Termine mit jeweils 45 Minuten Wasserzeit",
+                `${adult.price_member ?? ADULT_COURSE_PRICE_MEMBER} € für Mitglieder / ${adult.price_non_member ?? ADULT_COURSE_PRICE_NON_MEMBER} € für Nichtmitglieder`,
+              ].map((t) => (
+                <li key={t} className="flex gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Button asChild variant="accent" size="lg">
+                <Link to="/kurse/$slug" params={{ slug: ADULT_COURSE_SLUG }}>
+                  Erwachsenenschwimmen entdecken <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Unverbindliche Interessenbekundung – die Anmeldung ist noch nicht geöffnet.
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Safety section */}
       <section className="container mx-auto px-4 py-20 grid lg:grid-cols-2 gap-12 items-center">

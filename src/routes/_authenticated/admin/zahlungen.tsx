@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
 import { CalendarClock, Check, Euro, Mail } from "lucide-react";
+import { MemberCheckPanel } from "@/components/admin/MemberCheckPanel";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
@@ -250,6 +251,7 @@ function Page() {
 
   return (
     <div className="space-y-4">
+      <MemberCheckPanel onChanged={() => void load()} />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

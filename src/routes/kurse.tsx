@@ -11,6 +11,7 @@ import { BankDetails } from "@/components/BankDetails";
 import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { programAvailability } from "@/lib/course-status";
+import { ADULT_COURSE_SLUG } from "@/lib/adult-course";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
 import {
   NOT_BOOKABLE_NOTE,
@@ -244,9 +245,11 @@ function KursePage() {
                                 </>
                               )}
                             </div>
-                            <div className="text-[11px] opacity-80">
-                              Mitglieder werden bevorzugt aufgenommen
-                            </div>
+                            {c.slug !== ADULT_COURSE_SLUG && (
+                              <div className="text-[11px] opacity-80">
+                                Mitglieder werden bevorzugt aufgenommen
+                              </div>
+                            )}
                             {mem && (
                               <Link
                                 to="/mitgliedschaft"
@@ -290,11 +293,19 @@ function KursePage() {
                     ) : (
                       <>
                         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep mb-3">
-                          {NOT_BOOKABLE_NOTE}
+                          {c.slug === ADULT_COURSE_SLUG
+                            ? "Geplant – die verbindliche Anmeldung ist noch nicht geöffnet. Die Interessenbekundung ist unverbindlich und kostenfrei."
+                            : NOT_BOOKABLE_NOTE}
                         </div>
-                        <Button asChild variant="outline" className="w-full">
+                        <Button
+                          asChild
+                          variant={c.slug === ADULT_COURSE_SLUG ? "accent" : "outline"}
+                          className="w-full"
+                        >
                           <Link to="/kurse/$slug" params={{ slug: c.slug }}>
-                            Details &amp; Anfrage
+                            {c.slug === ADULT_COURSE_SLUG
+                              ? "Unverbindlich Interesse anmelden"
+                              : "Details & Anfrage"}
                           </Link>
                         </Button>
                       </>
