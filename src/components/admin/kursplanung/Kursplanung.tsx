@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CalendarPlus, FileUp, RefreshCw, Wand2 } from "lucide-react";
+import { AlertTriangle, CalendarPlus, FileUp, RefreshCw, Trash2, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { slugify, type Course, type ProgramRow } from "@/components/admin/kurse/shared";
 import { supabase } from "@/integrations/supabase/client";
 import { blackoutOn, type PlanBlackout } from "@/lib/dienstplan";
-import { fetchAll } from "@/lib/fetch-all";
+import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { todayBerlinIso } from "@/lib/format";
 import { extractPlanLines } from "@/lib/pool-file";
 import {
@@ -84,6 +84,9 @@ export function Kursplanung() {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [taken, setTaken] = useState<Record<string, TakenSession[]>>({});
+  const [crewOn, setCrewOn] = useState<
+    Record<string, { name: string; ids: string[]; needed: number; start: string; end: string }[]>
+  >({});
   const [slots, setSlots] = useState<StoredSlot[]>([]);
   const [meta, setMeta] = useState<{ file: string | null; at: string | null }>({
     file: null,
@@ -100,6 +103,8 @@ export function Kursplanung() {
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [kindsPool, setKindsPool] = useState("");
   const [pause, setPause] = useState(15);
+  const [publish, setPublish] = useState(false);
+  const saveReady = useRef(false);
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
 
@@ -152,12 +157,23 @@ export function Kursplanung() {
       const rows = await fetchAll<any>((f, t) =>
         supabase
           .from("course_sessions")
-          .select("session_date,start_time,end_time,courses(name,lanes,archived_at,schedule)")
+          .select(
+            "id,session_date,start_time,end_time,assigned_trainer_id,courses(name,lanes,archived_at,schedule,trainers_needed)",
+          )
           .gte("session_date", today)
           .order("id")
           .range(f, t),
       );
       const map: Record<string, TakenSession[]> = {};
+      const metas: {
+        id: string;
+        date: string;
+        name: string;
+        needed: number;
+        fixed: string | null;
+        start: string;
+        end: string;
+      }[] = [];
       for (const r of rows) {
         if (r.courses?.archived_at) continue;
         if (new Date(`${r.session_date}T12:00:00Z`).getUTCDay() !== cfg.weekday) continue;
@@ -178,10 +194,44 @@ export function Kursplanung() {
           ? { start, end: end ?? hhmm(toMin(start) + 45), lanes, name }
           : { start: "00:00", end: "23:59", lanes: cfg.lanes, name, noTime: true };
         (map[r.session_date] ??= []).push(entry);
+        metas.push({
+          id: r.id,
+          date: r.session_date,
+          name,
+          needed: r.courses?.trainers_needed ?? 2,
+          fixed: r.assigned_trainer_id ?? null,
+          start: entry.start,
+          end: entry.end,
+        });
       }
       setTaken(map);
+      // Wer ist bereits eingeteilt? (Einteilungen im Dienstplan plus feste Zuordnung am Termin)
+      const assigned = await fetchIn<{ session_id: string; trainer_id: string }>(
+        metas.map((m) => m.id),
+        (chunk, f, t) =>
+          (supabase as any)
+            .from("course_session_assignments")
+            .select("session_id,trainer_id")
+            .in("session_id", chunk)
+            .order("id")
+            .range(f, t),
+      );
+      const crewMap: typeof crewOn = {};
+      for (const m of metas) {
+        const ids = new Set(assigned.filter((a) => a.session_id === m.id).map((a) => a.trainer_id));
+        if (m.fixed) ids.add(m.fixed);
+        (crewMap[m.date] ??= []).push({
+          name: m.name,
+          ids: [...ids],
+          needed: m.needed,
+          start: m.start,
+          end: m.end,
+        });
+      }
+      setCrewOn(crewMap);
     } catch {
       setTaken({});
+      setCrewOn({});
     }
   }, [cfg.weekday, today]);
 
@@ -261,6 +311,9 @@ export function Kursplanung() {
   const trainersFor = (id: string) => latest(id, (c) => c.trainers_needed)?.trainers_needed ?? 2;
   const maxFor = (k: Kind): number | null =>
     k.max ?? latest(k.id, (c) => c.max_participants)?.max_participants ?? null;
+  // Einheiten je Zeitraum wie beim letzten Zeitraum desselben Angebots (z. B. 8), sonst 10.
+  const unitsFor = (id: string): number =>
+    Math.min(30, latest(id, (c) => c.unit_count)?.unit_count ?? 10);
 
   // Standard-Kursarten je Bad: Seepferdchen, Bronze je 1 Bahn, Aufbaukurs 2 Bahnen, 45 Minuten, 10 Einheiten.
   useEffect(() => {
@@ -272,15 +325,35 @@ export function Kursplanung() {
         id: p.id,
         lanes: Math.min(cfg.lanes, /aufbau/i.test(p.name) ? 2 : 1),
         minutes: 45,
-        units: 10,
+        units: unitsFor(p.id),
         trainers: trainersFor(p.id),
         count: 1,
       }));
     const blocks = autoBlocks(base, cfg.lanes);
-    setKinds(base.map((k) => ({ ...k, block: blocks[k.id], max: null })));
+    // Zuletzt verwendete Einstellungen dieses Bades, soweit die Kursangebote noch existieren.
+    let saved: { kinds?: Kind[]; pause?: number } = {};
+    try {
+      saved = JSON.parse(localStorage.getItem(`kursplanung-${pool}`) ?? "{}");
+    } catch {
+      /* ohne gespeicherte Werte starten */
+    }
+    const keep = (saved.kinds ?? []).filter((k) => programs.some((p) => p.id === k.id));
+    if (typeof saved.pause === "number") setPause(saved.pause);
+    setKinds(keep.length ? keep : base.map((k) => ({ ...k, block: blocks[k.id], max: null })));
     setToggled({});
+    saveReady.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programs, pool, kindsPool, courses]);
+
+  // Einstellungen je Bad merken (nur in diesem Browser).
+  useEffect(() => {
+    if (!saveReady.current || kindsPool !== pool) return;
+    try {
+      localStorage.setItem(`kursplanung-${pool}`, JSON.stringify({ kinds, pause }));
+    } catch {
+      /* nicht schlimm */
+    }
+  }, [kinds, pause, pool, kindsPool]);
 
   function skipReason(s: StoredSlot): string | undefined {
     if (s.mode === "familie") return "Familienschwimmen";
@@ -308,17 +381,31 @@ export function Kursplanung() {
 
   const need = trainersNeeded(kinds, cfg.lanes);
   const surveyed = availRows.length > 0;
-  function staffing(date: string) {
+  /**
+   * Zusagen, Absagen und offene Antworten für einen Termin. Mit Zeitfenster (von/bis) zählen
+   * Trainer, die in dieser Zeit schon in einem anderen Kurs eingeteilt sind, als „busy“ und nicht als frei.
+   */
+  function staffing(date: string, from?: string, to?: string) {
     let yes = 0;
     let no = 0;
     let unknown = 0;
+    let busy = 0;
+    const occupied = new Set<string>();
+    if (from && to)
+      for (const c of crewOn[date] ?? [])
+        if (toMin(c.start) < toMin(to) && toMin(c.end) > toMin(from))
+          for (const id of c.ids) occupied.add(id);
     for (const m of team) {
+      if (occupied.has(m.id)) {
+        busy++;
+        continue;
+      }
       const a = availRows.find((r) => r.d === date && r.t === m.id);
       if (blackoutOn(blackouts, m.id, date) || a?.ok === false) no++;
       else if (a?.ok) yes++;
       else unknown++;
     }
-    return { yes, no, unknown };
+    return { yes, no, unknown, busy };
   }
 
   function overlap(t: PlannedTerm): string | null {
@@ -334,10 +421,37 @@ export function Kursplanung() {
     );
     return hit ? `${hit.name} (${short(hit.starts_on!)}–${short(hit.ends_on!)})` : null;
   }
-  const thin = (t: PlannedTerm) =>
-    t.sessions.map((s) => s.date).filter((d) => staffing(d).yes < need);
+  // Trainerbedarf zur selben Zeit: alle Vorschläge, die an diesem Tag überlappen (ohne die abgewählten).
+  const needAt = (date: string, from: string, to: string) =>
+    terms
+      .filter((x) => toggled[x.id] !== false)
+      .reduce(
+        (n, x) =>
+          n +
+          (x.sessions.some(
+            (s) => s.date === date && toMin(s.start) < toMin(to) && toMin(s.end) > toMin(from),
+          )
+            ? (kinds.find((k) => k.id === x.track.kindId)?.trainers ?? 2)
+            : 0),
+        0,
+      );
+  /**
+   * Termine eines Vorschlags, an denen die Trainer nicht reichen: „hart“, wenn selbst mit allen offenen
+   * Antworten zu wenige frei sind (bereits eingeteilte Trainer zählen nicht), sonst nur zu wenige Zusagen.
+   */
+  const staffGaps = (t: PlannedTerm) => {
+    if (!team.length) return [];
+    const own = kinds.find((k) => k.id === t.track.kindId)?.trainers ?? 2;
+    return t.sessions
+      .map((s) => {
+        const st = staffing(s.date, s.start, s.end);
+        const req = Math.max(own, needAt(s.date, s.start, s.end));
+        return { date: s.date, st, req, hard: st.yes + st.unknown < req };
+      })
+      .filter((c) => c.hard || (surveyed && c.st.yes < c.req));
+  };
   const isSelected = (t: PlannedTerm) =>
-    toggled[t.id] ?? (t.complete && !overlap(t) && !(surveyed && thin(t).length > 0));
+    toggled[t.id] ?? (t.complete && !overlap(t) && staffGaps(t).length === 0);
   const chosen = terms.filter(isSelected);
 
   // Bereits vergebene und vorgeschlagene Kurse je Termin.
@@ -367,7 +481,15 @@ export function Kursplanung() {
   const typical = future.find((s) => !s.closed && s.start);
   const blockMinutes = kinds[0]?.minutes ?? 45;
   const nBlocks = Math.min(4, Math.max(1, typical ? blocksFit(typical, blockMinutes, pause) : 2));
-  const noFit = typical ? kinds.filter((k) => blocksFit(typical, k.minutes, pause) <= k.block) : [];
+  // Wie viele Kurse einer Art pro Tag in die Badezeit passen (ab ihrem Zeitblock, nebeneinander oder nacheinander).
+  const noFit = kinds
+    .filter((k) => k.count > 0)
+    .map((k) => {
+      const perBlock = Math.max(1, Math.floor(cfg.lanes / k.lanes));
+      const blocksLeft = typical ? Math.max(0, blocksFit(typical, k.minutes, pause) - k.block) : 0;
+      return { k, fit: blocksLeft * perBlock };
+    })
+    .filter((x) => x.fit < x.k.count);
   const usage = laneUsage(kinds, cfg.lanes);
 
   const demandFor = (programId: string, byDate: string | null) =>
@@ -570,7 +692,7 @@ export function Kursplanung() {
           starts_on: first.date,
           ends_on: last.date,
           schedule: `${wd(first.date)} ${first.start}–${first.end} Uhr`,
-          is_public: true,
+          is_public: publish,
           price_member: p.price_member,
           price_non_member: p.price_non_member,
           payment_due_days: p.payment_due_days,
@@ -851,14 +973,31 @@ export function Kursplanung() {
                             ) : (
                               Array.from({ length: nBlocks }, (_, b) => blockCell(s, b))
                             )}
-                            <td className="whitespace-nowrap border-l p-1.5 text-xs">
-                              {reason || !surveyed ? (
-                                "–"
-                              ) : (
-                                <span className={trainerColor}>
-                                  {st.yes} zu · {st.unknown} offen
-                                </span>
+                            <td className="min-w-[12rem] border-l p-1.5 text-xs">
+                              {(crewOn[s.date] ?? []).map((c, i) => {
+                                const names = c.ids.map(
+                                  (id) => team.find((m) => m.id === id)?.name ?? "?",
+                                );
+                                const gap = Math.max(0, c.needed - c.ids.length);
+                                return (
+                                  <div key={`${c.name}${i}`} className="mb-0.5 leading-tight">
+                                    <span className="text-muted-foreground">{c.name}: </span>
+                                    {names.length ? names.join(", ") : "niemand"}
+                                    {gap > 0 && (
+                                      <span className="font-semibold text-red-600">
+                                        {" "}
+                                        – {gap} fehlt
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              {!reason && surveyed && (
+                                <div className={trainerColor}>
+                                  Abfrage: {st.yes} zu · {st.unknown} offen
+                                </div>
                               )}
+                              {!(crewOn[s.date] ?? []).length && (reason || !surveyed) && "–"}
                             </td>
                           </tr>
                         );
@@ -910,15 +1049,26 @@ export function Kursplanung() {
                   >
                     <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
                       <span className="text-sm font-semibold">{programName(k.id)}</span>
-                      <span className="text-xs">
+                      <span className="flex items-center gap-2 text-xs">
                         {waiting === null
                           ? ""
                           : `${dem} wartend${mx ? ` (≈ ${(dem / mx).toFixed(1)} Kurse)` : ""}`}
+                        <button
+                          type="button"
+                          title="Dieses Kursangebot aus der Planung entfernen"
+                          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => {
+                            setKinds((all) => all.filter((x) => x.id !== k.id));
+                            setToggled({});
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                       {field(
-                        "Anzahl",
+                        "Kurse pro Tag",
                         <Input
                           className="h-8"
                           type="number"
@@ -945,7 +1095,7 @@ export function Kursplanung() {
                         />,
                       )}
                       {field(
-                        "Einheiten",
+                        "Termine je Kurs",
                         <Input
                           className="h-8"
                           type="number"
@@ -997,7 +1147,7 @@ export function Kursplanung() {
               })}
             </div>
 
-            {poolPrograms.some((p) => !kinds.some((k) => k.id === p.id)) && (
+            {programs.some((p) => !kinds.some((k) => k.id === p.id)) && (
               <Select
                 value=""
                 onValueChange={(id) =>
@@ -1007,7 +1157,7 @@ export function Kursplanung() {
                       id,
                       lanes: Math.min(cfg.lanes, /aufbau/i.test(programName(id)) ? 2 : 1),
                       minutes: 45,
-                      units: 10,
+                      units: unitsFor(id),
                       trainers: trainersFor(id),
                       count: 1,
                       block: 0,
@@ -1017,14 +1167,21 @@ export function Kursplanung() {
                 }
               >
                 <SelectTrigger className="h-8 w-72">
-                  <SelectValue placeholder="Weiteres Kursangebot hinzufügen…" />
+                  <SelectValue placeholder="Kursangebot hinzufügen…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {poolPrograms
+                  {/* Alle Angebote, die zum Bad passenden zuerst */}
+                  {programs
                     .filter((p) => !kinds.some((k) => k.id === p.id))
+                    .sort(
+                      (a, b) =>
+                        Number(cfg.match.test(`${b.location ?? ""} ${b.name}`)) -
+                        Number(cfg.match.test(`${a.location ?? ""} ${a.name}`)),
+                    )
                     .map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
+                        {p.location ? ` · ${p.location}` : ""}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -1040,10 +1197,10 @@ export function Kursplanung() {
                   Block {Number(b) + 1}: {n}/{cfg.lanes} Bahnen{n > cfg.lanes ? " – zu viele!" : ""}
                 </span>
               ))}
-              {noFit.map((k) => (
+              {noFit.map(({ k, fit }) => (
                 <span key={k.id} className="font-semibold text-red-600">
-                  {programName(k.id)}: Block {k.block + 1} passt nicht in die Badezeit (
-                  {time(typical)})
+                  {programName(k.id)}: nur {fit} von {k.count} Kursen pro Tag passen in die Badezeit
+                  ({time(typical)})
                 </span>
               ))}
               <label className="flex items-center gap-1">
@@ -1067,9 +1224,19 @@ export function Kursplanung() {
                   du ankreuzt, siehst du im Terminplan gestrichelt.
                 </p>
               </div>
-              <Button disabled={busy || !chosen.length} onClick={createTerms}>
-                <CalendarPlus className="h-4 w-4" /> {chosen.length} anlegen
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                <Button disabled={busy || !chosen.length} onClick={createTerms}>
+                  <CalendarPlus className="h-4 w-4" /> {chosen.length} anlegen
+                </Button>
+                <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={publish}
+                    onChange={(e) => setPublish(e.target.checked)}
+                  />
+                  gleich auf der Webseite zeigen
+                </label>
+              </div>
             </div>
             {!terms.length && (
               <p className="text-sm text-muted-foreground">
@@ -1082,7 +1249,7 @@ export function Kursplanung() {
                 const first = t.sessions[0];
                 const last = t.sessions[t.sessions.length - 1];
                 const k = kinds.find((x) => x.id === t.track.kindId)!;
-                const th = surveyed ? thin(t) : [];
+                const th = staffGaps(t);
                 const isFirst = terms.find((x) => x.track.id === t.track.id) === t;
                 const odd = t.sessions.filter((s) => s.start !== first.start);
                 return (
@@ -1128,9 +1295,18 @@ export function Kursplanung() {
                           </Badge>
                         )}
                         {th.length > 0 && (
-                          <Badge variant="outline" className="text-amber-700">
-                            zu wenig Trainer:{" "}
-                            {th.map((d) => `${short(d)} ${staffing(d).yes}/${need}`).join(", ")}
+                          <Badge
+                            variant="outline"
+                            className={th.some((c) => c.hard) ? "text-red-600" : "text-amber-700"}
+                            title="frei / benötigt; „schon eingeteilt“ = Trainer sind zur selben Zeit in einem anderen Kurs"
+                          >
+                            Trainer:{" "}
+                            {th
+                              .map(
+                                (c) =>
+                                  `${short(c.date)} ${c.st.yes + (surveyed ? 0 : c.st.unknown)}/${c.req}${c.st.busy ? ` (${c.st.busy} schon eingeteilt)` : ""}`,
+                              )
+                              .join(", ")}
                           </Badge>
                         )}
                         {ov && (
