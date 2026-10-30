@@ -62,6 +62,7 @@ import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes
 import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
 import { Route as AuthenticatedAdminSperrlisteRouteImport } from './routes/_authenticated/admin/sperrliste'
+import { Route as AuthenticatedAdminStatistikRouteImport } from './routes/_authenticated/admin/statistik'
 import { Route as AuthenticatedAdminSucheRouteImport } from './routes/_authenticated/admin/suche'
 import { Route as AuthenticatedAdminUebungsleitergelderRouteImport } from './routes/_authenticated/admin/uebungsleitergelder'
 import { Route as AuthenticatedAdminVerfuegbarkeitRouteImport } from './routes/_authenticated/admin/verfuegbarkeit'
@@ -81,6 +82,7 @@ import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedTrainerKurseRouteImport } from './routes/_authenticated/trainer/kurse'
 import { Route as AuthenticatedTrainerMitgliederRouteImport } from './routes/_authenticated/trainer/mitglieder'
 import { Route as AuthenticatedTrainerVerfuegbarkeitRouteImport } from './routes/_authenticated/trainer/verfuegbarkeit'
+import { Route as ApiPublicAnalyticsRouteImport } from './routes/api/public/analytics'
 import { Route as ApiPublicCourseIcsRouteImport } from './routes/api/public/course-ics'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
@@ -374,6 +376,12 @@ const AuthenticatedAdminSperrlisteRoute =
     path: '/sperrliste',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminStatistikRoute =
+  AuthenticatedAdminStatistikRouteImport.update({
+    id: '/statistik',
+    path: '/statistik',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminSucheRoute = AuthenticatedAdminSucheRouteImport.update({
   id: '/suche',
   path: '/suche',
@@ -486,6 +494,11 @@ const AuthenticatedTrainerVerfuegbarkeitRoute =
     path: '/trainer/verfuegbarkeit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicAnalyticsRoute = ApiPublicAnalyticsRouteImport.update({
+  id: '/api/public/analytics',
+  path: '/api/public/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCourseIcsRoute = ApiPublicCourseIcsRouteImport.update({
   id: '/api/public/course-ics',
   path: '/api/public/course-ics',
@@ -602,6 +615,7 @@ export interface FileRoutesByFullPath {
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
   '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
+  '/admin/statistik': typeof AuthenticatedAdminStatistikRoute
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
@@ -619,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
+  '/api/public/analytics': typeof ApiPublicAnalyticsRoute
   '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
@@ -685,6 +700,7 @@ export interface FileRoutesByTo {
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
   '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
+  '/admin/statistik': typeof AuthenticatedAdminStatistikRoute
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
@@ -702,6 +718,7 @@ export interface FileRoutesByTo {
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
+  '/api/public/analytics': typeof ApiPublicAnalyticsRoute
   '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
@@ -771,6 +788,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
   '/_authenticated/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
+  '/_authenticated/admin/statistik': typeof AuthenticatedAdminStatistikRoute
   '/_authenticated/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/_authenticated/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/_authenticated/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
@@ -788,6 +806,7 @@ export interface FileRoutesById {
   '/_authenticated/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/_authenticated/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/_authenticated/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
+  '/api/public/analytics': typeof ApiPublicAnalyticsRoute
   '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
@@ -857,6 +876,7 @@ export interface FileRouteTypes {
     | '/admin/nachrichten'
     | '/admin/news'
     | '/admin/sperrliste'
+    | '/admin/statistik'
     | '/admin/suche'
     | '/admin/uebungsleitergelder'
     | '/admin/verfuegbarkeit'
@@ -874,6 +894,7 @@ export interface FileRouteTypes {
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/verfuegbarkeit'
+    | '/api/public/analytics'
     | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
@@ -940,6 +961,7 @@ export interface FileRouteTypes {
     | '/admin/nachrichten'
     | '/admin/news'
     | '/admin/sperrliste'
+    | '/admin/statistik'
     | '/admin/suche'
     | '/admin/uebungsleitergelder'
     | '/admin/verfuegbarkeit'
@@ -957,6 +979,7 @@ export interface FileRouteTypes {
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/verfuegbarkeit'
+    | '/api/public/analytics'
     | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
@@ -1025,6 +1048,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/nachrichten'
     | '/_authenticated/admin/news'
     | '/_authenticated/admin/sperrliste'
+    | '/_authenticated/admin/statistik'
     | '/_authenticated/admin/suche'
     | '/_authenticated/admin/uebungsleitergelder'
     | '/_authenticated/admin/verfuegbarkeit'
@@ -1042,6 +1066,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trainer/kurse'
     | '/_authenticated/trainer/mitglieder'
     | '/_authenticated/trainer/verfuegbarkeit'
+    | '/api/public/analytics'
     | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
@@ -1091,6 +1116,7 @@ export interface RootRouteChildren {
   RatgeberSeepferdchenAnforderungenRoute: typeof RatgeberSeepferdchenAnforderungenRoute
   WartelisteAntwortRoute: typeof WartelisteAntwortRoute
   WartelisteRueckfrageRoute: typeof WartelisteRueckfrageRoute
+  ApiPublicAnalyticsRoute: typeof ApiPublicAnalyticsRoute
   ApiPublicCourseIcsRoute: typeof ApiPublicCourseIcsRoute
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
@@ -1477,6 +1503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSperrlisteRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/statistik': {
+      id: '/_authenticated/admin/statistik'
+      path: '/statistik'
+      fullPath: '/admin/statistik'
+      preLoaderRoute: typeof AuthenticatedAdminStatistikRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/suche': {
       id: '/_authenticated/admin/suche'
       path: '/suche'
@@ -1610,6 +1643,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainerVerfuegbarkeitRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/analytics': {
+      id: '/api/public/analytics'
+      path: '/api/public/analytics'
+      fullPath: '/api/public/analytics'
+      preLoaderRoute: typeof ApiPublicAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/course-ics': {
       id: '/api/public/course-ics'
       path: '/api/public/course-ics'
@@ -1710,6 +1750,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
   AuthenticatedAdminSperrlisteRoute: typeof AuthenticatedAdminSperrlisteRoute
+  AuthenticatedAdminStatistikRoute: typeof AuthenticatedAdminStatistikRoute
   AuthenticatedAdminSucheRoute: typeof AuthenticatedAdminSucheRoute
   AuthenticatedAdminUebungsleitergelderRoute: typeof AuthenticatedAdminUebungsleitergelderRoute
   AuthenticatedAdminVerfuegbarkeitRoute: typeof AuthenticatedAdminVerfuegbarkeitRoute
@@ -1744,6 +1785,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
     AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
     AuthenticatedAdminSperrlisteRoute: AuthenticatedAdminSperrlisteRoute,
+    AuthenticatedAdminStatistikRoute: AuthenticatedAdminStatistikRoute,
     AuthenticatedAdminSucheRoute: AuthenticatedAdminSucheRoute,
     AuthenticatedAdminUebungsleitergelderRoute:
       AuthenticatedAdminUebungsleitergelderRoute,
@@ -1831,6 +1873,7 @@ const rootRouteChildren: RootRouteChildren = {
     RatgeberSeepferdchenAnforderungenRoute,
   WartelisteAntwortRoute: WartelisteAntwortRoute,
   WartelisteRueckfrageRoute: WartelisteRueckfrageRoute,
+  ApiPublicAnalyticsRoute: ApiPublicAnalyticsRoute,
   ApiPublicCourseIcsRoute: ApiPublicCourseIcsRoute,
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,

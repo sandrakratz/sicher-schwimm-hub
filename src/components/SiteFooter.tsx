@@ -5,6 +5,7 @@ import logo from "@/assets/sicher-schwimmen-rund.png";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { SocialLinks } from "@/components/SocialLinks";
 import { ReweSfvBanner } from "@/components/ReweSfvBanner";
+import { openConsentSettings } from "@/components/analytics/ConsentBanner";
 
 export function SiteFooter() {
   return (
@@ -131,6 +132,9 @@ export function SiteFooter() {
             <Link to="/impressum" hash="bildnachweise" className="hover:text-accent">
               Bildnachweise
             </Link>
+            <button type="button" onClick={openConsentSettings} className="hover:text-accent">
+              Messung &amp; Datenschutz-Einstellungen
+            </button>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,7 @@ function Page() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<{ reference: string } | null>(null);
+  const ft = useFormTracking("widerruf");
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -109,9 +111,11 @@ function Page() {
         if (typeof k === "string" && !fieldErrors[k]) fieldErrors[k] = issue.message;
       }
       setErrors(fieldErrors);
+      ft.invalid(Object.keys(fieldErrors));
       toast.error("Bitte prüfen Sie Ihre Eingaben.");
       return;
     }
+    ft.attempt();
     setLoading(true);
     try {
       const res = await fetch("/api/public/submit-cancellation", {
@@ -124,13 +128,16 @@ function Page() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) {
+        ft.failed(`http_${res.status}`);
         toast.error(json?.error || "Widerruf konnte nicht übermittelt werden.");
         return;
       }
+      ft.succeeded();
       setSuccess({ reference: json.reference_number });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("[widerruf] submit", err);
+      ft.failed("netzwerk");
       toast.error("Netzwerkfehler. Bitte versuchen Sie es später erneut.");
     } finally {
       setLoading(false);
@@ -269,7 +276,7 @@ function Page() {
                   Pflichtfelder sind mit * gekennzeichnet.
                 </p>
 
-                <form onSubmit={onSubmit} noValidate className="space-y-5">
+                <form onSubmit={onSubmit} {...ft.formProps} noValidate className="space-y-5">
                   {/* Honeypot — visually hidden, ignored by users */}
                   <div className="hidden" aria-hidden="true">
                     <label>

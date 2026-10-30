@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { LegalPage } from "@/components/LegalPage";
+import { openConsentSettings } from "@/components/analytics/ConsentBanner";
 
 export const Route = createFileRoute("/datenschutz")({
   head: () => ({
@@ -230,14 +231,49 @@ function Page() {
         verarbeitet.
       </p>
 
-      <H2>11. Cookies, Browser-Speicher & Reichweitenmessung</H2>
+      <H2>11. Cookies, Browser-Speicher & Nutzungsmessung</H2>
       <p>
         Diese Webseite setzt <strong>keine Cookies</strong>. Beim Anmelden speichert Ihr Browser
         eine Sitzungskennung im lokalen Speicher; im Mitglieder- und Verwaltungsbereich merken wir
         uns außerdem Einstellungen der Oberfläche (z. B. aufgeklappte Bereiche). Beides ist für den
         Betrieb erforderlich und verlässt Ihr Gerät nicht (§ 25 Abs. 2 TDDDG). Tracking-, Werbe-
-        oder Analysedienste Dritter werden nicht eingesetzt. Ein Cookie-Banner ist deshalb nicht
-        erforderlich.
+        oder Analysedienste Dritter werden nicht eingesetzt.
+      </p>
+      <h3 id="messung" className="font-display text-xl font-bold text-primary-deep">
+        Nutzungsmessung (nur mit Ihrer Einwilligung)
+      </h3>
+      <p>
+        Wenn Sie im Banner zustimmen, messen wir auf den öffentlichen Seiten, wie die Webseite
+        genutzt wird, um sie und unser Angebot zu verbessern. Dabei speichert Ihr Browser im lokalen
+        Speicher eine zufällige Kennung (Gültigkeit 13 Monate, nicht mit Ihrem Namen, Konto oder
+        Ihrer Buchung verknüpft) und eine Sitzungskennung (bis zum Schließen des Tabs). Erfasst
+        werden: aufgerufene Seite (ohne Suchparameter), Zeitpunkt, sichtbare Verweildauer,
+        Scrolltiefe, Herkunftsseite (nur Domain), Gerätekategorie (Handy, Tablet, PC), angeklickte
+        Schaltflächen sowie bei Formularen, ob sie begonnen, abgesendet oder abgebrochen wurden und
+        bei welchem Feld ein Fehler auftrat (nur Feldname und Fehlerart). <strong>Nicht</strong>{" "}
+        erfasst werden Inhalte Ihrer Eingaben, IP-Adressen und der Browser-Typ. Für die Erkennung
+        von Fehlern in Formularen zählen wir außerdem auf dem Server, wie viele Formulare
+        eingegangen oder abgewiesen wurden. Das geschieht ohne Kennung und ohne Zugriff auf Ihr
+        Gerät.
+      </p>
+      <p>
+        Wir testen außerdem verschiedene Varianten einzelner Texte und Schaltflächen (A/B-Tests).
+        Dazu speichern wir im lokalen Speicher, welche Variante Ihnen gezeigt wird. Die Auswertung
+        erfolgt pro Testversion; Ergebnisse alter Versionen fließen nicht in neue Tests ein.
+      </p>
+      <p>
+        <strong>Rechtsgrundlage</strong> ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 25
+        Abs. 1 TDDDG). <strong>Speicherdauer:</strong> Einzelne Messdaten löschen wir nach 90 Tagen;
+        danach bleiben nur zusammengefasste Zahlen ohne Personenbezug. Die Daten werden bei unserem
+        Auftragsverarbeiter Supabase (Frankfurt) gespeichert, an Dritte zu Werbezwecken gelangen sie
+        nicht. Ihre Einwilligung ist freiwillig und kann jederzeit mit Wirkung für die Zukunft
+        widerrufen werden, ohne dass Nachteile entstehen: über{" "}
+        <button type="button" onClick={openConsentSettings} className="underline font-medium">
+          Messung &amp; Datenschutz-Einstellungen
+        </button>{" "}
+        (auch im Footer jeder Seite). Beim Widerruf werden Kennung und Testzuordnung in Ihrem
+        Browser sofort gelöscht. Sendet Ihr Browser „Do Not Track“ oder „Global Privacy Control“,
+        messen wir nicht.
       </p>
 
       <H2>12. Bildnutzung, Soziale Netzwerke & externe Links</H2>

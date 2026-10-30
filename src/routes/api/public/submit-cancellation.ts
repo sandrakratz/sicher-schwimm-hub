@@ -65,6 +65,7 @@ export const Route = createFileRoute('/api/public/submit-cancellation')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { recordServerEvent } = await import('@/lib/analytics/server')
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
         if (!supabaseUrl || !serviceKey) {
@@ -78,6 +79,7 @@ export const Route = createFileRoute('/api/public/submit-cancellation')({
 
         const parsed = submitSchema.safeParse(body)
         if (!parsed.success) {
+          await recordServerEvent('form_rejected', { form: 'widerruf', reason: 'ungueltig' })
           return Response.json(
             { error: 'Bitte prüfen Sie Ihre Eingaben.', issues: parsed.error.flatten() },
             { status: 400 },
@@ -87,6 +89,7 @@ export const Route = createFileRoute('/api/public/submit-cancellation')({
 
         if (data.website && data.website.length > 0) {
           // Silent honeypot reject — pretend success.
+          await recordServerEvent('form_rejected', { form: 'widerruf', reason: 'honeypot' })
           return Response.json({ success: true, reference_number: 'SW-WID-00000000-00000' })
         }
 
@@ -103,6 +106,7 @@ export const Route = createFileRoute('/api/public/submit-cancellation')({
             .eq('ip_address', ip)
             .gte('created_at', since)
           if ((count ?? 0) >= 5) {
+            await recordServerEvent('form_rejected', { form: 'widerruf', reason: 'zu_viele' })
             return Response.json(
               { error: 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.' },
               { status: 429 },
@@ -142,6 +146,7 @@ export const Route = createFileRoute('/api/public/submit-cancellation')({
           // 23505 = unique_violation → retry with new reference
           if ((error as any).code !== '23505') {
             console.error('[cancellation] insert failed', error)
+            await recordServerEvent('form_rejected', { form: 'widerruf', reason: 'fehler' })
             return Response.json(
               { error: 'Konnte den Widerruf nicht speichern.' },
               { status: 500 },
@@ -200,6 +205,7 @@ export const Route = createFileRoute('/api/public/submit-cancellation')({
           console.error('[cancellation] confirmation email enqueue failed', e)
         }
 
+        await recordServerEvent('form_received', { form: 'widerruf' })
         return Response.json({ success: true, reference_number: referenceNumber })
       },
     },

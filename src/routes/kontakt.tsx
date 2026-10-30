@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { PublicLayout } from "@/components/PublicLayout";
 import { CONTACT_ITEMS, ORG, SOCIAL } from "@/lib/billing-config";
 import { SocialLinks } from "@/components/SocialLinks";
@@ -88,6 +89,7 @@ function Page() {
   const [category, setCategory] = useState("other");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const ft = useFormTracking("kontakt");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -104,9 +106,11 @@ function Page() {
       body: fd.get("body"),
     });
     if (!parsed.success) {
+      ft.invalid(parsed.error.issues.map((i) => String(i.path[0] ?? "")));
       toast.error("Bitte Eingaben prüfen");
       return;
     }
+    ft.attempt();
     setLoading(true);
     const idem =
       typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
@@ -115,9 +119,11 @@ function Page() {
     setLoading(false);
     if (error) {
       console.warn("[messages.insert]", error.code, error.message);
+      ft.failed("speichern_fehlgeschlagen");
       toast.error("Nachricht konnte nicht gesendet werden");
       return;
     }
+    ft.succeeded();
     fetch("/api/public/notify-admin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -193,7 +199,7 @@ function Page() {
           ) : (
             <Card className="border-0 shadow-card">
               <CardContent className="p-8">
-                <form onSubmit={onSubmit} className="space-y-4">
+                <form onSubmit={onSubmit} {...ft.formProps} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="from_name">Name *</Label>
