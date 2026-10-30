@@ -34,8 +34,8 @@ export const EXPERIMENTS: readonly ExperimentDefinition[] = [
     variants: { control: 50, platz_sichern: 50 },
     control: "control",
     goal: { event: "form_submit_success", filter: { form: "kursbuchung_kind" } },
-    status: "draft",
-    startedAt: "2026-10-30T00:00:00Z",
+    status: "running",
+    startedAt: "2026-10-30T08:30:00Z",
   },
 ];
 
