@@ -70,7 +70,7 @@ function TrainerHome() {
       // Nur die eigenen Einsätze laden (nicht alle Termine des Vereins; Supabase liefert pro Abfrage höchstens
       // 1000 Zeilen). Wie unter „Meine Kurse“ zählen auch Kurse, in denen man als Kurstrainer:in eingetragen ist.
       const SELECT =
-        "id,course_id,session_date,session_index,start_time,end_time,assigned_trainer_id,courses(name,location,schedule,trainer_id)";
+        "id,course_id,session_date,session_index,start_time,end_time,assigned_trainer_id,courses(name,location,schedule,trainer_id,archived_at)";
       const assignments = await fetchAll<{ session_id: string }>((f, t) =>
         supabase
           .from("course_session_assignments")
@@ -109,9 +109,13 @@ function TrainerHome() {
       ]);
       const byId = new Map<string, any>();
       for (const s of [...byAssignment, ...byTerm, ...byCourse]) byId.set(s.id, s);
-      const mine = [...byId.values()].sort(
-        (a, b) => a.session_date.localeCompare(b.session_date) || a.session_index - b.session_index,
-      );
+      // Abgesagte (archivierte) Kurse nicht anzeigen
+      const mine = [...byId.values()]
+        .filter((s) => !s.courses?.archived_at)
+        .sort(
+          (a, b) =>
+            a.session_date.localeCompare(b.session_date) || a.session_index - b.session_index,
+        );
       setRows(
         mine.map((s) => ({
           id: s.id,

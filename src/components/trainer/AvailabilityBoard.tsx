@@ -50,6 +50,7 @@ type CourseRow = {
   duration: string | null;
   trainers_needed: number | null;
   trainer_id: string | null;
+  archived_at?: string | null;
 };
 
 type Avail = { session_id: string; trainer_id: string; available: boolean };
@@ -108,7 +109,7 @@ export function AvailabilityBoard() {
 
     // Seitenweise bzw. in Blöcken laden (Zeilengrenze der Schnittstelle, lange ID-Listen sprengen die Adresszeile)
     const today = todayBerlinIso();
-    const sessionRows = await fetchAll<SessionRow>((f, t) =>
+    const allSessionRows = await fetchAll<SessionRow>((f, t) =>
       supabase
         .from("course_sessions")
         .select(
@@ -119,18 +120,19 @@ export function AvailabilityBoard() {
         .order("id")
         .range(f, t),
     );
-    setSessions(sessionRows);
-
     const cs = await fetchAll<CourseRow>((f, t) =>
       supabase
         .from("courses")
-        .select("id,name,location,schedule,duration,trainers_needed,trainer_id")
+        .select("id,name,location,schedule,duration,trainers_needed,trainer_id,archived_at")
         .order("id")
         .range(f, t),
     );
     const map: Record<string, CourseRow> = {};
     for (const c of cs) map[c.id] = c;
     setCourses(map);
+    // Abgesagte (archivierte) Kurse tauchen im Trainerbereich nicht mehr auf
+    const sessionRows = allSessionRows.filter((s) => !map[s.course_id]?.archived_at);
+    setSessions(sessionRows);
 
     if (sessionRows.length > 0) {
       const ids = sessionRows.map((s) => s.id);

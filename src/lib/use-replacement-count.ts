@@ -17,15 +17,16 @@ export function useReplacementCount(enabled: boolean): number {
       const { data: u } = await supabase.auth.getUser();
       const me = u.user?.id;
       if (!me) return;
-      const rows = await fetchAll<any>((f, t) =>
+      let rows = await fetchAll<any>((f, t) =>
         supabase
           .from("course_sessions")
-          .select("id,assigned_trainer_id,courses(trainers_needed,trainer_id)")
+          .select("id,assigned_trainer_id,courses(trainers_needed,trainer_id,archived_at)")
           .not("replacement_requested_at", "is", null)
           .gte("session_date", todayBerlinIso())
           .order("id")
           .range(f, t),
       );
+      rows = rows.filter((r) => !r.courses?.archived_at);
       if (rows.length === 0) return setCount(0);
       const assigned = await fetchIn<{ session_id: string; trainer_id: string }>(
         rows.map((r) => r.id),

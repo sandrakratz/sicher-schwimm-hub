@@ -23,7 +23,7 @@ export const Route = createFileRoute('/api/public/trainer-ics')({
         const { buildIcs, parseTimeRange } = await import('@/lib/ics')
         const from = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10)
         const SELECT =
-          'id,session_index,session_date,start_time,end_time,courses(name,location,schedule,duration)'
+          'id,session_index,session_date,start_time,end_time,courses(name,location,schedule,duration,archived_at)'
 
         const assigned = await fetchAll<{ session_id: string }>((f, t) =>
           db.from('course_session_assignments').select('session_id').eq('trainer_id', me).order('id').range(f, t),
@@ -46,6 +46,7 @@ export const Route = createFileRoute('/api/public/trainer-ics')({
         for (const s of [...a, ...b, ...c]) byId.set(s.id, s)
 
         const items = [...byId.values()]
+          .filter((s) => !s.courses?.archived_at)
           .sort((x, y) => x.session_date.localeCompare(y.session_date))
           .map((s) => {
             const course = s.courses ?? {}
