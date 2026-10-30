@@ -17,8 +17,7 @@ export async function recordServerEvent<N extends ServerEventName>(
     const schema = SERVER_EVENT_SCHEMAS[name];
     const parsed = schema.props.safeParse(props);
     if (!parsed.success) return;
-    // Tabelle ist noch nicht in den generierten Typen (types.ts), bis die Migration eingespielt und neu generiert ist
-    await (supabaseAdmin as any).from("analytics_events").insert({
+    await supabaseAdmin.from("analytics_events").insert({
       source: "server",
       event: name,
       schema_version: schema.version,
@@ -74,7 +73,7 @@ export async function syncExperiments(force = false) {
   lastExperimentSync = now;
   try {
     const { EXPERIMENTS } = await import("./experiments");
-    const db = supabaseAdmin as any;
+    const db = supabaseAdmin;
     const { data: rows, error } = await db
       .from("analytics_experiments")
       .select("key,version,variants,goal_event,goal_filter,status");
@@ -123,6 +122,9 @@ export async function syncExperiments(force = false) {
   }
 }
 
-function sortKeys(value: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)));
+function sortKeys(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)),
+  );
 }

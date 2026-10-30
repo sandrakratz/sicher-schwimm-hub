@@ -14,6 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_daily: {
+        Row: {
+          day: string
+          event: string
+          events: number
+          experiment_key: string
+          experiment_version: number
+          path: string
+          schema_version: number
+          source: string
+          variant: string
+          visitors: number
+        }
+        Insert: {
+          day: string
+          event: string
+          events: number
+          experiment_key?: string
+          experiment_version?: number
+          path?: string
+          schema_version: number
+          source: string
+          variant?: string
+          visitors: number
+        }
+        Update: {
+          day?: string
+          event?: string
+          events?: number
+          experiment_key?: string
+          experiment_version?: number
+          path?: string
+          schema_version?: number
+          source?: string
+          variant?: string
+          visitors?: number
+        }
+        Relationships: []
+      }
+      analytics_events: {
+        Row: {
+          app_build: string | null
+          consent_version: number | null
+          created_at: string
+          device_class: string | null
+          event: string
+          experiment_key: string | null
+          experiment_version: number | null
+          id: number
+          occurred_at: string
+          path: string | null
+          props: Json
+          referrer_host: string | null
+          schema_version: number
+          session_id: string | null
+          source: string
+          variant: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          app_build?: string | null
+          consent_version?: number | null
+          created_at?: string
+          device_class?: string | null
+          event: string
+          experiment_key?: string | null
+          experiment_version?: number | null
+          id?: never
+          occurred_at?: string
+          path?: string | null
+          props?: Json
+          referrer_host?: string | null
+          schema_version: number
+          session_id?: string | null
+          source: string
+          variant?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          app_build?: string | null
+          consent_version?: number | null
+          created_at?: string
+          device_class?: string | null
+          event?: string
+          experiment_key?: string | null
+          experiment_version?: number | null
+          id?: never
+          occurred_at?: string
+          path?: string | null
+          props?: Json
+          referrer_host?: string | null
+          schema_version?: number
+          session_id?: string | null
+          source?: string
+          variant?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_experiments: {
+        Row: {
+          created_at: string
+          description: string | null
+          ended_at: string | null
+          goal_event: string
+          goal_filter: Json
+          id: number
+          key: string
+          started_at: string | null
+          status: string
+          variants: Json
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          goal_event: string
+          goal_filter?: Json
+          id?: never
+          key: string
+          started_at?: string | null
+          status?: string
+          variants: Json
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          goal_event?: string
+          goal_filter?: Json
+          id?: never
+          key?: string
+          started_at?: string | null
+          status?: string
+          variants?: Json
+          version?: number
+        }
+        Relationships: []
+      }
       assignment_rules: {
         Row: {
           area: string
@@ -1790,6 +1931,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analytics_dashboard: {
+        Args: { p_from: string; p_to: string; p_versions: Json }
+        Returns: Json
+      }
       can_help: { Args: { _user_id: string }; Returns: boolean }
       generate_course_document_no: { Args: never; Returns: string }
       has_active_membership: { Args: { _user_id: string }; Returns: boolean }
@@ -1800,6 +1945,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      run_analytics_rollup: { Args: { p_dry_run?: boolean }; Returns: Json }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_trainer_of_course: {
         Args: { _course_id: string; _trainer_id: string }
