@@ -129,12 +129,9 @@ export async function runTrainerReminders() {
       for (const q of quals) {
         const d = daysUntil(q.valid_until, today);
         if (d === null || d > QUALIFICATION_WARN_DAYS) continue;
-        const label =
-          q.kind === "sonstiges" && q.note ? q.note : qualificationLabel(q.kind);
+        const label = q.kind === "sonstiges" && q.note ? q.note : qualificationLabel(q.kind);
         const text =
-          d < 0
-            ? `${label}: seit ${-d} Tagen abgelaufen`
-            : `${label}: läuft in ${d} Tagen ab`;
+          d < 0 ? `${label}: seit ${-d} Tagen abgelaufen` : `${label}: läuft in ${d} Tagen ab`;
         warnBy.set(q.trainer_id, [...(warnBy.get(q.trainer_id) ?? []), text]);
       }
     } catch {

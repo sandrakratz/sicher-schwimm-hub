@@ -208,7 +208,11 @@ export function Qualifications({ me }: { me: string }) {
       </div>
       <Input
         className="mt-3"
-        placeholder={kind === "sonstiges" ? "Bezeichnung, z. B. Fachkraft für Kleinkindpädagogik" : "Notiz (optional)"}
+        placeholder={
+          kind === "sonstiges"
+            ? "Bezeichnung, z. B. Fachkraft für Kleinkindpädagogik"
+            : "Notiz (optional)"
+        }
         aria-label="Notiz zum Nachweis"
         value={note}
         maxLength={120}
