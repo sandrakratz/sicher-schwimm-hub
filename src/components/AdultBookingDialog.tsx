@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ export function AdultBookingDialog({
   onBlocked: () => void;
 }) {
   const { defaults, ready } = useContactDefaults();
+  const ft = useFormTracking("kursbuchung_erwachsene");
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
@@ -92,11 +94,19 @@ export function AdultBookingDialog({
     e.preventDefault();
     if (!term || submitting) return;
     if (!form.ageConfirmed || !form.acceptTerms || !form.gdprConsent) {
+      ft.invalid(
+        [
+          !form.ageConfirmed && "age_confirmed",
+          !form.acceptTerms && "accept_terms",
+          !form.gdprConsent && "gdpr_consent",
+        ].filter((x): x is string => Boolean(x)),
+      );
       toast.error(
         "Bitte bestätigen Sie Ihre Volljährigkeit, die Kursbedingungen und die Datenschutzhinweise.",
       );
       return;
     }
+    ft.attempt();
     setSubmitting(true);
     try {
       const r = (await bookCourseTerm({
@@ -127,9 +137,11 @@ export function AdultBookingDialog({
           }
         | undefined;
       if (r?.blocked) {
+        ft.failed("gesperrt");
         onBlocked();
         return;
       }
+      ft.succeeded();
       onSuccess({
         status: r?.status === "waiting" ? "waiting" : "confirmed",
         courseName: r?.courseName ?? term.name,
@@ -139,6 +151,7 @@ export function AdultBookingDialog({
         memberCheck: Boolean(r?.memberCheckPending),
       });
     } catch (err) {
+      ft.failed("buchung_fehlgeschlagen");
       toast.error(
         err instanceof Error ? err.message : "Die Buchung konnte nicht abgeschlossen werden.",
       );
@@ -165,7 +178,7 @@ export function AdultBookingDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} {...ft.formProps} className="space-y-4">
           <input
             type="text"
             tabIndex={-1}

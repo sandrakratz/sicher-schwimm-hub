@@ -1,4 +1,7 @@
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
+import { track } from "@/lib/analytics/client";
+import { useExperiment } from "@/lib/analytics/useExperiment";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { useState } from "react";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -283,6 +286,8 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
     memberCheck?: boolean;
   } | null>(null);
   const [blockedNotice, setBlockedNotice] = useState(false);
+  // A/B-Test (nur Kinderkurse): Beschriftung der Schaltfläche, die das Formular öffnet
+  const bookButtonVariant = useExperiment("kurs_buchen_button", !isAdultProgram(program));
 
   const paragraphs = (program.description ?? "").split(/\n\s*\n/).filter(Boolean);
   const requirements = parseRequirementLines(program.requirements);
@@ -533,8 +538,18 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                           <p className="text-sm font-medium text-muted-foreground">Ausgebucht</p>
                         )
                       ) : (
-                        <Button variant="accent" size="lg" onClick={() => setBookingTerm(t)}>
-                          Verbindlich buchen <ChevronRight className="h-4 w-4" />
+                        <Button
+                          variant="accent"
+                          size="lg"
+                          onClick={() => {
+                            track("cta_click", { cta: "kurs_verbindlich_buchen" });
+                            setBookingTerm(t);
+                          }}
+                        >
+                          {bookButtonVariant === "platz_sichern"
+                            ? "Jetzt Platz sichern"
+                            : "Verbindlich buchen"}{" "}
+                          <ChevronRight className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -852,6 +867,7 @@ function BookingDialog({
   }) => void;
   onBlocked: () => void;
 }) {
+  const ft = useFormTracking("kursbuchung_kind");
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     parentFirstName: "",
@@ -896,15 +912,22 @@ function BookingDialog({
     e.preventDefault();
     if (!term) return;
     if (!form.acceptTerms || !form.gdprConsent) {
+      ft.invalid(
+        [!form.acceptTerms && "accept_terms", !form.gdprConsent && "gdpr_consent"].filter(
+          (x): x is string => Boolean(x),
+        ),
+      );
       toast.error("Bitte bestätigen Sie die Kursbedingungen und die Datenschutzhinweise.");
       return;
     }
     if (hasHealthInfo && !form.healthConsent) {
+      ft.invalid(["health_consent"]);
       toast.error(
         "Bitte willigen Sie in die Verarbeitung der Gesundheitsangaben ein oder löschen Sie diese Angaben.",
       );
       return;
     }
+    ft.attempt();
     setSubmitting(true);
     try {
       const kids = [
@@ -918,6 +941,7 @@ function BookingDialog({
           .map((k) => ({ ...k, childName: fullName(k.childName, k.childLastName) })),
       ];
       if (kids.some((k) => k.childName.split(/\s+/).length < 2)) {
+        ft.failed("kindname_unvollstaendig");
         toast.error("Bitte Vor- und Nachnamen jedes Kindes angeben.");
         setSubmitting(false);
         return;
@@ -960,6 +984,7 @@ function BookingDialog({
         }
         if (r?.blocked) {
           if (!res) {
+            ft.failed("gesperrt");
             onBlocked();
             return;
           }
@@ -981,6 +1006,7 @@ function BookingDialog({
           { duration: 12000 },
         );
       }
+      ft.succeeded();
       onSuccess({
         status: confirmed.length ? "confirmed" : "waiting",
         courseName: `${res.courseName ?? term.name}${booked.length > 1 ? ` (${booked.join(", ")})` : ""}`,
@@ -990,6 +1016,7 @@ function BookingDialog({
         memberCheck: Boolean(res?.memberCheckPending),
       });
     } catch (err) {
+      ft.failed("buchung_fehlgeschlagen");
       toast.error(
         err instanceof Error ? err.message : "Die Buchung konnte nicht abgeschlossen werden.",
       );
@@ -1016,7 +1043,7 @@ function BookingDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} {...ft.formProps} className="space-y-4">
           <input
             type="text"
             tabIndex={-1}

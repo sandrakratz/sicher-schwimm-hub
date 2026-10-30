@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PublicLayout } from "@/components/PublicLayout";
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/warteliste")({
 
 function WaitlistPage() {
   const search = useSearch({ from: "/warteliste" });
+  const ft = useFormTracking("warteliste");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -70,26 +72,32 @@ function WaitlistPage() {
       return;
     }
     if (!String(fd.get("program_id") || "").trim()) {
+      ft.invalid(["program_id"]);
       toast.error("Bitte wählen Sie den gewünschten Kurs aus.");
       return;
     }
     if (!String(fd.get("swimming_level") || "").trim()) {
+      ft.invalid(["swimming_level"]);
       toast.error("Bitte geben Sie das Schwimmlevel des Kindes an.");
       return;
     }
     const memberValue = String(fd.get("is_member") || "");
     if (memberValue !== "ja" && memberValue !== "nein") {
+      ft.invalid(["is_member"]);
       toast.error("Bitte geben Sie an, ob Ihr Kind bereits Vereinsmitglied ist.");
       return;
     }
     if (fd.get("gdpr_consent") !== "on") {
+      ft.invalid(["gdpr_consent"]);
       toast.error("Bitte bestätigen Sie die Datenschutzhinweise.");
       return;
     }
     if (fd.get("contact_permission") !== "on") {
+      ft.invalid(["contact_permission"]);
       toast.error("Bitte stimmen Sie der Kontaktaufnahme zu.");
       return;
     }
+    ft.attempt();
     setLoading(true);
     try {
       const res = await joinWaitlist({
@@ -114,12 +122,15 @@ function WaitlistPage() {
         },
       });
       if (!res.ok) {
+        ft.failed("abgelehnt");
         toast.error("Eintrag nicht möglich. Bitte wenden Sie sich an info@sicher-schwimmen.com.");
         return;
       }
+      ft.succeeded();
       setDone(true);
     } catch (err) {
       console.error(err);
+      ft.failed("speichern_fehlgeschlagen");
       toast.error("Eintrag konnte nicht gespeichert werden. Bitte später erneut versuchen.");
     } finally {
       setLoading(false);
@@ -168,7 +179,7 @@ function WaitlistPage() {
             {!ready ? (
               <p className="py-6 text-center text-muted-foreground">Formular wird vorbereitet…</p>
             ) : (
-              <form onSubmit={onSubmit} className="space-y-5">
+              <form onSubmit={onSubmit} {...ft.formProps} className="space-y-5">
                 <HoneypotField />
 
                 {defaults.signedIn && (

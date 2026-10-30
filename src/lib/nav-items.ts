@@ -17,6 +17,7 @@ import {
   Activity,
   ScrollText,
   Euro,
+  BarChart3,
 } from "lucide-react";
 
 export type Role = "admin" | "board" | "trainer" | "member" | "parent";
@@ -60,6 +61,7 @@ export type AppNavItem = {
     | "/admin/emails"
     | "/admin/versandstatus"
     | "/admin/widerrufe"
+    | "/admin/statistik"
     | "/admin/audit";
   icon: typeof Shield;
   label: string;
@@ -194,6 +196,7 @@ export const adminNav: (AppNavItem & { group?: string[] })[] = [
   sectionNav(3, Users, ["admin", "board"]),
   sectionNav(4, MailOpen, ["admin", "board"]),
   sectionNav(5, Newspaper, ["admin", "board"]),
+  { to: "/admin/statistik", icon: BarChart3, label: "Statistik", allow: ["admin", "board"] },
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin", "board"] },
 ];
 

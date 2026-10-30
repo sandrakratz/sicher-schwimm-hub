@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -181,6 +182,7 @@ function Page() {
   const showMinor = tier === "children_youth" || isMinorDob(dob);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const ft = useFormTracking("mitgliedschaft");
   const [accountResult, setAccountResult] = useState<
     "none" | "created" | "created_no_password" | "exists" | "failed"
   >("none");
@@ -199,10 +201,12 @@ function Page() {
 
     if (rawPassword || rawPasswordConfirm) {
       if (rawPassword.length < 8) {
+        ft.invalid(["account_password"], "zu_kurz");
         toast.error("Passwort muss mindestens 8 Zeichen lang sein.");
         return;
       }
       if (rawPassword !== rawPasswordConfirm) {
+        ft.invalid(["account_password_confirm"], "ungleich");
         toast.error("Passwörter stimmen nicht überein.");
         return;
       }
@@ -234,6 +238,7 @@ function Page() {
     };
     const parsed = schema.safeParse(obj);
     if (!parsed.success) {
+      ft.invalid(parsed.error.issues.map((i) => String(i.path[0] ?? "")));
       toast.error("Bitte alle Pflichtfelder & Zustimmungen ausfüllen.");
       return;
     }
@@ -248,6 +253,7 @@ function Page() {
           !g.guardian_email ||
           !g.guardian_phone)
       ) {
+        ft.invalid(["guardian_name", "guardian_email", "guardian_phone"], "fehlt");
         toast.error(
           "Bei Minderjährigen bitte Vor- und Nachname, E-Mail und Telefon der Erziehungsberechtigten angeben.",
         );
@@ -256,11 +262,16 @@ function Page() {
       if (isMinorMember) {
         const memberEmail = String(fd.get("member_email") || "").trim();
         if (!z.string().email().safeParse(memberEmail).success) {
+          ft.invalid(["member_email"]);
           toast.error("Bitte die E-Mail-Adresse des minderjährigen Mitglieds angeben.");
           return;
         }
         const keys = MINOR_CONSENTS.map((c) => c.key);
         if (keys.some((k) => fd.get(k) !== "on")) {
+          ft.invalid(
+            keys.filter((k) => fd.get(k) !== "on"),
+            "fehlt",
+          );
           toast.error("Bitte alle Zustimmungen für minderjährige Mitglieder bestätigen.");
           return;
         }
@@ -272,9 +283,11 @@ function Page() {
       }
     }
     if (tier === "family" && children.some((c) => c.name.trim() && !c.date_of_birth)) {
+      ft.invalid(["child_date_of_birth"], "fehlt");
       toast.error("Bitte bei jedem Kind das Geburtsdatum angeben.");
       return;
     }
+    ft.attempt();
     setLoading(true);
     const family_members =
       tier === "family"
@@ -313,9 +326,11 @@ function Page() {
     if (error) {
       setLoading(false);
       console.warn("[memberships.insert]", error.code, error.message);
+      ft.failed("speichern_fehlgeschlagen");
       toast.error("Antrag konnte nicht gesendet werden.");
       return;
     }
+    ft.succeeded();
     // Fire-and-forget admin notification email
     fetch("/api/public/notify-admin", {
       method: "POST",
@@ -540,7 +555,12 @@ function Page() {
                 Hinweis: Die Mitgliedschaft wird erst nach Genehmigung durch den Vereinsvorstand
                 aktiv.
               </p>
-              <form key={ready ? "prefilled" : "loading"} onSubmit={onSubmit} className="space-y-6">
+              <form
+                key={ready ? "prefilled" : "loading"}
+                onSubmit={onSubmit}
+                {...ft.formProps}
+                className="space-y-6"
+              >
                 <div>
                   <Label>Mitgliedschaftsart</Label>
                   <Select value={tier} onValueChange={setTier}>

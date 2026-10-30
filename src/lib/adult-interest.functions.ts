@@ -39,56 +39,59 @@ async function assertStaff(context: { supabase: any; userId: string }) {
 export const submitAdultInterest = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => interestInputSchema.parse(input))
   .handler(async ({ data }) => {
-    if (data.website) return { ok: true as const };
+    const { countSubmission } = await import("@/lib/analytics/server");
+    return countSubmission("erwachsenen_interesse", Boolean(data.website), async () => {
+      if (data.website) return { ok: true as const };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { normalizeEmail } = await import("@/lib/blocklist.server");
-    const { resolveMembership } = await import("@/lib/membership-lookup.server");
-    const emailNorm = normalizeEmail(data.email);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { normalizeEmail } = await import("@/lib/blocklist.server");
+      const { resolveMembership } = await import("@/lib/membership-lookup.server");
+      const emailNorm = normalizeEmail(data.email);
 
-    const { data: program } = await supabaseAdmin
-      .from("course_programs")
-      .select("id")
-      .eq("slug", ADULT_COURSE_SLUG)
-      .eq("is_public", true)
-      .maybeSingle();
-    if (!program) throw new Error("Das Kursangebot ist derzeit nicht verfügbar.");
+      const { data: program } = await supabaseAdmin
+        .from("course_programs")
+        .select("id")
+        .eq("slug", ADULT_COURSE_SLUG)
+        .eq("is_public", true)
+        .maybeSingle();
+      if (!program) throw new Error("Das Kursangebot ist derzeit nicht verfügbar.");
 
-    // Doppelte Bekundung (gleiche E-Mail): nichts überschreiben, Bestätigung bleibt gleich.
-    const { data: existing } = await (supabaseAdmin as any)
-      .from("adult_course_interests")
-      .select("id")
-      .eq("email_norm", emailNorm)
-      .eq("program_id", program.id)
-      .limit(1)
-      .maybeSingle();
-    if (existing) return { ok: true as const };
+      // Doppelte Bekundung (gleiche E-Mail): nichts überschreiben, Bestätigung bleibt gleich.
+      const { data: existing } = await (supabaseAdmin as any)
+        .from("adult_course_interests")
+        .select("id")
+        .eq("email_norm", emailNorm)
+        .eq("program_id", program.id)
+        .limit(1)
+        .maybeSingle();
+      if (existing) return { ok: true as const };
 
-    // Mitgliedsstatus aus der bestehenden Mitgliederverwaltung (nur Information, kein Preisrecht)
-    let isMember: boolean | null = null;
-    try {
-      isMember = (await resolveMembership({ email: emailNorm })).isMember;
-    } catch (err) {
-      console.error("adult interest: membership lookup failed", err);
-    }
+      // Mitgliedsstatus aus der bestehenden Mitgliederverwaltung (nur Information, kein Preisrecht)
+      let isMember: boolean | null = null;
+      try {
+        isMember = (await resolveMembership({ email: emailNorm })).isMember;
+      } catch (err) {
+        console.error("adult interest: membership lookup failed", err);
+      }
 
-    const { error } = await (supabaseAdmin as any).from("adult_course_interests").insert({
-      program_id: program.id,
-      first_name: data.firstName,
-      last_name: data.lastName,
-      email: data.email,
-      email_norm: emailNorm,
-      phone: data.phone || null,
-      swim_level: data.swimLevel,
-      saturday_availability: data.saturdayAvailability,
-      price_preference: data.pricePreference,
-      member_status_stated: data.memberStatus ?? null,
-      is_member: isMember,
-      message: data.message || null,
+      const { error } = await (supabaseAdmin as any).from("adult_course_interests").insert({
+        program_id: program.id,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        email_norm: emailNorm,
+        phone: data.phone || null,
+        swim_level: data.swimLevel,
+        saturday_availability: data.saturdayAvailability,
+        price_preference: data.pricePreference,
+        member_status_stated: data.memberStatus ?? null,
+        is_member: isMember,
+        message: data.message || null,
+      });
+      // Parallele Doppel-Klicks: eindeutiger Index greift, Ergebnis bleibt "ok"
+      if (error && error.code !== "23505") throw new Error(error.message);
+      return { ok: true as const };
     });
-    // Parallele Doppel-Klicks: eindeutiger Index greift, Ergebnis bleibt "ok"
-    if (error && error.code !== "23505") throw new Error(error.message);
-    return { ok: true as const };
   });
 
 export const listAdultInterests = createServerFn({ method: "POST" })

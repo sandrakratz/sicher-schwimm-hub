@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { track } from "@/lib/analytics/client";
 import { useState, useEffect } from "react";
 import { Menu, X, LogIn } from "lucide-react";
 import logo from "@/assets/sicher-schwimmen-rund.png";
@@ -58,7 +59,11 @@ export function SiteHeader() {
             </Link>
           </Button>
           <Button asChild variant="accent" size="sm">
-            <Link to="/warteliste" search={{ programm: undefined }}>
+            <Link
+              to="/warteliste"
+              search={{ programm: undefined }}
+              onClick={() => track("cta_click", { cta: "header_warteliste" })}
+            >
               Auf die Warteliste
             </Link>
           </Button>
@@ -96,7 +101,10 @@ export function SiteHeader() {
                 <Link
                   to="/warteliste"
                   search={{ programm: undefined }}
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    track("cta_click", { cta: "header_warteliste_mobil" });
+                    setOpen(false);
+                  }}
                 >
                   Auf die Warteliste
                 </Link>

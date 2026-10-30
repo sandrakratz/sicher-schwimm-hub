@@ -349,33 +349,257 @@ function healthConsentNote(healthInfo: string | undefined): string {
 export const bookCourseTerm = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => bookingInputSchema.parse(input))
   .handler(async ({ data: input }) => {
-    const data = normalizeBookingInput(input);
-    if (data.website) return { status: "confirmed" as const, ok: true };
+    const { countSubmission } = await import("@/lib/analytics/server");
+    const form = "audience" in input ? "kursbuchung_erwachsene" : "kursbuchung_kind";
+    return countSubmission(form, Boolean(input.website), async () => {
+      const data = normalizeBookingInput(input);
+      if (data.website) return { status: "confirmed" as const, ok: true };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Sperrliste prüfen: Treffer bei Eltern-E-Mail ODER Kind (Name + Geburtsdatum)
-    const { isBlocked, normalizeEmail } = await import("@/lib/blocklist.server");
-    const emailNorm = normalizeEmail(data.parentEmail);
-    if (
-      await isBlocked({
-        email: data.parentEmail,
-        childName: data.childName,
-        childDob: data.childDob,
-      })
-    ) {
-      // Keine Direktbuchung: stattdessen Kursanfrage zur Einzelfallprüfung anlegen
-      const { data: courseInfo } = await supabaseAdmin
+      // Sperrliste prüfen: Treffer bei Eltern-E-Mail ODER Kind (Name + Geburtsdatum)
+      const { isBlocked, normalizeEmail } = await import("@/lib/blocklist.server");
+      const emailNorm = normalizeEmail(data.parentEmail);
+      if (
+        await isBlocked({
+          email: data.parentEmail,
+          childName: data.childName,
+          childDob: data.childDob,
+        })
+      ) {
+        // Keine Direktbuchung: stattdessen Kursanfrage zur Einzelfallprüfung anlegen
+        const { data: courseInfo } = await supabaseAdmin
+          .from("courses")
+          .select("name,starts_on,ends_on,schedule,location, course_programs(name,location)")
+          .eq("id", data.courseId)
+          .maybeSingle();
+        const desired =
+          ((courseInfo as any)?.course_programs?.name as string | undefined) ??
+          courseInfo?.name ??
+          "Kursanfrage";
+
+        const { data: req } = await supabaseAdmin
+          .from("course_requests")
+          .insert({
+            parent_name: data.parentName,
+            parent_email: data.parentEmail,
+            parent_phone: data.parentPhone || null,
+            child_name: data.childName,
+            child_dob: data.childDob,
+            desired_course: desired,
+            health_info: data.healthInfo || null,
+            message: data.message || null,
+            gdpr_consent: true,
+            contact_permission: true,
+            status: "new",
+            admin_notes: `Sperrliste – Einzelfallprüfung durch den Vorstand erforderlich${healthConsentNote(data.healthInfo)}`,
+          })
+          .select("id")
+          .maybeSingle();
+
+        const { queueTemplateEmail } = await import("@/lib/email-send.server");
+        await queueTemplateEmail({
+          templateName: "course-request",
+          idempotencyKey: `course-blocked-${req?.id ?? data.courseId}-${emailNorm}`,
+          templateData: {
+            parent_name: data.parentName,
+            parent_email: data.parentEmail,
+            parent_phone: data.parentPhone || "",
+            child_name: data.childName,
+            child_dob: data.childDob,
+            desired_course: `${desired} – ${courseInfo?.name ?? ""}`,
+            has_health_info: Boolean(data.healthInfo),
+            health_consent: data.healthInfo ? true : undefined,
+            terms_accepted: true,
+            privacy_accepted: true,
+            message: `SPERRLISTE – Einzelfallprüfung erforderlich (keine Direktbuchung)${data.message ? ` – ${data.message}` : ""}`,
+            submitted_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            program_name: desired,
+            course_name: courseInfo?.name ?? null,
+            course_starts_on: courseInfo?.starts_on ?? null,
+            course_ends_on: courseInfo?.ends_on ?? null,
+            course_schedule: courseInfo?.schedule ?? null,
+            course_location:
+              courseInfo?.location ??
+              ((courseInfo as any)?.course_programs?.location as string | undefined) ??
+              null,
+            booking_status: "Sperrliste – Einzelfallprüfung",
+          },
+        });
+
+        return { ok: false as const, blocked: true as const };
+      }
+
+      const { data: course, error: courseErr } = await supabaseAdmin
         .from("courses")
-        .select("name,starts_on,ends_on,schedule,location, course_programs(name,location)")
+        .select("*, course_programs(*)")
         .eq("id", data.courseId)
         .maybeSingle();
-      const desired =
-        ((courseInfo as any)?.course_programs?.name as string | undefined) ??
-        courseInfo?.name ??
-        "Kursanfrage";
 
-      const { data: req } = await supabaseAdmin
+      if (courseErr) throw new Error(courseErr.message);
+      if (!course || !course.is_public || course.archived_at) {
+        throw new Error("Dieser Kurs ist derzeit nicht buchbar.");
+      }
+      if ((course as any).course_programs && (course as any).course_programs.bookable === false) {
+        throw new Error("Dieses Angebot ist derzeit noch nicht buchbar.");
+      }
+
+      const program = (course as any).course_programs as {
+        id: string;
+        name: string;
+        min_age_years: number | null;
+        max_age_years: number | null;
+        age_range: string | null;
+        target_group: string | null;
+        duration: string | null;
+        location: string | null;
+        description: string | null;
+        price_member: number | null;
+        price_non_member: number | null;
+        payment_due_days: number;
+      } | null;
+
+      // Angebote für Erwachsene und für Kinder haben je ein eigenes Formular; der Server prüft, dass das richtige benutzt wurde.
+      const adultProgram = program ? isAdultProgram(program) : false;
+      if (adultProgram !== data.adult) {
+        throw new Error(
+          adultProgram
+            ? "Dieses Angebot richtet sich an Erwachsene. Bitte nutzen Sie das Anmeldeformular für Erwachsene."
+            : "Dieses Angebot ist für Kinder. Bitte nutzen Sie das Anmeldeformular für Kinder.",
+        );
+      }
+
+      // Alter zu Kursbeginn (gleiche Rechenregel wie bei der Warteliste, siehe waitlist-age.ts)
+      const minAge = program?.min_age_years ?? null;
+      if (
+        !data.adult &&
+        data.childDob &&
+        minAge != null &&
+        !meetsMinAge(data.childDob, course.starts_on, minAge)
+      ) {
+        throw new Error(
+          `Für diesen Kurs ist ein Mindestalter von ${minAge} Jahren zu Kursbeginn erforderlich. Bitte stellen Sie stattdessen eine Kursanfrage.`,
+        );
+      }
+      const maxAge = program?.max_age_years ?? null;
+      if (
+        !data.adult &&
+        data.childDob &&
+        maxAge != null &&
+        !withinMaxAge(data.childDob, course.starts_on, maxAge)
+      ) {
+        throw new Error(
+          `Dieser Kurs ist für Kinder bis ${maxAge} Jahre zu Kursbeginn. Bitte stellen Sie stattdessen eine Kursanfrage.`,
+        );
+      }
+
+      // Mitgliedspreis nur mit bestätigter Mitgliedschaft: Die Angabe im Formular allein reicht nicht.
+      // Wird sie vom System nicht bestätigt, gilt zunächst der Normalpreis und die Verwaltung prüft
+      // (member_check = pending); Zahlungsmails gehen erst nach dieser Prüfung raus.
+      let verified: boolean | null = null;
+      try {
+        const { resolveMembership } = await import("@/lib/membership-lookup.server");
+        const found = await resolveMembership({
+          email: data.parentEmail,
+          childName: data.childName,
+        });
+        verified = found.isMember;
+      } catch (err) {
+        console.error("membership lookup failed", err);
+      }
+      const decision = decideMember({ claimed: data.isMember, verified });
+      const isMember = decision.isMember;
+      const memberCheckPending = decision.check === "pending";
+
+      const price = priceFor(isMember, {
+        member: course.price_member ?? program?.price_member ?? null,
+        nonMember: course.price_non_member ?? program?.price_non_member ?? null,
+      });
+
+      // Erwachsene: Doppelbuchung (kein Geburtsdatum für die Datenbankprüfung vorhanden) selbst abfangen
+      if (data.adult) {
+        const { data: dup } = await supabaseAdmin
+          .from("course_participants")
+          .select("id")
+          .eq("course_id", course.id)
+          .neq("status", "cancelled")
+          .ilike("participant_email", escapeLike(emailNorm))
+          .ilike("participant_name", escapeLike(data.childName.trim()))
+          .limit(1)
+          .maybeSingle();
+        if (dup) {
+          throw new Error(
+            "Für Sie liegt bereits eine Buchung für diesen Kurs vor. Bitte prüfen Sie Ihr E-Mail-Postfach oder melden Sie sich bei uns.",
+          );
+        }
+      }
+
+      const issuedAt = new Date().toISOString();
+
+      // Serverseitig verbindlich berechnete Zahlungsbedingungen (manipulationssicher)
+      const { paymentTerms } = await import("@/lib/payment-status");
+      const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14;
+      const terms = paymentTerms({
+        bookedAt: issuedAt,
+        startsOn: course.starts_on,
+        paymentDueDays: dueDays,
+      });
+
+      const { newPushToken } = await import("@/lib/push.server");
+      const pushToken = newPushToken();
+
+      // Platz atomar buchen: Duplikat- und Kapazitätsprüfung (inkl. reservierter Plätze aus laufenden
+      // Wartelisten-Angeboten) und Eintrag laufen in einer Datenbank-Transaktion.
+      const { bookSeat } = await import("@/lib/booking-seat.server");
+      const seat = await bookSeat({
+        courseId: course.id,
+        source: "parent",
+        participant: {
+          participant_name: data.childName,
+          participant_email: data.parentEmail,
+          participant_phone: data.parentPhone || null,
+          payer_street: data.parentStreet,
+          payer_zip: data.parentZip,
+          payer_city: data.parentCity,
+          date_of_birth: data.childDob,
+          notes: data.healthInfo || null,
+          is_member: isMember,
+          price_amount: price,
+          online_booking: true,
+          payment_method: terms.immediate ? "immediate" : "transfer",
+          payment_due_date: terms.dueDateIso,
+          push_token: pushToken,
+          document_issued_at: issuedAt,
+        },
+      });
+      if (seat.result === "course_not_found")
+        throw new Error("Dieser Kurs ist derzeit nicht buchbar.");
+      if (seat.result === "duplicate") {
+        throw new Error(
+          "Für dieses Kind liegt bereits eine Buchung für diesen Kurs vor. Bitte prüfen Sie Ihr E-Mail-Postfach oder melden Sie sich bei uns.",
+        );
+      }
+      if (seat.result === "offer_not_valid")
+        throw new Error("Die Buchung konnte nicht abgeschlossen werden.");
+
+      // Ausgebucht: Familie kommt auf die (einzige) Warteliste und erhält automatisch ein Angebot, sobald ein Platz frei wird
+      const isFull = seat.result === "full";
+      const status: "confirmed" | "waiting" = isFull ? "waiting" : "confirmed";
+      if (isFull && (course as any).course_programs?.waitlist_open === false) {
+        throw new Error("Dieser Kurs ist ausgebucht, die Warteliste ist derzeit geschlossen.");
+      }
+      const documentNo = seat.result === "booked" ? seat.documentNo : null;
+      const pendingCheck = memberCheckPending && !isFull;
+      if (pendingCheck && seat.result === "booked") {
+        const { markMemberCheckPending } = await import("@/lib/member-check.server");
+        await markMemberCheckPending(seat.participantId);
+      }
+      const paymentMethod = isFull ? null : terms.immediate ? "immediate" : "transfer";
+      const paymentDueDate = isFull ? null : terms.dueDateIso;
+
+      // Anfrage-Datensatz für die Admin-Übersicht anlegen
+      const { data: request } = await supabaseAdmin
         .from("course_requests")
         .insert({
           parent_name: data.parentName,
@@ -383,380 +607,165 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
           parent_phone: data.parentPhone || null,
           child_name: data.childName,
           child_dob: data.childDob,
-          desired_course: desired,
+          desired_course: program?.name ?? course.name,
           health_info: data.healthInfo || null,
           message: data.message || null,
           gdpr_consent: true,
           contact_permission: true,
-          status: "new",
-          admin_notes: `Sperrliste – Einzelfallprüfung durch den Vorstand erforderlich${healthConsentNote(data.healthInfo)}`,
+          status: isFull ? "waiting_list" : "accepted",
+          assigned_course_id: isFull ? null : course.id,
+          admin_notes: `Online-Buchung über die Webseite${isFull ? " (Kurs ausgebucht → Warteliste)" : ""}${healthConsentNote(data.healthInfo)}`,
         })
         .select("id")
         .maybeSingle();
 
+      if (seat.result === "booked") {
+        if (request?.id) {
+          await supabaseAdmin
+            .from("course_participants")
+            .update({ request_id: request.id })
+            .eq("id", seat.participantId);
+        }
+      } else {
+        const escaped = data.childName.trim().replace(/[\\%_]/g, "\\$&");
+        const { data: existingEntry } = await supabaseAdmin
+          .from("waitlist_entries")
+          .select("id")
+          .ilike("parent_email", escapeLike(emailNorm))
+          .ilike("child_name", escaped)
+          .in("status", ["waiting", "offered"])
+          .limit(1)
+          .maybeSingle();
+        if (!existingEntry) {
+          const { error: wlErr } = await supabaseAdmin.from("waitlist_entries").insert({
+            program_id: program?.id ?? null,
+            course_id: course.id,
+            request_id: request?.id ?? null,
+            child_name: data.childName,
+            child_dob: data.childDob,
+            parent_name: data.parentName,
+            parent_email: data.parentEmail,
+            parent_phone: data.parentPhone || null,
+            is_member: isMember,
+            member_claimed: memberCheckPending,
+            notes: [data.message, data.healthInfo].filter(Boolean).join("\n") || null,
+            gdpr_consent: true,
+            status: "waiting",
+          });
+          if (wlErr) throw new Error(wlErr.message);
+        }
+      }
+
+      const bookingRef = request?.id ?? (seat.result === "booked" ? seat.participantId : course.id);
+
       const { queueTemplateEmail } = await import("@/lib/email-send.server");
+
+      const { loadCourseSessionsForMail, courseIcsUrl } =
+        await import("@/lib/course-session-mail.server");
+      const mailSessions = isFull
+        ? []
+        : await loadCourseSessionsForMail(course.id, course.schedule);
+
+      await queueTemplateEmail({
+        templateName: isFull ? "course-waitlist-confirmation" : "course-booking-confirmation",
+        recipientEmail: data.parentEmail,
+        idempotencyKey: `course-booking-${bookingRef}-${data.parentEmail}`,
+        templateData: {
+          parent_name: data.parentName,
+          payer_street: data.parentStreet,
+          payer_zip: data.parentZip,
+          payer_city: data.parentCity,
+          child_name: data.childName,
+          program_name: program?.name ?? course.name,
+          course_name: course.name,
+          course_location: course.location ?? program?.location,
+          course_schedule: course.schedule,
+          course_starts_on: course.starts_on,
+          course_ends_on: course.ends_on,
+          course_description: program?.description ?? course.description,
+          course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
+          sessions: mailSessions,
+          ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
+          unit_count: course.unit_count ?? null,
+          waitlist: isFull,
+          member_check_pending: pendingCheck,
+          price_member: course.price_member ?? program?.price_member ?? null,
+          price_non_member: course.price_non_member ?? program?.price_non_member ?? null,
+          adult: data.adult,
+          is_member: isMember,
+          price_amount: price,
+          payment_due_days: dueDays,
+          payment_method: paymentMethod,
+          payment_due_date: paymentDueDate,
+          document_no: documentNo ?? undefined,
+          issued_at: issuedAt,
+          site_base_url: SITE_BASE_URL,
+          push_url: isFull ? undefined : `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
+        },
+      });
+
+      // Interne Benachrichtigung
       await queueTemplateEmail({
         templateName: "course-request",
-        idempotencyKey: `course-blocked-${req?.id ?? data.courseId}-${emailNorm}`,
+        idempotencyKey: `course-booking-admin-${bookingRef}`,
         templateData: {
           parent_name: data.parentName,
           parent_email: data.parentEmail,
           parent_phone: data.parentPhone || "",
           child_name: data.childName,
           child_dob: data.childDob,
-          desired_course: `${desired} – ${courseInfo?.name ?? ""}`,
+          desired_course: `${program?.name ?? course.name} – ${course.name}`,
           has_health_info: Boolean(data.healthInfo),
           health_consent: data.healthInfo ? true : undefined,
           terms_accepted: true,
           privacy_accepted: true,
-          message: `SPERRLISTE – Einzelfallprüfung erforderlich (keine Direktbuchung)${data.message ? ` – ${data.message}` : ""}`,
+          message: `Online-Buchung (${isFull ? "Warteliste" : "verbindlich gebucht"})${pendingCheck ? " – MITGLIEDSCHAFT PRÜFEN (Normalpreis, keine Zahlungsmail bis zur Prüfung, siehe Offene Zahlungen)" : ""}${data.message ? ` – ${data.message}` : ""}`,
           submitted_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
-          program_name: desired,
-          course_name: courseInfo?.name ?? null,
-          course_starts_on: courseInfo?.starts_on ?? null,
-          course_ends_on: courseInfo?.ends_on ?? null,
-          course_schedule: courseInfo?.schedule ?? null,
-          course_location:
-            courseInfo?.location ??
-            ((courseInfo as any)?.course_programs?.location as string | undefined) ??
-            null,
-          booking_status: "Sperrliste – Einzelfallprüfung",
-        },
-      });
-
-      return { ok: false as const, blocked: true as const };
-    }
-
-    const { data: course, error: courseErr } = await supabaseAdmin
-      .from("courses")
-      .select("*, course_programs(*)")
-      .eq("id", data.courseId)
-      .maybeSingle();
-
-    if (courseErr) throw new Error(courseErr.message);
-    if (!course || !course.is_public || course.archived_at) {
-      throw new Error("Dieser Kurs ist derzeit nicht buchbar.");
-    }
-    if ((course as any).course_programs && (course as any).course_programs.bookable === false) {
-      throw new Error("Dieses Angebot ist derzeit noch nicht buchbar.");
-    }
-
-    const program = (course as any).course_programs as {
-      id: string;
-      name: string;
-      min_age_years: number | null;
-      max_age_years: number | null;
-      age_range: string | null;
-      target_group: string | null;
-      duration: string | null;
-      location: string | null;
-      description: string | null;
-      price_member: number | null;
-      price_non_member: number | null;
-      payment_due_days: number;
-    } | null;
-
-    // Angebote für Erwachsene und für Kinder haben je ein eigenes Formular; der Server prüft, dass das richtige benutzt wurde.
-    const adultProgram = program ? isAdultProgram(program) : false;
-    if (adultProgram !== data.adult) {
-      throw new Error(
-        adultProgram
-          ? "Dieses Angebot richtet sich an Erwachsene. Bitte nutzen Sie das Anmeldeformular für Erwachsene."
-          : "Dieses Angebot ist für Kinder. Bitte nutzen Sie das Anmeldeformular für Kinder.",
-      );
-    }
-
-    // Alter zu Kursbeginn (gleiche Rechenregel wie bei der Warteliste, siehe waitlist-age.ts)
-    const minAge = program?.min_age_years ?? null;
-    if (
-      !data.adult &&
-      data.childDob &&
-      minAge != null &&
-      !meetsMinAge(data.childDob, course.starts_on, minAge)
-    ) {
-      throw new Error(
-        `Für diesen Kurs ist ein Mindestalter von ${minAge} Jahren zu Kursbeginn erforderlich. Bitte stellen Sie stattdessen eine Kursanfrage.`,
-      );
-    }
-    const maxAge = program?.max_age_years ?? null;
-    if (
-      !data.adult &&
-      data.childDob &&
-      maxAge != null &&
-      !withinMaxAge(data.childDob, course.starts_on, maxAge)
-    ) {
-      throw new Error(
-        `Dieser Kurs ist für Kinder bis ${maxAge} Jahre zu Kursbeginn. Bitte stellen Sie stattdessen eine Kursanfrage.`,
-      );
-    }
-
-    // Mitgliedspreis nur mit bestätigter Mitgliedschaft: Die Angabe im Formular allein reicht nicht.
-    // Wird sie vom System nicht bestätigt, gilt zunächst der Normalpreis und die Verwaltung prüft
-    // (member_check = pending); Zahlungsmails gehen erst nach dieser Prüfung raus.
-    let verified: boolean | null = null;
-    try {
-      const { resolveMembership } = await import("@/lib/membership-lookup.server");
-      const found = await resolveMembership({ email: data.parentEmail, childName: data.childName });
-      verified = found.isMember;
-    } catch (err) {
-      console.error("membership lookup failed", err);
-    }
-    const decision = decideMember({ claimed: data.isMember, verified });
-    const isMember = decision.isMember;
-    const memberCheckPending = decision.check === "pending";
-
-    const price = priceFor(isMember, {
-      member: course.price_member ?? program?.price_member ?? null,
-      nonMember: course.price_non_member ?? program?.price_non_member ?? null,
-    });
-
-    // Erwachsene: Doppelbuchung (kein Geburtsdatum für die Datenbankprüfung vorhanden) selbst abfangen
-    if (data.adult) {
-      const { data: dup } = await supabaseAdmin
-        .from("course_participants")
-        .select("id")
-        .eq("course_id", course.id)
-        .neq("status", "cancelled")
-        .ilike("participant_email", escapeLike(emailNorm))
-        .ilike("participant_name", escapeLike(data.childName.trim()))
-        .limit(1)
-        .maybeSingle();
-      if (dup) {
-        throw new Error(
-          "Für Sie liegt bereits eine Buchung für diesen Kurs vor. Bitte prüfen Sie Ihr E-Mail-Postfach oder melden Sie sich bei uns.",
-        );
-      }
-    }
-
-    const issuedAt = new Date().toISOString();
-
-    // Serverseitig verbindlich berechnete Zahlungsbedingungen (manipulationssicher)
-    const { paymentTerms } = await import("@/lib/payment-status");
-    const dueDays = course.payment_due_days ?? program?.payment_due_days ?? 14;
-    const terms = paymentTerms({
-      bookedAt: issuedAt,
-      startsOn: course.starts_on,
-      paymentDueDays: dueDays,
-    });
-
-    const { newPushToken } = await import("@/lib/push.server");
-    const pushToken = newPushToken();
-
-    // Platz atomar buchen: Duplikat- und Kapazitätsprüfung (inkl. reservierter Plätze aus laufenden
-    // Wartelisten-Angeboten) und Eintrag laufen in einer Datenbank-Transaktion.
-    const { bookSeat } = await import("@/lib/booking-seat.server");
-    const seat = await bookSeat({
-      courseId: course.id,
-      source: "parent",
-      participant: {
-        participant_name: data.childName,
-        participant_email: data.parentEmail,
-        participant_phone: data.parentPhone || null,
-        payer_street: data.parentStreet,
-        payer_zip: data.parentZip,
-        payer_city: data.parentCity,
-        date_of_birth: data.childDob,
-        notes: data.healthInfo || null,
-        is_member: isMember,
-        price_amount: price,
-        online_booking: true,
-        payment_method: terms.immediate ? "immediate" : "transfer",
-        payment_due_date: terms.dueDateIso,
-        push_token: pushToken,
-        document_issued_at: issuedAt,
-      },
-    });
-    if (seat.result === "course_not_found")
-      throw new Error("Dieser Kurs ist derzeit nicht buchbar.");
-    if (seat.result === "duplicate") {
-      throw new Error(
-        "Für dieses Kind liegt bereits eine Buchung für diesen Kurs vor. Bitte prüfen Sie Ihr E-Mail-Postfach oder melden Sie sich bei uns.",
-      );
-    }
-    if (seat.result === "offer_not_valid")
-      throw new Error("Die Buchung konnte nicht abgeschlossen werden.");
-
-    // Ausgebucht: Familie kommt auf die (einzige) Warteliste und erhält automatisch ein Angebot, sobald ein Platz frei wird
-    const isFull = seat.result === "full";
-    const status: "confirmed" | "waiting" = isFull ? "waiting" : "confirmed";
-    if (isFull && (course as any).course_programs?.waitlist_open === false) {
-      throw new Error("Dieser Kurs ist ausgebucht, die Warteliste ist derzeit geschlossen.");
-    }
-    const documentNo = seat.result === "booked" ? seat.documentNo : null;
-    const pendingCheck = memberCheckPending && !isFull;
-    if (pendingCheck && seat.result === "booked") {
-      const { markMemberCheckPending } = await import("@/lib/member-check.server");
-      await markMemberCheckPending(seat.participantId);
-    }
-    const paymentMethod = isFull ? null : terms.immediate ? "immediate" : "transfer";
-    const paymentDueDate = isFull ? null : terms.dueDateIso;
-
-    // Anfrage-Datensatz für die Admin-Übersicht anlegen
-    const { data: request } = await supabaseAdmin
-      .from("course_requests")
-      .insert({
-        parent_name: data.parentName,
-        parent_email: data.parentEmail,
-        parent_phone: data.parentPhone || null,
-        child_name: data.childName,
-        child_dob: data.childDob,
-        desired_course: program?.name ?? course.name,
-        health_info: data.healthInfo || null,
-        message: data.message || null,
-        gdpr_consent: true,
-        contact_permission: true,
-        status: isFull ? "waiting_list" : "accepted",
-        assigned_course_id: isFull ? null : course.id,
-        admin_notes: `Online-Buchung über die Webseite${isFull ? " (Kurs ausgebucht → Warteliste)" : ""}${healthConsentNote(data.healthInfo)}`,
-      })
-      .select("id")
-      .maybeSingle();
-
-    if (seat.result === "booked") {
-      if (request?.id) {
-        await supabaseAdmin
-          .from("course_participants")
-          .update({ request_id: request.id })
-          .eq("id", seat.participantId);
-      }
-    } else {
-      const escaped = data.childName.trim().replace(/[\\%_]/g, "\\$&");
-      const { data: existingEntry } = await supabaseAdmin
-        .from("waitlist_entries")
-        .select("id")
-        .ilike("parent_email", escapeLike(emailNorm))
-        .ilike("child_name", escaped)
-        .in("status", ["waiting", "offered"])
-        .limit(1)
-        .maybeSingle();
-      if (!existingEntry) {
-        const { error: wlErr } = await supabaseAdmin.from("waitlist_entries").insert({
-          program_id: program?.id ?? null,
-          course_id: course.id,
-          request_id: request?.id ?? null,
-          child_name: data.childName,
-          child_dob: data.childDob,
-          parent_name: data.parentName,
-          parent_email: data.parentEmail,
-          parent_phone: data.parentPhone || null,
-          is_member: isMember,
-          member_claimed: memberCheckPending,
-          notes: [data.message, data.healthInfo].filter(Boolean).join("\n") || null,
-          gdpr_consent: true,
-          status: "waiting",
-        });
-        if (wlErr) throw new Error(wlErr.message);
-      }
-    }
-
-    const bookingRef = request?.id ?? (seat.result === "booked" ? seat.participantId : course.id);
-
-    const { queueTemplateEmail } = await import("@/lib/email-send.server");
-
-    const { loadCourseSessionsForMail, courseIcsUrl } =
-      await import("@/lib/course-session-mail.server");
-    const mailSessions = isFull ? [] : await loadCourseSessionsForMail(course.id, course.schedule);
-
-    await queueTemplateEmail({
-      templateName: isFull ? "course-waitlist-confirmation" : "course-booking-confirmation",
-      recipientEmail: data.parentEmail,
-      idempotencyKey: `course-booking-${bookingRef}-${data.parentEmail}`,
-      templateData: {
-        parent_name: data.parentName,
-        payer_street: data.parentStreet,
-        payer_zip: data.parentZip,
-        payer_city: data.parentCity,
-        child_name: data.childName,
-        program_name: program?.name ?? course.name,
-        course_name: course.name,
-        course_location: course.location ?? program?.location,
-        course_schedule: course.schedule,
-        course_starts_on: course.starts_on,
-        course_ends_on: course.ends_on,
-        course_description: program?.description ?? course.description,
-        course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
-        sessions: mailSessions,
-        ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
-        unit_count: course.unit_count ?? null,
-        waitlist: isFull,
-        member_check_pending: pendingCheck,
-        price_member: course.price_member ?? program?.price_member ?? null,
-        price_non_member: course.price_non_member ?? program?.price_non_member ?? null,
-        adult: data.adult,
-        is_member: isMember,
-        price_amount: price,
-        payment_due_days: dueDays,
-        payment_method: paymentMethod,
-        payment_due_date: paymentDueDate,
-        document_no: documentNo ?? undefined,
-        issued_at: issuedAt,
-        site_base_url: SITE_BASE_URL,
-        push_url: isFull ? undefined : `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
-      },
-    });
-
-    // Interne Benachrichtigung
-    await queueTemplateEmail({
-      templateName: "course-request",
-      idempotencyKey: `course-booking-admin-${bookingRef}`,
-      templateData: {
-        parent_name: data.parentName,
-        parent_email: data.parentEmail,
-        parent_phone: data.parentPhone || "",
-        child_name: data.childName,
-        child_dob: data.childDob,
-        desired_course: `${program?.name ?? course.name} – ${course.name}`,
-        has_health_info: Boolean(data.healthInfo),
-        health_consent: data.healthInfo ? true : undefined,
-        terms_accepted: true,
-        privacy_accepted: true,
-        message: `Online-Buchung (${isFull ? "Warteliste" : "verbindlich gebucht"})${pendingCheck ? " – MITGLIEDSCHAFT PRÜFEN (Normalpreis, keine Zahlungsmail bis zur Prüfung, siehe Offene Zahlungen)" : ""}${data.message ? ` – ${data.message}` : ""}`,
-        submitted_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        program_name: program?.name ?? course.name,
-        course_name: course.name,
-        course_starts_on: course.starts_on,
-        course_ends_on: course.ends_on,
-        course_schedule: course.schedule,
-        course_location: course.location ?? program?.location ?? null,
-        booking_status: isFull ? "Warteliste" : "verbindlich gebucht",
-      },
-    });
-
-    // Sofortzahlung: zusätzliche interne Warnung an Admins/Trainer
-    if (!isFull && terms.immediate && !pendingCheck) {
-      await queueTemplateEmail({
-        templateName: "immediate-payment-alert",
-        idempotencyKey: `immediate-payment-${bookingRef}-${emailNorm}`,
-        templateData: {
-          child_name: data.childName,
-          parent_name: data.parentName,
-          parent_email: data.parentEmail,
-          parent_phone: data.parentPhone || "",
           program_name: program?.name ?? course.name,
           course_name: course.name,
           course_starts_on: course.starts_on,
-          booked_at: issuedAt,
-          due_date: paymentDueDate,
-          price_amount: price,
-          document_no: documentNo,
-          payment_reference: documentNo
-            ? `${documentNo} / ${data.childName}`
-            : `${course.name} – ${data.childName}`,
+          course_ends_on: course.ends_on,
+          course_schedule: course.schedule,
+          course_location: course.location ?? program?.location ?? null,
+          booking_status: isFull ? "Warteliste" : "verbindlich gebucht",
         },
       });
-    }
 
-    return {
-      ok: true,
-      status,
-      courseName: course.name,
-      programName: program?.name ?? course.name,
-      price,
-      paymentMethod,
-      paymentDueDate,
-      immediatePayment: !isFull && terms.immediate,
-      memberCheckPending: pendingCheck,
-    };
+      // Sofortzahlung: zusätzliche interne Warnung an Admins/Trainer
+      if (!isFull && terms.immediate && !pendingCheck) {
+        await queueTemplateEmail({
+          templateName: "immediate-payment-alert",
+          idempotencyKey: `immediate-payment-${bookingRef}-${emailNorm}`,
+          templateData: {
+            child_name: data.childName,
+            parent_name: data.parentName,
+            parent_email: data.parentEmail,
+            parent_phone: data.parentPhone || "",
+            program_name: program?.name ?? course.name,
+            course_name: course.name,
+            course_starts_on: course.starts_on,
+            booked_at: issuedAt,
+            due_date: paymentDueDate,
+            price_amount: price,
+            document_no: documentNo,
+            payment_reference: documentNo
+              ? `${documentNo} / ${data.childName}`
+              : `${course.name} – ${data.childName}`,
+          },
+        });
+      }
+
+      return {
+        ok: true,
+        status,
+        courseName: course.name,
+        programName: program?.name ?? course.name,
+        price,
+        paymentMethod,
+        paymentDueDate,
+        immediatePayment: !isFull && terms.immediate,
+        memberCheckPending: pendingCheck,
+      };
+    });
   });

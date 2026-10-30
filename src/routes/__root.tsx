@@ -12,6 +12,8 @@ import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
+import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { ConsentBanner } from "@/components/analytics/ConsentBanner";
 import { THEME_COLOR } from "@/lib/billing-config";
 
 function NotFoundComponent() {
@@ -170,6 +172,8 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <AnalyticsTracker />
+      <ConsentBanner />
       <Toaster richColors position="top-center" closeButton />
     </QueryClientProvider>
   );

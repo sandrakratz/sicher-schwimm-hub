@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useFormTracking } from "@/lib/analytics/forms";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CalendarDays, CheckCircle2, Clock, MapPin, Tag, Users } from "lucide-react";
@@ -114,6 +115,7 @@ function InterestForm({
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const ft = useFormTracking("erwachsenen_interesse");
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -175,16 +177,20 @@ function InterestForm({
         if (key && !next[key]) next[key] = issue.message;
       }
       setErrors(next);
+      ft.invalid(Object.keys(next));
       toast.error("Bitte prüfe die markierten Angaben.");
       return;
     }
+    ft.attempt();
     setLoading(true);
     try {
       const res = await submitAdultInterest({ data: parsed.data });
       if (!res.ok) throw new Error("not ok");
+      ft.succeeded();
       setDone(true);
     } catch (err) {
       console.error(err);
+      ft.failed("speichern_fehlgeschlagen");
       toast.error(
         "Das Absenden hat leider nicht geklappt. Bitte versuche es später erneut oder schreibe an info@sicher-schwimmen.com.",
       );
@@ -222,7 +228,7 @@ function InterestForm({
   const askMember = defaults.isMember === null;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+    <form onSubmit={onSubmit} {...ft.formProps} className="space-y-5" noValidate>
       <HoneypotField value={form.website} onChange={(v) => set("website", v)} />
       {defaults.signedIn && (
         <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">

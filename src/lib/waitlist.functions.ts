@@ -55,149 +55,152 @@ const joinSchema = z.object({
 export const joinWaitlist = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => joinSchema.parse(input))
   .handler(async ({ data }) => {
-    if (data.website) return { ok: true as const };
+    const { countSubmission } = await import("@/lib/analytics/server");
+    return countSubmission("warteliste", Boolean(data.website), async () => {
+      if (data.website) return { ok: true as const };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { isBlocked, normalizeEmail } = await import("@/lib/blocklist.server");
-    const emailNorm = normalizeEmail(data.parentEmail);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { isBlocked, normalizeEmail } = await import("@/lib/blocklist.server");
+      const emailNorm = normalizeEmail(data.parentEmail);
 
-    // Sperrliste prüfen
-    if (
-      await isBlocked({
-        email: data.parentEmail,
-        childName: data.childName,
-        childDob: data.childDob || null,
-      })
-    ) {
-      return { ok: false as const, blocked: true as const };
-    }
-
-    // Doppeleintrag vermeiden
-    const { data: existing } = await supabaseAdmin
-      .from("waitlist_entries")
-      .select("id")
-      .ilike("parent_email", escapeLike(emailNorm))
-      .ilike("child_name", escapeLike(data.childName.trim()))
-      .in("status", ["waiting", "offered"])
-      .limit(1)
-      .maybeSingle();
-    if (existing) return { ok: true as const, duplicate: true as const };
-
-    // Mitglied nur mit bestätigter Mitgliedschaft (Vorrang bei der Platzvergabe, Mitgliedspreis).
-    // Die bloße Angabe im Formular wird vermerkt (member_claimed) und von der Verwaltung geprüft.
-    let verified: boolean | null = null;
-    try {
-      const { resolveMembership } = await import("@/lib/membership-lookup.server");
-      verified = (await resolveMembership({ email: emailNorm, childName: data.childName }))
-        .isMember;
-    } catch (err) {
-      console.error("waitlist: membership lookup failed", err);
-    }
-    const { decideMember } = await import("@/lib/member-claim");
-    const memberDecision = decideMember({ claimed: data.isMember, verified });
-
-    let programId = data.programId ?? null;
-    let courseName: string | null = null;
-    if (data.courseId) {
-      const { data: course } = await supabaseAdmin
-        .from("courses")
-        .select("id,name,program_id")
-        .eq("id", data.courseId)
-        .maybeSingle();
-      if (course) {
-        courseName = course.name;
-        programId = programId ?? course.program_id;
+      // Sperrliste prüfen
+      if (
+        await isBlocked({
+          email: data.parentEmail,
+          childName: data.childName,
+          childDob: data.childDob || null,
+        })
+      ) {
+        return { ok: false as const, blocked: true as const };
       }
-    }
-    let programName: string | null = null;
-    if (programId) {
-      const { data: prog } = await supabaseAdmin
-        .from("course_programs")
-        .select("name, waitlist_open")
-        .eq("id", programId)
+
+      // Doppeleintrag vermeiden
+      const { data: existing } = await supabaseAdmin
+        .from("waitlist_entries")
+        .select("id")
+        .ilike("parent_email", escapeLike(emailNorm))
+        .ilike("child_name", escapeLike(data.childName.trim()))
+        .in("status", ["waiting", "offered"])
+        .limit(1)
         .maybeSingle();
-      if (prog && (prog as any).waitlist_open === false) {
-        throw new Error(
-          "Für dieses Kursangebot ist die Warteliste derzeit geschlossen. Bitte wählen Sie ein anderes Angebot.",
-        );
+      if (existing) return { ok: true as const, duplicate: true as const };
+
+      // Mitglied nur mit bestätigter Mitgliedschaft (Vorrang bei der Platzvergabe, Mitgliedspreis).
+      // Die bloße Angabe im Formular wird vermerkt (member_claimed) und von der Verwaltung geprüft.
+      let verified: boolean | null = null;
+      try {
+        const { resolveMembership } = await import("@/lib/membership-lookup.server");
+        verified = (await resolveMembership({ email: emailNorm, childName: data.childName }))
+          .isMember;
+      } catch (err) {
+        console.error("waitlist: membership lookup failed", err);
       }
-      programName = prog?.name ?? null;
-    }
+      const { decideMember } = await import("@/lib/member-claim");
+      const memberDecision = decideMember({ claimed: data.isMember, verified });
 
-    const { data: inserted, error } = await supabaseAdmin
-      .from("waitlist_entries")
-      .insert({
-        program_id: programId,
-        course_id: data.courseId ?? null,
-        child_name: data.childName,
-        child_dob: data.childDob || null,
-        parent_name: data.parentName,
-        parent_email: data.parentEmail,
-        parent_phone: data.parentPhone || null,
-        is_member: memberDecision.isMember,
-        member_claimed: memberDecision.check === "pending",
-        notes: [
-          `Schwimmlevel: ${data.swimmingLevel}`,
-          // Beide Tage angekreuzt = egal; dann keine Einschränkung
-          data.preferredDays?.length === 1 ? `Wunschtag: ${data.preferredDays[0]}` : null,
-          data.notes || null,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        gdpr_consent: true,
-        status: "waiting",
-      })
-      .select("id")
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+      let programId = data.programId ?? null;
+      let courseName: string | null = null;
+      if (data.courseId) {
+        const { data: course } = await supabaseAdmin
+          .from("courses")
+          .select("id,name,program_id")
+          .eq("id", data.courseId)
+          .maybeSingle();
+        if (course) {
+          courseName = course.name;
+          programId = programId ?? course.program_id;
+        }
+      }
+      let programName: string | null = null;
+      if (programId) {
+        const { data: prog } = await supabaseAdmin
+          .from("course_programs")
+          .select("name, waitlist_open")
+          .eq("id", programId)
+          .maybeSingle();
+        if (prog && (prog as any).waitlist_open === false) {
+          throw new Error(
+            "Für dieses Kursangebot ist die Warteliste derzeit geschlossen. Bitte wählen Sie ein anderes Angebot.",
+          );
+        }
+        programName = prog?.name ?? null;
+      }
 
-    const { queueTemplateEmail } = await import("@/lib/email-send.server");
-    await queueTemplateEmail({
-      templateName: "waitlist-signup",
-      recipientEmail: data.parentEmail,
-      idempotencyKey: `waitlist-signup-${inserted?.id}`,
-      templateData: {
-        parent_name: data.parentName,
-        child_name: data.childName,
-        program_name: programName,
-        course_name: courseName,
-      },
-      metadata: { waitlist_entry_id: inserted?.id },
+      const { data: inserted, error } = await supabaseAdmin
+        .from("waitlist_entries")
+        .insert({
+          program_id: programId,
+          course_id: data.courseId ?? null,
+          child_name: data.childName,
+          child_dob: data.childDob || null,
+          parent_name: data.parentName,
+          parent_email: data.parentEmail,
+          parent_phone: data.parentPhone || null,
+          is_member: memberDecision.isMember,
+          member_claimed: memberDecision.check === "pending",
+          notes: [
+            `Schwimmlevel: ${data.swimmingLevel}`,
+            // Beide Tage angekreuzt = egal; dann keine Einschränkung
+            data.preferredDays?.length === 1 ? `Wunschtag: ${data.preferredDays[0]}` : null,
+            data.notes || null,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          gdpr_consent: true,
+          status: "waiting",
+        })
+        .select("id")
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+
+      const { queueTemplateEmail } = await import("@/lib/email-send.server");
+      await queueTemplateEmail({
+        templateName: "waitlist-signup",
+        recipientEmail: data.parentEmail,
+        idempotencyKey: `waitlist-signup-${inserted?.id}`,
+        templateData: {
+          parent_name: data.parentName,
+          child_name: data.childName,
+          program_name: programName,
+          course_name: courseName,
+        },
+        metadata: { waitlist_entry_id: inserted?.id },
+      });
+
+      await queueTemplateEmail({
+        templateName: "course-request",
+        idempotencyKey: `waitlist-admin-${inserted?.id}`,
+        templateData: {
+          parent_name: data.parentName,
+          parent_email: data.parentEmail,
+          parent_phone: data.parentPhone || "",
+          child_name: data.childName,
+          child_dob: data.childDob || "",
+          desired_course: [programName, courseName].filter(Boolean).join(" – ") || "Ohne Angabe",
+          swimming_level: data.swimmingLevel,
+          // Anmerkungen sind Wunschzeiten o. Ä., keine Gesundheitsangabe (Formular weist darauf hin):
+          // nur Hinweis, Text steht im Admin-Bereich
+          has_parent_notes: Boolean(data.notes),
+          privacy_accepted: true,
+          message: `Neue Eintragung auf der Warteliste über die Webseite (Mitglied: ${memberDecision.isMember ? "ja" : memberDecision.check === "pending" ? "angegeben, ungeprüft" : "nein"})`,
+          submitted_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          program_name: programName,
+          course_name: courseName,
+          booking_status: "Warteliste",
+        },
+      });
+
+      // Falls sofort ein Platz frei ist, direkt anbieten
+      try {
+        const { allocateWaitlist } = await import("@/lib/waitlist.server");
+        await allocateWaitlist(data.courseId ?? null);
+      } catch (err) {
+        console.error("waitlist allocation after signup failed", err);
+      }
+
+      return { ok: true as const };
     });
-
-    await queueTemplateEmail({
-      templateName: "course-request",
-      idempotencyKey: `waitlist-admin-${inserted?.id}`,
-      templateData: {
-        parent_name: data.parentName,
-        parent_email: data.parentEmail,
-        parent_phone: data.parentPhone || "",
-        child_name: data.childName,
-        child_dob: data.childDob || "",
-        desired_course: [programName, courseName].filter(Boolean).join(" – ") || "Ohne Angabe",
-        swimming_level: data.swimmingLevel,
-        // Anmerkungen sind Wunschzeiten o. Ä., keine Gesundheitsangabe (Formular weist darauf hin):
-        // nur Hinweis, Text steht im Admin-Bereich
-        has_parent_notes: Boolean(data.notes),
-        privacy_accepted: true,
-        message: `Neue Eintragung auf der Warteliste über die Webseite (Mitglied: ${memberDecision.isMember ? "ja" : memberDecision.check === "pending" ? "angegeben, ungeprüft" : "nein"})`,
-        submitted_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        program_name: programName,
-        course_name: courseName,
-        booking_status: "Warteliste",
-      },
-    });
-
-    // Falls sofort ein Platz frei ist, direkt anbieten
-    try {
-      const { allocateWaitlist } = await import("@/lib/waitlist.server");
-      await allocateWaitlist(data.courseId ?? null);
-    } catch (err) {
-      console.error("waitlist allocation after signup failed", err);
-    }
-
-    return { ok: true as const };
   });
 
 /** Lädt ein Platzangebot anhand des Tokens (öffentliche Antwortseite). */
