@@ -51,7 +51,13 @@ export function DailyChart({ data }: { data: Point[] }) {
         <path d={line("views")} fill="none" className="stroke-primary" strokeWidth={2} />
         <path d={line("visitors")} fill="none" className="stroke-accent" strokeWidth={2} />
         {data.map((d, i) => (
-          <circle key={d.day} cx={x(i)} cy={y(d.views)} r={8} fill="transparent">
+          <g key={d.day}>
+            <circle cx={x(i)} cy={y(d.views)} r={3} className="fill-primary" />
+            <circle cx={x(i)} cy={y(d.visitors)} r={3} className="fill-accent" />
+          </g>
+        ))}
+        {data.map((d, i) => (
+          <circle key={`hit-${d.day}`} cx={x(i)} cy={y(d.views)} r={8} fill="transparent">
             <title>{`${dm(d.day)}: ${d.views} Aufrufe, ${d.visitors} Besucher`}</title>
           </circle>
         ))}

@@ -120,15 +120,15 @@ function Page() {
   }, [refresh]);
 
   // Anteil der Eingänge, die auch im Browser gemessen wurden = ungefähre Zustimmungsquote
-  const measured = data
-    ? data.forms.reduce((s, f) => s + f.client_success, 0) /
-      Math.max(
-        1,
-        data.forms.reduce((s, f) => s + f.server_received, 0) +
-          data.db_counts.kontakt +
-          data.db_counts.mitgliedschaft,
-      )
-    : null;
+  const receivedTotal = data
+    ? data.forms.reduce((n, f) => n + f.server_received, 0) +
+      data.db_counts.kontakt +
+      data.db_counts.mitgliedschaft
+    : 0;
+  const measured =
+    data && receivedTotal > 0
+      ? data.forms.reduce((n, f) => n + f.client_success, 0) / receivedTotal
+      : null;
 
   return (
     <div className="max-w-6xl space-y-6">
