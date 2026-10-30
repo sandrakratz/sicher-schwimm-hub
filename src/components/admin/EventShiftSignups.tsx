@@ -331,7 +331,13 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
                             ))}
                         </select>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => removeRow(s.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Zeile entfernen"
+                        title="Zeile entfernen"
+                        onClick={() => removeRow(s.id)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

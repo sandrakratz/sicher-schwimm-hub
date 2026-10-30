@@ -38,6 +38,7 @@ export type AppNavItem = {
     | "/admin"
     | "/admin/kalender"
     | "/admin/dienstplan"
+    | "/admin/qualifikationen"
     | "/admin/kursplanung"
     | "/admin/benutzer"
     | "/admin/mitglieder"
@@ -137,6 +138,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
       { to: "/admin/kalender", label: "Kurse & Termine" },
       { to: "/admin/kursplanung", label: "Kursplanung" },
       { to: "/admin/dienstplan", label: "Dienstplan" },
+      { to: "/admin/qualifikationen", label: "Trainer-Qualifikationen" },
     ],
   },
   {

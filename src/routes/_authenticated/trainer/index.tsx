@@ -9,6 +9,10 @@ import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { getMyPayoutDetails } from "@/lib/trainer-payout.functions";
+import { WeekShifts } from "@/components/trainer/WeekShifts";
+import { InstallHint } from "@/components/trainer/InstallHint";
+import { DeviceCard } from "@/components/trainer/DeviceCard";
+import { Qualifications } from "@/components/trainer/Qualifications";
 
 export const Route = createFileRoute("/_authenticated/trainer/")({
   beforeLoad: async () => {
@@ -40,17 +44,24 @@ type Row = {
   start_time: string | null;
   end_time: string | null;
   courseId: string;
-  course: { name: string; location: string | null; schedule: string | null } | null;
+  course: {
+    name: string;
+    location: string | null;
+    schedule: string | null;
+    trainer_id: string | null;
+  } | null;
 };
 
 function TrainerHome() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState("");
 
   useEffect(() => {
     (async () => {
       const { data: userData } = await supabase.auth.getUser();
       const me = userData.user?.id;
+      setMe(me ?? "");
       if (!me) {
         setLoading(false);
         return;
@@ -59,7 +70,7 @@ function TrainerHome() {
       // Nur die eigenen Einsätze laden (nicht alle Termine des Vereins; Supabase liefert pro Abfrage höchstens
       // 1000 Zeilen). Wie unter „Meine Kurse“ zählen auch Kurse, in denen man als Kurstrainer:in eingetragen ist.
       const SELECT =
-        "id,course_id,session_date,session_index,start_time,end_time,assigned_trainer_id,courses(name,location,schedule)";
+        "id,course_id,session_date,session_index,start_time,end_time,assigned_trainer_id,courses(name,location,schedule,trainer_id)";
       const assignments = await fetchAll<{ session_id: string }>((f, t) =>
         supabase
           .from("course_session_assignments")
@@ -148,39 +159,11 @@ function TrainerHome() {
       <OpenAvailabilityNotice />
       <PayoutIbanNotice />
 
-      {next && (
-        <Card className="border-0 shadow-soft bg-primary/5">
-          <CardContent className="p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {todayRows.length > 0
-                ? `Heute (${todayRows.length} ${todayRows.length === 1 ? "Einsatz" : "Einsätze"})`
-                : "Nächster Einsatz"}
-            </div>
-            <div className="mt-1 text-base font-bold text-primary-deep">
-              {next.course?.name ?? "Kurs"}
-            </div>
-            <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-3 w-3" />
-                {weekdayLabel(next.session_date)}, {formatDateBerlin(next.session_date)}
-                {timeLabel(next) ? `, ${timeLabel(next)}` : ""}
-              </span>
-              {next.course?.location && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {next.course.location}
-                </span>
-              )}
-            </div>
-            <Link
-              to="/trainer/kurse"
-              className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground sm:w-auto"
-            >
-              Anwesenheit erfassen
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+      <WeekShifts rows={upcoming} me={me} today={today} loading={loading} />
+
+      <InstallHint />
+
+      {me && <DeviceCard rows={upcoming} me={me} loading={loading} />}
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard label="Einsätze gesamt" value={rows.length} />
@@ -202,72 +185,82 @@ function TrainerHome() {
         </p>
       </CollapsibleCard>
 
+      {me && <Qualifications me={me} />}
+
       <Link
         to="/trainer/verfuegbarkeit"
         className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-primary px-4 text-sm font-semibold text-primary sm:w-auto"
       >
-        <CalendarCheck className="h-4 w-4" /> Verfügbarkeit eintragen
+        <CalendarCheck className="h-4 w-4" /> Verfügbarkeit &amp; Sperrzeiten
       </Link>
 
-      <h2 className="font-display text-xl font-bold text-primary-deep sm:text-2xl">
-        Meine nächsten Einsätze
-      </h2>
-      {loading ? (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Wird geladen …
-          </CardContent>
-        </Card>
-      ) : groups.length === 0 ? (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Aktuell bist du für keine kommenden Termine eingeteilt.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {groups.map(([courseId, g], i) => (
-            <CollapsibleCard
-              key={courseId}
-              defaultOpen={i === 0}
-              storageKey={`trainer-home-${courseId}`}
-              className="border-0 shadow-soft"
-              title={g.name}
-              subtitle={g.rows[0]?.course?.schedule ?? undefined}
-              meta={<Badge variant="secondary">{g.rows.length} Termine</Badge>}
-            >
-              <div className="divide-y rounded-md border bg-card">
-                {g.rows.map((r) => (
-                  <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
-                    <div>
-                      <div className="text-sm font-medium">{r.session_index}. Termin</div>
-                      <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarDays className="h-3 w-3" />
-                          {weekdayLabel(r.session_date)}, {formatDateBerlin(r.session_date)}
-                        </span>
-                        {r.course?.location && (
+      <CollapsibleCard
+        storageKey="trainer-home-all"
+        defaultOpen={false}
+        className="border-0 shadow-soft"
+        title="Alle kommenden Einsätze nach Kurs"
+        meta={<Badge variant="secondary">{upcoming.length}</Badge>}
+      >
+        {loading ? (
+          <Card className="border-0 shadow-soft">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              Wird geladen …
+            </CardContent>
+          </Card>
+        ) : groups.length === 0 ? (
+          <Card className="border-0 shadow-soft">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              Aktuell bist du für keine kommenden Termine eingeteilt.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {groups.map(([courseId, g], i) => (
+              <CollapsibleCard
+                key={courseId}
+                defaultOpen={i === 0}
+                storageKey={`trainer-home-${courseId}`}
+                className="border-0 shadow-soft"
+                title={g.name}
+                subtitle={g.rows[0]?.course?.schedule ?? undefined}
+                meta={<Badge variant="secondary">{g.rows.length} Termine</Badge>}
+              >
+                <div className="divide-y rounded-md border bg-card">
+                  {g.rows.map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex flex-wrap items-center justify-between gap-3 p-3"
+                    >
+                      <div>
+                        <div className="text-sm font-medium">{r.session_index}. Termin</div>
+                        <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {r.course.location}
+                            <CalendarDays className="h-3 w-3" />
+                            {weekdayLabel(r.session_date)}, {formatDateBerlin(r.session_date)}
                           </span>
-                        )}
+                          {r.course?.location && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {r.course.location}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {r.session_date === today ? (
+                        <Badge className="border-transparent bg-primary text-primary-foreground">
+                          Heute{timeLabel(r) ? `, ${timeLabel(r)}` : ""}
+                        </Badge>
+                      ) : timeLabel(r) ? (
+                        <span className="text-xs text-muted-foreground">{timeLabel(r)}</span>
+                      ) : null}
                     </div>
-                    {r.session_date === today ? (
-                      <Badge className="border-transparent bg-primary text-primary-foreground">
-                        Heute{timeLabel(r) ? `, ${timeLabel(r)}` : ""}
-                      </Badge>
-                    ) : timeLabel(r) ? (
-                      <span className="text-xs text-muted-foreground">{timeLabel(r)}</span>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </CollapsibleCard>
-          ))}
-        </div>
-      )}
+                  ))}
+                </div>
+              </CollapsibleCard>
+            ))}
+          </div>
+        )}
+      </CollapsibleCard>
     </div>
   );
 }

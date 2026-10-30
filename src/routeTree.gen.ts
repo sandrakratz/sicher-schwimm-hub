@@ -61,6 +61,7 @@ import { Route as AuthenticatedAdminMitgliederRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminMitgliedschaftenRouteImport } from './routes/_authenticated/admin/mitgliedschaften'
 import { Route as AuthenticatedAdminNachrichtenRouteImport } from './routes/_authenticated/admin/nachrichten'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin/news'
+import { Route as AuthenticatedAdminQualifikationenRouteImport } from './routes/_authenticated/admin/qualifikationen'
 import { Route as AuthenticatedAdminSperrlisteRouteImport } from './routes/_authenticated/admin/sperrliste'
 import { Route as AuthenticatedAdminStatistikRouteImport } from './routes/_authenticated/admin/statistik'
 import { Route as AuthenticatedAdminSucheRouteImport } from './routes/_authenticated/admin/suche'
@@ -81,17 +82,20 @@ import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authent
 import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authenticated/trainer/index'
 import { Route as AuthenticatedTrainerKurseRouteImport } from './routes/_authenticated/trainer/kurse'
 import { Route as AuthenticatedTrainerMitgliederRouteImport } from './routes/_authenticated/trainer/mitglieder'
+import { Route as AuthenticatedTrainerOfflineRouteImport } from './routes/_authenticated/trainer/offline'
 import { Route as AuthenticatedTrainerVerfuegbarkeitRouteImport } from './routes/_authenticated/trainer/verfuegbarkeit'
 import { Route as ApiPublicAnalyticsRouteImport } from './routes/api/public/analytics'
 import { Route as ApiPublicCourseIcsRouteImport } from './routes/api/public/course-ics'
 import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/notify-admin'
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
+import { Route as ApiPublicTrainerIcsRouteImport } from './routes/api/public/trainer-ics'
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
 import { Route as ApiPublicHooksDailyDigestRouteImport } from './routes/api/public/hooks/daily-digest'
 import { Route as ApiPublicHooksMajorityNoticeRouteImport } from './routes/api/public/hooks/majority-notice'
 import { Route as ApiPublicHooksPartialCertificateRouteImport } from './routes/api/public/hooks/partial-certificate'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
+import { Route as ApiPublicHooksTrainerRemindersRouteImport } from './routes/api/public/hooks/trainer-reminders'
 import { Route as ApiPublicHooksTransferConsentReminderRouteImport } from './routes/api/public/hooks/transfer-consent-reminder'
 import { Route as ApiPublicHooksWaitlistSweepRouteImport } from './routes/api/public/hooks/waitlist-sweep'
 
@@ -370,6 +374,12 @@ const AuthenticatedAdminNewsRoute = AuthenticatedAdminNewsRouteImport.update({
   path: '/news',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminQualifikationenRoute =
+  AuthenticatedAdminQualifikationenRouteImport.update({
+    id: '/qualifikationen',
+    path: '/qualifikationen',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminSperrlisteRoute =
   AuthenticatedAdminSperrlisteRouteImport.update({
     id: '/sperrliste',
@@ -488,6 +498,12 @@ const AuthenticatedTrainerMitgliederRoute =
     path: '/trainer/mitglieder',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTrainerOfflineRoute =
+  AuthenticatedTrainerOfflineRouteImport.update({
+    id: '/trainer/offline',
+    path: '/trainer/offline',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTrainerVerfuegbarkeitRoute =
   AuthenticatedTrainerVerfuegbarkeitRouteImport.update({
     id: '/trainer/verfuegbarkeit',
@@ -520,6 +536,11 @@ const ApiPublicSubmitCancellationRoute =
     path: '/api/public/submit-cancellation',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTrainerIcsRoute = ApiPublicTrainerIcsRouteImport.update({
+  id: '/api/public/trainer-ics',
+  path: '/api/public/trainer-ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksCourseStartReminderRoute =
   ApiPublicHooksCourseStartReminderRouteImport.update({
     id: '/api/public/hooks/course-start-reminder',
@@ -548,6 +569,12 @@ const ApiPublicHooksPaymentCheckReminderRoute =
   ApiPublicHooksPaymentCheckReminderRouteImport.update({
     id: '/api/public/hooks/payment-check-reminder',
     path: '/api/public/hooks/payment-check-reminder',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksTrainerRemindersRoute =
+  ApiPublicHooksTrainerRemindersRouteImport.update({
+    id: '/api/public/hooks/trainer-reminders',
+    path: '/api/public/hooks/trainer-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksTransferConsentReminderRoute =
@@ -614,6 +641,7 @@ export interface FileRoutesByFullPath {
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/qualifikationen': typeof AuthenticatedAdminQualifikationenRoute
   '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
   '/admin/statistik': typeof AuthenticatedAdminStatistikRoute
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
@@ -632,12 +660,14 @@ export interface FileRoutesByFullPath {
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
+  '/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/analytics': typeof ApiPublicAnalyticsRoute
   '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
+  '/api/public/trainer-ics': typeof ApiPublicTrainerIcsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
@@ -646,6 +676,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/trainer-reminders': typeof ApiPublicHooksTrainerRemindersRoute
   '/api/public/hooks/transfer-consent-reminder': typeof ApiPublicHooksTransferConsentReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
 }
@@ -699,6 +730,7 @@ export interface FileRoutesByTo {
   '/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/qualifikationen': typeof AuthenticatedAdminQualifikationenRoute
   '/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
   '/admin/statistik': typeof AuthenticatedAdminStatistikRoute
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
@@ -717,12 +749,14 @@ export interface FileRoutesByTo {
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
+  '/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
   '/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/analytics': typeof ApiPublicAnalyticsRoute
   '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
+  '/api/public/trainer-ics': typeof ApiPublicTrainerIcsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
@@ -731,6 +765,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/trainer-reminders': typeof ApiPublicHooksTrainerRemindersRoute
   '/api/public/hooks/transfer-consent-reminder': typeof ApiPublicHooksTransferConsentReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
 }
@@ -787,6 +822,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/mitgliedschaften': typeof AuthenticatedAdminMitgliedschaftenRoute
   '/_authenticated/admin/nachrichten': typeof AuthenticatedAdminNachrichtenRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/_authenticated/admin/qualifikationen': typeof AuthenticatedAdminQualifikationenRoute
   '/_authenticated/admin/sperrliste': typeof AuthenticatedAdminSperrlisteRoute
   '/_authenticated/admin/statistik': typeof AuthenticatedAdminStatistikRoute
   '/_authenticated/admin/suche': typeof AuthenticatedAdminSucheRoute
@@ -805,12 +841,14 @@ export interface FileRoutesById {
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/_authenticated/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/_authenticated/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
+  '/_authenticated/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
   '/_authenticated/trainer/verfuegbarkeit': typeof AuthenticatedTrainerVerfuegbarkeitRoute
   '/api/public/analytics': typeof ApiPublicAnalyticsRoute
   '/api/public/course-ics': typeof ApiPublicCourseIcsRoute
   '/api/public/notify-admin': typeof ApiPublicNotifyAdminRoute
   '/api/public/pay-qr': typeof ApiPublicPayQrRoute
   '/api/public/submit-cancellation': typeof ApiPublicSubmitCancellationRoute
+  '/api/public/trainer-ics': typeof ApiPublicTrainerIcsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
@@ -819,6 +857,7 @@ export interface FileRoutesById {
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
+  '/api/public/hooks/trainer-reminders': typeof ApiPublicHooksTrainerRemindersRoute
   '/api/public/hooks/transfer-consent-reminder': typeof ApiPublicHooksTransferConsentReminderRoute
   '/api/public/hooks/waitlist-sweep': typeof ApiPublicHooksWaitlistSweepRoute
 }
@@ -875,6 +914,7 @@ export interface FileRouteTypes {
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
+    | '/admin/qualifikationen'
     | '/admin/sperrliste'
     | '/admin/statistik'
     | '/admin/suche'
@@ -893,12 +933,14 @@ export interface FileRouteTypes {
     | '/portal/profil'
     | '/trainer/kurse'
     | '/trainer/mitglieder'
+    | '/trainer/offline'
     | '/trainer/verfuegbarkeit'
     | '/api/public/analytics'
     | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
+    | '/api/public/trainer-ics'
     | '/admin/'
     | '/portal/'
     | '/trainer/'
@@ -907,6 +949,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/trainer-reminders'
     | '/api/public/hooks/transfer-consent-reminder'
     | '/api/public/hooks/waitlist-sweep'
   fileRoutesByTo: FileRoutesByTo
@@ -960,6 +1003,7 @@ export interface FileRouteTypes {
     | '/admin/mitgliedschaften'
     | '/admin/nachrichten'
     | '/admin/news'
+    | '/admin/qualifikationen'
     | '/admin/sperrliste'
     | '/admin/statistik'
     | '/admin/suche'
@@ -978,12 +1022,14 @@ export interface FileRouteTypes {
     | '/portal/profil'
     | '/trainer/kurse'
     | '/trainer/mitglieder'
+    | '/trainer/offline'
     | '/trainer/verfuegbarkeit'
     | '/api/public/analytics'
     | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
+    | '/api/public/trainer-ics'
     | '/admin'
     | '/portal'
     | '/trainer'
@@ -992,6 +1038,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/trainer-reminders'
     | '/api/public/hooks/transfer-consent-reminder'
     | '/api/public/hooks/waitlist-sweep'
   id:
@@ -1047,6 +1094,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/mitgliedschaften'
     | '/_authenticated/admin/nachrichten'
     | '/_authenticated/admin/news'
+    | '/_authenticated/admin/qualifikationen'
     | '/_authenticated/admin/sperrliste'
     | '/_authenticated/admin/statistik'
     | '/_authenticated/admin/suche'
@@ -1065,12 +1113,14 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/profil'
     | '/_authenticated/trainer/kurse'
     | '/_authenticated/trainer/mitglieder'
+    | '/_authenticated/trainer/offline'
     | '/_authenticated/trainer/verfuegbarkeit'
     | '/api/public/analytics'
     | '/api/public/course-ics'
     | '/api/public/notify-admin'
     | '/api/public/pay-qr'
     | '/api/public/submit-cancellation'
+    | '/api/public/trainer-ics'
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/trainer/'
@@ -1079,6 +1129,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/majority-notice'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
+    | '/api/public/hooks/trainer-reminders'
     | '/api/public/hooks/transfer-consent-reminder'
     | '/api/public/hooks/waitlist-sweep'
   fileRoutesById: FileRoutesById
@@ -1121,11 +1172,13 @@ export interface RootRouteChildren {
   ApiPublicNotifyAdminRoute: typeof ApiPublicNotifyAdminRoute
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
+  ApiPublicTrainerIcsRoute: typeof ApiPublicTrainerIcsRoute
   ApiPublicHooksCourseStartReminderRoute: typeof ApiPublicHooksCourseStartReminderRoute
   ApiPublicHooksDailyDigestRoute: typeof ApiPublicHooksDailyDigestRoute
   ApiPublicHooksMajorityNoticeRoute: typeof ApiPublicHooksMajorityNoticeRoute
   ApiPublicHooksPartialCertificateRoute: typeof ApiPublicHooksPartialCertificateRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
+  ApiPublicHooksTrainerRemindersRoute: typeof ApiPublicHooksTrainerRemindersRoute
   ApiPublicHooksTransferConsentReminderRoute: typeof ApiPublicHooksTransferConsentReminderRoute
   ApiPublicHooksWaitlistSweepRoute: typeof ApiPublicHooksWaitlistSweepRoute
 }
@@ -1496,6 +1549,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNewsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/qualifikationen': {
+      id: '/_authenticated/admin/qualifikationen'
+      path: '/qualifikationen'
+      fullPath: '/admin/qualifikationen'
+      preLoaderRoute: typeof AuthenticatedAdminQualifikationenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/sperrliste': {
       id: '/_authenticated/admin/sperrliste'
       path: '/sperrliste'
@@ -1636,6 +1696,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainerMitgliederRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trainer/offline': {
+      id: '/_authenticated/trainer/offline'
+      path: '/trainer/offline'
+      fullPath: '/trainer/offline'
+      preLoaderRoute: typeof AuthenticatedTrainerOfflineRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trainer/verfuegbarkeit': {
       id: '/_authenticated/trainer/verfuegbarkeit'
       path: '/trainer/verfuegbarkeit'
@@ -1678,6 +1745,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSubmitCancellationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/trainer-ics': {
+      id: '/api/public/trainer-ics'
+      path: '/api/public/trainer-ics'
+      fullPath: '/api/public/trainer-ics'
+      preLoaderRoute: typeof ApiPublicTrainerIcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/course-start-reminder': {
       id: '/api/public/hooks/course-start-reminder'
       path: '/api/public/hooks/course-start-reminder'
@@ -1711,6 +1785,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/payment-check-reminder'
       fullPath: '/api/public/hooks/payment-check-reminder'
       preLoaderRoute: typeof ApiPublicHooksPaymentCheckReminderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/trainer-reminders': {
+      id: '/api/public/hooks/trainer-reminders'
+      path: '/api/public/hooks/trainer-reminders'
+      fullPath: '/api/public/hooks/trainer-reminders'
+      preLoaderRoute: typeof ApiPublicHooksTrainerRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/transfer-consent-reminder': {
@@ -1749,6 +1830,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminMitgliedschaftenRoute: typeof AuthenticatedAdminMitgliedschaftenRoute
   AuthenticatedAdminNachrichtenRoute: typeof AuthenticatedAdminNachrichtenRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
+  AuthenticatedAdminQualifikationenRoute: typeof AuthenticatedAdminQualifikationenRoute
   AuthenticatedAdminSperrlisteRoute: typeof AuthenticatedAdminSperrlisteRoute
   AuthenticatedAdminStatistikRoute: typeof AuthenticatedAdminStatistikRoute
   AuthenticatedAdminSucheRoute: typeof AuthenticatedAdminSucheRoute
@@ -1784,6 +1866,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminMitgliedschaftenRoute,
     AuthenticatedAdminNachrichtenRoute: AuthenticatedAdminNachrichtenRoute,
     AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
+    AuthenticatedAdminQualifikationenRoute:
+      AuthenticatedAdminQualifikationenRoute,
     AuthenticatedAdminSperrlisteRoute: AuthenticatedAdminSperrlisteRoute,
     AuthenticatedAdminStatistikRoute: AuthenticatedAdminStatistikRoute,
     AuthenticatedAdminSucheRoute: AuthenticatedAdminSucheRoute,
@@ -1815,6 +1899,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortalProfilRoute: typeof AuthenticatedPortalProfilRoute
   AuthenticatedTrainerKurseRoute: typeof AuthenticatedTrainerKurseRoute
   AuthenticatedTrainerMitgliederRoute: typeof AuthenticatedTrainerMitgliederRoute
+  AuthenticatedTrainerOfflineRoute: typeof AuthenticatedTrainerOfflineRoute
   AuthenticatedTrainerVerfuegbarkeitRoute: typeof AuthenticatedTrainerVerfuegbarkeitRoute
   AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
   AuthenticatedTrainerIndexRoute: typeof AuthenticatedTrainerIndexRoute
@@ -1830,6 +1915,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortalProfilRoute: AuthenticatedPortalProfilRoute,
   AuthenticatedTrainerKurseRoute: AuthenticatedTrainerKurseRoute,
   AuthenticatedTrainerMitgliederRoute: AuthenticatedTrainerMitgliederRoute,
+  AuthenticatedTrainerOfflineRoute: AuthenticatedTrainerOfflineRoute,
   AuthenticatedTrainerVerfuegbarkeitRoute:
     AuthenticatedTrainerVerfuegbarkeitRoute,
   AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
@@ -1878,6 +1964,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicNotifyAdminRoute: ApiPublicNotifyAdminRoute,
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
+  ApiPublicTrainerIcsRoute: ApiPublicTrainerIcsRoute,
   ApiPublicHooksCourseStartReminderRoute:
     ApiPublicHooksCourseStartReminderRoute,
   ApiPublicHooksDailyDigestRoute: ApiPublicHooksDailyDigestRoute,
@@ -1885,6 +1972,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPartialCertificateRoute: ApiPublicHooksPartialCertificateRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
+  ApiPublicHooksTrainerRemindersRoute: ApiPublicHooksTrainerRemindersRoute,
   ApiPublicHooksTransferConsentReminderRoute:
     ApiPublicHooksTransferConsentReminderRoute,
   ApiPublicHooksWaitlistSweepRoute: ApiPublicHooksWaitlistSweepRoute,

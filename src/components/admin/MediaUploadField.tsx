@@ -63,7 +63,15 @@ export function MediaUploadField({ folder, value, mime, alt, onChange, onAltChan
           disabled={busy}
         />
         {value && (
-          <Button type="button" variant="ghost" size="sm" onClick={removeFile} disabled={busy}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Datei entfernen"
+            title="Datei entfernen"
+            onClick={removeFile}
+            disabled={busy}
+          >
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
         )}

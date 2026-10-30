@@ -138,7 +138,13 @@ export function SessionsDialog({
                     value={(s.end_time || "").slice(0, 5)}
                     onChange={(e) => onTimeChange(s.id, "end_time", e.target.value)}
                   />
-                  <Button variant="ghost" size="sm" onClick={() => onRemove(s.id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Termin entfernen"
+                    title="Termin entfernen"
+                    onClick={() => onRemove(s.id)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>

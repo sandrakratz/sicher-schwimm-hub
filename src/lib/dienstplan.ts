@@ -15,10 +15,21 @@ export type PlanSession = {
   /** Fest zugeordnete Personen (Kurstrainer:in, ältere Einzelzuordnung) – zählen zur Besetzung, nicht entfernbar. */
   fixedIds: string[];
   replacementRequestedAt: string | null;
+  /** Kursart (course_programs); null = ohne Zuordnung, dann greift keine Kursart-Bereitschaft. */
+  programId?: string | null;
 };
 
+/** Grundsätzliche Bereitschaft je Kursart; fehlt ein Eintrag, gilt „geht auch“. */
+export type ProgramPref = { trainerId: string; programId: string; preference: "gern" | "nein" };
+
 export type PlanTrainer = { id: string; name: string; email: string };
-export type PlanAssignment = { sessionId: string; trainerId: string };
+export type PlanAssignment = {
+  sessionId: string;
+  trainerId: string;
+  /** false = noch nicht bestätigt */ confirmed?: boolean;
+};
+/** Wunsch der Person: höchstens so viele Einsätze im Monat. */
+export type PlanSetting = { trainerId: string; maxPerMonth: number | null };
 export type PlanAvailability = { sessionId: string; trainerId: string; available: boolean };
 export type PlanBlackout = {
   id: string;
@@ -36,6 +47,8 @@ export type PlanData = {
   assignments: PlanAssignment[];
   availability: PlanAvailability[];
   blackouts: PlanBlackout[];
+  programPrefs?: ProgramPref[];
+  settings?: PlanSetting[];
 };
 
 export const WEEKDAY_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -144,7 +157,29 @@ export function indexPlan(data: PlanData) {
     if (!s) continue;
     for (const t of team) sessionsByTrainer.set(t, [...(sessionsByTrainer.get(t) ?? []), s]);
   }
-  return { teamBySession, availBy, sessionById, trainerById, sessionsByTrainer };
+  const prefBy = new Map<string, "gern" | "nein">();
+  for (const p of data.programPrefs ?? [])
+    prefBy.set(`${p.programId}|${p.trainerId}`, p.preference);
+  const maxBy = new Map<string, number>();
+  for (const s of data.settings ?? []) if (s.maxPerMonth) maxBy.set(s.trainerId, s.maxPerMonth);
+  const unconfirmed = new Set<string>();
+  for (const a of data.assignments)
+    if (a.confirmed === false) unconfirmed.add(`${a.sessionId}|${a.trainerId}`);
+  return {
+    teamBySession,
+    availBy,
+    sessionById,
+    trainerById,
+    sessionsByTrainer,
+    prefBy,
+    maxBy,
+    unconfirmed,
+  };
+}
+
+/** Bereitschaft der Person für die Kursart des Termins (undefined = geht auch). */
+export function programPref(ix: PlanIndex, s: PlanSession, trainerId: string) {
+  return s.programId ? ix.prefBy.get(`${s.programId}|${trainerId}`) : undefined;
 }
 export type PlanIndex = ReturnType<typeof indexPlan>;
 
@@ -161,6 +196,8 @@ export type Candidate = {
   hint: string;
   /** Einsätze im Monat des Termins (ohne diesen). */
   load: number;
+  /** Macht diese Kursart ausdrücklich gern. */
+  liked?: boolean;
 };
 
 const STATE_RANK: Record<CandidateState, number> = {
@@ -195,6 +232,14 @@ export function rankCandidates(data: PlanData, ix: PlanIndex, s: PlanSession): C
         (o) => o.id !== s.id && overlaps(o, s),
       );
       const av = ix.availBy.get(`${s.id}|${t.id}`);
+      const pref = programPref(ix, s, t.id);
+      if (pref === "nein")
+        return {
+          trainer: t,
+          state: "declined",
+          hint: "betreut diese Kursart grundsätzlich nicht",
+          load,
+        };
       if (av === false)
         return { trainer: t, state: "declined", hint: "hat „kann nicht“ gemeldet", load };
       if (clash) {
@@ -205,16 +250,29 @@ export function rankCandidates(data: PlanData, ix: PlanIndex, s: PlanSession): C
           load,
         };
       }
+      const max = ix.maxBy.get(t.id);
+      if (max && load >= max) {
+        return {
+          trainer: t,
+          state: "conflict",
+          hint: `Wunsch: höchstens ${max} Einsätze im Monat (schon ${load})`,
+          load,
+        };
+      }
       return {
         trainer: t,
         state: av === true ? "yes" : "open",
-        hint: av === true ? "hat zugesagt" : "keine Rückmeldung",
+        hint:
+          (av === true ? "hat zugesagt" : "keine Rückmeldung") +
+          (pref === "gern" ? " · macht diese Kursart gern" : ""),
         load,
+        liked: pref === "gern",
       };
     })
     .sort(
       (a, b) =>
         STATE_RANK[a.state] - STATE_RANK[b.state] ||
+        Number(b.liked ?? false) - Number(a.liked ?? false) ||
         a.load - b.load ||
         a.trainer.name.localeCompare(b.trainer.name, "de"),
     );
@@ -259,19 +317,24 @@ export function suggestPlan(
           if (blackoutOn(data.blackouts, t.id, s.date)) return null;
           const av = ix.availBy.get(`${s.id}|${t.id}`);
           if (av === false) return null;
+          const pref = programPref(ix, s, t.id);
+          if (pref === "nein") return null;
           if (av === undefined && !opts.includeOpen) return null;
           if ((byTrainer.get(t.id) ?? []).some((o) => o.id !== s.id && overlaps(o, s))) return null;
           const load = (byTrainer.get(t.id) ?? []).filter((o) =>
             o.date.startsWith(s.date.slice(0, 7)),
           ).length;
+          const max = ix.maxBy.get(t.id);
+          if (max && load >= max) return null;
           const inTeam = courseTeam.get(s.courseId)?.has(t.id) ?? false;
-          return { t, av, load, inTeam };
+          return { t, av, load, inTeam, liked: pref === "gern" };
         })
         .filter((x): x is NonNullable<typeof x> => x !== null)
         .sort(
           (a, b) =>
             Number(b.inTeam) - Number(a.inTeam) ||
             Number(b.av === true) - Number(a.av === true) ||
+            Number(b.liked) - Number(a.liked) ||
             a.load - b.load ||
             a.t.name.localeCompare(b.t.name, "de"),
         );
@@ -286,6 +349,7 @@ export function suggestPlan(
         why: [
           pick.inTeam ? "bleibt im Team des Kurses" : "",
           pick.av === true ? "hat zugesagt" : "keine Rückmeldung",
+          pick.liked ? "macht diese Kursart gern" : "",
           `${pick.load} Einsätze im Monat`,
         ]
           .filter(Boolean)

@@ -82,7 +82,7 @@ async function loadTrainerList(db: any): Promise<PlanTrainer[]> {
 
 const SESSION_SELECT =
   "id,course_id,session_index,session_date,start_time,end_time,assigned_trainer_id,replacement_requested_at," +
-  "courses!inner(name,location,schedule,duration,trainer_id,trainers_needed,archived_at)";
+  "courses!inner(name,location,schedule,duration,trainer_id,trainers_needed,archived_at,program_id)";
 
 function toPlanSession(row: any): PlanSession {
   const c = row.courses ?? {};
@@ -99,6 +99,7 @@ function toPlanSession(row: any): PlanSession {
     needed: c.trainers_needed ?? 2,
     fixedIds: c.trainer_id ? [c.trainer_id] : [],
     replacementRequestedAt: row.replacement_requested_at ?? null,
+    programId: c.program_id ?? null,
   };
 }
 
@@ -271,15 +272,45 @@ export const loadPlanningData = createServerFn({ method: "POST" })
       loadTrainerList(db),
     ]);
 
+    // Kursart-Bereitschaft: Tabelle kann fehlen, solange die Migration nicht eingespielt ist
+    const prefRows = await fetchAll<any>((f, t) =>
+      db
+        .from("trainer_program_preferences")
+        .select("trainer_id,program_id,preference")
+        .order("trainer_id")
+        .order("program_id")
+        .range(f, t),
+    ).catch(() => [] as any[]);
+
+    // Bestätigung und Wunschlast: Tabellen/Spalten fehlen, solange die Migration nicht eingespielt ist
+    const unconfirmedRows = await fetchIn<any>(ids, (chunk, f, t) =>
+      db
+        .from("course_session_assignments")
+        .select("session_id,trainer_id")
+        .is("confirmed_at", null)
+        .in("session_id", chunk)
+        .order("id")
+        .range(f, t),
+    ).catch(() => [] as any[]);
+    const unconfirmedKeys = new Set(unconfirmedRows.map((r) => `${r.session_id}|${r.trainer_id}`));
+    const settingRows = await fetchAll<any>((f, t) =>
+      db
+        .from("trainer_settings")
+        .select("trainer_id,max_per_month")
+        .order("trainer_id")
+        .range(f, t),
+    ).catch(() => [] as any[]);
+
     const assignments = assignRows.map((a) => ({
       sessionId: a.session_id,
       trainerId: a.trainer_id,
+      confirmed: !unconfirmedKeys.has(`${a.session_id}|${a.trainer_id}`),
     }));
     // Alte Einzelzuordnung am Termin zählt wie eine Einteilung
     const have = new Set(assignments.map((a) => `${a.sessionId}|${a.trainerId}`));
     for (const r of rows) {
       if (r.assigned_trainer_id && !have.has(`${r.id}|${r.assigned_trainer_id}`))
-        assignments.push({ sessionId: r.id, trainerId: r.assigned_trainer_id });
+        assignments.push({ sessionId: r.id, trainerId: r.assigned_trainer_id, confirmed: true });
     }
 
     const blackouts: PlanBlackout[] = blackoutRows.map((b) => ({
@@ -301,6 +332,15 @@ export const loadPlanningData = createServerFn({ method: "POST" })
         available: !!a.available,
       })),
       blackouts,
+      settings: settingRows.map((r) => ({
+        trainerId: r.trainer_id,
+        maxPerMonth: r.max_per_month ?? null,
+      })),
+      programPrefs: prefRows.map((p) => ({
+        trainerId: p.trainer_id,
+        programId: p.program_id,
+        preference: p.preference === "gern" ? ("gern" as const) : ("nein" as const),
+      })),
     };
   });
 
@@ -394,6 +434,15 @@ export const applyAssignments = createServerFn({ method: "POST" })
           { title: "Dein Einsatz entfällt", items: future(removes) },
         ].filter((s) => s.items.length);
         if (!sections.length) continue;
+        const { pushToTrainer } = await import("@/lib/trainer-push.server");
+        await pushToTrainer(trainerId, {
+          title: sections.some((s) => s.title === "Du bist eingeteilt")
+            ? "Dienstplan: Du bist eingeteilt"
+            : "Dienstplan: Dein Einsatz entfällt",
+          body: sections[0]!.items.slice(0, 2).join(" · "),
+          url: "/trainer/verfuegbarkeit",
+          tag: "dienstplan-geaendert",
+        });
         const ok = await sendMail(
           "dienstplan-trainer",
           t.email,
@@ -587,6 +636,13 @@ export const requestReplacement = createServerFn({ method: "POST" })
 
     let mailed = 0;
     for (const t of targets) {
+      const { pushToTrainer } = await import("@/lib/trainer-push.server");
+      await pushToTrainer(t.id, {
+        title: "Kannst du einspringen?",
+        body: sessionLabel(s),
+        url: "/trainer/verfuegbarkeit",
+        tag: `ersatz-${s.id}`,
+      });
       if (!t.email) continue;
       const ok = await sendMail(
         "dienstplan-trainer",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, CalendarCheck, HandHelping } from "lucide-react";
@@ -7,7 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { claimSession, withdrawFromSessions } from "@/lib/dienstplan.functions";
-import { shortDate, timeText } from "@/lib/dienstplan";
+import { confirmAssignments } from "@/lib/trainer-extras.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { addDays, mondayOf, shortDate, timeText } from "@/lib/dienstplan";
 import { parseTimeRange } from "@/lib/ics";
 import { todayBerlinIso } from "@/lib/format";
 
@@ -31,6 +34,8 @@ export type ShiftCourse = {
   trainer_id: string | null;
 };
 
+type Window = "week" | "four" | "all";
+
 const REASONS = ["Krank", "Privat verhindert", "Beruflich verhindert"];
 
 /**
@@ -53,10 +58,29 @@ export function MyShifts({
 }) {
   const withdraw = useServerFn(withdrawFromSessions);
   const claim = useServerFn(claimSession);
+  const confirm = useServerFn(confirmAssignments);
+  // Bestätigung der Einteilung: Spalte kann fehlen, solange die Migration nicht eingespielt ist
+  const [unconfirmed, setUnconfirmed] = useState<Set<string>>(new Set());
+  const [confirmSupported, setConfirmSupported] = useState(false);
+  async function loadConfirmed() {
+    const { data, error } = await (supabase as any)
+      .from("course_session_assignments")
+      .select("session_id,confirmed_at")
+      .eq("trainer_id", me);
+    if (error) return;
+    setConfirmSupported(true);
+    setUnconfirmed(
+      new Set((data ?? []).filter((r: any) => !r.confirmed_at).map((r: any) => r.session_id)),
+    );
+  }
+  useEffect(() => {
+    void loadConfirmed();
+  }, [me, sessions]);
   const today = todayBerlinIso();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [chosenWindow, setWindow] = useState<Window | null>(null);
 
   const label = (s: ShiftSession) => {
     const c = courses[s.course_id];
@@ -81,7 +105,19 @@ export function MyShifts({
     .filter((s) => s.session_date >= today)
     .sort((a, b) => a.session_date.localeCompare(b.session_date));
   const mine = sorted.filter((s) => members(s).has(me));
-  const withdrawable = mine.filter((s) => courses[s.course_id]?.trainer_id !== me);
+  // Zeitfenster: nicht alle Einsätze auf einmal, sondern „Diese Woche“ / „Nächste 4 Wochen“ / „Alle“
+  const weekEnd = addDays(mondayOf(today), 6);
+  const fourEnd = addDays(today, 27);
+  const counts = {
+    week: mine.filter((s) => s.session_date <= weekEnd).length,
+    four: mine.filter((s) => s.session_date <= fourEnd).length,
+    all: mine.length,
+  };
+  const win: Window = chosenWindow ?? (counts.week > 0 ? "week" : counts.four > 0 ? "four" : "all");
+  const shown = mine.filter(
+    (s) => win === "all" || s.session_date <= (win === "week" ? weekEnd : fourEnd),
+  );
+  const withdrawable = shown.filter((s) => courses[s.course_id]?.trainer_id !== me);
   const requests = sorted.filter(
     (s) =>
       s.replacement_requested_at &&
@@ -98,6 +134,23 @@ export function MyShifts({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Übernehmen nicht möglich");
       onChanged();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function confirmShown() {
+    const ids = shown.filter((s) => unconfirmed.has(s.id)).map((s) => s.id);
+    if (!ids.length) return;
+    setBusy("confirm");
+    try {
+      const res = await confirm({ data: { sessionIds: ids } });
+      toast.success(
+        `${res.confirmed} Einsatz${res.confirmed === 1 ? "" : "ätze"} bestätigt. Danke!`,
+      );
+      await loadConfirmed();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Bestätigen nicht möglich");
     } finally {
       setBusy(null);
     }
@@ -168,8 +221,51 @@ export function MyShifts({
               Du kannst nicht mehr? Termine ankreuzen, Grund angeben, absagen – jederzeit, auch
               kurzfristig. Der Vorstand bekommt sofort Bescheid.
             </p>
-            <div className="max-h-80 divide-y overflow-y-auto rounded-md border">
-              {mine.map((s) => {
+            <div role="group" aria-label="Zeitraum" className="mb-3 flex flex-wrap gap-1.5">
+              {(
+                [
+                  ["week", "Diese Woche"],
+                  ["four", "Nächste 4 Wochen"],
+                  ["all", "Alle"],
+                ] as [Window, string][]
+              ).map(([key, text]) => (
+                <Button
+                  key={key}
+                  size="sm"
+                  type="button"
+                  className="min-h-9"
+                  aria-pressed={win === key}
+                  variant={win === key ? "default" : "outline"}
+                  onClick={() => setWindow(key)}
+                >
+                  {text} ({counts[key]})
+                </Button>
+              ))}
+            </div>
+            {confirmSupported && shown.some((s) => unconfirmed.has(s.id)) && (
+              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                <span className="flex-1">
+                  {shown.filter((s) => unconfirmed.has(s.id)).length} Einsatz
+                  {shown.filter((s) => unconfirmed.has(s.id)).length === 1 ? "" : "ätze"} noch nicht
+                  bestätigt.
+                </span>
+                <Button
+                  size="sm"
+                  className="min-h-11"
+                  disabled={busy === "confirm"}
+                  onClick={() => void confirmShown()}
+                >
+                  Alle in dieser Ansicht bestätigen
+                </Button>
+              </div>
+            )}
+            {shown.length === 0 && (
+              <p className="rounded-md border p-3 text-sm text-muted-foreground">
+                In diesem Zeitraum bist du nicht eingeteilt.
+              </p>
+            )}
+            <div className="max-h-96 divide-y overflow-y-auto rounded-md border empty:hidden">
+              {shown.map((s) => {
                 const l = label(s);
                 const fixed = courses[s.course_id]?.trainer_id === me;
                 return (
@@ -196,6 +292,11 @@ export function MyShifts({
                         {fixed ? " · fest zugeordnet – bitte telefonisch absagen" : ""}
                       </span>
                     </span>
+                    {confirmSupported && unconfirmed.has(s.id) && (
+                      <Badge variant="outline" className="shrink-0">
+                        Bitte bestätigen
+                      </Badge>
+                    )}
                   </label>
                 );
               })}
@@ -210,7 +311,7 @@ export function MyShifts({
                     className="h-7 px-2"
                     onClick={() => setPicked(new Set(withdrawable.map((s) => s.id)))}
                   >
-                    Alle auswählen
+                    Alle in dieser Ansicht auswählen
                   </Button>
                   <span className="text-muted-foreground">{picked.size} ausgewählt</span>
                 </div>

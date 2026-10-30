@@ -142,7 +142,13 @@ export function GapList({
                       {s.location ? `${s.location} · ` : ""}
                       eingeteilt:{" "}
                       {team.length
-                        ? team.map((id) => ix.trainerById.get(id)?.name ?? "?").join(", ")
+                        ? team
+                            .map(
+                              (id) =>
+                                (ix.trainerById.get(id)?.name ?? "?") +
+                                (ix.unconfirmed.has(`${s.id}|${id}`) ? " (unbestätigt)" : ""),
+                            )
+                            .join(", ")
                         : "niemand"}
                     </div>
                   </div>

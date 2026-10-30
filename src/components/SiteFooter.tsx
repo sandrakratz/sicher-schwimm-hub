@@ -30,22 +30,22 @@ export function SiteFooter() {
           <h4 className="font-display font-bold mb-3 text-base">Verein</h4>
           <ul className="space-y-2 text-sm opacity-90">
             <li>
-              <Link to="/ueber-uns" className="hover:text-accent">
+              <Link to="/ueber-uns" className="inline-block py-1 hover:text-accent">
                 Über uns
               </Link>
             </li>
             <li>
-              <Link to="/sicherheit" className="hover:text-accent">
+              <Link to="/sicherheit" className="inline-block py-1 hover:text-accent">
                 Kinderschutz
               </Link>
             </li>
             <li>
-              <Link to="/mitgliedschaft" className="hover:text-accent">
+              <Link to="/mitgliedschaft" className="inline-block py-1 hover:text-accent">
                 Mitgliedschaft
               </Link>
             </li>
             <li>
-              <Link to="/kurse" className="hover:text-accent">
+              <Link to="/kurse" className="inline-block py-1 hover:text-accent">
                 Kurse
               </Link>
             </li>
@@ -68,22 +68,26 @@ export function SiteFooter() {
           <h4 className="font-display font-bold mb-3 text-base">Service</h4>
           <ul className="space-y-2 text-sm opacity-90">
             <li>
-              <Link to="/warteliste" search={{ programm: undefined }} className="hover:text-accent">
+              <Link
+                to="/warteliste"
+                search={{ programm: undefined }}
+                className="inline-block py-1 hover:text-accent"
+              >
                 {LABELS.waitlistCta}
               </Link>
             </li>
             <li>
-              <Link to="/kontakt" className="hover:text-accent">
+              <Link to="/kontakt" className="inline-block py-1 hover:text-accent">
                 Kontakt
               </Link>
             </li>
             <li>
-              <Link to="/faq" className="hover:text-accent">
+              <Link to="/faq" className="inline-block py-1 hover:text-accent">
                 FAQ
               </Link>
             </li>
             <li>
-              <Link to="/portal" className="hover:text-accent">
+              <Link to="/portal" className="inline-block py-1 hover:text-accent">
                 Mitgliederportal
               </Link>
             </li>
@@ -111,28 +115,36 @@ export function SiteFooter() {
         <div className="container mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs opacity-80">
           <div>© {new Date().getFullYear()} Sicher Schwimmen e.V.</div>
           <div className="flex flex-wrap gap-4">
-            <Link to="/impressum" className="hover:text-accent">
+            <Link to="/impressum" className="inline-block py-1 hover:text-accent">
               Impressum
             </Link>
-            <Link to="/datenschutz" className="hover:text-accent">
+            <Link to="/datenschutz" className="inline-block py-1 hover:text-accent">
               Datenschutz
             </Link>
-            <Link to="/satzung" className="hover:text-accent">
+            <Link to="/satzung" className="inline-block py-1 hover:text-accent">
               Satzung
             </Link>
-            <Link to="/mitgliedsordnung" className="hover:text-accent">
+            <Link to="/mitgliedsordnung" className="inline-block py-1 hover:text-accent">
               Mitgliedsordnung
             </Link>
-            <Link to="/kursbedingungen" className="hover:text-accent">
+            <Link to="/kursbedingungen" className="inline-block py-1 hover:text-accent">
               Kursbedingungen
             </Link>
-            <Link to="/widerruf" className="hover:text-accent">
+            <Link to="/widerruf" className="inline-block py-1 hover:text-accent">
               Widerruf
             </Link>
-            <Link to="/impressum" hash="bildnachweise" className="hover:text-accent">
+            <Link
+              to="/impressum"
+              hash="bildnachweise"
+              className="inline-block py-1 hover:text-accent"
+            >
               Bildnachweise
             </Link>
-            <button type="button" onClick={openConsentSettings} className="hover:text-accent">
+            <button
+              type="button"
+              onClick={openConsentSettings}
+              className="inline-block py-1 hover:text-accent"
+            >
               Messung &amp; Datenschutz-Einstellungen
             </button>
           </div>

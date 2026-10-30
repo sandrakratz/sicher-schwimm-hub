@@ -98,6 +98,10 @@ export function Kursplanung() {
   const trainersFn = useServerFn(listTrainers);
   const [team, setTeam] = useState<TrainerOption[]>([]);
   const [availRows, setAvailRows] = useState<{ d: string; t: string; ok: boolean }[]>([]);
+  // Grundsätzliche Bereitschaft der Trainer je Kursart (leer, solange die Migration fehlt)
+  const [prefRows, setPrefRows] = useState<
+    { trainerId: string; programId: string; pref: "gern" | "nein" }[]
+  >([]);
   const [blackouts, setBlackouts] = useState<PlanBlackout[]>([]);
 
   const [kinds, setKinds] = useState<Kind[]>([]);
@@ -241,6 +245,16 @@ export function Kursplanung() {
     } catch {
       setTeam([]);
     }
+    const prefs = await db
+      .from("trainer_program_preferences")
+      .select("trainer_id,program_id,preference");
+    setPrefRows(
+      (prefs.data ?? []).map((r: any) => ({
+        trainerId: r.trainer_id,
+        programId: r.program_id,
+        pref: r.preference,
+      })),
+    );
     const [a, b] = await Promise.all([
       db
         .from("pool_slot_availability")
@@ -836,6 +850,33 @@ export function Kursplanung() {
           </Button>
         </div>
       </div>
+
+      {kinds.length > 0 && team.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border p-3 text-sm">
+          <span className="font-medium">Trainer je Kursart:</span>
+          {kinds.map((k) => {
+            const out = new Set(
+              prefRows
+                .filter((r) => r.programId === k.id && r.pref === "nein")
+                .map((r) => r.trainerId),
+            );
+            const gern = prefRows.filter((r) => r.programId === k.id && r.pref === "gern").length;
+            const ready = team.filter((t) => !out.has(t.id)).length;
+            const short = ready < k.trainers;
+            return (
+              <Badge
+                key={k.id}
+                variant="outline"
+                className={short ? "border-destructive text-destructive" : ""}
+                title={`${ready} von ${team.length} Trainern betreuen diese Kursart (${out.size} nicht, ${gern} gern). Benötigt je Termin: ${k.trainers}.`}
+              >
+                {programName(k.id)}: {ready}
+                {gern > 0 ? ` (${gern} gern)` : ""} · braucht {k.trainers}
+              </Badge>
+            );
+          })}
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="h-auto flex-wrap">
