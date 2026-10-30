@@ -131,7 +131,7 @@ function TrainerHome() {
         supabase
           .from("trainer_session_attendance")
           .select(
-            "id,session_id,course_sessions(session_date,session_index,start_time,end_time,courses(name,archived_at))",
+            "id,session_id,course_sessions(session_date,session_index,start_time,end_time,courses(name))",
           )
           .eq("trainer_id", me)
           .eq("present", true)
@@ -140,8 +140,9 @@ function TrainerHome() {
           .range(f, t),
       );
       setConfirmed(
+        // Auch Termine abgeschlossener (archivierter) Kurse: bestätigt heißt, der Einsatz hat stattgefunden
         att
-          .filter((a) => a.course_sessions && !a.course_sessions.courses?.archived_at)
+          .filter((a) => a.course_sessions)
           .map((a) => ({
             sessionId: a.session_id,
             date: a.course_sessions.session_date,
