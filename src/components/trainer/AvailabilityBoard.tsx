@@ -24,6 +24,9 @@ import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { buildIcs, googleCalendarUrl, parseTimeRange, type CalendarItem } from "@/lib/ics";
 import { EventShiftSignups } from "@/components/admin/EventShiftSignups";
+import { ProgramPreferences } from "@/components/trainer/ProgramPreferences";
+import { TrainerSettings } from "@/components/trainer/TrainerSettings";
+import { CalendarSubscribe } from "@/components/trainer/CalendarSubscribe";
 import { MyShifts } from "@/components/trainer/MyShifts";
 import { Blackouts } from "@/components/trainer/Blackouts";
 import { blackoutOn, type PlanBlackout } from "@/lib/dienstplan";
@@ -511,21 +514,24 @@ export function AvailabilityBoard() {
         Meine Verfügbarkeit
       </h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Bitte pro Kurstermin angeben, ob du kannst. Ein erneuter Klick auf die gewählte Antwort hebt
-        sie wieder auf.
+        Hier siehst du deine Einsätze und sagst dem Vorstand, wann und wofür du zur Verfügung
+        stehst.
       </p>
 
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="outline" onClick={() => exportIcs("available")}>
-          <CalendarPlus className="h-4 w-4" /> Zusagen als Kalender (.ics)
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => exportIcs("assigned")}>
-          <CalendarPlus className="h-4 w-4" /> Meine Einteilungen (.ics)
-        </Button>
-        <span className="text-xs text-muted-foreground">
-          Die .ics-Datei kannst du in Google Kalender (Einstellungen → Importieren) und in
-          familywall.com importieren.
-        </span>
+      <div className="mb-6 space-y-2">
+        <CalendarSubscribe />
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer">Einmaliger Export als Datei (.ics)</summary>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportIcs("assigned")}>
+              <CalendarPlus className="h-4 w-4" /> Meine Einteilungen (.ics)
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => exportIcs("available")}>
+              <CalendarPlus className="h-4 w-4" /> Meine Zusagen (.ics)
+            </Button>
+            <span>Zum Importieren, z. B. in familywall.com – ändert sich nicht von selbst.</span>
+          </div>
+        </details>
       </div>
 
       {me && !loading && (
@@ -537,328 +543,339 @@ export function AvailabilityBoard() {
             team={teamBySession}
             onChanged={() => void load(true)}
           />
-          <SlotAvailability me={me} blackouts={blackouts} />
           <Blackouts
             me={me}
             blackouts={blackouts}
             assignedDates={sessions.filter((s) => isAssignedToMe(s.id)).map((s) => s.session_date)}
             onChanged={() => void load(true)}
           />
+          <ProgramPreferences me={me} />
+          <TrainerSettings me={me} />
+          <SlotAvailability me={me} blackouts={blackouts} />
         </>
       )}
 
       {me && <EventShiftSignups me={me} trainers={trainers} />}
 
-      <h2 className="font-display text-2xl font-bold text-primary-deep mb-3">Kurstermine</h2>
-
-      {!loading && understaffed.length > 0 && (
-        <Card className="mb-6 border-2 border-destructive/40 bg-destructive/5 shadow-soft">
-          <CardContent className="py-4">
-            <div className="mb-3 flex items-center gap-2 font-semibold text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Bei {understaffed.length}{" "}
-              {understaffed.length === 1 ? "Termin fehlen" : "Terminen fehlen"} noch Trainer
-              (weniger Zusagen als benötigt)
-            </div>
-            <div className="divide-y rounded-md border bg-background">
-              {understaffed.slice(0, 6).map((s) => renderSession(s, { compact: true }))}
-            </div>
-            {understaffed.length > 6 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                … und {understaffed.length - 6} weitere.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-md border p-0.5">
-          <Button
-            size="sm"
-            variant={view === "course" ? "default" : "ghost"}
-            onClick={() => setView("course")}
-          >
-            <List className="h-4 w-4" /> Nach Kursen
-          </Button>
-          <Button
-            size="sm"
-            variant={view === "date" ? "default" : "ghost"}
-            onClick={() => setView("date")}
-          >
-            <CalendarDays className="h-4 w-4" /> Nach Terminen
-          </Button>
-          <Button
-            size="sm"
-            variant={view === "calendar" ? "default" : "ghost"}
-            onClick={() => setView("calendar")}
-          >
-            <CalendarDays className="h-4 w-4" /> Kalender
-          </Button>
-        </div>
-        <label className="ml-auto inline-flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={showDeclined}
-            onChange={(e) => setShowDeclined(e.target.checked)}
-          />
-          Abgesagte Termine einblenden
-        </label>
-      </div>
-
-      {loading ? (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Wird geladen …
-          </CardContent>
-        </Card>
-      ) : visibleSessions.length === 0 ? (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Keine offenen oder zugesagten Kurstermine.
-          </CardContent>
-        </Card>
-      ) : view === "course" ? (
-        <div className="space-y-6">
-          {groups.map((g) => {
-            const list = g.sessions.filter(isVisible);
-            if (list.length === 0) return null;
-            const yesCount = list.filter(
-              (s) => myState(s.id) === true || isAssignedToMe(s.id),
-            ).length;
-            return (
-              <CollapsibleCard
-                key={g.courseId}
-                className="border-0 shadow-soft"
-                storageKey={`trainer-avail-${g.courseId}`}
-                title={g.course?.name || "Kurs"}
-                subtitle={
-                  <span className="flex flex-wrap gap-3">
-                    {g.course?.location && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {g.course.location}
-                      </span>
-                    )}
-                    {g.course?.schedule && (
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {g.course.schedule}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3" />
-                      {yesCount}/{list.length} zugesagt
-                    </span>
-                  </span>
-                }
-                actions={
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy === g.courseId}
-                      onClick={() => setAll(g.courseId, true)}
-                    >
-                      Alle: Kann
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy === g.courseId}
-                      onClick={() => setAll(g.courseId, false)}
-                    >
-                      Alle: Kann nicht
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy === g.courseId}
-                      onClick={() => setAll(g.courseId, null)}
-                    >
-                      Alle: Zurücksetzen
-                    </Button>
-                  </>
-                }
-              >
-                <div className="overflow-x-auto">
-                  <table className="text-xs">
-                    <thead>
-                      <tr>
-                        <th className="sticky left-0 bg-background p-1 text-left">Termin</th>
-                        {list.map((s) => (
-                          <th key={s.id} className="p-1 text-center font-normal whitespace-nowrap">
-                            <div>
-                              {weekday(s.session_date)}{" "}
-                              {formatDateBerlin(s.session_date).slice(0, 6)}
-                            </div>
-                            <div className="text-muted-foreground">{s.session_index}.</div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-t">
-                        <td className="sticky left-0 bg-background p-1 font-medium whitespace-nowrap">
-                          Ich
-                        </td>
-                        {list.map((s) => {
-                          const st = myState(s.id);
-                          const mine = isAssignedToMe(s.id);
-                          const next = st === null ? true : st === true ? false : null;
-                          return (
-                            <td key={s.id} className="p-1 text-center">
-                              <button
-                                type="button"
-                                disabled={busy === s.id}
-                                title={
-                                  mine
-                                    ? "Du bist eingeteilt"
-                                    : st === true
-                                      ? "Kann – klicken für „Kann nicht“"
-                                      : st === false
-                                        ? "Kann nicht – klicken zum Zurücksetzen"
-                                        : "Offen – klicken für „Kann“"
-                                }
-                                onClick={() => setAvailability(s.id, next)}
-                                className={`h-9 w-9 rounded border text-sm font-semibold ${mine ? "bg-primary text-primary-foreground" : st === true ? "bg-success text-success-foreground" : st === false ? "bg-destructive/15 text-destructive" : ""}`}
-                              >
-                                {mine ? "★" : st === true ? "✓" : st === false ? "✕" : "·"}
-                              </button>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                      <tr className="border-t">
-                        <td className="sticky left-0 bg-background p-1 text-muted-foreground whitespace-nowrap">
-                          Besetzung
-                        </td>
-                        {list.map((s) => {
-                          const n = staffCount(s.id);
-                          const required = neededFor(s);
-                          return (
-                            <td key={s.id} className="p-1 text-center">
-                              <Badge
-                                variant={n >= required ? "secondary" : "outline"}
-                                className={
-                                  n >= required ? "" : "border-destructive text-destructive"
-                                }
-                              >
-                                {n}/{required}
-                              </Badge>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+      <CollapsibleCard
+        className="mb-8 border-0 shadow-soft"
+        storageKey="trainer-avail-einzeltermine"
+        defaultOpen={false}
+        title="Einzelne Kurstermine melden (optional)"
+        subtitle="Nur nötig, wenn du bei einem bestimmten Termin ausnahmsweise nicht kannst – für Urlaub nutze die Sperrzeiten, für Kursarten „Meine Kursarten“"
+      >
+        {!loading && understaffed.length > 0 && (
+          <Card className="mb-6 border-2 border-destructive/40 bg-destructive/5 shadow-soft">
+            <CardContent className="py-4">
+              <div className="mb-3 flex items-center gap-2 font-semibold text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Bei {understaffed.length}{" "}
+                {understaffed.length === 1 ? "Termin fehlen" : "Terminen fehlen"} noch Trainer
+                (weniger Zusagen als benötigt)
+              </div>
+              <div className="divide-y rounded-md border bg-background">
+                {understaffed.slice(0, 6).map((s) => renderSession(s, { compact: true }))}
+              </div>
+              {understaffed.length > 6 && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Klick wechselt: · offen → ✓ kann → ✕ kann nicht → offen. ★ = du bist eingeteilt.
+                  … und {understaffed.length - 6} weitere.
                 </p>
-              </CollapsibleCard>
-            );
-          })}
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-md border p-0.5">
+            <Button
+              size="sm"
+              variant={view === "course" ? "default" : "ghost"}
+              onClick={() => setView("course")}
+            >
+              <List className="h-4 w-4" /> Nach Kursen
+            </Button>
+            <Button
+              size="sm"
+              variant={view === "date" ? "default" : "ghost"}
+              onClick={() => setView("date")}
+            >
+              <CalendarDays className="h-4 w-4" /> Nach Terminen
+            </Button>
+            <Button
+              size="sm"
+              variant={view === "calendar" ? "default" : "ghost"}
+              onClick={() => setView("calendar")}
+            >
+              <CalendarDays className="h-4 w-4" /> Kalender
+            </Button>
+          </div>
+          <label className="ml-auto inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={showDeclined}
+              onChange={(e) => setShowDeclined(e.target.checked)}
+            />
+            Abgesagte Termine einblenden
+          </label>
         </div>
-      ) : view === "calendar" ? (
-        <Card className="border-0 shadow-soft">
-          <CardContent className="py-4">
-            <div className="mb-3 flex items-center justify-between">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => shiftMonth(-1)}
-                aria-label="Vorheriger Monat"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="font-semibold">
-                {new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
-                  new Date(month.y, month.m, 1),
+
+        {loading ? (
+          <Card className="border-0 shadow-soft">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              Wird geladen …
+            </CardContent>
+          </Card>
+        ) : visibleSessions.length === 0 ? (
+          <Card className="border-0 shadow-soft">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              Keine offenen oder zugesagten Kurstermine.
+            </CardContent>
+          </Card>
+        ) : view === "course" ? (
+          <div className="space-y-6">
+            {groups.map((g) => {
+              const list = g.sessions.filter(isVisible);
+              if (list.length === 0) return null;
+              const yesCount = list.filter(
+                (s) => myState(s.id) === true || isAssignedToMe(s.id),
+              ).length;
+              return (
+                <CollapsibleCard
+                  key={g.courseId}
+                  className="border-0 shadow-soft"
+                  storageKey={`trainer-avail-${g.courseId}`}
+                  title={g.course?.name || "Kurs"}
+                  subtitle={
+                    <span className="flex flex-wrap gap-3">
+                      {g.course?.location && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {g.course.location}
+                        </span>
+                      )}
+                      {g.course?.schedule && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {g.course.schedule}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {yesCount}/{list.length} zugesagt
+                      </span>
+                    </span>
+                  }
+                  actions={
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy === g.courseId}
+                        onClick={() => setAll(g.courseId, true)}
+                      >
+                        Alle: Kann
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busy === g.courseId}
+                        onClick={() => setAll(g.courseId, false)}
+                      >
+                        Alle: Kann nicht
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busy === g.courseId}
+                        onClick={() => setAll(g.courseId, null)}
+                      >
+                        Alle: Zurücksetzen
+                      </Button>
+                    </>
+                  }
+                >
+                  <div className="overflow-x-auto">
+                    <table className="text-xs">
+                      <thead>
+                        <tr>
+                          <th className="sticky left-0 bg-background p-1 text-left">Termin</th>
+                          {list.map((s) => (
+                            <th
+                              key={s.id}
+                              className="p-1 text-center font-normal whitespace-nowrap"
+                            >
+                              <div>
+                                {weekday(s.session_date)}{" "}
+                                {formatDateBerlin(s.session_date).slice(0, 6)}
+                              </div>
+                              <div className="text-muted-foreground">{s.session_index}.</div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t">
+                          <td className="sticky left-0 bg-background p-1 font-medium whitespace-nowrap">
+                            Ich
+                          </td>
+                          {list.map((s) => {
+                            const st = myState(s.id);
+                            const mine = isAssignedToMe(s.id);
+                            const next = st === null ? true : st === true ? false : null;
+                            return (
+                              <td key={s.id} className="p-1 text-center">
+                                <button
+                                  type="button"
+                                  disabled={busy === s.id}
+                                  title={
+                                    mine
+                                      ? "Du bist eingeteilt"
+                                      : st === true
+                                        ? "Kann – klicken für „Kann nicht“"
+                                        : st === false
+                                          ? "Kann nicht – klicken zum Zurücksetzen"
+                                          : "Offen – klicken für „Kann“"
+                                  }
+                                  onClick={() => setAvailability(s.id, next)}
+                                  className={`h-9 w-9 rounded border text-sm font-semibold ${mine ? "bg-primary text-primary-foreground" : st === true ? "bg-success text-success-foreground" : st === false ? "bg-destructive/15 text-destructive" : ""}`}
+                                >
+                                  {mine ? "★" : st === true ? "✓" : st === false ? "✕" : "·"}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        <tr className="border-t">
+                          <td className="sticky left-0 bg-background p-1 text-muted-foreground whitespace-nowrap">
+                            Besetzung
+                          </td>
+                          {list.map((s) => {
+                            const n = staffCount(s.id);
+                            const required = neededFor(s);
+                            return (
+                              <td key={s.id} className="p-1 text-center">
+                                <Badge
+                                  variant={n >= required ? "secondary" : "outline"}
+                                  className={
+                                    n >= required ? "" : "border-destructive text-destructive"
+                                  }
+                                >
+                                  {n}/{required}
+                                </Badge>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Klick wechselt: · offen → ✓ kann → ✕ kann nicht → offen. ★ = du bist eingeteilt.
+                  </p>
+                </CollapsibleCard>
+              );
+            })}
+          </div>
+        ) : view === "calendar" ? (
+          <Card className="border-0 shadow-soft">
+            <CardContent className="py-4">
+              <div className="mb-3 flex items-center justify-between">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => shiftMonth(-1)}
+                  aria-label="Vorheriger Monat"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="font-semibold">
+                  {new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
+                    new Date(month.y, month.m, 1),
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => shiftMonth(1)}
+                  aria-label="Nächster Monat"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground mb-1">
+                {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {monthCells.map((cell, i) => {
+                  if (!cell) return <div key={i} />;
+                  const list = byDate.get(cell) || [];
+                  const selected = selectedDate === cell;
+                  return (
+                    <button
+                      key={cell}
+                      type="button"
+                      disabled={list.length === 0}
+                      onClick={() => setSelectedDate(selected ? null : cell)}
+                      className={`min-h-14 rounded-md border p-1 text-left text-xs transition-colors ${list.length ? "hover:bg-muted" : "opacity-40"} ${selected ? "ring-2 ring-primary" : ""}`}
+                    >
+                      <div className="font-medium">{Number(cell.slice(8))}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {list.map((s) => (
+                          <span key={s.id} className={`h-2.5 w-2.5 rounded-full ${statusDot(s)}`} />
+                        ))}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  Eingeteilt
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-green-600" />
+                  Zugesagt
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                  Offen
+                </span>
+                {showDeclined && (
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
+                    Abgesagt
+                  </span>
                 )}
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => shiftMonth(1)}
-                aria-label="Nächster Monat"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground mb-1">
-              {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {monthCells.map((cell, i) => {
-                if (!cell) return <div key={i} />;
-                const list = byDate.get(cell) || [];
-                const selected = selectedDate === cell;
-                return (
-                  <button
-                    key={cell}
-                    type="button"
-                    disabled={list.length === 0}
-                    onClick={() => setSelectedDate(selected ? null : cell)}
-                    className={`min-h-14 rounded-md border p-1 text-left text-xs transition-colors ${list.length ? "hover:bg-muted" : "opacity-40"} ${selected ? "ring-2 ring-primary" : ""}`}
-                  >
-                    <div className="font-medium">{Number(cell.slice(8))}</div>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {list.map((s) => (
-                        <span key={s.id} className={`h-2.5 w-2.5 rounded-full ${statusDot(s)}`} />
-                      ))}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                Eingeteilt
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-green-600" />
-                Zugesagt
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                Offen
-              </span>
-              {showDeclined && (
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
-                  Abgesagt
-                </span>
+              {selectedDate && (byDate.get(selectedDate) || []).length > 0 && (
+                <div className="mt-4 divide-y rounded-md border">
+                  {(byDate.get(selectedDate) || []).map((s) => renderSession(s))}
+                </div>
               )}
-            </div>
-            {selectedDate && (byDate.get(selectedDate) || []).length > 0 && (
-              <div className="mt-4 divide-y rounded-md border">
-                {(byDate.get(selectedDate) || []).map((s) => renderSession(s))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {[...byDate.entries()]
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([day, list]) => (
-              <Card key={day} className="border-0 shadow-soft">
-                <CardContent className="py-3">
-                  <div className="mb-2 text-sm font-semibold">
-                    {weekday(day)}, {formatDateBerlin(day)}
-                  </div>
-                  <div className="divide-y rounded-md border">
-                    {list.map((s) => renderSession(s))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-        </div>
-      )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {[...byDate.entries()]
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([day, list]) => (
+                <Card key={day} className="border-0 shadow-soft">
+                  <CardContent className="py-3">
+                    <div className="mb-2 text-sm font-semibold">
+                      {weekday(day)}, {formatDateBerlin(day)}
+                    </div>
+                    <div className="divide-y rounded-md border">
+                      {list.map((s) => renderSession(s))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+          </div>
+        )}
+      </CollapsibleCard>
     </div>
   );
 }

@@ -3,17 +3,19 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, HandHelping } from "lucide-react";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
-import { todayBerlinIso } from "@/lib/format";
+import { useReplacementCount } from "@/lib/use-replacement-count";
 
 /**
- * Hinweis für Trainer:innen: offene (noch nicht beantwortete) Kurstermine
- * und Helfer-Umfragen zu Terminen.
+ * Hinweise für Trainer:innen auf der Startseite: Termine, die Ersatz suchen, und offene
+ * Helfer-Umfragen zu Veranstaltungen. (Die Abfrage je Kurstermin ist durch die Bereitschaft je
+ * Kursart ersetzt und daher keine Pflicht mehr.)
  */
 export function OpenAvailabilityNotice() {
-  const [openSessions, setOpenSessions] = useState(0);
+  const [isTeam, setIsTeam] = useState(false);
   const [openEvents, setOpenEvents] = useState(0);
+  const replacements = useReplacementCount(isTeam);
 
   useEffect(() => {
     (async () => {
@@ -22,52 +24,20 @@ export function OpenAvailabilityNotice() {
       if (!me) return;
 
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", me);
-      const isTeam = (roles || []).some((r) =>
-        ["trainer", "admin", "board"].includes(r.role as string),
+      if (!(roles || []).some((r) => ["trainer", "admin", "board"].includes(r.role as string)))
+        return;
+      setIsTeam(true);
+
+      const evRows = await fetchAll<{ id: string }>((f, t) =>
+        supabase
+          .from("events")
+          .select("id")
+          .eq("signup_enabled", true)
+          .gte("starts_at", new Date().toISOString())
+          .order("id")
+          .range(f, t),
       );
-      if (!isTeam) return;
-
-      const today = todayBerlinIso();
-      const nowIso = new Date().toISOString();
-
-      // Seitenweise bzw. in Blöcken laden: Supabase liefert pro Abfrage höchstens 1000 Zeilen, und lange
-      // ID-Listen sprengen die Adresszeile (dann erschienen bereits beantwortete Termine wieder als „offen“).
-      const [sessRows, evRows] = await Promise.all([
-        fetchAll<{ id: string }>((f, t) =>
-          supabase
-            .from("course_sessions")
-            .select("id")
-            .gte("session_date", today)
-            .order("id")
-            .range(f, t),
-        ),
-        fetchAll<{ id: string }>((f, t) =>
-          supabase
-            .from("events")
-            .select("id")
-            .eq("signup_enabled", true)
-            .gte("starts_at", nowIso)
-            .order("id")
-            .range(f, t),
-        ),
-      ]);
-      const sessionIds = sessRows.map((s) => s.id);
       const eventIds = evRows.map((e) => e.id);
-
-      if (sessionIds.length > 0) {
-        const av = await fetchIn<{ session_id: string }>(sessionIds, (chunk, f, t) =>
-          supabase
-            .from("course_session_availability")
-            .select("session_id")
-            .eq("trainer_id", me)
-            .in("session_id", chunk)
-            .order("id")
-            .range(f, t),
-        );
-        const answered = new Set(av.map((a) => a.session_id));
-        setOpenSessions(sessionIds.filter((id) => !answered.has(id)).length);
-      }
-
       if (eventIds.length > 0) {
         const su = await fetchIn<{ event_id: string }>(eventIds, (chunk, f, t) =>
           supabase
@@ -84,31 +54,50 @@ export function OpenAvailabilityNotice() {
     })();
   }, []);
 
-  if (openSessions === 0 && openEvents === 0) return null;
-
-  const parts = [
-    openSessions > 0 ? `${openSessions} Kurstermin${openSessions === 1 ? "" : "e"}` : null,
-    openEvents > 0 ? `${openEvents} Helfer-Umfrage${openEvents === 1 ? "" : "n"}` : null,
-  ].filter(Boolean);
+  if (replacements === 0 && openEvents === 0) return null;
 
   return (
-    <Card className="border-0 shadow-soft bg-accent/10">
-      <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
-        <div className="flex items-start gap-3">
-          <CalendarClock className="mt-0.5 h-6 w-6 text-accent shrink-0" />
-          <div>
-            <div className="font-semibold text-primary-deep">
-              Offene Rückmeldungen zur Verfügbarkeit
+    <div className="space-y-3">
+      {replacements > 0 && (
+        <Card className="border-2 border-amber-400/60 bg-amber-50/50 shadow-soft dark:bg-amber-950/10">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div className="flex items-start gap-3">
+              <HandHelping className="mt-0.5 h-6 w-6 shrink-0" />
+              <div>
+                <div className="font-semibold text-primary-deep">
+                  {replacements === 1 ? "Ein Termin sucht" : `${replacements} Termine suchen`}{" "}
+                  Ersatz
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Kannst du einspringen? Wer zuerst klickt, ist eingeteilt.
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Du hast {parts.join(" und ")} noch nicht beantwortet. Bitte gib an, wann du kannst.
-            </p>
-          </div>
-        </div>
-        <Button asChild size="sm">
-          <Link to="/trainer/verfuegbarkeit">Jetzt beantworten</Link>
-        </Button>
-      </CardContent>
-    </Card>
+            <Button asChild size="sm" className="min-h-11">
+              <Link to="/trainer/verfuegbarkeit">Termine ansehen</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      {openEvents > 0 && (
+        <Card className="border-0 shadow-soft bg-accent/10">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div className="flex items-start gap-3">
+              <CalendarClock className="mt-0.5 h-6 w-6 shrink-0 text-accent" />
+              <div>
+                <div className="font-semibold text-primary-deep">Offene Helfer-Umfragen</div>
+                <p className="text-sm text-muted-foreground">
+                  Zu {openEvents} Veranstaltung{openEvents === 1 ? "" : "en"} fehlt deine
+                  Rückmeldung.
+                </p>
+              </div>
+            </div>
+            <Button asChild size="sm" className="min-h-11">
+              <Link to="/trainer/verfuegbarkeit">Jetzt beantworten</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

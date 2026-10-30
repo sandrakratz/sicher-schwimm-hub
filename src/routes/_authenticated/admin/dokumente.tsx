@@ -221,7 +221,13 @@ function Page() {
                 </TableCell>
                 <TableCell>
                   {d.file_url ? (
-                    <Button variant="ghost" size="sm" onClick={() => download(d)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Datei herunterladen"
+                      title="Datei herunterladen"
+                      onClick={() => download(d)}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   ) : (
@@ -235,7 +241,13 @@ function Page() {
                   <Button variant="ghost" size="sm" onClick={() => startEdit(d)}>
                     Bearbeiten
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => remove(d)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Dokument löschen"
+                    title="Dokument löschen"
+                    onClick={() => remove(d)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>

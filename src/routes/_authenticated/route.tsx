@@ -15,12 +15,22 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/co
 import { toast } from "sonner";
 import { portalNav, visibleAdminNav, visibleTrainerNav, type Role } from "@/lib/nav-items";
 import { TrainerMobileNav } from "@/components/trainer/TrainerMobileNav";
+import { SkipLink } from "@/components/SkipLink";
+import { clearOfflineData } from "@/lib/offline-store";
+import { clearShellCache, registerServiceWorker } from "@/lib/register-sw";
+import { useReplacementCount } from "@/lib/use-replacement-count";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   // Mitglieder-, Trainer- und Verwaltungsbereich: nie in Suchmaschinen
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   beforeLoad: async () => {
+    // Ohne Netz (Offline-Modus am Beckenrand) zählt die lokal gespeicherte Anmeldung
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session) throw redirect({ to: "/auth" });
+      return { user: s.session.user };
+    }
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
     const { data: profile } = await supabase
@@ -48,6 +58,11 @@ function AuthLayout() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Service Worker für Push und Offline-Nutzung (nur im Trainerbereich nötig)
+  useEffect(() => {
+    if (pathname.startsWith("/trainer")) void registerServiceWorker();
+  }, [pathname]);
+
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
@@ -66,6 +81,9 @@ function AuthLayout() {
   }, []);
 
   async function logout() {
+    // Offline gespeicherte Teilnehmerdaten gehören nicht auf ein Gerät, an dem niemand mehr angemeldet ist
+    await clearOfflineData();
+    await clearShellCache();
     await supabase.auth.signOut();
     toast.success("Abgemeldet");
     navigate({ to: "/" });
@@ -73,6 +91,7 @@ function AuthLayout() {
 
   const adminItems = visibleAdminNav(roles);
   const trainerItems = visibleTrainerNav(roles);
+  const replacementCount = useReplacementCount(trainerItems.length > 0);
 
   const navContent = (
     <>
@@ -113,6 +132,15 @@ function AuthLayout() {
               >
                 <n.icon className="h-4 w-4" />
                 {n.label}
+                {n.to === "/trainer/verfuegbarkeit" && replacementCount > 0 && (
+                  <span
+                    className="ml-auto rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-amber-950"
+                    title="Ersatz gesucht"
+                  >
+                    {replacementCount}
+                    <span className="sr-only"> Termine suchen Ersatz</span>
+                  </span>
+                )}
               </Link>
             ))}
           </>
@@ -156,7 +184,12 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen flex bg-surface">
-      <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground shrink-0">
+      <SkipLink />
+      {/* Fest am Fensterrand: Menü scrollt für sich, „Abmelden“ bleibt immer sichtbar */}
+      <aside
+        aria-label="Hauptmenü"
+        className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground shrink-0 lg:sticky lg:top-0 lg:h-screen"
+      >
         {navContent}
       </aside>
 
@@ -196,7 +229,7 @@ function AuthLayout() {
             <LogOut className="h-4 w-4" />
           </Button>
         </header>
-        <main className="flex-1 p-4 sm:p-6 lg:p-10">
+        <main id="main" tabIndex={-1} className="flex-1 p-4 sm:p-6 lg:p-10 outline-none">
           <Outlet />
           <TrainerMobileNav />
         </main>

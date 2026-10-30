@@ -2601,7 +2601,13 @@ function Page() {
                         })()}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
-                        <Button variant="ghost" size="sm" onClick={() => setEditPart(p)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Teilnehmer bearbeiten"
+                          title="Teilnehmer bearbeiten"
+                          onClick={() => setEditPart(p)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         {canManage && p.status !== "cancelled" && (
@@ -2615,7 +2621,13 @@ function Page() {
                           </Button>
                         )}
                         {canManage && (
-                          <Button variant="ghost" size="sm" onClick={() => removePart(p)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Teilnehmer entfernen"
+                            title="Teilnehmer entfernen"
+                            onClick={() => removePart(p)}
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}

@@ -258,7 +258,13 @@ function Page() {
                   <Button variant="ghost" size="sm" onClick={() => startEdit(e)}>
                     Bearbeiten
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => remove(e)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Veranstaltung löschen"
+                    title="Veranstaltung löschen"
+                    onClick={() => remove(e)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>
@@ -535,7 +541,13 @@ function HelperDialog({
                         <X className="h-3 w-3" /> Kann nicht
                       </Badge>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => removeSignup(s.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Anmeldung entfernen"
+                      title="Anmeldung entfernen"
+                      onClick={() => removeSignup(s.id)}
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>

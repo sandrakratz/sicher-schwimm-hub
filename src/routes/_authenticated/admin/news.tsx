@@ -211,7 +211,13 @@ function Page() {
                   <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>
                     Bearbeiten
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => remove(n)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Beitrag löschen"
+                    title="Beitrag löschen"
+                    onClick={() => remove(n)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </TableCell>

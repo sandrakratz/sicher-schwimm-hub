@@ -143,12 +143,15 @@ export function WeekPlan({ data }: { data: PlanData }) {
                       {block && <div className="text-muted-foreground">gesperrt</div>}
                       {mine.map((s) => {
                         const clash = mine.some((o) => o.id !== s.id && overlaps(o, s));
+                        const open = ix.unconfirmed.has(`${s.id}|${t.id}`);
                         return chip(
                           s,
-                          clash || block
-                            ? "bg-destructive text-destructive-foreground"
-                            : "bg-primary text-primary-foreground",
-                          `${s.courseName}${s.location ? ` · ${s.location}` : ""}${clash ? " – Doppelbelegung!" : ""}${block ? " – in einer Sperrzeit!" : ""}`,
+                          `${
+                            clash || block
+                              ? "bg-destructive text-destructive-foreground"
+                              : "bg-primary text-primary-foreground"
+                          }${open ? " ring-2 ring-amber-300" : ""}`,
+                          `${s.courseName}${s.location ? ` · ${s.location}` : ""}${clash ? " – Doppelbelegung!" : ""}${block ? " – in einer Sperrzeit!" : ""}${open ? " – noch nicht bestätigt" : ""}`,
                         );
                       })}
                       {yes.map((s) =>

@@ -251,6 +251,12 @@ function Page() {
 
   return (
     <div className="space-y-4">
+      <header>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">Geld</h1>
+        <p className="text-sm text-muted-foreground">
+          Mitgliedschaften prüfen und offene Zahlungen nachverfolgen.
+        </p>
+      </header>
       <MemberCheckPanel onChanged={() => void load()} />
       <Card>
         <CardHeader>

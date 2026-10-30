@@ -177,7 +177,13 @@ export function HelperGroupsPanel({
                     <AlertTriangle className="h-3 w-3" /> {people}/{g.needed_count}
                   </Badge>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => remove(g)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Helfergruppe löschen"
+                  title="Helfergruppe löschen"
+                  onClick={() => remove(g)}
+                >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
