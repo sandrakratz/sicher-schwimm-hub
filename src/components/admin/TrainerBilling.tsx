@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Download, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, Download, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +60,7 @@ export function TrainerBilling() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [paidOn, setPaidOn] = useState(today);
   const [busy, setBusy] = useState(false);
+  const [openPayouts, setOpenPayouts] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,6 +86,41 @@ export function TrainerBilling() {
     [data, trainerId],
   );
   const key = (r: BillingRow) => `${r.trainerId}:${r.sessionId}`;
+
+  const openRows = useMemo(() => rows.filter((r) => !r.paid), [rows]);
+  /** Ausgezahlte Termine, je Überweisung zusammengefasst (neueste zuerst). */
+  const payoutGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { id: string; trainerName: string; paidOn: string; total: number; rows: BillingRow[] }
+    >();
+    for (const r of rows) {
+      if (!r.paid) continue;
+      const g = groups.get(r.paid.payoutId) ?? {
+        id: r.paid.payoutId,
+        trainerName: r.trainerName,
+        paidOn: r.paid.paidOn,
+        total: 0,
+        rows: [],
+      };
+      g.total += r.paid.amount;
+      g.rows.push(r);
+      groups.set(r.paid.payoutId, g);
+    }
+    return [...groups.values()].sort(
+      (a, b) =>
+        b.paidOn.localeCompare(a.paidOn) || a.trainerName.localeCompare(b.trainerName, "de"),
+    );
+  }, [rows]);
+
+  function togglePayout(id: string) {
+    setOpenPayouts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const totals = useMemo(() => {
     const byTrainer = new Map<
@@ -352,9 +388,11 @@ export function TrainerBilling() {
         <CardContent className="p-0">
           {loading ? (
             <div className="py-10 text-center text-muted-foreground">Wird geladen …</div>
-          ) : rows.length === 0 ? (
+          ) : openRows.length === 0 ? (
             <div className="py-10 text-center text-muted-foreground">
-              Keine bestätigten Einsätze im gewählten Zeitraum.
+              {rows.length === 0
+                ? "Keine bestätigten Einsätze im gewählten Zeitraum."
+                : "Keine offenen Einsätze – alles ausgezahlt."}
             </div>
           ) : (
             <Table>
@@ -371,7 +409,7 @@ export function TrainerBilling() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => {
+                {openRows.map((r) => {
                   const b = blocker(r);
                   return (
                     <TableRow key={key(r)}>
@@ -402,22 +440,7 @@ export function TrainerBilling() {
                         {r.amount !== null ? formatEuro(r.amount) : "—"}
                       </TableCell>
                       <TableCell>
-                        {r.paid ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Badge variant="secondary">
-                              ausgezahlt {formatDateBerlin(r.paid.paidOn)}
-                            </Badge>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              aria-label="Auszahlung rückgängig machen"
-                              onClick={() => undoPayout(r.paid!.payoutId)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </span>
-                        ) : b ? (
+                        {b ? (
                           <Badge variant="outline" className="text-destructive">
                             {b}
                           </Badge>
@@ -433,6 +456,83 @@ export function TrainerBilling() {
           )}
         </CardContent>
       </Card>
+
+      {!loading && payoutGroups.length > 0 && (
+        <Card className="border-0 shadow-soft">
+          <CardContent className="p-0">
+            <div className="border-b px-4 py-3 font-medium">
+              Ausgezahlt{" "}
+              <span className="text-sm font-normal text-muted-foreground">
+                ({payoutGroups.length} Überweisungen ·{" "}
+                {payoutGroups.reduce((n, g) => n + g.rows.length, 0)} Termine)
+              </span>
+            </div>
+            <ul className="divide-y">
+              {payoutGroups.map((g) => {
+                const isOpen = openPayouts.has(g.id);
+                return (
+                  <li key={g.id}>
+                    <div className="flex items-center gap-2 px-4 py-2">
+                      <button
+                        type="button"
+                        className="flex flex-1 items-center gap-2 text-left text-sm"
+                        aria-expanded={isOpen}
+                        onClick={() => togglePayout(g.id)}
+                      >
+                        {isOpen ? (
+                          <ChevronDown className="h-4 w-4 shrink-0" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 shrink-0" />
+                        )}
+                        <span className="w-24 shrink-0">{formatDateBerlin(g.paidOn)}</span>
+                        <span className="font-medium">{g.trainerName}</span>
+                        <span className="text-muted-foreground">
+                          · {g.rows.length} Termine · {formatEuro(g.total)}
+                        </span>
+                      </button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        aria-label="Auszahlung rückgängig machen"
+                        onClick={() => undoPayout(g.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    {isOpen && (
+                      <Table>
+                        <TableBody>
+                          {g.rows.map((r) => (
+                            <TableRow key={key(r)} className="text-muted-foreground">
+                              <TableCell className="w-10" />
+                              <TableCell>
+                                <div>{r.courseName}</div>
+                                <div className="text-xs">
+                                  {r.sessionIndex}. Termin
+                                  {r.programName ? ` · ${r.programName}` : ""}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {formatDateBerlin(r.date)}
+                                <div className="text-xs">{timeText(r)}</div>
+                              </TableCell>
+                              <TableCell className="text-right">{r.hours ?? "—"} Std.</TableCell>
+                              <TableCell className="text-right">
+                                {r.paid ? formatEuro(r.paid.amount) : "—"}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
