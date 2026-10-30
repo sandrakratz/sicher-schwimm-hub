@@ -105,18 +105,23 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
     assignedSessions.forEach((s) => allowed.add(s.course_id));
 
     if (allowed.size === 0) return [];
-    const ids = Array.from(allowed);
+    let ids = Array.from(allowed);
+    const todayIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
 
     const courses = (
       await fetchIn<any>(ids, (chunk, f, t) =>
         supabaseAdmin
           .from("courses")
-          .select("id,name,location,schedule,starts_on,ends_on")
+          .select("id,name,location,schedule,starts_on,ends_on,archived_at")
           .in("id", chunk)
           .order("id")
           .range(f, t),
       )
-    ).sort((x, y) => String(x.starts_on ?? "9999").localeCompare(String(y.starts_on ?? "9999")));
+    )
+      .sort((x, y) => String(x.starts_on ?? "9999").localeCompare(String(y.starts_on ?? "9999")))
+      // Abgesagte Kurse (archiviert, bevor sie zu Ende gelaufen sind) nicht mehr anzeigen
+      .filter((c) => !(c.archived_at && (!c.ends_on || c.ends_on >= todayIso)));
+    ids = courses.map((c) => c.id as string);
 
     const parts = await fetchIn<any>(ids, (chunk, f, t) =>
       supabaseAdmin
