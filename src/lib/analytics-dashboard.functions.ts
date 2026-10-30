@@ -90,7 +90,7 @@ export const getAnalyticsDashboard = createServerFn({ method: "POST" })
     await syncExperiments(true);
     const to = new Date();
     const from = new Date(to.getTime() - data.days * 24 * 60 * 60 * 1000);
-    const { data: raw, error } = await (supabaseAdmin as any).rpc("analytics_dashboard", {
+    const { data: raw, error } = await supabaseAdmin.rpc("analytics_dashboard", {
       p_from: from.toISOString(),
       p_to: to.toISOString(),
       p_versions: CURRENT_VERSIONS,

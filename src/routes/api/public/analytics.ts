@@ -73,8 +73,7 @@ export const Route = createFileRoute("/api/public/analytics")({
             const { syncExperiments } = await import("@/lib/analytics/server");
             await syncExperiments();
           }
-          // Tabelle noch nicht in den generierten Typen (types.ts), bis die Migration eingespielt ist
-          const { error } = await (supabaseAdmin as any).from("analytics_events").insert(rows);
+          const { error } = await supabaseAdmin.from("analytics_events").insert(rows);
           if (error) console.error("[analytics] insert failed", error);
         } catch (e) {
           console.error("[analytics] insert failed", e);
