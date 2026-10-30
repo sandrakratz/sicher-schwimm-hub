@@ -67,10 +67,23 @@ export function Qualifications({ me }: { me: string }) {
       valid_until: validUntil,
       note: note.trim() || null,
     };
-    // „Sonstiges“ darf mehrfach vorkommen: immer neu anlegen, nie überschreiben
-    const res = MULTI_KINDS.includes(kind)
-      ? await db.from("trainer_qualifications").insert(payload)
-      : await db.from("trainer_qualifications").upsert(payload, { onConflict: "trainer_id,kind" });
+    // „Sonstiges“ darf mehrfach vorkommen: immer neu anlegen, nie überschreiben.
+    // Alle anderen Arten: vorhandenen Eintrag aktualisieren, sonst neu anlegen. Kein upsert(onConflict), denn die
+    // Eindeutigkeit ist ein partieller Index (WHERE kind <> 'sonstiges'), den ON CONFLICT nicht verwenden kann.
+    let res;
+    if (MULTI_KINDS.includes(kind)) {
+      res = await db.from("trainer_qualifications").insert(payload);
+    } else {
+      res = await db
+        .from("trainer_qualifications")
+        .update(payload)
+        .eq("trainer_id", me)
+        .eq("kind", kind)
+        .select("id");
+      if (!res.error && (res.data?.length ?? 0) === 0) {
+        res = await db.from("trainer_qualifications").insert(payload);
+      }
+    }
     if (res.error) return toast.error("Konnte nicht gespeichert werden");
     toast.success("Gespeichert");
     setIssued("");
