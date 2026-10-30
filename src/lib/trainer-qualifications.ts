@@ -29,6 +29,13 @@ export const kindInfo = (kind: string) => QUALIFICATION_KINDS.find((k) => k.valu
 
 export const qualificationLabel = (kind: string) => kindInfo(kind)?.label ?? kind;
 
+/** Arten, die eine Person mehrfach eintragen darf (jeder Eintrag ist ein eigener Nachweis). */
+export const MULTI_KINDS: readonly string[] = ["sonstiges"];
+
+/** Schlüssel für die Prüfmarkierung: bei Mehrfach-Arten pro Eintrag, sonst pro Art. */
+export const checkKeyOf = (kind: string, id: string) =>
+  MULTI_KINDS.includes(kind) ? `${kind}:${id}` : kind;
+
 /** Ablaufdatum aus Ausstellungsdatum (z. B. +2 Jahre); null, wenn die Art keine feste Frist hat. */
 export function expiryFrom(kind: string, issuedOn: string): string | null {
   const years = kindInfo(kind)?.years;

@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchIn } from "@/lib/fetch-all";
+import { checkKeyOf } from "@/lib/trainer-qualifications";
 
 const SITE = "https://sicher-schwimmen.com";
 
@@ -123,6 +124,7 @@ export type QualificationOverviewRow = {
   name: string;
   email: string;
   qualifications: {
+    id: string;
     kind: string;
     issued_on: string | null;
     valid_until: string | null;
@@ -163,9 +165,10 @@ export const listQualificationOverview = createServerFn({ method: "POST" })
     const quals = await fetchAll<any>((f, t) =>
       db
         .from("trainer_qualifications")
-        .select("trainer_id,kind,issued_on,valid_until,note")
+        .select("id,trainer_id,kind,issued_on,valid_until,note")
         .order("trainer_id")
         .order("kind")
+        .order("id")
         .range(f, t),
     );
     const checks = await fetchAll<any>((f, t) =>
@@ -186,12 +189,14 @@ export const listQualificationOverview = createServerFn({ method: "POST" })
         qualifications: quals
           .filter((q) => q.trainer_id === p.id)
           .map((q) => ({
+            id: q.id as string,
             kind: q.kind as string,
             issued_on: (q.issued_on as string) ?? null,
             valid_until: (q.valid_until as string) ?? null,
             note: (q.note as string) ?? null,
             checked:
-              stampOf.get(`${p.id}|${q.kind}`) === `${q.issued_on ?? ""}|${q.valid_until ?? ""}`,
+              stampOf.get(`${p.id}|${checkKeyOf(q.kind, q.id)}`) ===
+              `${q.issued_on ?? ""}|${q.valid_until ?? ""}`,
           })),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
@@ -204,7 +209,7 @@ export const setQualificationChecked = createServerFn({ method: "POST" })
     z
       .object({
         trainerId: z.string().uuid(),
-        kind: z.string().min(1).max(40),
+        qualificationId: z.string().uuid(),
         checked: z.boolean(),
       })
       .parse(input),
@@ -213,26 +218,27 @@ export const setQualificationChecked = createServerFn({ method: "POST" })
     await assertBoard(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
+    const { data: q, error } = await db
+      .from("trainer_qualifications")
+      .select("kind,issued_on,valid_until")
+      .eq("id", data.qualificationId)
+      .eq("trainer_id", data.trainerId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!q) throw new Error("Kein Nachweis eingetragen");
+    const key = checkKeyOf(q.kind as string, data.qualificationId);
     if (!data.checked) {
       const del = await db
         .from("trainer_qualification_checks")
         .delete()
         .eq("trainer_id", data.trainerId)
-        .eq("kind", data.kind);
+        .eq("kind", key);
       if (del.error) throw new Error(del.error.message);
       return { ok: true };
     }
-    const { data: q, error } = await db
-      .from("trainer_qualifications")
-      .select("issued_on,valid_until")
-      .eq("trainer_id", data.trainerId)
-      .eq("kind", data.kind)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!q) throw new Error("Kein Nachweis eingetragen");
     const res = await db.from("trainer_qualification_checks").upsert({
       trainer_id: data.trainerId,
-      kind: data.kind,
+      kind: key,
       stamp: `${q.issued_on ?? ""}|${q.valid_until ?? ""}`,
       checked_at: new Date().toISOString(),
       checked_by: context.userId,

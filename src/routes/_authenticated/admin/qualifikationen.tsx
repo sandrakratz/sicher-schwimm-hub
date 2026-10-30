@@ -77,16 +77,9 @@ function Page() {
     void reload();
   }, []);
 
-  function statusOf(
-    row: QualificationOverviewRow,
-    kind: (typeof QUALIFICATION_KINDS)[number],
-  ): {
-    status: Status;
-    q?: QualificationOverviewRow["qualifications"][number];
-    days: number | null;
-  } {
-    const q = row.qualifications.find((x) => x.kind === kind.value);
-    if (!q) return { status: kind.required ? "missing" : "none", days: null };
+  type Q = QualificationOverviewRow["qualifications"][number];
+
+  function statusOfQ(q: Q): { status: Status; q: Q; days: number | null } {
     const days = daysUntil(q.valid_until, today);
     if (days === null) return { status: "ok", q, days };
     if (days < 0) return { status: "expired", q, days };
@@ -94,11 +87,22 @@ function Page() {
     return { status: "ok", q, days };
   }
 
+  /** Alle Einträge dieser Art (bei „Sonstiges“ können es mehrere sein); ohne Eintrag ein Platzhalter. */
+  function statusesOf(
+    row: QualificationOverviewRow,
+    kind: (typeof QUALIFICATION_KINDS)[number],
+  ): { status: Status; q?: Q; days: number | null }[] {
+    const qs = row.qualifications.filter((x) => x.kind === kind.value);
+    if (qs.length === 0) return [{ status: kind.required ? "missing" : "none", days: null }];
+    return qs.map(statusOfQ);
+  }
+
   const needsAction = (row: QualificationOverviewRow) =>
-    QUALIFICATION_KINDS.some((k) => {
-      const s = statusOf(row, k);
-      return s.status === "missing" || s.status === "expired" || s.status === "soon";
-    });
+    QUALIFICATION_KINDS.some((k) =>
+      statusesOf(row, k).some(
+        (s) => s.status === "missing" || s.status === "expired" || s.status === "soon",
+      ),
+    );
 
   const shown = useMemo(
     () =>
@@ -112,17 +116,27 @@ function Page() {
   );
   const todoCount = rows.filter(needsAction).length;
 
-  async function toggle(trainerId: string, kind: string, checked: boolean) {
+  async function toggle(trainerId: string, qualificationId: string, checked: boolean) {
     try {
-      await setChecked({ data: { trainerId, kind, checked } });
+      await setChecked({ data: { trainerId, qualificationId, checked } });
       await reload();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Konnte nicht gespeichert werden");
     }
   }
 
-  const cell = (row: QualificationOverviewRow, kind: (typeof QUALIFICATION_KINDS)[number]) => {
-    const { status, q, days } = statusOf(row, kind);
+  const cell = (row: QualificationOverviewRow, kind: (typeof QUALIFICATION_KINDS)[number]) => (
+    <div className="space-y-3">
+      {statusesOf(row, kind).map((s, i) => (
+        <div key={s.q?.id ?? i}>{entry(row, s)}</div>
+      ))}
+    </div>
+  );
+
+  const entry = (
+    row: QualificationOverviewRow,
+    { status, q, days }: { status: Status; q?: Q; days: number | null },
+  ) => {
     if (status === "none") return <span className="text-xs text-muted-foreground">–</span>;
     if (status === "missing")
       return (
@@ -158,7 +172,7 @@ function Page() {
         <label className="flex cursor-pointer items-center gap-1.5 text-xs">
           <Checkbox
             checked={!!q?.checked}
-            onCheckedChange={(v) => void toggle(row.trainerId, kind.value, !!v)}
+            onCheckedChange={(v) => void toggle(row.trainerId, q!.id, !!v)}
           />
           Nachweis geprüft
         </label>
