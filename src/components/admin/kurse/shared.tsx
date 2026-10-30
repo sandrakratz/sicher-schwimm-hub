@@ -149,6 +149,7 @@ export type Course = {
   min_participants?: number | null;
   lanes?: number | null;
   trainers_needed?: number | null;
+  billed_hours?: number | null;
   start_tentative?: boolean;
   tentative_note?: string | null;
 };

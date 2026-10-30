@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CalendarCheck, CalendarDays, MapPin } from "lucide-react";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
@@ -13,6 +20,7 @@ import { WeekShifts } from "@/components/trainer/WeekShifts";
 import { InstallHint } from "@/components/trainer/InstallHint";
 import { DeviceCard } from "@/components/trainer/DeviceCard";
 import { Qualifications } from "@/components/trainer/Qualifications";
+import { MyPayouts } from "@/components/trainer/MyPayouts";
 
 export const Route = createFileRoute("/_authenticated/trainer/")({
   beforeLoad: async () => {
@@ -52,10 +60,22 @@ type Row = {
   } | null;
 };
 
+type DoneRow = {
+  sessionId: string;
+  date: string;
+  sessionIndex: number;
+  startTime: string | null;
+  endTime: string | null;
+  courseName: string;
+};
+
 function TrainerHome() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState("");
+  // Vom Vorstand bestätigte Anwesenheiten (Termin-ID → Datum), auch bei Ersatz-Einsätzen
+  const [confirmed, setConfirmed] = useState<DoneRow[]>([]);
+  const [showDone, setShowDone] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -107,6 +127,30 @@ function TrainerHome() {
               .range(f, t),
         ),
       ]);
+      const att = await fetchAll<any>((f, t) =>
+        supabase
+          .from("trainer_session_attendance")
+          .select(
+            "id,session_id,course_sessions(session_date,session_index,start_time,end_time,courses(name,archived_at))",
+          )
+          .eq("trainer_id", me)
+          .eq("present", true)
+          .not("confirmed_at", "is", null)
+          .order("id")
+          .range(f, t),
+      );
+      setConfirmed(
+        att
+          .filter((a) => a.course_sessions && !a.course_sessions.courses?.archived_at)
+          .map((a) => ({
+            sessionId: a.session_id,
+            date: a.course_sessions.session_date,
+            sessionIndex: a.course_sessions.session_index,
+            startTime: a.course_sessions.start_time ?? null,
+            endTime: a.course_sessions.end_time ?? null,
+            courseName: a.course_sessions.courses?.name ?? "Kurs",
+          })),
+      );
       const byId = new Map<string, any>();
       for (const s of [...byAssignment, ...byTerm, ...byCourse]) byId.set(s.id, s);
       // Abgesagte (archivierte) Kurse nicht anzeigen
@@ -133,8 +177,14 @@ function TrainerHome() {
 
   const today = todayBerlinIso();
   const upcoming = useMemo(() => rows.filter((r) => r.session_date >= today), [rows, today]);
-  const past = useMemo(() => rows.filter((r) => r.session_date < today), [rows, today]);
   const currentYear = String(new Date().getFullYear());
+  const done = useMemo(
+    () =>
+      confirmed
+        .filter((c) => c.date <= today)
+        .sort((a, b) => b.date.localeCompare(a.date) || b.sessionIndex - a.sessionIndex),
+    [confirmed, today],
+  );
   const thisYear = useMemo(
     () => rows.filter((r) => r.session_date.startsWith(currentYear)),
     [rows, currentYear],
@@ -182,12 +232,52 @@ function TrainerHome() {
       >
         <div className="grid grid-cols-2 gap-3">
           <StatCard label={`Einsätze ${currentYear}`} value={thisYear.length} />
-          <StatCard label="Bereits geleistet" value={past.length} />
+          <StatCard
+            label="Bereits geleistet (Liste anzeigen)"
+            value={done.length}
+            onClick={() => setShowDone(true)}
+          />
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Gezählt werden alle Kurstermine, für die du eingeteilt bist.
+          „Einsätze“ sind alle Kurstermine, für die du eingeteilt bist. „Bereits geleistet“ zählt
+          nur Termine, bei denen der Vorstand deine Anwesenheit bestätigt hat.
         </p>
       </CollapsibleCard>
+
+      <Dialog open={showDone} onOpenChange={setShowDone}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Bereits geleistete Einsätze ({done.length})</DialogTitle>
+            <DialogDescription>
+              Termine, bei denen der Vorstand deine Anwesenheit bestätigt hat. Zum Nachprüfen bei
+              der Abrechnung.
+            </DialogDescription>
+          </DialogHeader>
+          {done.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Noch keine bestätigten Einsätze.
+            </p>
+          ) : (
+            <div className="divide-y rounded-md border bg-card">
+              {done.map((d) => (
+                <div key={d.sessionId} className="p-3">
+                  <div className="text-sm font-medium">
+                    {d.courseName} <span className="font-normal">({d.sessionIndex}. Termin)</span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {weekdayLabel(d.date)}, {formatDateBerlin(d.date)}
+                    {timeLabel({ start_time: d.startTime, end_time: d.endTime })
+                      ? ` · ${timeLabel({ start_time: d.startTime, end_time: d.endTime })}`
+                      : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {me && <MyPayouts />}
 
       {me && <Qualifications me={me} />}
 
@@ -317,13 +407,27 @@ function PayoutIbanNotice() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  onClick?: () => void;
+}) {
+  const body = (
+    <CardContent className="p-4">
+      <div className="text-2xl font-bold text-primary-deep">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </CardContent>
+  );
+  if (!onClick) return <Card className="border-0 shadow-soft">{body}</Card>;
   return (
-    <Card className="border-0 shadow-soft">
-      <CardContent className="p-4">
-        <div className="text-2xl font-bold text-primary-deep">{value}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
-      </CardContent>
+    <Card className="border-0 shadow-soft transition-shadow hover:shadow-md">
+      <button type="button" onClick={onClick} className="w-full text-left">
+        {body}
+      </button>
     </Card>
   );
 }
