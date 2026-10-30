@@ -120,7 +120,7 @@ export async function runTrainerReminders() {
       const quals = await fetchAll<any>((f, t) =>
         db
           .from("trainer_qualifications")
-          .select("trainer_id,kind,valid_until")
+          .select("trainer_id,kind,valid_until,note")
           .not("valid_until", "is", null)
           .order("trainer_id")
           .order("kind")
@@ -129,10 +129,12 @@ export async function runTrainerReminders() {
       for (const q of quals) {
         const d = daysUntil(q.valid_until, today);
         if (d === null || d > QUALIFICATION_WARN_DAYS) continue;
+        const label =
+          q.kind === "sonstiges" && q.note ? q.note : qualificationLabel(q.kind);
         const text =
           d < 0
-            ? `${qualificationLabel(q.kind)}: seit ${-d} Tagen abgelaufen`
-            : `${qualificationLabel(q.kind)}: läuft in ${d} Tagen ab`;
+            ? `${label}: seit ${-d} Tagen abgelaufen`
+            : `${label}: läuft in ${d} Tagen ab`;
         warnBy.set(q.trainer_id, [...(warnBy.get(q.trainer_id) ?? []), text]);
       }
     } catch {

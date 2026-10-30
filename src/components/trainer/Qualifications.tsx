@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import {
+  MULTI_KINDS,
   QUALIFICATION_KINDS,
   QUALIFICATION_WARN_DAYS,
   daysUntil,
@@ -59,16 +60,17 @@ export function Qualifications({ me }: { me: string }) {
   async function save() {
     if (!issued) return toast.error("Bitte angeben, wann der Nachweis ausgestellt wurde");
     const validUntil = info?.years ? computed : until || null;
-    const res = await db.from("trainer_qualifications").upsert(
-      {
-        trainer_id: me,
-        kind,
-        issued_on: issued,
-        valid_until: validUntil,
-        note: note.trim() || null,
-      },
-      { onConflict: "trainer_id,kind" },
-    );
+    const payload = {
+      trainer_id: me,
+      kind,
+      issued_on: issued,
+      valid_until: validUntil,
+      note: note.trim() || null,
+    };
+    // „Sonstiges“ darf mehrfach vorkommen: immer neu anlegen, nie überschreiben
+    const res = MULTI_KINDS.includes(kind)
+      ? await db.from("trainer_qualifications").insert(payload)
+      : await db.from("trainer_qualifications").upsert(payload, { onConflict: "trainer_id,kind" });
     if (res.error) return toast.error("Konnte nicht gespeichert werden");
     toast.success("Gespeichert");
     setIssued("");
@@ -126,7 +128,9 @@ export function Qualifications({ me }: { me: string }) {
                   <ShieldCheck className="h-4 w-4 shrink-0 text-success" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{qualificationLabel(r.kind)}</div>
+                  <div className="text-sm font-medium">
+                    {r.kind === "sonstiges" && r.note ? r.note : qualificationLabel(r.kind)}
+                  </div>
                   <div className={`text-xs ${warn ? "text-destructive" : "text-muted-foreground"}`}>
                     {r.issued_on ? `ausgestellt ${formatDateBerlin(r.issued_on)}` : ""}
                     {r.issued_on && r.valid_until ? " · " : ""}
@@ -137,7 +141,7 @@ export function Qualifications({ me }: { me: string }) {
                       : r.issued_on
                         ? ""
                         : "ohne Datum"}
-                    {r.note ? ` · ${r.note}` : ""}
+                    {r.note && r.kind !== "sonstiges" ? ` · ${r.note}` : ""}
                   </div>
                 </div>
                 <Button
@@ -204,7 +208,7 @@ export function Qualifications({ me }: { me: string }) {
       </div>
       <Input
         className="mt-3"
-        placeholder="Notiz (optional)"
+        placeholder={kind === "sonstiges" ? "Bezeichnung, z. B. Fachkraft für Kleinkindpädagogik" : "Notiz (optional)"}
         aria-label="Notiz zum Nachweis"
         value={note}
         maxLength={120}
