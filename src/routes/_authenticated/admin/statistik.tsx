@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
+import { DailyChart } from "@/components/admin/DailyChart";
 import {
   CURRENT_VERSIONS,
   getAnalyticsDashboard,
@@ -98,11 +92,6 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="py-6 text-center text-sm text-muted-foreground">{children}</p>;
 }
-
-const chartConfig = {
-  views: { label: "Seitenaufrufe", color: "hsl(var(--primary))" },
-  visitors: { label: "Besucher", color: "hsl(var(--accent))" },
-} satisfies ChartConfig;
 
 function Page() {
   const load = useServerFn(getAnalyticsDashboard);
@@ -214,29 +203,7 @@ function Page() {
                 {data.daily.length === 0 ? (
                   <Empty>Noch keine Messdaten im Zeitraum.</Empty>
                 ) : (
-                  <ChartContainer config={chartConfig} className="h-64 w-full aspect-auto">
-                    <LineChart data={data.daily}>
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="day"
-                        tickFormatter={(d: string) => d.slice(8, 10) + "." + d.slice(5, 7) + "."}
-                      />
-                      <YAxis allowDecimals={false} width={32} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line
-                        dataKey="views"
-                        stroke="var(--color-views)"
-                        dot={false}
-                        strokeWidth={2}
-                      />
-                      <Line
-                        dataKey="visitors"
-                        stroke="var(--color-visitors)"
-                        dot={false}
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ChartContainer>
+                  <DailyChart data={data.daily} />
                 )}
               </CardContent>
             </Card>
