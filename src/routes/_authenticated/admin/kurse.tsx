@@ -1367,6 +1367,7 @@ function Page() {
       min_participants: editing.min_participants ?? null,
       lanes: editing.lanes ?? null,
       trainers_needed: Math.min(10, Math.max(1, Math.round(Number(editing.trainers_needed) || 2))),
+      billed_hours: editing.billed_hours && editing.billed_hours > 0 ? editing.billed_hours : null,
       start_tentative: !!editing.start_tentative,
       tentative_note: editing.tentative_note || null,
     };

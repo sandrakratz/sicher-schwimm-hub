@@ -220,6 +220,27 @@ export function CourseDialog({
               <Hint>Maßgeblich für Dienstplan und Kurse & Termine (Ampel „unterbesetzt“).</Hint>
             </div>
             <div>
+              <Label>Abgerechnete Stunden pro Termin (Trainer:innen)</Label>
+              <Input
+                type="number"
+                min={0.5}
+                max={12}
+                step={0.5}
+                value={editing.billed_hours ?? ""}
+                onChange={(e) =>
+                  setEditing((p) => ({
+                    ...p,
+                    billed_hours: e.target.value ? Number(e.target.value) : null,
+                  }))
+                }
+                placeholder="leer = Standard der Kursart"
+              />
+              <Hint>
+                Maßgeblich für die Übungsleitergelder, unabhängig von der tatsächlichen Einsatzzeit.
+                Leer lassen, wenn der Standard der Kursart gelten soll.
+              </Hint>
+            </div>
+            <div>
               <Label>Anzahl der Einheiten</Label>
               <Input
                 type="number"

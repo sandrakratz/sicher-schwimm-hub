@@ -11,6 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TrainerBilling, TrainerRates } from "@/components/admin/TrainerBilling";
+import { TrainerPayouts } from "@/components/admin/TrainerPayouts";
 import { toast } from "sonner";
 import { Copy, Download } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
@@ -46,6 +49,36 @@ function csvCell(v: string) {
 }
 
 function Page() {
+  return (
+    <div className="max-w-6xl space-y-4">
+      <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">
+        Übungsleitergelder
+      </h1>
+      <Tabs defaultValue="abrechnung">
+        <TabsList>
+          <TabsTrigger value="abrechnung">Abrechnung</TabsTrigger>
+          <TabsTrigger value="saetze">Stundensätze</TabsTrigger>
+          <TabsTrigger value="auszahlungen">Auszahlungen &amp; Bescheinigung</TabsTrigger>
+          <TabsTrigger value="konten">Bankverbindungen</TabsTrigger>
+        </TabsList>
+        <TabsContent value="abrechnung" className="mt-4">
+          <TrainerBilling />
+        </TabsContent>
+        <TabsContent value="saetze" className="mt-4">
+          <TrainerRates />
+        </TabsContent>
+        <TabsContent value="auszahlungen" className="mt-4">
+          <TrainerPayouts />
+        </TabsContent>
+        <TabsContent value="konten" className="mt-4">
+          <IbanList />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function IbanList() {
   const [rows, setRows] = useState<PayoutListRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,13 +129,10 @@ function Page() {
   }
 
   return (
-    <div className="max-w-6xl space-y-4">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">
-            Übungsleitergelder
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Bankverbindungen der Trainer:innen. Sie pflegen ihre Angaben selbst im Profil; bei einer
             Änderung geht automatisch ein Hinweis an info@sicher-schwimmen.com. Jeder Abruf wird im
             Audit-Log vermerkt.

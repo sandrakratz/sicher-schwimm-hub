@@ -557,6 +557,7 @@ export type Database = {
       }
       course_programs: {
         Row: {
+          billed_hours: number | null
           age_range: string | null
           bookable: boolean
           course_info: string | null
@@ -583,6 +584,7 @@ export type Database = {
           waitlist_open: boolean
         }
         Insert: {
+          billed_hours?: number | null
           age_range?: string | null
           bookable?: boolean
           course_info?: string | null
@@ -609,6 +611,7 @@ export type Database = {
           waitlist_open?: boolean
         }
         Update: {
+          billed_hours?: number | null
           age_range?: string | null
           bookable?: boolean
           course_info?: string | null
@@ -855,6 +858,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          billed_hours: number | null
           age_range: string | null
           archived_at: string | null
           course_info: string | null
@@ -888,6 +892,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billed_hours?: number | null
           age_range?: string | null
           archived_at?: string | null
           course_info?: string | null
@@ -921,6 +926,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billed_hours?: number | null
           age_range?: string | null
           archived_at?: string | null
           course_info?: string | null
@@ -1677,6 +1683,105 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      trainer_payout_items: {
+        Row: {
+          amount: number
+          course_name: string
+          hourly_rate: number
+          hours_billed: number
+          id: string
+          payout_id: string
+          program_name: string | null
+          session_date: string
+          session_id: string
+          trainer_id: string
+        }
+        Insert: {
+          amount: number
+          course_name: string
+          hourly_rate: number
+          hours_billed: number
+          id?: string
+          payout_id: string
+          program_name?: string | null
+          session_date: string
+          session_id: string
+          trainer_id: string
+        }
+        Update: {
+          amount?: number
+          course_name?: string
+          hourly_rate?: number
+          hours_billed?: number
+          id?: string
+          payout_id?: string
+          program_name?: string | null
+          session_date?: string
+          session_id?: string
+          trainer_id?: string
+        }
+        Relationships: []
+      }
+      trainer_payouts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          paid_on: string
+          total_amount: number
+          trainer_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_on: string
+          total_amount: number
+          trainer_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_on?: string
+          total_amount?: number
+          trainer_id?: string
+        }
+        Relationships: []
+      }
+      trainer_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          hourly_rate: number
+          id: string
+          program_id: string | null
+          trainer_id: string
+          valid_from: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          hourly_rate: number
+          id?: string
+          program_id?: string | null
+          trainer_id: string
+          valid_from?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          hourly_rate?: number
+          id?: string
+          program_id?: string | null
+          trainer_id?: string
+          valid_from?: string
         }
         Relationships: []
       }
