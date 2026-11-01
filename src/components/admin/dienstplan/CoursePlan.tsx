@@ -126,6 +126,33 @@ export function CoursePlan({
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span>
+          <span className="mr-1 inline-block rounded bg-primary/10 px-1.5 py-0.5 text-foreground">
+            Name
+          </span>
+          eingeteilt und bestätigt
+        </span>
+        <span>
+          <span className="mr-1 inline-block rounded bg-primary/10 px-1.5 py-0.5 text-foreground ring-2 ring-amber-300">
+            Name
+          </span>
+          eingeteilt, noch nicht bestätigt
+        </span>
+        <span>
+          <span className="mr-1 inline-block rounded bg-destructive px-1.5 py-0.5 text-destructive-foreground">
+            Name
+          </span>
+          Doppelbelegung oder Sperrzeit
+        </span>
+        <span>
+          <span className="mr-1 inline-block rounded border border-dashed border-destructive px-1.5 py-0.5 text-destructive">
+            1 fehlt
+          </span>
+          Platz noch frei
+        </span>
+      </div>
+
       {courses.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
