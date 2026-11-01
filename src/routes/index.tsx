@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import heroPool from "@/assets/hero-pool.jpg";
 import kids from "@/assets/kids-swimming.jpg";
-import beaver from "@/assets/sicher-schwimmen-rund.png";
+import beaver from "@/assets/sicher-schwimmen-rund-gross.webp";
 import { COURSE_LOCATION } from "@/lib/billing-config";
 import { listCoursePrograms, type CourseProgram } from "@/lib/courses-public.functions";
 import {

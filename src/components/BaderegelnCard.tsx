@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Download, Maximize2 } from "lucide-react";
-import posterUrl from "@/assets/baderegeln-seepferdchen.png";
+import posterUrl from "@/assets/baderegeln-seepferdchen.webp";
+import posterDownloadUrl from "@/assets/baderegeln-seepferdchen.png";
 
 const ALT =
   "Poster „Baderegeln für dein Seepferdchen“ von Sicher Schwimmen e.V. mit 10 Baderegeln für Kinder und der Rettungskette";
@@ -31,7 +32,7 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
 
   const download = (
     <Button asChild variant="accent" className={variant === "full" ? "" : "w-full"}>
-      <a href={posterUrl} download="Baderegeln-Sicher-Schwimmen.png">
+      <a href={posterDownloadUrl} download="Baderegeln-Sicher-Schwimmen.png">
         <Download className="h-4 w-4" /> Poster herunterladen
       </a>
     </Button>
@@ -46,7 +47,7 @@ export function BaderegelnCard({ variant = "full" }: { variant?: "full" | "compa
         <img src={posterUrl} alt={ALT} className="w-full h-auto rounded-lg" />
         <div className="flex justify-end">
           <Button asChild variant="accent">
-            <a href={posterUrl} download="Baderegeln-Sicher-Schwimmen.png">
+            <a href={posterDownloadUrl} download="Baderegeln-Sicher-Schwimmen.png">
               <Download className="h-4 w-4" /> Poster herunterladen
             </a>
           </Button>

@@ -1,7 +1,7 @@
 import { CONTACT_ITEMS, ASSOCIATION } from "@/lib/billing-config";
 import { LABELS } from "@/lib/labels";
 import { Link } from "@tanstack/react-router";
-import logo from "@/assets/sicher-schwimmen-rund.png";
+import logo from "@/assets/sicher-schwimmen-rund.webp";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { SocialLinks } from "@/components/SocialLinks";
 import { ReweSfvBanner } from "@/components/ReweSfvBanner";

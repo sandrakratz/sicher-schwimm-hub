@@ -9,7 +9,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { LogOut, Waves, Menu } from "lucide-react";
-import logo from "@/assets/sicher-schwimmen-rund.png";
+import logo from "@/assets/sicher-schwimmen-rund.webp";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { toast } from "sonner";
