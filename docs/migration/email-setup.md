@@ -1,5 +1,7 @@
 # E-Mail-Versand
 
+> **Archiv – Zustand vor dem Umzug.** Diese Datei beschreibt die Lage auf Lovable Cloud (Stand 30.09.2026). Der Umzug auf Cloudflare + Supabase + Resend ist seit 01.10.2026 abgeschlossen (siehe `neue-einrichtung.md`); Aussagen zu Lovable gelten nur für den alten Zustand. Heute läuft der Versand über Resend (`src/lib/email-send.server.ts`), die Anmelde-Mails über `src/routes/email/auth-hook.ts`; die hier genannten Dateien unter `src/routes/lovable/` gibt es nicht mehr.
+
 Stand: 30.09.2026.
 
 ## Aufbau

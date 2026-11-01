@@ -1,5 +1,7 @@
 # Geplante Aufgaben (Datenbank-Cron)
 
+> **Archiv – Zustand vor dem Umzug.** Diese Datei beschreibt die Lage auf Lovable Cloud (Stand 30.09.2026). Der Umzug auf Cloudflare + Supabase + Resend ist seit 01.10.2026 abgeschlossen (siehe `neue-einrichtung.md`); Aussagen zu Lovable gelten nur für den alten Zustand. Die Zeitpläne zeigen heute auf `https://sicher-schwimmen.com/api/public/hooks/…` (Einrichtung: `neue-einrichtung.md`, Abschnitt 4); die unten genannte `lovable.app`-Adresse ist die alte.
+
 Stand: 30.09.2026. Quelle: direkte Abfrage der Tabelle `cron.job`. Zeitpläne in UTC (06:00 UTC = 08:00 Berlin Sommerzeit).
 Alle Aufgaben sind aktiv und rufen per `net.http_post` einen öffentlichen Endpunkt der App auf.
 

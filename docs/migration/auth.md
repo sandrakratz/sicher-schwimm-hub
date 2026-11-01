@@ -1,5 +1,7 @@
 # Anmelde-Einstellungen
 
+> **Archiv – Zustand vor dem Umzug.** Diese Datei beschreibt die Lage auf Lovable Cloud (Stand 30.09.2026). Der Umzug auf Cloudflare + Supabase + Resend ist seit 01.10.2026 abgeschlossen (siehe `neue-einrichtung.md`); Aussagen zu Lovable gelten nur für den alten Zustand. Heute laufen die Anmelde-Mails über `src/routes/email/auth-hook.ts` (Resend); die hier genannte Datei unter `src/routes/lovable/` gibt es nicht mehr. `sicher-schwimm-hub.lovable.app` ist nicht mehr in Betrieb.
+
 Stand: 30.09.2026.
 
 ## Was NICHT direkt ausgelesen werden konnte
