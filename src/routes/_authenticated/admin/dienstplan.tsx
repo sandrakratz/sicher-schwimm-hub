@@ -12,6 +12,7 @@ import { GapList } from "@/components/admin/dienstplan/GapList";
 import { ReplacementDialog } from "@/components/admin/dienstplan/ReplacementDialog";
 import { WithdrawalDialog } from "@/components/admin/dienstplan/WithdrawalDialog";
 import { WeekPlan } from "@/components/admin/dienstplan/WeekPlan";
+import { CoursePlan } from "@/components/admin/dienstplan/CoursePlan";
 import { AutoPlan } from "@/components/admin/dienstplan/AutoPlan";
 import { PlanLog } from "@/components/admin/dienstplan/PlanLog";
 
@@ -95,6 +96,7 @@ function Page() {
           <TabsList className="h-auto flex-wrap">
             <TabsTrigger value="luecken">Lücken{openGaps > 0 ? ` (${openGaps})` : ""}</TabsTrigger>
             <TabsTrigger value="woche">Wochenplan</TabsTrigger>
+            <TabsTrigger value="kurse">Nach Kursen</TabsTrigger>
             <TabsTrigger value="vorschlag">Vorschlag</TabsTrigger>
             <TabsTrigger value="protokoll">Protokoll</TabsTrigger>
           </TabsList>
@@ -104,6 +106,9 @@ function Page() {
           </TabsContent>
           <TabsContent value="woche" className="mt-4">
             <WeekPlan data={data} />
+          </TabsContent>
+          <TabsContent value="kurse" className="mt-4">
+            <CoursePlan data={data} onPick={setPickId} />
           </TabsContent>
           <TabsContent value="vorschlag" className="mt-4">
             <AutoPlan data={data} onChanged={() => void refresh()} />
