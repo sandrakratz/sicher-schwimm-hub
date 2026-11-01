@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +36,16 @@ export function CoursePlan({
   const [days, setDays] = useState("42");
   const [q, setQ] = useState("");
   const [onlyGaps, setOnlyGaps] = useState(false);
+  const [closed, setClosed] = useState<Set<string>>(new Set());
   const ix = useMemo(() => indexPlan(data), [data]);
+
+  const toggle = (courseId: string) =>
+    setClosed((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) next.delete(courseId);
+      else next.add(courseId);
+      return next;
+    });
 
   const courses = useMemo(() => {
     const limit = days === "all" ? "9999-12-31" : addDays(today, Number(days));
@@ -100,6 +109,21 @@ export function CoursePlan({
         >
           Nur Kurse mit Lücke
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={() => setClosed(new Set())}
+        >
+          Alle aufklappen
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setClosed(new Set(courses.map((l) => l[0]!.courseId)))}
+        >
+          Alle zuklappen
+        </Button>
       </div>
 
       {courses.length === 0 && (
@@ -113,11 +137,25 @@ export function CoursePlan({
       {courses.map((list) => {
         const first = list[0]!;
         const gaps = list.filter((s) => gapOf(ix, s) > 0).length;
+        const isClosed = closed.has(first.courseId);
         return (
           <Card key={first.courseId}>
             <CardContent className="space-y-2 pt-4">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <div className="text-base font-semibold">{first.courseName}</div>
+                <button
+                  type="button"
+                  onClick={() => toggle(first.courseId)}
+                  aria-expanded={!isClosed}
+                  title={isClosed ? "Aufklappen" : "Zuklappen"}
+                  className="flex items-center gap-1 text-base font-semibold"
+                >
+                  {isClosed ? (
+                    <ChevronRight className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                  {first.courseName}
+                </button>
                 {first.location && (
                   <span className="text-xs text-muted-foreground">{first.location}</span>
                 )}
@@ -140,7 +178,7 @@ export function CoursePlan({
                 </a>
               </div>
 
-              <div className="divide-y rounded-lg border">
+              <div className={`divide-y rounded-lg border ${isClosed ? "hidden" : ""}`}>
                 {list.map((s) => {
                   const team = [...(ix.teamBySession.get(s.id) ?? [])];
                   const gap = gapOf(ix, s);
