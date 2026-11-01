@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Waves, ArrowLeft, Info } from "lucide-react";
-import logo from "@/assets/sicher-schwimmen-rund.png";
+import logo from "@/assets/sicher-schwimmen-rund.webp";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({

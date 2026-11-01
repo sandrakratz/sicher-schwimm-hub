@@ -6,9 +6,9 @@ import { SOCIAL, ASSOCIATION } from "@/lib/billing-config";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, Users, Sparkles, Accessibility, ShieldCheck } from "lucide-react";
 import parentChild from "@/assets/parent-child.jpg";
-import sandraKratzPhoto from "@/assets/sandra-kratz.png";
-import michaelKratzPhoto from "@/assets/michael-kratz.jpg";
-import manuelaScholzOrnowskiPhoto from "@/assets/manuela-scholz-ornowski.jpg";
+import sandraKratzPhoto from "@/assets/sandra-kratz.webp";
+import michaelKratzPhoto from "@/assets/michael-kratz.webp";
+import manuelaScholzOrnowskiPhoto from "@/assets/manuela-scholz-ornowski.webp";
 
 export const Route = createFileRoute("/ueber-uns")({
   head: () => ({

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { track } from "@/lib/analytics/client";
 import { useState, useEffect } from "react";
 import { Menu, X, LogIn } from "lucide-react";
-import logo from "@/assets/sicher-schwimmen-rund.png";
+import logo from "@/assets/sicher-schwimmen-rund.webp";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
