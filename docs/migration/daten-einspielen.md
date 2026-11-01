@@ -1,5 +1,7 @@
 # Datenbank einspielen (Windows)
 
+> **Einmaliger Umzugsschritt (erledigt).** Diese Anleitung wurde für den Umzug von Lovable Cloud auf Supabase genutzt; der Umzug ist seit 01.10.2026 abgeschlossen (siehe `neue-einrichtung.md`). Nur noch relevant, falls die Daten erneut eingespielt werden müssen.
+
 Spielt die Lovable-Sicherung (`.backup`) in das **neue, leere** Supabase-Projekt ein. Das Skript `daten-einspielen.ps1` macht die Arbeit;
 hier steht, was davor und danach zu tun ist.
 

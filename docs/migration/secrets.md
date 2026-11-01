@@ -1,5 +1,7 @@
 # Geheimnisse und Umgebungsvariablen (nur Namen, keine Werte)
 
+> **Archiv – Zustand vor dem Umzug.** Diese Datei beschreibt die Lage auf Lovable Cloud (Stand 30.09.2026). Der Umzug auf Cloudflare + Supabase + Resend ist seit 01.10.2026 abgeschlossen (siehe `neue-einrichtung.md`); Aussagen zu Lovable gelten nur für den alten Zustand. `LOVABLE_API_KEY` und `LOVABLE_SEND_URL` werden nicht mehr gebraucht (siehe `neue-einrichtung.md`, Abschnitt 1).
+
 Stand: 30.09.2026.
 
 ## Hinterlegte Geheimnisse (Secrets)
