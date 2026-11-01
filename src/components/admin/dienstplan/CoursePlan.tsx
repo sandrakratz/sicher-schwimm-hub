@@ -48,7 +48,9 @@ export function CoursePlan({
     }
     return [...map.values()]
       .map((list) =>
-        [...list].sort((a, b) => (a.date + (a.start ?? "")).localeCompare(b.date + (b.start ?? ""))),
+        [...list].sort((a, b) =>
+          (a.date + (a.start ?? "")).localeCompare(b.date + (b.start ?? "")),
+        ),
       )
       .filter((list) => {
         const first = list[0]!;
