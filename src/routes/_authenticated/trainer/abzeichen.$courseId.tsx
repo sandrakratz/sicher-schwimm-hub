@@ -76,7 +76,9 @@ function Page() {
           <p className="text-sm text-muted-foreground">
             {course.name}
             {course.location ? ` · ${course.location}` : ""}
-            {course.last_session ? ` · letzte Stunde am ${formatDateBerlin(course.last_session)}` : ""}
+            {course.last_session
+              ? ` · letzte Stunde am ${formatDateBerlin(course.last_session)}`
+              : ""}
           </p>
         </div>
         <div className="flex gap-2 print:hidden">
@@ -104,7 +106,9 @@ function Page() {
         </CardHeader>
         <CardContent className="space-y-4">
           {groups.length === 0 && (
-            <p className="text-sm text-muted-foreground">Noch kein Kind hat ein Abzeichen geschafft.</p>
+            <p className="text-sm text-muted-foreground">
+              Noch kein Kind hat ein Abzeichen geschafft.
+            </p>
           )}
           {groups.map((g) => (
             <div key={g.label}>

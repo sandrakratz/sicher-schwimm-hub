@@ -23,7 +23,9 @@ export async function runBadgePrepReminders() {
   const courses = await fetchAll<any>((f, t) =>
     db
       .from("courses")
-      .select("id,name,location,trainer_id,ends_on,archived_at,course_sessions(id,session_date,assigned_trainer_id)")
+      .select(
+        "id,name,location,trainer_id,ends_on,archived_at,course_sessions(id,session_date,assigned_trainer_id)",
+      )
       .is("archived_at", null)
       .gte("ends_on", today)
       .lte("ends_on", addDays(today, 30))
@@ -43,14 +45,21 @@ export async function runBadgePrepReminders() {
   const optOut = new Set<string>();
   try {
     const rows = await fetchAll<any>((f, t) =>
-      db.from("trainer_settings").select("trainer_id").eq("reminders", false).order("trainer_id").range(f, t),
+      db
+        .from("trainer_settings")
+        .select("trainer_id")
+        .eq("reminders", false)
+        .order("trainer_id")
+        .range(f, t),
     );
     for (const r of rows) optOut.add(r.trainer_id);
   } catch {
     /* ohne Einstellungen: alle erinnern */
   }
 
-  const sessionIds = ending.flatMap((c) => (c.course_sessions ?? []).map((s: any) => s.id as string));
+  const sessionIds = ending.flatMap((c) =>
+    (c.course_sessions ?? []).map((s: any) => s.id as string),
+  );
   const assignments = await fetchIn<{ session_id: string; trainer_id: string }>(
     sessionIds,
     (chunk, f, t) =>

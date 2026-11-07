@@ -103,7 +103,10 @@ export function buildBadgePrep(parts: BadgePrepInput[]): BadgePrep {
     return i < 0 ? 999 : i;
   };
   ready.sort(
-    (a, b) => order(a) - order(b) || a.label.localeCompare(b.label, "de") || a.name.localeCompare(b.name, "de"),
+    (a, b) =>
+      order(a) - order(b) ||
+      a.label.localeCompare(b.label, "de") ||
+      a.name.localeCompare(b.name, "de"),
   );
   siggi.sort((a, b) => a.name.localeCompare(b.name, "de"));
   return { ready, siggi };

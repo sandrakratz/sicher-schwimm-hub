@@ -35,7 +35,9 @@ export async function loadCourseBadgePrep(courseId: string): Promise<CourseBadge
   const parts = await fetchAll<any>((f, t) =>
     db
       .from("course_participants")
-      .select("id,participant_name,date_of_birth,badge,goal_reached,exam_level,exam_criteria,exam_date")
+      .select(
+        "id,participant_name,date_of_birth,badge,goal_reached,exam_level,exam_criteria,exam_date",
+      )
       .eq("course_id", courseId)
       .neq("status", "cancelled")
       .order("id")
@@ -62,7 +64,9 @@ export async function loadCourseBadgePrep(courseId: string): Promise<CourseBadge
       name: course.name,
       location: course.location ?? null,
       last_session: lastSessionDate(
-        ((course.course_sessions ?? []) as Array<{ session_date: string }>).map((s) => s.session_date),
+        ((course.course_sessions ?? []) as Array<{ session_date: string }>).map(
+          (s) => s.session_date,
+        ),
         course.ends_on,
       ),
     },
