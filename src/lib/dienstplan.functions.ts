@@ -292,6 +292,14 @@ export const loadPlanningData = createServerFn({ method: "POST" })
         .order("id")
         .range(f, t),
     ).catch(() => [] as any[]);
+    const attendanceRows = await fetchIn<any>(ids, (chunk, f, t) =>
+      db
+        .from("trainer_session_attendance")
+        .select("session_id,trainer_id,present,confirmed_at")
+        .in("session_id", chunk)
+        .order("id")
+        .range(f, t),
+    ).catch(() => [] as any[]);
     const unconfirmedKeys = new Set(unconfirmedRows.map((r) => `${r.session_id}|${r.trainer_id}`));
     const settingRows = await fetchAll<any>((f, t) =>
       db
@@ -325,6 +333,12 @@ export const loadPlanningData = createServerFn({ method: "POST" })
     return {
       sessions,
       trainers,
+      attendance: attendanceRows.map((a) => ({
+        sessionId: a.session_id,
+        trainerId: a.trainer_id,
+        present: !!a.present,
+        confirmed: !!a.confirmed_at,
+      })),
       assignments,
       availability: availRows.map((a) => ({
         sessionId: a.session_id,

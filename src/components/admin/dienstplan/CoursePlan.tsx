@@ -11,12 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AttendanceAction, MarkBadge } from "./AttendanceMark";
 import {
   addDays,
+  attendanceOf,
   blackoutOn,
   gapOf,
   indexPlan,
   overlaps,
+  sessionIsOver,
   shortDate,
   timeText,
   type PlanData,
@@ -28,9 +31,11 @@ import { todayBerlinIso } from "@/lib/format";
 export function CoursePlan({
   data,
   onPick,
+  onChanged,
 }: {
   data: PlanData;
   onPick: (sessionId: string) => void;
+  onChanged: () => void;
 }) {
   const today = todayBerlinIso();
   const [days, setDays] = useState("42");
@@ -48,11 +53,13 @@ export function CoursePlan({
     });
 
   const courses = useMemo(() => {
-    const limit = days === "all" ? "9999-12-31" : addDays(today, Number(days));
+    const back = days === "back";
+    const limit = back ? today : days === "all" ? "9999-12-31" : addDays(today, Number(days));
+    const start = back ? addDays(today, -28) : today;
     const needle = q.trim().toLowerCase();
     const map = new Map<string, PlanSession[]>();
     for (const s of data.sessions) {
-      if (s.date < today || s.date > limit) continue;
+      if (s.date < start || s.date > limit) continue;
       map.set(s.courseId, [...(map.get(s.courseId) ?? []), s]);
     }
     return [...map.values()]
@@ -87,6 +94,7 @@ export function CoursePlan({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="back">Letzte 4 Wochen (Anwesenheit)</SelectItem>
             <SelectItem value="14">Nächste 2 Wochen</SelectItem>
             <SelectItem value="42">Nächste 6 Wochen</SelectItem>
             <SelectItem value="90">Nächste 3 Monate</SelectItem>
@@ -152,6 +160,27 @@ export function CoursePlan({
           Platz noch frei
         </span>
       </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">
+          Nach dem Termin (Namen anklicken zum Ändern):
+        </span>
+        <span>
+          <MarkBadge state="ok" />
+          war da, bestätigt
+        </span>
+        <span>
+          <MarkBadge state="recorded" />
+          hat sich eingetragen, du musst noch bestätigen
+        </span>
+        <span>
+          <MarkBadge state="absent" />
+          war nicht da
+        </span>
+        <span>
+          <MarkBadge state="none" />
+          kein Eintrag
+        </span>
+      </div>
 
       {courses.length === 0 && (
         <Card>
@@ -163,7 +192,7 @@ export function CoursePlan({
 
       {courses.map((list) => {
         const first = list[0]!;
-        const gaps = list.filter((s) => gapOf(ix, s) > 0).length;
+        const gaps = list.filter((s) => !sessionIsOver(s, today) && gapOf(ix, s) > 0).length;
         const isClosed = closed.has(first.courseId);
         return (
           <Card key={first.courseId}>
@@ -208,7 +237,7 @@ export function CoursePlan({
               <div className={`divide-y rounded-lg border ${isClosed ? "hidden" : ""}`}>
                 {list.map((s) => {
                   const team = [...(ix.teamBySession.get(s.id) ?? [])];
-                  const gap = gapOf(ix, s);
+                  const gap = sessionIsOver(s, today) ? 0 : gapOf(ix, s);
                   return (
                     <div
                       key={s.id}
@@ -231,9 +260,10 @@ export function CoursePlan({
                           );
                           const open = ix.unconfirmed.has(`${s.id}|${id}`);
                           const bad = !!block || clash;
-                          return (
+                          const att = attendanceOf(ix, s, id, today);
+                          const name = ix.trainerById.get(id)?.name ?? "?";
+                          const chip = (
                             <span
-                              key={id}
                               title={
                                 bad
                                   ? block
@@ -243,14 +273,30 @@ export function CoursePlan({
                                     ? "noch nicht bestätigt"
                                     : undefined
                               }
-                              className={`rounded px-1.5 py-0.5 text-xs ${
+                              className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs ${
                                 bad
                                   ? "bg-destructive text-destructive-foreground"
                                   : "bg-primary/10 text-foreground"
-                              }${open ? " ring-2 ring-amber-300" : ""}`}
+                              }${open ? " ring-2 ring-amber-300" : ""}${att === "absent" ? " line-through opacity-70" : ""}`}
                             >
-                              {ix.trainerById.get(id)?.name ?? "?"}
+                              {att && <MarkBadge state={att} />}
+                              {name}
                             </span>
+                          );
+                          return att ? (
+                            <AttendanceAction
+                              key={id}
+                              inline
+                              state={att}
+                              sessionId={s.id}
+                              trainerId={id}
+                              trainerName={name}
+                              onChanged={onChanged}
+                            >
+                              {chip}
+                            </AttendanceAction>
+                          ) : (
+                            <span key={id}>{chip}</span>
                           );
                         })}
                         {gap > 0 && (
