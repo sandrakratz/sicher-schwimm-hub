@@ -13,8 +13,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
-import { Check, Users, Heart, User, HandHeart, Waves, Euro, Star, Vote } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Check,
+  Users,
+  Heart,
+  User,
+  HandHeart,
+  Waves,
+  Euro,
+  Star,
+  Vote,
+  Plus,
+  Minus,
+} from "lucide-react";
+
+// Technische Obergrenze im Formular (Missbrauchsschutz); die Satzung kennt keine Begrenzung.
+const MAX_CHILDREN = 20;
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -174,6 +198,24 @@ function Page() {
     { name: "", last_name: "", date_of_birth: "" },
     { name: "", last_name: "", date_of_birth: "" },
   ]);
+  // Ab dem 4. eingetragenen Kind: Hinweis auf die Haushaltsbescheinigung (einmalig als Popup).
+  const filledChildren = children.filter((c) => c.name.trim()).length;
+  const manyChildren = filledChildren > 3;
+  const [proofDialogOpen, setProofDialogOpen] = useState(false);
+  const proofShown = useRef(false);
+  useEffect(() => {
+    if (manyChildren && !proofShown.current) {
+      proofShown.current = true;
+      setProofDialogOpen(true);
+    }
+  }, [manyChildren]);
+  const addChild = () =>
+    setChildren((prev) =>
+      prev.length >= MAX_CHILDREN
+        ? prev
+        : [...prev, { name: "", last_name: "", date_of_birth: "" }],
+    );
+  const removeLastChild = () => setChildren((prev) => (prev.length > 4 ? prev.slice(0, -1) : prev));
   const updateChild = (i: number, patch: Partial<FamilyMember>) =>
     setChildren((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
 
@@ -775,8 +817,9 @@ function Page() {
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Bitte tragen Sie Partner/in und Kinder (bis zu 4) ein. Nicht ausgefüllte
-                      Felder werden ignoriert.
+                      Bitte tragen Sie Partner/in und alle Kinder ein. Weitere Kinder können Sie mit
+                      „Weiteres Kind hinzufügen“ ergänzen. Nicht ausgefüllte Felder werden
+                      ignoriert.
                     </p>
                     <div className="space-y-4">
                       <div>
@@ -882,9 +925,55 @@ function Page() {
                           </div>
                         </div>
                       ))}
+                      {manyChildren && (
+                        <div className="rounded-lg border-2 border-accent/40 bg-accent/5 p-4 text-sm">
+                          <p className="font-semibold text-primary-deep mb-1">
+                            Nachweis erforderlich (Haushaltsbescheinigung)
+                          </p>
+                          <p>
+                            Bei mehr als 3 Kindern benötigen wir einen Nachweis, aus dem hervorgeht,
+                            dass alle Familienmitglieder unter der Haushaltsadresse gemeldet sind
+                            (z. B. eine Haushaltsbescheinigung des Einwohnermeldeamts). Bitte senden
+                            Sie uns diesen nach der Anmeldung zu.
+                          </p>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addChild}
+                          disabled={children.length >= MAX_CHILDREN}
+                        >
+                          <Plus className="h-4 w-4 mr-1" /> Weiteres Kind hinzufügen
+                        </Button>
+                        {children.length > 4 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={removeLastChild}>
+                            <Minus className="h-4 w-4 mr-1" /> Letztes Kind entfernen
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
+
+                <AlertDialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Haushaltsbescheinigung erforderlich</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Bei mehr als 3 Kindern benötigen wir einen Nachweis, aus dem eindeutig
+                        hervorgeht, dass alle Familienmitglieder unter der Haushaltsadresse gemeldet
+                        sind (z. B. eine Haushaltsbescheinigung des Einwohnermeldeamts). Bitte
+                        senden Sie uns diesen nach der Anmeldung zu.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogAction>Verstanden</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
 
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>

@@ -10,7 +10,7 @@ const contact = z.object({
 const inputSchema = z.object({
   membership_id: z.string().uuid(),
   partner: contact.nullable(),
-  children: z.array(contact).max(10),
+  children: z.array(contact).max(20),
   /** Ältere Mitgliedschaften: Familie als einfache Liste, Zuordnung per Position. */
   list: z.array(contact).max(20).optional(),
 });
