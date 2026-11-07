@@ -41,8 +41,17 @@ export type PlanBlackout = {
   note: string | null;
 };
 
+/** Tatsächliche Anwesenheit (von der Trainer:in eingetragen, vom Vorstand bestätigt). */
+export type PlanAttendance = {
+  sessionId: string;
+  trainerId: string;
+  present: boolean;
+  confirmed: boolean;
+};
+
 export type PlanData = {
   sessions: PlanSession[];
+  attendance?: PlanAttendance[];
   trainers: PlanTrainer[];
   assignments: PlanAssignment[];
   availability: PlanAvailability[];
@@ -165,7 +174,10 @@ export function indexPlan(data: PlanData) {
   const unconfirmed = new Set<string>();
   for (const a of data.assignments)
     if (a.confirmed === false) unconfirmed.add(`${a.sessionId}|${a.trainerId}`);
+  const attendanceBy = new Map<string, PlanAttendance>();
+  for (const a of data.attendance ?? []) attendanceBy.set(`${a.sessionId}|${a.trainerId}`, a);
   return {
+    attendanceBy,
     teamBySession,
     availBy,
     sessionById,
@@ -182,6 +194,55 @@ export function programPref(ix: PlanIndex, s: PlanSession, trainerId: string) {
   return s.programId ? ix.prefBy.get(`${s.programId}|${trainerId}`) : undefined;
 }
 export type PlanIndex = ReturnType<typeof indexPlan>;
+
+/**
+ * Ist-Stand eines Einsatzes nach dem Termin:
+ * ok = war da (bestätigt) · recorded = eingetragen, Bestätigung fehlt · absent = nicht anwesend ·
+ * none = kein Eintrag · null = Termin noch nicht vorbei.
+ */
+export type AttendanceState = "ok" | "recorded" | "absent" | "none";
+
+function berlinNowHm(): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+}
+
+/** Termin ist vorbei: Tag liegt zurück, oder heute und die Endzeit ist erreicht. */
+export function sessionIsOver(s: PlanSession, today: string): boolean {
+  if (s.date < today) return true;
+  if (s.date > today) return false;
+  return !!s.end && s.end <= berlinNowHm();
+}
+
+export function attendanceOf(
+  ix: PlanIndex,
+  s: PlanSession,
+  trainerId: string,
+  today: string,
+): AttendanceState | null {
+  if (!sessionIsOver(s, today)) return null;
+  const a = ix.attendanceBy.get(`${s.id}|${trainerId}`);
+  if (!a) return "none";
+  if (!a.present) return "absent";
+  return a.confirmed ? "ok" : "recorded";
+}
+
+/** Vergangene Einsätze, die noch geprüft werden müssen (eingetragen, aber unbestätigt – oder gar kein Eintrag). */
+export function openAttendanceCount(data: PlanData, ix: PlanIndex, today: string): number {
+  let n = 0;
+  for (const s of data.sessions) {
+    if (!sessionIsOver(s, today)) continue;
+    for (const id of ix.teamBySession.get(s.id) ?? []) {
+      const st = attendanceOf(ix, s, id, today);
+      if (st === "recorded" || st === "none") n += 1;
+    }
+  }
+  return n;
+}
 
 export function gapOf(ix: PlanIndex, s: PlanSession): number {
   return Math.max(0, s.needed - (ix.teamBySession.get(s.id)?.size ?? 0));

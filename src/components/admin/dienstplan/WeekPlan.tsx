@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AttendanceAction, MarkBadge, markLabel } from "./AttendanceMark";
 import {
   addDays,
+  attendanceOf,
   blackoutOn,
   blackoutText,
   indexPlan,
@@ -24,7 +26,7 @@ function monthName(key: string) {
 }
 
 /** Trainer:innen × Wochentage: wer ist wann eingeteilt, wer gesperrt, wo gibt es Doppelbelegungen? */
-export function WeekPlan({ data }: { data: PlanData }) {
+export function WeekPlan({ data, onChanged }: { data: PlanData; onChanged: () => void }) {
   const today = todayBerlinIso();
   const [monday, setMonday] = useState(mondayOf(today));
   const ix = useMemo(() => indexPlan(data), [data]);
@@ -44,9 +46,16 @@ export function WeekPlan({ data }: { data: PlanData }) {
     });
   }, [today]);
 
-  const chip = (s: PlanSession, cls: string, title: string) => (
-    <div key={s.id} title={title} className={`mb-0.5 rounded px-1 py-0.5 leading-tight ${cls}`}>
-      {s.start ?? "?"} {s.courseName}
+  const chip = (s: PlanSession, cls: string, title: string, mark?: ReactNode) => (
+    <div
+      key={s.id}
+      title={title}
+      className={`mb-0.5 flex items-start rounded px-1 py-0.5 leading-tight ${cls}`}
+    >
+      {mark}
+      <span>
+        {s.start ?? "?"} {s.courseName}
+      </span>
     </div>
   );
 
@@ -82,6 +91,28 @@ export function WeekPlan({ data }: { data: PlanData }) {
             <span className="mr-1 inline-block h-2.5 w-2.5 rounded bg-destructive" />
             Doppelbelegung
           </span>
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">
+          Nach dem Termin (anklicken zum Ändern):
+        </span>
+        <span>
+          <MarkBadge state="ok" />
+          war da, bestätigt
+        </span>
+        <span>
+          <MarkBadge state="recorded" />
+          hat sich eingetragen, du musst noch bestätigen
+        </span>
+        <span>
+          <MarkBadge state="absent" />
+          war nicht da
+        </span>
+        <span>
+          <MarkBadge state="none" />
+          kein Eintrag
         </span>
       </div>
 
@@ -144,14 +175,30 @@ export function WeekPlan({ data }: { data: PlanData }) {
                       {mine.map((s) => {
                         const clash = mine.some((o) => o.id !== s.id && overlaps(o, s));
                         const open = ix.unconfirmed.has(`${s.id}|${t.id}`);
-                        return chip(
+                        const att = attendanceOf(ix, s, t.id, today);
+                        const el = chip(
                           s,
                           `${
                             clash || block
                               ? "bg-destructive text-destructive-foreground"
                               : "bg-primary text-primary-foreground"
-                          }${open ? " ring-2 ring-amber-300" : ""}`,
-                          `${s.courseName}${s.location ? ` · ${s.location}` : ""}${clash ? " – Doppelbelegung!" : ""}${block ? " – in einer Sperrzeit!" : ""}${open ? " – noch nicht bestätigt" : ""}`,
+                          }${open ? " ring-2 ring-amber-300" : ""}${att === "absent" ? " opacity-60" : ""}`,
+                          `${s.courseName}${s.location ? ` · ${s.location}` : ""}${clash ? " – Doppelbelegung!" : ""}${block ? " – in einer Sperrzeit!" : ""}${open ? " – noch nicht bestätigt" : ""}${att ? ` – ${markLabel(att)}` : ""}`,
+                          att ? <MarkBadge state={att} /> : undefined,
+                        );
+                        return att ? (
+                          <AttendanceAction
+                            key={s.id}
+                            state={att}
+                            sessionId={s.id}
+                            trainerId={t.id}
+                            trainerName={t.name}
+                            onChanged={onChanged}
+                          >
+                            {el}
+                          </AttendanceAction>
+                        ) : (
+                          el
                         );
                       })}
                       {yes.map((s) =>

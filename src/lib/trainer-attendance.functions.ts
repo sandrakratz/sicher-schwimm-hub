@@ -356,21 +356,33 @@ export const correctTrainerAttendance = createServerFn({ method: "POST" })
       .eq("session_id", data.sessionId)
       .eq("trainer_id", data.trainerId)
       .maybeSingle();
-    if (!existing) throw new Error("Eintrag nicht gefunden");
-
     const now = new Date().toISOString();
     const reason = data.note?.trim();
-    const note = `Vom Vorstand korrigiert${reason ? `: ${reason}` : ""}`;
-    const { error } = await supabaseAdmin
-      .from("trainer_session_attendance")
-      .update({
+    const note = `Vom Vorstand ${existing ? "korrigiert" : "eingetragen"}${reason ? `: ${reason}` : ""}`;
+    if (existing) {
+      const { error } = await supabaseAdmin
+        .from("trainer_session_attendance")
+        .update({
+          present: data.present,
+          note,
+          confirmed_at: now,
+          confirmed_by: context.userId,
+        })
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      // Trainer:in hat nichts eingetragen: Vorstand trägt für sie/ihn ein (sofort bestätigt)
+      const { error } = await supabaseAdmin.from("trainer_session_attendance").insert({
+        session_id: data.sessionId,
+        trainer_id: data.trainerId,
         present: data.present,
         note,
+        recorded_by: context.userId,
         confirmed_at: now,
         confirmed_by: context.userId,
-      })
-      .eq("id", existing.id);
-    if (error) throw error;
+      });
+      if (error) throw error;
+    }
 
     try {
       const { logAudit } = await import("@/lib/audit.server");
@@ -380,7 +392,7 @@ export const correctTrainerAttendance = createServerFn({ method: "POST" })
         entity_id: data.sessionId,
         metadata: {
           trainer_id: data.trainerId,
-          was_present: !!existing.present,
+          was_present: existing ? !!existing.present : null,
           present: data.present,
           reason: reason || null,
         },

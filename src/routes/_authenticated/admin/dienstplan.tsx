@@ -6,7 +6,7 @@ import { RefreshCw, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadPlanningData } from "@/lib/dienstplan.functions";
-import { gapOf, indexPlan, type PlanData } from "@/lib/dienstplan";
+import { gapOf, indexPlan, openAttendanceCount, type PlanData } from "@/lib/dienstplan";
 import { todayBerlinIso } from "@/lib/format";
 import { GapList } from "@/components/admin/dienstplan/GapList";
 import { ReplacementDialog } from "@/components/admin/dienstplan/ReplacementDialog";
@@ -70,6 +70,12 @@ function Page() {
     return data.sessions.filter((s) => s.date >= today && gapOf(ix, s) > 0).length;
   }, [data]);
 
+  /** Vergangene Einsätze mit offener Anwesenheit (Bestätigung fehlt oder kein Eintrag). */
+  const openAtt = useMemo(
+    () => (data ? openAttendanceCount(data, indexPlan(data), todayBerlinIso()) : 0),
+    [data],
+  );
+
   const picked = data?.sessions.find((s) => s.id === pickId) ?? null;
 
   return (
@@ -96,8 +102,8 @@ function Page() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="h-auto flex-wrap">
             <TabsTrigger value="luecken">Lücken{openGaps > 0 ? ` (${openGaps})` : ""}</TabsTrigger>
-            <TabsTrigger value="woche">Wochenplan</TabsTrigger>
-            <TabsTrigger value="kurse">Nach Kursen</TabsTrigger>
+            <TabsTrigger value="woche">Wochenplan{openAtt > 0 ? ` (${openAtt})` : ""}</TabsTrigger>
+            <TabsTrigger value="kurse">Nach Kursen{openAtt > 0 ? ` (${openAtt})` : ""}</TabsTrigger>
             <TabsTrigger value="anwesenheit">Anwesenheit</TabsTrigger>
             <TabsTrigger value="vorschlag">Vorschlag</TabsTrigger>
             <TabsTrigger value="protokoll">Protokoll</TabsTrigger>
@@ -107,10 +113,10 @@ function Page() {
             <GapList data={data} onPick={setPickId} onWithdrawal={() => setWithdrawOpen(true)} />
           </TabsContent>
           <TabsContent value="woche" className="mt-4">
-            <WeekPlan data={data} />
+            <WeekPlan data={data} onChanged={() => void refresh()} />
           </TabsContent>
           <TabsContent value="kurse" className="mt-4">
-            <CoursePlan data={data} onPick={setPickId} />
+            <CoursePlan data={data} onPick={setPickId} onChanged={() => void refresh()} />
           </TabsContent>
           <TabsContent value="anwesenheit" className="mt-4">
             <AttendanceConfirm />
