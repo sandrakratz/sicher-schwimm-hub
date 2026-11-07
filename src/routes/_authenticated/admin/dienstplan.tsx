@@ -14,6 +14,7 @@ import { WithdrawalDialog } from "@/components/admin/dienstplan/WithdrawalDialog
 import { WeekPlan } from "@/components/admin/dienstplan/WeekPlan";
 import { CoursePlan } from "@/components/admin/dienstplan/CoursePlan";
 import { AutoPlan } from "@/components/admin/dienstplan/AutoPlan";
+import { AttendanceConfirm } from "@/components/admin/dienstplan/AttendanceConfirm";
 import { PlanLog } from "@/components/admin/dienstplan/PlanLog";
 
 export const Route = createFileRoute("/_authenticated/admin/dienstplan")({
@@ -97,6 +98,7 @@ function Page() {
             <TabsTrigger value="luecken">Lücken{openGaps > 0 ? ` (${openGaps})` : ""}</TabsTrigger>
             <TabsTrigger value="woche">Wochenplan</TabsTrigger>
             <TabsTrigger value="kurse">Nach Kursen</TabsTrigger>
+            <TabsTrigger value="anwesenheit">Anwesenheit</TabsTrigger>
             <TabsTrigger value="vorschlag">Vorschlag</TabsTrigger>
             <TabsTrigger value="protokoll">Protokoll</TabsTrigger>
           </TabsList>
@@ -109,6 +111,9 @@ function Page() {
           </TabsContent>
           <TabsContent value="kurse" className="mt-4">
             <CoursePlan data={data} onPick={setPickId} />
+          </TabsContent>
+          <TabsContent value="anwesenheit" className="mt-4">
+            <AttendanceConfirm />
           </TabsContent>
           <TabsContent value="vorschlag" className="mt-4">
             <AutoPlan data={data} onChanged={() => void refresh()} />

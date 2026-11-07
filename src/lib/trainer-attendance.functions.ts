@@ -250,3 +250,82 @@ export const countUnconfirmedTrainerAttendance = createServerFn({ method: "GET" 
       .is("confirmed_at", null);
     return count || 0;
   });
+
+export type OpenAttendanceRow = {
+  session_id: string;
+  trainer_id: string;
+  trainer_name: string;
+  present: boolean;
+  recorded_at: string;
+  course_name: string;
+  session_index: number;
+  session_date: string;
+  start_time: string | null;
+};
+
+/** Alle noch nicht bestätigten Trainer-Einträge über alle Kurse (Vorstand/Admin). */
+export const listOpenTrainerAttendance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<OpenAttendanceRow[]> => {
+    const roles = await rolesOf(context.supabase, context.userId);
+    if (!roles.some((r) => ["admin", "board"].includes(r))) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: att } = await supabaseAdmin
+      .from("trainer_session_attendance")
+      .select("session_id,trainer_id,present,recorded_at")
+      .is("confirmed_at", null)
+      .limit(1000);
+    const list = (att || []) as {
+      session_id: string;
+      trainer_id: string;
+      present: boolean;
+      recorded_at: string;
+    }[];
+    if (list.length === 0) return [];
+
+    const { data: sess } = await supabaseAdmin
+      .from("course_sessions")
+      .select("id,course_id,session_index,session_date,start_time")
+      .in("id", Array.from(new Set(list.map((a) => a.session_id))));
+    const sessions = (sess || []) as {
+      id: string;
+      course_id: string;
+      session_index: number;
+      session_date: string;
+      start_time: string | null;
+    }[];
+    const { data: crs } = await supabaseAdmin
+      .from("courses")
+      .select("id,name")
+      .in("id", Array.from(new Set(sessions.map((s) => s.course_id))));
+    const courseName = new Map(
+      ((crs || []) as { id: string; name: string }[]).map((c) => [c.id, c.name] as const),
+    );
+    const sessionById = new Map(sessions.map((s) => [s.id, s]));
+    const names = await displayNames(list.map((a) => a.trainer_id));
+
+    return list
+      .flatMap((a) => {
+        const s = sessionById.get(a.session_id);
+        if (!s) return [];
+        return [
+          {
+            session_id: a.session_id,
+            trainer_id: a.trainer_id,
+            trainer_name: names.get(a.trainer_id) || "—",
+            present: !!a.present,
+            recorded_at: a.recorded_at,
+            course_name: courseName.get(s.course_id) || "—",
+            session_index: s.session_index,
+            session_date: s.session_date,
+            start_time: s.start_time,
+          },
+        ];
+      })
+      .sort(
+        (x, y) =>
+          x.session_date.localeCompare(y.session_date) ||
+          x.course_name.localeCompare(y.course_name) ||
+          x.trainer_name.localeCompare(y.trainer_name),
+      );
+  });
