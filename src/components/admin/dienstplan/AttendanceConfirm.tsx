@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   listOpenTrainerAttendance,
   confirmTrainerAttendance,
+  correctTrainerAttendance,
   type OpenAttendanceRow,
 } from "@/lib/trainer-attendance.functions";
 import { formatDateBerlin } from "@/lib/format";
@@ -14,6 +15,7 @@ import { formatDateBerlin } from "@/lib/format";
 export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
   const load = useServerFn(listOpenTrainerAttendance);
   const confirmFn = useServerFn(confirmTrainerAttendance);
+  const correctFn = useServerFn(correctTrainerAttendance);
   const [rows, setRows] = useState<OpenAttendanceRow[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -43,6 +45,36 @@ export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
       onChanged?.();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Bestätigen fehlgeschlagen");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** Eintrag ablehnen (→ „nicht anwesend“) bzw. umgekehrt; gilt sofort als bestätigt. */
+  async function correct(r: OpenAttendanceRow) {
+    const toPresent = !r.present;
+    const reason = window.prompt(
+      toPresent
+        ? `${r.trainer_name} doch als „anwesend“ eintragen und bestätigen?\nGrund (optional):`
+        : `${r.trainer_name} als „nicht anwesend“ eintragen (Eintrag ablehnen)?\nGrund (optional), z. B. „nach der 1. Stunde gegangen“:`,
+      "",
+    );
+    if (reason === null) return;
+    setBusy(`${r.session_id}:${r.trainer_id}`);
+    try {
+      await correctFn({
+        data: {
+          sessionId: r.session_id,
+          trainerId: r.trainer_id,
+          present: toPresent,
+          note: reason,
+        },
+      });
+      toast.success(toPresent ? "Auf „anwesend“ korrigiert" : "Eintrag abgelehnt: nicht anwesend");
+      await refresh();
+      onChanged?.();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Korrigieren fehlgeschlagen");
     } finally {
       setBusy(null);
     }
@@ -88,6 +120,15 @@ export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
               >
                 {r.present ? "anwesend" : "nicht anwesend"}
               </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive"
+                disabled={busy !== null}
+                onClick={() => void correct(r)}
+              >
+                {r.present ? "Ablehnen" : "Doch anwesend"}
+              </Button>
               <Button
                 size="sm"
                 variant="outline"

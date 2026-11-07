@@ -329,3 +329,64 @@ export const listOpenTrainerAttendance = createServerFn({ method: "GET" })
           x.trainer_name.localeCompare(y.trainer_name),
       );
   });
+
+/**
+ * Vorstand korrigiert den Eintrag einer Trainer:in (z. B. zu Unrecht „anwesend“).
+ * Die Korrektur gilt sofort als bestätigt; abgerechnet werden nur bestätigte „anwesend“-Einträge.
+ */
+export const correctTrainerAttendance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { sessionId: string; trainerId: string; present: boolean; note?: string | null }) => {
+      if (!d || typeof d.sessionId !== "string" || d.sessionId.length < 8)
+        throw new Error("sessionId required");
+      if (typeof d.trainerId !== "string" || d.trainerId.length < 8)
+        throw new Error("trainerId required");
+      return d;
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const roles = await rolesOf(context.supabase, context.userId);
+    if (!roles.some((r) => ["admin", "board"].includes(r))) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: existing } = await supabaseAdmin
+      .from("trainer_session_attendance")
+      .select("id,present")
+      .eq("session_id", data.sessionId)
+      .eq("trainer_id", data.trainerId)
+      .maybeSingle();
+    if (!existing) throw new Error("Eintrag nicht gefunden");
+
+    const now = new Date().toISOString();
+    const reason = data.note?.trim();
+    const note = `Vom Vorstand korrigiert${reason ? `: ${reason}` : ""}`;
+    const { error } = await supabaseAdmin
+      .from("trainer_session_attendance")
+      .update({
+        present: data.present,
+        note,
+        confirmed_at: now,
+        confirmed_by: context.userId,
+      })
+      .eq("id", existing.id);
+    if (error) throw error;
+
+    try {
+      const { logAudit } = await import("@/lib/audit.server");
+      await logAudit(null, context.userId, {
+        action: "trainer_attendance_corrected",
+        entity: "course_sessions",
+        entity_id: data.sessionId,
+        metadata: {
+          trainer_id: data.trainerId,
+          was_present: !!existing.present,
+          present: data.present,
+          reason: reason || null,
+        },
+      });
+    } catch (err) {
+      console.warn("[trainer-attendance] Nicht-kritischer Fehler:", err);
+    }
+    return { ok: true };
+  });

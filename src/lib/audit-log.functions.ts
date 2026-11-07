@@ -413,6 +413,8 @@ export const listAuditLog = createServerFn({ method: "POST" })
           case "attendance_recorded":
           case "trainer_attendance_recorded":
             return `hat die Anwesenheit erfasst${target ? ` (${q(target)})` : ""}`;
+          case "trainer_attendance_corrected":
+            return `hat die Trainer-Anwesenheit auf „${m["present"] ? "anwesend" : "nicht anwesend"}“ korrigiert${target ? ` (${q(target)})` : ""}${m["reason"] ? ` – ${String(m["reason"])}` : ""}`;
           case "user.role_granted":
             return `hat ${t} eine Rolle zugewiesen${m["role"] ? ` (${String(m["role"])})` : ""}`;
           case "user.role_revoked":
