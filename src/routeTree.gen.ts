@@ -90,6 +90,8 @@ import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/no
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
 import { Route as ApiPublicTrainerIcsRouteImport } from './routes/api/public/trainer-ics'
+import { Route as AuthenticatedTrainerAbzeichenCourseIdRouteImport } from './routes/_authenticated/trainer/abzeichen.$courseId'
+import { Route as ApiPublicHooksBadgePrepReminderRouteImport } from './routes/api/public/hooks/badge-prep-reminder'
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
 import { Route as ApiPublicHooksDailyDigestRouteImport } from './routes/api/public/hooks/daily-digest'
 import { Route as ApiPublicHooksMajorityNoticeRouteImport } from './routes/api/public/hooks/majority-notice'
@@ -541,6 +543,18 @@ const ApiPublicTrainerIcsRoute = ApiPublicTrainerIcsRouteImport.update({
   path: '/api/public/trainer-ics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTrainerAbzeichenCourseIdRoute =
+  AuthenticatedTrainerAbzeichenCourseIdRouteImport.update({
+    id: '/trainer/abzeichen/$courseId',
+    path: '/trainer/abzeichen/$courseId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicHooksBadgePrepReminderRoute =
+  ApiPublicHooksBadgePrepReminderRouteImport.update({
+    id: '/api/public/hooks/badge-prep-reminder',
+    path: '/api/public/hooks/badge-prep-reminder',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCourseStartReminderRoute =
   ApiPublicHooksCourseStartReminderRouteImport.update({
     id: '/api/public/hooks/course-start-reminder',
@@ -671,6 +685,8 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
+  '/trainer/abzeichen/$courseId': typeof AuthenticatedTrainerAbzeichenCourseIdRoute
+  '/api/public/hooks/badge-prep-reminder': typeof ApiPublicHooksBadgePrepReminderRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
   '/api/public/hooks/daily-digest': typeof ApiPublicHooksDailyDigestRoute
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
@@ -760,6 +776,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
+  '/trainer/abzeichen/$courseId': typeof AuthenticatedTrainerAbzeichenCourseIdRoute
+  '/api/public/hooks/badge-prep-reminder': typeof ApiPublicHooksBadgePrepReminderRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
   '/api/public/hooks/daily-digest': typeof ApiPublicHooksDailyDigestRoute
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
@@ -852,6 +870,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
+  '/_authenticated/trainer/abzeichen/$courseId': typeof AuthenticatedTrainerAbzeichenCourseIdRoute
+  '/api/public/hooks/badge-prep-reminder': typeof ApiPublicHooksBadgePrepReminderRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
   '/api/public/hooks/daily-digest': typeof ApiPublicHooksDailyDigestRoute
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
@@ -944,6 +964,8 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/portal/'
     | '/trainer/'
+    | '/trainer/abzeichen/$courseId'
+    | '/api/public/hooks/badge-prep-reminder'
     | '/api/public/hooks/course-start-reminder'
     | '/api/public/hooks/daily-digest'
     | '/api/public/hooks/majority-notice'
@@ -1033,6 +1055,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/portal'
     | '/trainer'
+    | '/trainer/abzeichen/$courseId'
+    | '/api/public/hooks/badge-prep-reminder'
     | '/api/public/hooks/course-start-reminder'
     | '/api/public/hooks/daily-digest'
     | '/api/public/hooks/majority-notice'
@@ -1124,6 +1148,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/trainer/'
+    | '/_authenticated/trainer/abzeichen/$courseId'
+    | '/api/public/hooks/badge-prep-reminder'
     | '/api/public/hooks/course-start-reminder'
     | '/api/public/hooks/daily-digest'
     | '/api/public/hooks/majority-notice'
@@ -1173,6 +1199,7 @@ export interface RootRouteChildren {
   ApiPublicPayQrRoute: typeof ApiPublicPayQrRoute
   ApiPublicSubmitCancellationRoute: typeof ApiPublicSubmitCancellationRoute
   ApiPublicTrainerIcsRoute: typeof ApiPublicTrainerIcsRoute
+  ApiPublicHooksBadgePrepReminderRoute: typeof ApiPublicHooksBadgePrepReminderRoute
   ApiPublicHooksCourseStartReminderRoute: typeof ApiPublicHooksCourseStartReminderRoute
   ApiPublicHooksDailyDigestRoute: typeof ApiPublicHooksDailyDigestRoute
   ApiPublicHooksMajorityNoticeRoute: typeof ApiPublicHooksMajorityNoticeRoute
@@ -1752,6 +1779,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTrainerIcsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/trainer/abzeichen/$courseId': {
+      id: '/_authenticated/trainer/abzeichen/$courseId'
+      path: '/trainer/abzeichen/$courseId'
+      fullPath: '/trainer/abzeichen/$courseId'
+      preLoaderRoute: typeof AuthenticatedTrainerAbzeichenCourseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/hooks/badge-prep-reminder': {
+      id: '/api/public/hooks/badge-prep-reminder'
+      path: '/api/public/hooks/badge-prep-reminder'
+      fullPath: '/api/public/hooks/badge-prep-reminder'
+      preLoaderRoute: typeof ApiPublicHooksBadgePrepReminderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/course-start-reminder': {
       id: '/api/public/hooks/course-start-reminder'
       path: '/api/public/hooks/course-start-reminder'
@@ -1903,6 +1944,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTrainerVerfuegbarkeitRoute: typeof AuthenticatedTrainerVerfuegbarkeitRoute
   AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
   AuthenticatedTrainerIndexRoute: typeof AuthenticatedTrainerIndexRoute
+  AuthenticatedTrainerAbzeichenCourseIdRoute: typeof AuthenticatedTrainerAbzeichenCourseIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1920,6 +1962,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedTrainerVerfuegbarkeitRoute,
   AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
   AuthenticatedTrainerIndexRoute: AuthenticatedTrainerIndexRoute,
+  AuthenticatedTrainerAbzeichenCourseIdRoute:
+    AuthenticatedTrainerAbzeichenCourseIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -1965,6 +2009,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicPayQrRoute: ApiPublicPayQrRoute,
   ApiPublicSubmitCancellationRoute: ApiPublicSubmitCancellationRoute,
   ApiPublicTrainerIcsRoute: ApiPublicTrainerIcsRoute,
+  ApiPublicHooksBadgePrepReminderRoute: ApiPublicHooksBadgePrepReminderRoute,
   ApiPublicHooksCourseStartReminderRoute:
     ApiPublicHooksCourseStartReminderRoute,
   ApiPublicHooksDailyDigestRoute: ApiPublicHooksDailyDigestRoute,

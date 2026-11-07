@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
@@ -227,6 +227,11 @@ function Page() {
             disabled={exporting === c.id}
           >
             {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
+          </Button>
+          <Button variant="outline" size="sm" className="ml-2" asChild>
+            <Link to="/trainer/abzeichen/$courseId" params={{ courseId: c.id }}>
+              Abzeichen vorbereiten
+            </Link>
           </Button>
           <Button
             variant="destructive"
