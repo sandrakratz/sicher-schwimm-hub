@@ -15,15 +15,6 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useRef, useState } from "react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Check,
   Users,
   Heart,
@@ -36,9 +27,6 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
-
-// Technische Obergrenze im Formular (Missbrauchsschutz); die Satzung kennt keine Begrenzung.
-const MAX_CHILDREN = 20;
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -56,6 +44,9 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { submitMembershipSignup } from "@/lib/membership-signup.functions";
 import { useContactDefaults } from "@/hooks/use-contact-defaults";
+
+// Technische Obergrenze im Formular (Missbrauchsschutz); die Satzung kennt keine Begrenzung.
+const MAX_CHILDREN = 20;
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
