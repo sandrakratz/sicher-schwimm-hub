@@ -38,6 +38,7 @@ import { template as trainerPayoutChanged } from "./trainer-payout-changed";
 import { template as dienstplanTrainer } from "./dienstplan-trainer";
 import { template as dienstplanIntern } from "./dienstplan-intern";
 import { template as familienschwimmen } from "./familienschwimmen";
+import { template as newsNotice } from "./news-notice";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -87,4 +88,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "dienstplan-trainer": dienstplanTrainer,
   "dienstplan-intern": dienstplanIntern,
   familienschwimmen: familienschwimmen,
+  "news-notice": newsNotice,
 };

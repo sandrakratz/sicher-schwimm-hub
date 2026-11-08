@@ -31,6 +31,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "task-assigned": "Vorgang zugewiesen (intern, an das zuständige Vorstandsmitglied)",
   "dienstplan-trainer": "Dienstplan: Einteilung, Änderung oder Ersatzanfrage (an Trainer:in)",
   "dienstplan-intern": "Dienstplan: Absage oder Übernahme (intern, an den Vorstand)",
+  "news-notice": "News-Hinweis: Neuigkeiten auf der Webseite (an Mitglieder)",
   familienschwimmen:
     "Familienschwimmen: Eingang, Zusage, Warteliste, Nachrücken, Absage (an Mitglieder)",
   "daily-digest": "Tägliche Zusammenfassung „Das liegt heute bei dir“ (intern)",

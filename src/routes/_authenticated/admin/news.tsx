@@ -32,8 +32,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Mail, Plus, Trash2 } from "lucide-react";
 import { formatDateBerlin } from "@/lib/format";
+import { canNotify } from "@/lib/news-notice";
+import {
+  getNewsNoticeInfo,
+  sendNewsNoticeBatch,
+  sendNewsNoticeTest,
+} from "@/lib/news-notice.functions";
 import { MediaUploadField } from "@/components/admin/MediaUploadField";
 
 export const Route = createFileRoute("/_authenticated/admin/news")({
@@ -83,6 +89,75 @@ function Page() {
   const [rows, setRows] = useState<News[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<News>>({});
+  const [notice, setNotice] = useState<null | {
+    news: News;
+    info: Awaited<ReturnType<typeof getNewsNoticeInfo>> | null;
+    busy: boolean;
+    progress: string;
+  }>(null);
+
+  async function openNotice(n: News) {
+    setNotice({ news: n, info: null, busy: true, progress: "" });
+    try {
+      const info = await getNewsNoticeInfo({ data: { newsId: n.id } });
+      setNotice({ news: n, info, busy: false, progress: "" });
+    } catch (err) {
+      setNotice(null);
+      toast.error(err instanceof Error ? err.message : "Vorschau nicht möglich.");
+    }
+  }
+
+  async function sendTest() {
+    if (!notice) return;
+    try {
+      const r = await sendNewsNoticeTest({ data: { newsId: notice.news.id } });
+      toast.success(`Testmail an ${r.to} gesendet.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Testmail fehlgeschlagen.");
+    }
+  }
+
+  async function sendAll() {
+    if (!notice?.info) return;
+    const open = notice.info.open;
+    if (
+      !confirm(
+        `Jetzt an ${open} Mitglieder-Adressen senden? Diese Mail kann nicht zurückgeholt werden.`,
+      )
+    )
+      return;
+    const newsId = notice.news.id;
+    let delivered = 0;
+    setNotice((p) => (p ? { ...p, busy: true, progress: "Wird gesendet…" } : p));
+    try {
+      for (let i = 0; i < 100; i++) {
+        const r = await sendNewsNoticeBatch({ data: { newsId } });
+        delivered += r.delivered;
+        setNotice((p) =>
+          p ? { ...p, progress: `${delivered} gesendet, noch ${r.remaining} offen…` } : p,
+        );
+        if (r.remaining === 0) break;
+        if (r.limitReached) {
+          toast.warning(
+            `Das Tageslimit des Mail-Anbieters ist erreicht. ${delivered} gesendet, ${r.remaining} offen. Morgen auf „Weiter senden“ klicken.`,
+          );
+          break;
+        }
+        if (r.delivered === 0) {
+          toast.warning(
+            `Es konnte nichts mehr gesendet werden. ${r.remaining} Adressen sind offen (siehe Versandstatus).`,
+          );
+          break;
+        }
+      }
+      toast.success(`${delivered} Mails gesendet.`);
+      const info = await getNewsNoticeInfo({ data: { newsId } });
+      setNotice((p) => (p ? { ...p, info, busy: false, progress: "" } : p));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Versand unterbrochen.");
+      setNotice((p) => (p ? { ...p, busy: false, progress: "" } : p));
+    }
+  }
 
   async function load() {
     const { data } = await supabase
@@ -208,6 +283,16 @@ function Page() {
                   {n.published_at ? formatDateBerlin(n.published_at) : "—"}
                 </TableCell>
                 <TableCell className="text-right space-x-1">
+                  {canNotify(n) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Alle Mitglieder per E-Mail auf diesen Beitrag hinweisen"
+                      onClick={() => openNotice(n)}
+                    >
+                      <Mail className="h-4 w-4" /> Per Mail ankündigen
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>
                     Bearbeiten
                   </Button>
@@ -226,6 +311,63 @@ function Page() {
           </TableBody>
         </Table>
       </CollapsibleCard>
+
+      <Dialog open={!!notice} onOpenChange={(o) => !o && !notice?.busy && setNotice(null)}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Mitglieder per E-Mail informieren</DialogTitle>
+          </DialogHeader>
+          {!notice?.info ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Wird geladen…
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-md border p-4 bg-muted/40">
+                <div className="text-xs text-muted-foreground">So sieht der Inhalt aus:</div>
+                <div className="font-semibold text-primary-deep mt-1">{notice.info.title}</div>
+                <p className="text-sm mt-1 whitespace-pre-wrap">{notice.info.preview}</p>
+                <div className="text-xs text-muted-foreground mt-2">
+                  Knopf „Weiterlesen“ → {notice.info.url}
+                </div>
+              </div>
+              <ul className="text-sm space-y-1">
+                <li>
+                  Empfänger insgesamt: <strong>{notice.info.total}</strong> (aktive Mitglieder, ohne
+                  Doppelte)
+                </li>
+                <li>
+                  Schon informiert: <strong>{notice.info.alreadySent}</strong> · noch offen:{" "}
+                  <strong>{notice.info.open}</strong>
+                </li>
+                <li>
+                  Heute noch möglich (Tageslimit des Mail-Anbieters):{" "}
+                  <strong>{notice.info.budgetToday}</strong>
+                </li>
+              </ul>
+              {notice.info.open > notice.info.budgetToday && (
+                <p className="text-sm text-amber-700">
+                  Das Tageslimit reicht nicht für alle. Es wird so viel gesendet wie möglich, den
+                  Rest kannst du morgen mit „Weiter senden“ nachholen.
+                </p>
+              )}
+              {notice.progress && <p className="text-sm font-medium">{notice.progress}</p>}
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" disabled={!notice?.info || notice.busy} onClick={sendTest}>
+              Testmail an mich
+            </Button>
+            <Button
+              disabled={!notice?.info || notice.busy || notice.info.open === 0}
+              onClick={sendAll}
+            >
+              {notice?.busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {notice?.info && notice.info.alreadySent > 0 ? "Weiter senden" : "An alle senden"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
