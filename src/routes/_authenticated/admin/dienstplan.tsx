@@ -6,6 +6,7 @@ import { RefreshCw, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadPlanningData } from "@/lib/dienstplan.functions";
+import { getMyAdminRoles } from "@/lib/role-guard";
 import { gapOf, indexPlan, openAttendanceCount, type PlanData } from "@/lib/dienstplan";
 import { todayBerlinIso } from "@/lib/format";
 import { GapList } from "@/components/admin/dienstplan/GapList";
@@ -42,6 +43,13 @@ function Page() {
   const [pickId, setPickId] = useState<string | null>(null);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [logKey, setLogKey] = useState(0);
+  // Protokoll nur für den Administrator (Server prüft das ebenfalls)
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    getMyAdminRoles()
+      .then((r) => setIsAdmin(r.roles.includes("admin")))
+      .catch(() => setIsAdmin(false));
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -106,7 +114,7 @@ function Page() {
             <TabsTrigger value="kurse">Nach Kursen{openAtt > 0 ? ` (${openAtt})` : ""}</TabsTrigger>
             <TabsTrigger value="anwesenheit">Anwesenheit</TabsTrigger>
             <TabsTrigger value="vorschlag">Vorschlag</TabsTrigger>
-            <TabsTrigger value="protokoll">Protokoll</TabsTrigger>
+            {isAdmin && <TabsTrigger value="protokoll">Protokoll</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="luecken" className="mt-4">
@@ -124,9 +132,11 @@ function Page() {
           <TabsContent value="vorschlag" className="mt-4">
             <AutoPlan data={data} onChanged={() => void refresh()} />
           </TabsContent>
-          <TabsContent value="protokoll" className="mt-4">
-            <PlanLog reloadKey={logKey} />
-          </TabsContent>
+          {isAdmin && (
+            <TabsContent value="protokoll" className="mt-4">
+              <PlanLog reloadKey={logKey} />
+            </TabsContent>
+          )}
 
           <ReplacementDialog
             session={picked}

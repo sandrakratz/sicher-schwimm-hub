@@ -791,7 +791,12 @@ export const listDienstplanLog = createServerFn({ method: "POST" })
     z.object({ limit: z.number().int().min(1).max(1000).default(300) }).parse(input ?? {}),
   )
   .handler(async ({ data, context }): Promise<DienstplanLogRow[]> => {
-    await assertStaff(context);
+    // Das Protokoll sieht ausschließlich der Administrator (nicht der übrige Vorstand)
+    const { data: isAdminRole } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdminRole) throw new Error("Forbidden");
     const db = await admin();
     const { data: rows, error } = await db
       .from("dienstplan_log")
