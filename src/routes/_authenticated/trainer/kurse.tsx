@@ -146,8 +146,10 @@ function Page() {
   const isDone = (c: TrainerCourse) =>
     (c.ends_on != null && c.ends_on.slice(0, 10) < today) ||
     !c.participants.some((p) => p.status !== "cancelled");
-  const activeCourses = courses.filter((c) => !isDone(c));
-  const doneCourses = courses.filter(isDone);
+  const activeCourses = courses.filter((c) => !isDone(c) && !c.supporting);
+  const doneCourses = courses.filter((c) => isDone(c) && !c.supporting);
+  // Vorstand/Verwaltung: weitere laufende Kurse ohne Einteilung, eingeklappt in einer eigenen Rubrik
+  const supportCourses = courses.filter((c) => c.supporting && !isDone(c));
 
   return (
     <div className="space-y-4">
@@ -185,6 +187,19 @@ function Page() {
       />
 
       {activeCourses.map((c, i) => renderCourse(c, i === 0))}
+
+      {supportCourses.length > 0 && (
+        <CollapsibleCard
+          storageKey="trainer-kurse-unterstuetzung"
+          title="Weitere laufende Kurse"
+          subtitle="Hier bist du nicht eingeteilt – zum Aushelfen kannst du trotzdem Anwesenheit melden und Fortschritte eintragen"
+          meta={<Badge variant="outline">{supportCourses.length}</Badge>}
+        >
+          <div className="space-y-4 px-4 pb-4 sm:px-6">
+            {supportCourses.map((c) => renderCourse(c, false))}
+          </div>
+        </CollapsibleCard>
+      )}
 
       {doneCourses.length > 0 && (
         <CollapsibleCard

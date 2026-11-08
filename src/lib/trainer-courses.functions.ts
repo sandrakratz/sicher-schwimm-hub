@@ -42,6 +42,8 @@ export type TrainerCourse = {
   schedule: string | null;
   starts_on: string | null;
   ends_on: string | null;
+  /** Nur Vorstand/Verwaltung: laufender Kurs, in dem die Person nicht eingeteilt ist. */
+  supporting: boolean;
   participants: TrainerParticipant[];
 };
 
@@ -104,9 +106,27 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
     );
     assignedSessions.forEach((s) => allowed.add(s.course_id));
 
+    const todayIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+
+    // Vorstand/Verwaltung: zusätzlich alle aktuell laufenden Kurse (zur spontanen Unterstützung, auch ohne
+    // Einteilung). Eigene Kurse bleiben unverändert; die übrigen werden als „supporting“ markiert.
+    const own = new Set(allowed);
+    if (roles.some((r) => ["admin", "board"].includes(r))) {
+      const running = await fetchAll<{ id: string }>((f, t) =>
+        supabaseAdmin
+          .from("courses")
+          .select("id")
+          .is("archived_at", null)
+          .lte("starts_on", todayIso)
+          .gte("ends_on", todayIso)
+          .order("id")
+          .range(f, t),
+      );
+      running.forEach((c) => allowed.add(c.id));
+    }
+
     if (allowed.size === 0) return [];
     let ids = Array.from(allowed);
-    const todayIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
 
     const courses = (
       await fetchIn<any>(ids, (chunk, f, t) =>
@@ -209,6 +229,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       schedule: (c.schedule ?? null) as string | null,
       starts_on: (c.starts_on ?? null) as string | null,
       ends_on: (c.ends_on ?? null) as string | null,
+      supporting: !own.has(c.id as string),
       participants: parts
         .filter((p) => p.course_id === c.id)
         .map((p) => ({
