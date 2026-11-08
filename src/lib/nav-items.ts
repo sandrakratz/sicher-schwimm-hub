@@ -18,6 +18,7 @@ import {
   ScrollText,
   Euro,
   BarChart3,
+  Waves,
 } from "lucide-react";
 
 export type Role = "admin" | "board" | "trainer" | "member" | "parent";
@@ -27,6 +28,7 @@ export type AppNavItem = {
     | "/portal"
     | "/portal/profil"
     | "/portal/kurse"
+    | "/portal/familienschwimmen"
     | "/portal/news"
     | "/portal/events"
     | "/portal/dokumente"
@@ -38,6 +40,7 @@ export type AppNavItem = {
     | "/admin"
     | "/admin/kalender"
     | "/admin/dienstplan"
+    | "/admin/familienschwimmen"
     | "/admin/qualifikationen"
     | "/admin/kursplanung"
     | "/admin/benutzer"
@@ -75,6 +78,7 @@ export const portalNav: AppNavItem[] = [
   { to: "/portal", icon: LayoutDashboard, label: "Übersicht", exact: true },
   { to: "/portal/profil", icon: User, label: "Mein Profil" },
   { to: "/portal/kurse", icon: BookOpen, label: "Meine Kurse" },
+  { to: "/portal/familienschwimmen", icon: Waves, label: "Familienschwimmen" },
   { to: "/portal/news", icon: Newspaper, label: "Vereinsnews" },
   { to: "/portal/events", icon: Calendar, label: "Termine" },
   { to: "/portal/dokumente", icon: FileText, label: "Dokumente" },
@@ -138,6 +142,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
       { to: "/admin/kalender", label: "Kurse & Termine" },
       { to: "/admin/kursplanung", label: "Kursplanung" },
       { to: "/admin/dienstplan", label: "Dienstplan" },
+      { to: "/admin/familienschwimmen", label: "Familienschwimmen" },
       { to: "/admin/qualifikationen", label: "Trainer-Qualifikationen" },
     ],
   },

@@ -231,6 +231,25 @@ function Page() {
         verarbeitet.
       </p>
 
+      <H2>10a. Familienschwimmen (nur für Vereinsmitglieder)</H2>
+      <p>
+        Wenn Sie sich im Mitgliederbereich für das Familienschwimmen anmelden, verarbeiten wir die
+        Namen und Geburtsdaten der angemeldeten Familienmitglieder (aus Ihrem Mitgliedskonto), Ihre
+        Kontaktdaten, die gewünschten Termine, gegebenenfalls den Namen einer Aufsichtsperson auf
+        der Tribüne und Ihre Anmerkung. Zweck ist die Durchführung des Angebots und die faire
+        Vergabe der begrenzten Plätze. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO
+        (Mitgliedschaftsverhältnis).
+      </p>
+      <p>
+        Für die faire Vergabe führen wir je Mitgliedskonto einen Zähler: Anzahl der tatsächlichen
+        Teilnahmen, Anzahl der Strafpunkte durch kurzfristige Absagen oder Nichterscheinen und das
+        Datum der letzten Teilnahme. Namen von Kindern werden dafür nicht gespeichert. Die Angaben
+        sind nur für berechtigte Vorstandsmitglieder sichtbar und werden nicht an andere Mitglieder
+        weitergegeben. Sechs Monate nach dem Termin löschen wir Namen, Geburtsdaten, Kontaktdaten,
+        Aufsichtsperson und Anmerkungen. Der Zähler bleibt bis zum Ende der Mitgliedschaft
+        gespeichert und wird danach gelöscht.
+      </p>
+
       <H2>11. Cookies, Browser-Speicher & Nutzungsmessung</H2>
       <p>
         Diese Webseite setzt <strong>keine Cookies</strong>. Beim Anmelden speichert Ihr Browser

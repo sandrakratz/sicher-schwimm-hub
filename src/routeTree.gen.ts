@@ -53,6 +53,7 @@ import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminErwachsenenkursRouteImport } from './routes/_authenticated/admin/erwachsenenkurs'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin/events'
 import { Route as AuthenticatedAdminFamilieRouteImport } from './routes/_authenticated/admin/familie'
+import { Route as AuthenticatedAdminFamilienschwimmenRouteImport } from './routes/_authenticated/admin/familienschwimmen'
 import { Route as AuthenticatedAdminFolgekurseRouteImport } from './routes/_authenticated/admin/folgekurse'
 import { Route as AuthenticatedAdminKalenderRouteImport } from './routes/_authenticated/admin/kalender'
 import { Route as AuthenticatedAdminKurseRouteImport } from './routes/_authenticated/admin/kurse'
@@ -75,6 +76,7 @@ import { Route as AuthenticatedAdminZustaendigkeitenRouteImport } from './routes
 import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated/portal/index'
 import { Route as AuthenticatedPortalDokumenteRouteImport } from './routes/_authenticated/portal/dokumente'
 import { Route as AuthenticatedPortalEventsRouteImport } from './routes/_authenticated/portal/events'
+import { Route as AuthenticatedPortalFamilienschwimmenRouteImport } from './routes/_authenticated/portal/familienschwimmen'
 import { Route as AuthenticatedPortalKontaktRouteImport } from './routes/_authenticated/portal/kontakt'
 import { Route as AuthenticatedPortalKurseRouteImport } from './routes/_authenticated/portal/kurse'
 import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authenticated/portal/news'
@@ -330,6 +332,12 @@ const AuthenticatedAdminFamilieRoute =
     path: '/familie',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminFamilienschwimmenRoute =
+  AuthenticatedAdminFamilienschwimmenRouteImport.update({
+    id: '/familienschwimmen',
+    path: '/familienschwimmen',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminFolgekurseRoute =
   AuthenticatedAdminFolgekurseRouteImport.update({
     id: '/folgekurse',
@@ -457,6 +465,12 @@ const AuthenticatedPortalEventsRoute =
   AuthenticatedPortalEventsRouteImport.update({
     id: '/portal/events',
     path: '/portal/events',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPortalFamilienschwimmenRoute =
+  AuthenticatedPortalFamilienschwimmenRouteImport.update({
+    id: '/portal/familienschwimmen',
+    path: '/portal/familienschwimmen',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPortalKontaktRoute =
@@ -647,6 +661,7 @@ export interface FileRoutesByFullPath {
   '/admin/erwachsenenkurs': typeof AuthenticatedAdminErwachsenenkursRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/familie': typeof AuthenticatedAdminFamilieRoute
+  '/admin/familienschwimmen': typeof AuthenticatedAdminFamilienschwimmenRoute
   '/admin/folgekurse': typeof AuthenticatedAdminFolgekurseRoute
   '/admin/kalender': typeof AuthenticatedAdminKalenderRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
@@ -668,6 +683,7 @@ export interface FileRoutesByFullPath {
   '/admin/zustaendigkeiten': typeof AuthenticatedAdminZustaendigkeitenRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/portal/familienschwimmen': typeof AuthenticatedPortalFamilienschwimmenRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
@@ -738,6 +754,7 @@ export interface FileRoutesByTo {
   '/admin/erwachsenenkurs': typeof AuthenticatedAdminErwachsenenkursRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/familie': typeof AuthenticatedAdminFamilieRoute
+  '/admin/familienschwimmen': typeof AuthenticatedAdminFamilienschwimmenRoute
   '/admin/folgekurse': typeof AuthenticatedAdminFolgekurseRoute
   '/admin/kalender': typeof AuthenticatedAdminKalenderRoute
   '/admin/kurse': typeof AuthenticatedAdminKurseRoute
@@ -759,6 +776,7 @@ export interface FileRoutesByTo {
   '/admin/zustaendigkeiten': typeof AuthenticatedAdminZustaendigkeitenRoute
   '/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/portal/familienschwimmen': typeof AuthenticatedPortalFamilienschwimmenRoute
   '/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
   '/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/portal/news': typeof AuthenticatedPortalNewsRoute
@@ -832,6 +850,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/erwachsenenkurs': typeof AuthenticatedAdminErwachsenenkursRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/familie': typeof AuthenticatedAdminFamilieRoute
+  '/_authenticated/admin/familienschwimmen': typeof AuthenticatedAdminFamilienschwimmenRoute
   '/_authenticated/admin/folgekurse': typeof AuthenticatedAdminFolgekurseRoute
   '/_authenticated/admin/kalender': typeof AuthenticatedAdminKalenderRoute
   '/_authenticated/admin/kurse': typeof AuthenticatedAdminKurseRoute
@@ -853,6 +872,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/zustaendigkeiten': typeof AuthenticatedAdminZustaendigkeitenRoute
   '/_authenticated/portal/dokumente': typeof AuthenticatedPortalDokumenteRoute
   '/_authenticated/portal/events': typeof AuthenticatedPortalEventsRoute
+  '/_authenticated/portal/familienschwimmen': typeof AuthenticatedPortalFamilienschwimmenRoute
   '/_authenticated/portal/kontakt': typeof AuthenticatedPortalKontaktRoute
   '/_authenticated/portal/kurse': typeof AuthenticatedPortalKurseRoute
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
@@ -926,6 +946,7 @@ export interface FileRouteTypes {
     | '/admin/erwachsenenkurs'
     | '/admin/events'
     | '/admin/familie'
+    | '/admin/familienschwimmen'
     | '/admin/folgekurse'
     | '/admin/kalender'
     | '/admin/kurse'
@@ -947,6 +968,7 @@ export interface FileRouteTypes {
     | '/admin/zustaendigkeiten'
     | '/portal/dokumente'
     | '/portal/events'
+    | '/portal/familienschwimmen'
     | '/portal/kontakt'
     | '/portal/kurse'
     | '/portal/news'
@@ -1017,6 +1039,7 @@ export interface FileRouteTypes {
     | '/admin/erwachsenenkurs'
     | '/admin/events'
     | '/admin/familie'
+    | '/admin/familienschwimmen'
     | '/admin/folgekurse'
     | '/admin/kalender'
     | '/admin/kurse'
@@ -1038,6 +1061,7 @@ export interface FileRouteTypes {
     | '/admin/zustaendigkeiten'
     | '/portal/dokumente'
     | '/portal/events'
+    | '/portal/familienschwimmen'
     | '/portal/kontakt'
     | '/portal/kurse'
     | '/portal/news'
@@ -1110,6 +1134,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/erwachsenenkurs'
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/familie'
+    | '/_authenticated/admin/familienschwimmen'
     | '/_authenticated/admin/folgekurse'
     | '/_authenticated/admin/kalender'
     | '/_authenticated/admin/kurse'
@@ -1131,6 +1156,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/zustaendigkeiten'
     | '/_authenticated/portal/dokumente'
     | '/_authenticated/portal/events'
+    | '/_authenticated/portal/familienschwimmen'
     | '/_authenticated/portal/kontakt'
     | '/_authenticated/portal/kurse'
     | '/_authenticated/portal/news'
@@ -1520,6 +1546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFamilieRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/familienschwimmen': {
+      id: '/_authenticated/admin/familienschwimmen'
+      path: '/familienschwimmen'
+      fullPath: '/admin/familienschwimmen'
+      preLoaderRoute: typeof AuthenticatedAdminFamilienschwimmenRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/folgekurse': {
       id: '/_authenticated/admin/folgekurse'
       path: '/folgekurse'
@@ -1672,6 +1705,13 @@ declare module '@tanstack/react-router' {
       path: '/portal/events'
       fullPath: '/portal/events'
       preLoaderRoute: typeof AuthenticatedPortalEventsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal/familienschwimmen': {
+      id: '/_authenticated/portal/familienschwimmen'
+      path: '/portal/familienschwimmen'
+      fullPath: '/portal/familienschwimmen'
+      preLoaderRoute: typeof AuthenticatedPortalFamilienschwimmenRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/portal/kontakt': {
@@ -1863,6 +1903,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminErwachsenenkursRoute: typeof AuthenticatedAdminErwachsenenkursRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminFamilieRoute: typeof AuthenticatedAdminFamilieRoute
+  AuthenticatedAdminFamilienschwimmenRoute: typeof AuthenticatedAdminFamilienschwimmenRoute
   AuthenticatedAdminFolgekurseRoute: typeof AuthenticatedAdminFolgekurseRoute
   AuthenticatedAdminKalenderRoute: typeof AuthenticatedAdminKalenderRoute
   AuthenticatedAdminKurseRoute: typeof AuthenticatedAdminKurseRoute
@@ -1898,6 +1939,8 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminErwachsenenkursRoute,
     AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
     AuthenticatedAdminFamilieRoute: AuthenticatedAdminFamilieRoute,
+    AuthenticatedAdminFamilienschwimmenRoute:
+      AuthenticatedAdminFamilienschwimmenRoute,
     AuthenticatedAdminFolgekurseRoute: AuthenticatedAdminFolgekurseRoute,
     AuthenticatedAdminKalenderRoute: AuthenticatedAdminKalenderRoute,
     AuthenticatedAdminKurseRoute: AuthenticatedAdminKurseRoute,
@@ -1934,6 +1977,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedPortalDokumenteRoute: typeof AuthenticatedPortalDokumenteRoute
   AuthenticatedPortalEventsRoute: typeof AuthenticatedPortalEventsRoute
+  AuthenticatedPortalFamilienschwimmenRoute: typeof AuthenticatedPortalFamilienschwimmenRoute
   AuthenticatedPortalKontaktRoute: typeof AuthenticatedPortalKontaktRoute
   AuthenticatedPortalKurseRoute: typeof AuthenticatedPortalKurseRoute
   AuthenticatedPortalNewsRoute: typeof AuthenticatedPortalNewsRoute
@@ -1951,6 +1995,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedPortalDokumenteRoute: AuthenticatedPortalDokumenteRoute,
   AuthenticatedPortalEventsRoute: AuthenticatedPortalEventsRoute,
+  AuthenticatedPortalFamilienschwimmenRoute:
+    AuthenticatedPortalFamilienschwimmenRoute,
   AuthenticatedPortalKontaktRoute: AuthenticatedPortalKontaktRoute,
   AuthenticatedPortalKurseRoute: AuthenticatedPortalKurseRoute,
   AuthenticatedPortalNewsRoute: AuthenticatedPortalNewsRoute,
