@@ -19,6 +19,7 @@ import {
   Euro,
   BarChart3,
   Waves,
+  Inbox,
 } from "lucide-react";
 
 export type Role = "admin" | "board" | "trainer" | "member" | "parent";
@@ -33,6 +34,7 @@ export type AppNavItem = {
     | "/portal/events"
     | "/portal/dokumente"
     | "/portal/kontakt"
+    | "/portal/postfach"
     | "/trainer"
     | "/trainer/verfuegbarkeit"
     | "/trainer/kurse"
@@ -62,6 +64,7 @@ export type AppNavItem = {
     | "/admin/dokumente"
     | "/admin/events"
     | "/admin/nachrichten"
+    | "/admin/mitgliedernachricht"
     | "/admin/emails"
     | "/admin/versandstatus"
     | "/admin/widerrufe"
@@ -79,6 +82,7 @@ export const portalNav: AppNavItem[] = [
   { to: "/portal/profil", icon: User, label: "Mein Profil" },
   { to: "/portal/kurse", icon: BookOpen, label: "Meine Kurse" },
   { to: "/portal/familienschwimmen", icon: Waves, label: "Familienschwimmen" },
+  { to: "/portal/postfach", icon: Inbox, label: "Postfach" },
   { to: "/portal/news", icon: Newspaper, label: "Vereinsnews" },
   { to: "/portal/events", icon: Calendar, label: "Termine" },
   { to: "/portal/dokumente", icon: FileText, label: "Dokumente" },
@@ -165,6 +169,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
     label: "Kommunikation & E-Mails",
     tabs: [
       { to: "/admin/nachrichten", label: "Posteingang" },
+      { to: "/admin/mitgliedernachricht", label: "Mitglieder anschreiben" },
       { to: "/admin/emails", label: "Gesendete E-Mails" },
       { to: "/admin/versandstatus", label: "Versandstatus" },
     ],

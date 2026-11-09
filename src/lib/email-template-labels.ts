@@ -26,6 +26,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "course-removal-unpaid": "Kursplatz freigegeben (keine Rückmeldung/Zahlung)",
   "course-removal-agreed": "Kursabmeldung wie besprochen",
   "course-request-reply": "Antwort auf eine Kursanfrage",
+  "member-message-notice": "Nachricht vom Vorstand – Hinweis an Mitglied",
   "message-reply": "Antwort auf eine Nachricht",
   "waitlist-reply": "Rückfrage zu einem Wartelisten-Eintrag",
   "task-assigned": "Vorgang zugewiesen (intern, an das zuständige Vorstandsmitglied)",
