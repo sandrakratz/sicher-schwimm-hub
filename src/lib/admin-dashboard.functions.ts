@@ -58,38 +58,47 @@ export const getAdminTasks = createServerFn({ method: "POST" })
           .range(f, t),
     );
 
-    const [overdue, offers, memberships, messages, requests, memberChecks] = await Promise.all([
-      supabaseAdmin
-        .from("course_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "confirmed")
-        .eq("paid", false)
-        .not("payment_due_date", "is", null)
-        .lt("payment_due_date", today),
-      supabaseAdmin
-        .from("waitlist_entries")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "offered")
-        .not("offer_expires_at", "is", null)
-        .lt("offer_expires_at", in48h),
-      supabaseAdmin
-        .from("memberships")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending"),
-      supabaseAdmin
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .in("status", ["new", "read"]),
-      supabaseAdmin
-        .from("course_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "new"),
-      supabaseAdmin
-        .from("course_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("member_check", "pending")
-        .eq("status", "confirmed"),
-    ]);
+    const [overdue, offers, memberships, messages, requests, memberChecks, adultNew, familyNew] =
+      await Promise.all([
+        supabaseAdmin
+          .from("course_participants")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "confirmed")
+          .eq("paid", false)
+          .not("payment_due_date", "is", null)
+          .lt("payment_due_date", today),
+        supabaseAdmin
+          .from("waitlist_entries")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "offered")
+          .not("offer_expires_at", "is", null)
+          .lt("offer_expires_at", in48h),
+        supabaseAdmin
+          .from("memberships")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending"),
+        supabaseAdmin
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["new", "read"]),
+        supabaseAdmin
+          .from("course_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "new"),
+        supabaseAdmin
+          .from("course_participants")
+          .select("id", { count: "exact", head: true })
+          .eq("member_check", "pending")
+          .eq("status", "confirmed"),
+        (supabaseAdmin as any)
+          .from("adult_course_interests")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "new"),
+        (supabaseAdmin as any)
+          .from("family_swim_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "requested"),
+      ]);
 
     // „Anfrageliste: zu prüfen“ = offene Rückfragen („Warteliste behalten?“) + Familien, bei denen
     // der Sperrvorschlag (ab 3 Absagen/Stornierungen gesamt) offen ist. Gleiche Regel wie in listWaitlist.
@@ -186,6 +195,22 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         count: requests.count ?? 0,
         to: "/admin/archiv",
         tone: "attention",
+      },
+      {
+        key: "adult-interest",
+        label: "Erwachsenenschwimmen: neue Interessenten",
+        count: adultNew.count ?? 0,
+        to: "/admin/erwachsenenkurs",
+        tone: "attention",
+        hint: "Rückmeldungen mit Status „Neu“",
+      },
+      {
+        key: "family-swim",
+        label: "Familienschwimmen: neue Vormerkungen",
+        count: familyNew.count ?? 0,
+        to: "/admin/familienschwimmen",
+        tone: "attention",
+        hint: "noch nicht verteilt",
       },
       {
         key: "messages",
