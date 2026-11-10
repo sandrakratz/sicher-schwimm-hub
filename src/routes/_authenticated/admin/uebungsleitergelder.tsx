@@ -14,6 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainerBilling, TrainerRates } from "@/components/admin/TrainerBilling";
 import { TrainerPayouts } from "@/components/admin/TrainerPayouts";
+import { CourseResults } from "@/components/admin/CourseResults";
 import { toast } from "sonner";
 import { Copy, Download } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
@@ -57,12 +58,16 @@ function Page() {
       <Tabs defaultValue="abrechnung">
         <TabsList>
           <TabsTrigger value="abrechnung">Abrechnung</TabsTrigger>
+          <TabsTrigger value="ergebnis">Kursergebnis</TabsTrigger>
           <TabsTrigger value="saetze">Stundensätze</TabsTrigger>
           <TabsTrigger value="auszahlungen">Auszahlungen &amp; Bescheinigung</TabsTrigger>
           <TabsTrigger value="konten">Bankverbindungen</TabsTrigger>
         </TabsList>
         <TabsContent value="abrechnung" className="mt-4">
           <TrainerBilling />
+        </TabsContent>
+        <TabsContent value="ergebnis" className="mt-4">
+          <CourseResults />
         </TabsContent>
         <TabsContent value="saetze" className="mt-4">
           <TrainerRates />
