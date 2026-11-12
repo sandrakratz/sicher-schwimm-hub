@@ -84,7 +84,11 @@ export const getCourseResults = createServerFn({ method: "GET" })
           .range(f, t),
       ),
       fetchAll<any>((f, t) =>
-        supabaseAdmin.from("course_costs" as any).select("*").order("id").range(f, t),
+        supabaseAdmin
+          .from("course_costs" as any)
+          .select("*")
+          .order("id")
+          .range(f, t),
       ),
     ]);
 
