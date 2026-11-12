@@ -20,6 +20,15 @@ export interface SendRawEmailOptions {
   senderUserId?: string | null;
   replyTo?: string;
   metadata?: Record<string, unknown> | null;
+  /**
+   * Nur für Serienversand (z. B. Erinnerungen an viele Eltern in einem Lauf): Cloudflare erlaubt im
+   * kostenlosen Tarif nur ca. 50 Abfragen pro Aufruf. Mit diesen Optionen spart der Aufrufer die
+   * Einzelabfragen pro Mail ein, indem er sie vorab gesammelt erledigt.
+   */
+  /** Kleingeschriebene gesperrte Adressen, vorab gesammelt abgefragt (statt einer Abfrage pro Mail). */
+  knownSuppressed?: Set<string>;
+  /** Prüfung „Tageslimit fast erreicht“ nach dem Versand auslassen; der Aufrufer macht sie einmal am Ende. */
+  skipLimitWarning?: boolean;
 }
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
@@ -68,7 +77,7 @@ async function warnIfNearDailyLimit(admin: AdminClient) {
  */
 export async function sendRawEmail(
   opts: SendRawEmailOptions,
-): Promise<{ sent: boolean; reason?: string }> {
+): Promise<{ sent: boolean; reason?: string; retryable?: boolean }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const messageId = crypto.randomUUID();
   const logMetadata = { idempotency_key: opts.idempotencyKey, ...(opts.metadata ?? {}) };
@@ -84,12 +93,19 @@ export async function sendRawEmail(
     metadata: logMetadata,
   };
 
-  const { data: suppressedRow } = await supabaseAdmin
-    .from("suppressed_emails")
-    .select("id")
-    .eq("email", opts.recipientEmail.trim().toLowerCase())
-    .maybeSingle();
-  if (suppressedRow) {
+  const recipientKey = opts.recipientEmail.trim().toLowerCase();
+  let isSuppressed: boolean;
+  if (opts.knownSuppressed) {
+    isSuppressed = opts.knownSuppressed.has(recipientKey);
+  } else {
+    const { data: suppressedRow } = await supabaseAdmin
+      .from("suppressed_emails")
+      .select("id")
+      .eq("email", recipientKey)
+      .maybeSingle();
+    isSuppressed = !!suppressedRow;
+  }
+  if (isSuppressed) {
     const { error: logErr } = await supabaseAdmin
       .from("email_send_log")
       .insert({ ...logRow, status: "suppressed" });
@@ -113,7 +129,11 @@ export async function sendRawEmail(
       .from("email_send_log")
       .insert({ ...logRow, status: "failed", error_message: message.slice(0, 1000) });
     if (logErr) console.error("email_send_log insert failed", logErr);
-    return { sent: false, reason: "send_failed" };
+    // Ablehnung wegen falscher Adresse o. Ä. (4xx) bringt beim nächsten Versuch nichts;
+    // Tageslimit (429) und Ausfälle beim Anbieter (5xx, Netz) dagegen schon.
+    const status = error instanceof EmailSendError ? error.status : 0;
+    const retryable = !(status >= 400 && status < 500 && status !== 429);
+    return { sent: false, reason: "send_failed", retryable };
   }
 
   const { error: logErr } = await supabaseAdmin
@@ -121,9 +141,17 @@ export async function sendRawEmail(
     .insert({ ...logRow, status: "sent" });
   if (logErr) console.error("email_send_log insert failed", logErr);
 
-  if (opts.templateName !== WARNING_TEMPLATE) await warnIfNearDailyLimit(supabaseAdmin);
+  if (opts.templateName !== WARNING_TEMPLATE && !opts.skipLimitWarning) {
+    await warnIfNearDailyLimit(supabaseAdmin);
+  }
 
   return { sent: true };
+}
+
+/** Einmalige Prüfung „Tageslimit fast erreicht“ für Aufrufer, die mit `skipLimitWarning` gesendet haben. */
+export async function checkDailyLimitWarning(): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await warnIfNearDailyLimit(supabaseAdmin);
 }
 
 /**
@@ -139,7 +167,10 @@ export async function queueTemplateEmail(opts: {
   replyTo?: string;
   /** Zusätzliche Metadaten im Sendeprotokoll (z. B. zur Dedupe-Prüfung). */
   metadata?: Record<string, unknown> | null;
-}): Promise<{ queued: boolean; reason?: string }> {
+  /** Siehe `SendRawEmailOptions`: Einsparung von Abfragen bei Serienversand. */
+  knownSuppressed?: Set<string>;
+  skipLimitWarning?: boolean;
+}): Promise<{ queued: boolean; reason?: string; retryable?: boolean }> {
   const tpl = TEMPLATES[opts.templateName];
   if (!tpl) return { queued: false, reason: "unknown_template" };
 
@@ -164,7 +195,9 @@ export async function queueTemplateEmail(opts: {
     senderUserId: opts.senderUserId ?? null,
     replyTo: opts.replyTo,
     metadata: opts.metadata ?? null,
+    knownSuppressed: opts.knownSuppressed,
+    skipLimitWarning: opts.skipLimitWarning,
   });
 
-  return { queued: result.sent, reason: result.reason };
+  return { queued: result.sent, reason: result.reason, retryable: result.retryable };
 }
