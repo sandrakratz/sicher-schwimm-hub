@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CalendarPlus, FileUp, RefreshCw, Trash2, Wand2 } from "lucide-react";
+import { AlertTriangle, CalendarPlus, FileUp, RefreshCw, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -21,14 +21,18 @@ import { todayBerlinIso } from "@/lib/format";
 import { extractPlanLines } from "@/lib/pool-file";
 import {
   POOLS,
+  SKIPPED_BY_HAND,
+  adjustKey,
   autoBlocks,
   blocksFit,
   holidayName,
+  hourStart,
   laneUsage,
   parsePoolSlots,
   planTerms,
   suggestByDemand,
   trainersNeeded,
+  type Adjustments,
   type KindSetting,
   type PlannedTerm,
   type PoolSlot,
@@ -106,7 +110,7 @@ export function Kursplanung() {
 
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [kindsPool, setKindsPool] = useState("");
-  const [pause, setPause] = useState(15);
+  const [adjust, setAdjust] = useState<Adjustments>({});
   const [publish, setPublish] = useState(false);
   const saveReady = useRef(false);
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
@@ -345,14 +349,13 @@ export function Kursplanung() {
       }));
     const blocks = autoBlocks(base, cfg.lanes);
     // Zuletzt verwendete Einstellungen dieses Bades, soweit die Kursangebote noch existieren.
-    let saved: { kinds?: Kind[]; pause?: number } = {};
+    let saved: { kinds?: Kind[] } = {};
     try {
       saved = JSON.parse(localStorage.getItem(`kursplanung-${pool}`) ?? "{}");
     } catch {
       /* ohne gespeicherte Werte starten */
     }
     const keep = (saved.kinds ?? []).filter((k) => programs.some((p) => p.id === k.id));
-    if (typeof saved.pause === "number") setPause(saved.pause);
     setKinds(keep.length ? keep : base.map((k) => ({ ...k, block: blocks[k.id], max: null })));
     setToggled({});
     saveReady.current = true;
@@ -363,11 +366,11 @@ export function Kursplanung() {
   useEffect(() => {
     if (!saveReady.current || kindsPool !== pool) return;
     try {
-      localStorage.setItem(`kursplanung-${pool}`, JSON.stringify({ kinds, pause }));
+      localStorage.setItem(`kursplanung-${pool}`, JSON.stringify({ kinds }));
     } catch {
       /* nicht schlimm */
     }
-  }, [kinds, pause, pool, kindsPool]);
+  }, [kinds, pool, kindsPool]);
 
   function skipReason(s: StoredSlot): string | undefined {
     if (s.mode === "familie") return "Familienschwimmen";
@@ -389,8 +392,8 @@ export function Kursplanung() {
   }, [future]);
 
   const terms = useMemo(
-    () => planTerms(future, skip, kinds, pause, cfg.lanes, taken),
-    [future, skip, kinds, pause, cfg.lanes, taken],
+    () => planTerms(future, skip, kinds, cfg.lanes, taken, adjust),
+    [future, skip, kinds, cfg.lanes, taken, adjust],
   );
 
   const need = trainersNeeded(kinds, cfg.lanes);
@@ -494,13 +497,13 @@ export function Kursplanung() {
 
   const typical = future.find((s) => !s.closed && s.start);
   const blockMinutes = kinds[0]?.minutes ?? 45;
-  const nBlocks = Math.min(4, Math.max(1, typical ? blocksFit(typical, blockMinutes, pause) : 2));
+  const nBlocks = Math.min(4, Math.max(1, typical ? blocksFit(typical, blockMinutes) : 2));
   // Wie viele Kurse einer Art pro Tag in die Badezeit passen (ab ihrem Zeitblock, nebeneinander oder nacheinander).
   const noFit = kinds
     .filter((k) => k.count > 0)
     .map((k) => {
       const perBlock = Math.max(1, Math.floor(cfg.lanes / k.lanes));
-      const blocksLeft = typical ? Math.max(0, blocksFit(typical, k.minutes, pause) - k.block) : 0;
+      const blocksLeft = typical ? Math.max(0, blocksFit(typical, k.minutes) - k.block) : 0;
       return { k, fit: blocksLeft * perBlock };
     })
     .filter((x) => x.fit < x.k.count);
@@ -562,9 +565,7 @@ export function Kursplanung() {
 
   function applyDemand() {
     if (!waiting) return toast.error("Die Warteliste konnte nicht gelesen werden.");
-    const blocks = typical
-      ? Math.max(0, ...kinds.map((k) => blocksFit(typical, k.minutes, pause)))
-      : 0;
+    const blocks = typical ? Math.max(0, ...kinds.map((k) => blocksFit(typical, k.minutes))) : 0;
     const counts = suggestByDemand(
       kinds.map((k) => ({ id: k.id, lanes: k.lanes, demand: demandOf(k), max: maxFor(k) })),
       cfg.lanes,
@@ -747,6 +748,52 @@ export function Kursplanung() {
     }
   }
 
+  /** Angebote, die in der Liste stehen: die zum Bad passenden plus alles, was schon geplant ist. */
+  const kindRows = programs.filter(
+    (p) => poolPrograms.some((x) => x.id === p.id) || kinds.some((k) => k.id === p.id),
+  );
+
+  const defaultKind = (id: string): Kind => ({
+    id,
+    lanes: Math.min(cfg.lanes, /aufbau/i.test(programName(id)) ? 2 : 1),
+    minutes: 45,
+    units: unitsFor(id),
+    trainers: trainersFor(id),
+    count: 1,
+    block: 0,
+    max: null,
+    from: null,
+  });
+
+  /** Kurs in die Planung aufnehmen oder herausnehmen; neue Kurse bekommen die erste freie Stunde. */
+  function toggleKind(id: string, on: boolean) {
+    setKinds((all) => {
+      const has = all.some((x) => x.id === id);
+      const next = has
+        ? all.map((x) => (x.id === id ? { ...x, count: on ? Math.max(1, x.count) : 0 } : x))
+        : on
+          ? [...all, defaultKind(id)]
+          : all;
+      if (!on) return next;
+      const placed = autoBlocks(next, cfg.lanes);
+      return next.map((x) => (x.id === id && !has ? { ...x, block: placed[id] ?? 0 } : x));
+    });
+    setToggled({});
+  }
+
+  /** Einzelnen Termin eines Vorschlags anpassen (auslassen / andere Startzeit); undefined/false nimmt es zurück. */
+  function setAdj(trackId: string, date: string, patch: { skip?: boolean; start?: string }) {
+    setAdjust((all) => {
+      const key = adjustKey(trackId, date);
+      const cur = { ...all[key], ...patch };
+      const next = { ...all };
+      if (!cur.skip && !cur.start) delete next[key];
+      else next[key] = { skip: cur.skip || undefined, start: cur.start };
+      return next;
+    });
+    setToggled({});
+  }
+
   // ---------- Darstellung ----------
 
   const months = useMemo(() => {
@@ -784,8 +831,8 @@ export function Kursplanung() {
 
   function blockCell(s: StoredSlot, b: number) {
     if (!s.start) return null;
-    const from = toMin(s.start) + b * (blockMinutes + pause);
-    const to = from + blockMinutes;
+    const from = hourStart(s, b);
+    const to = from + 60;
     const list = (entriesOn[s.date] ?? []).filter(
       (e) => toMin(e.start) < to && toMin(e.end) > from,
     );
@@ -813,6 +860,7 @@ export function Kursplanung() {
             setPending(null);
             setConflicts([]);
             setToggled({});
+            setAdjust({});
           }}
         >
           {p.name} · {p.dayName}s
@@ -942,7 +990,7 @@ export function Kursplanung() {
                       <th className="w-44 p-1.5 text-left">Nutzung</th>
                       {Array.from({ length: nBlocks }, (_, b) => (
                         <th key={b} className="border-l p-1.5 text-left">
-                          Block {b + 1}
+                          {b + 1}. Stunde{typical?.start ? ` (${hhmm(hourStart(typical, b))})` : ""}
                         </th>
                       ))}
                       <th className="border-l p-1.5 text-left">Trainer</th>
@@ -1057,12 +1105,13 @@ export function Kursplanung() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="text-sm font-semibold">
-                  1. Welche Kurse sollen pro {cfg.dayName} laufen?
+                  1. Welche Kurse sollen jeden {cfg.dayName} laufen?
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {cfg.name} hat {cfg.lanes} {cfg.lanes === 1 ? "Bahn (nur ganzes Bad)" : "Bahnen"}.
-                  Kurse im selben Block laufen gleichzeitig, der nächste Block beginnt danach.
-                  „Anzahl“ 0 = dieses Angebot nicht planen.
+                  Kurse ankreuzen und Startzeit wählen: die 1. Stunde beginnt mit der Badzeit, die
+                  2. Stunde eine Stunde später. Termine und abweichende Badzeiten kommen aus dem
+                  Badplan. {cfg.name} hat {cfg.lanes}{" "}
+                  {cfg.lanes === 1 ? "Bahn (nur ganzes Bad)" : "Bahnen"}.
                 </p>
               </div>
               <Button size="sm" variant="outline" onClick={applyDemand}>
@@ -1070,155 +1119,158 @@ export function Kursplanung() {
               </Button>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-2">
-              {kinds.map((k) => {
-                const set = (patch: Partial<Kind>) =>
-                  setKinds((all) => all.map((x) => (x.id === k.id ? { ...x, ...patch } : x)));
+            <div className="space-y-1.5">
+              {kindRows.map((p) => {
+                const k = kinds.find((x) => x.id === p.id);
+                const on = !!k && k.count > 0;
+                const set = (patch: Partial<Kind>) => {
+                  setKinds((all) => all.map((x) => (x.id === p.id ? { ...x, ...patch } : x)));
+                  setToggled({});
+                };
                 const num = (v: string, min = 1) => Math.max(min, Number(v) || min);
-                const dem = demandOf(k);
-                const mx = maxFor(k);
                 const field = (label: string, el: React.ReactNode) => (
                   <label className="text-[11px] text-muted-foreground">
                     {label}
                     {el}
                   </label>
                 );
+                const dem = k ? demandOf(k) : demandFor(p.id, null);
+                const mx = k ? maxFor(k) : null;
                 return (
-                  <div
-                    key={k.id}
-                    className={`rounded-md border p-2.5 ${k.count === 0 ? "opacity-60" : ""}`}
-                  >
-                    <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
-                      <span className="text-sm font-semibold">{programName(k.id)}</span>
-                      <span className="flex items-center gap-2 text-xs">
-                        {waiting === null
-                          ? ""
-                          : `${dem} wartend${mx ? ` (≈ ${(dem / mx).toFixed(1)} Kurse)` : ""}`}
-                        <button
-                          type="button"
-                          title="Dieses Kursangebot aus der Planung entfernen"
-                          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => {
-                            setKinds((all) => all.filter((x) => x.id !== k.id));
-                            setToggled({});
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-2">
-                      {field(
-                        "Kurse pro Tag",
-                        <Input
-                          className="h-8"
-                          type="number"
-                          value={k.count}
-                          onChange={(e) => set({ count: num(e.target.value, 0) })}
-                        />,
-                      )}
-                      {field(
-                        "Bahnen",
-                        <Input
-                          className="h-8"
-                          type="number"
-                          value={k.lanes}
-                          onChange={(e) => set({ lanes: Math.min(cfg.lanes, num(e.target.value)) })}
-                        />,
-                      )}
-                      {field(
-                        "Minuten",
-                        <Input
-                          className="h-8"
-                          type="number"
-                          value={k.minutes}
-                          onChange={(e) => set({ minutes: num(e.target.value, 15) })}
-                        />,
-                      )}
-                      {field(
-                        "Termine je Kurs",
-                        <Input
-                          className="h-8"
-                          type="number"
-                          value={k.units}
-                          onChange={(e) => set({ units: Math.min(30, num(e.target.value)) })}
-                        />,
-                      )}
-                      {field(
-                        "Block",
-                        <Select
-                          value={String(k.block)}
-                          onValueChange={(v) => set({ block: Number(v) })}
-                        >
-                          <SelectTrigger className="h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[0, 1, 2].map((b) => (
-                              <SelectItem key={b} value={String(b)}>
-                                {b + 1}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>,
-                      )}
-                      {field(
-                        "Plätze",
-                        <Input
-                          className="h-8"
-                          type="number"
-                          value={k.max ?? mx ?? ""}
-                          onChange={(e) =>
-                            set({ max: e.target.value ? Number(e.target.value) : null })
-                          }
-                        />,
-                      )}
-                      {field(
-                        "Trainer",
-                        <Input
-                          className="h-8"
-                          type="number"
-                          value={k.trainers}
-                          onChange={(e) => set({ trainers: Math.min(10, num(e.target.value)) })}
-                        />,
+                  <div key={p.id} className={`rounded-md border p-2.5 ${on ? "" : "bg-muted/30"}`}>
+                    <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+                      <label className="flex min-w-[14rem] flex-1 cursor-pointer items-center gap-2 self-center text-sm font-semibold">
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={(e) => toggleKind(p.id, e.target.checked)}
+                        />
+                        {p.name}
+                        {waiting !== null && (
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {dem} wartend{mx && on ? ` (≈ ${(dem / mx).toFixed(1)} Kurse)` : ""}
+                          </span>
+                        )}
+                      </label>
+                      {on && k && (
+                        <>
+                          {field(
+                            "Startzeit",
+                            <Select
+                              value={String(k.block)}
+                              onValueChange={(v) => set({ block: Number(v) })}
+                            >
+                              <SelectTrigger className="h-8 w-44">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from(
+                                  { length: Math.max(2, nBlocks, k.block + 1) },
+                                  (_, b) => (
+                                    <SelectItem key={b} value={String(b)}>
+                                      {b + 1}. Stunde
+                                      {typical?.start
+                                        ? ` · ${hhmm(hourStart(typical, b))} Uhr`
+                                        : ""}
+                                    </SelectItem>
+                                  ),
+                                )}
+                              </SelectContent>
+                            </Select>,
+                          )}
+                          {field(
+                            "Kurse parallel",
+                            <Input
+                              className="h-8 w-20"
+                              type="number"
+                              value={k.count}
+                              onChange={(e) => set({ count: num(e.target.value, 1) })}
+                            />,
+                          )}
+                          {field(
+                            "Start frühestens",
+                            <Input
+                              className="h-8 w-40"
+                              type="date"
+                              value={k.from ?? ""}
+                              onChange={(e) => set({ from: e.target.value || null })}
+                            />,
+                          )}
+                        </>
                       )}
                     </div>
+                    {on && k && (
+                      <details className="mt-1.5">
+                        <summary className="cursor-pointer text-xs text-muted-foreground">
+                          Bahnen, Dauer, Termine, Plätze, Trainer ({k.lanes}{" "}
+                          {k.lanes === 1 ? "Bahn" : "Bahnen"}, {k.minutes} Min., {k.units} Termine)
+                        </summary>
+                        <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                          {field(
+                            "Bahnen",
+                            <Input
+                              className="h-8"
+                              type="number"
+                              value={k.lanes}
+                              onChange={(e) =>
+                                set({ lanes: Math.min(cfg.lanes, num(e.target.value)) })
+                              }
+                            />,
+                          )}
+                          {field(
+                            "Minuten",
+                            <Input
+                              className="h-8"
+                              type="number"
+                              value={k.minutes}
+                              onChange={(e) => set({ minutes: num(e.target.value, 15) })}
+                            />,
+                          )}
+                          {field(
+                            "Termine je Kurs",
+                            <Input
+                              className="h-8"
+                              type="number"
+                              value={k.units}
+                              onChange={(e) => set({ units: Math.min(30, num(e.target.value)) })}
+                            />,
+                          )}
+                          {field(
+                            "Plätze",
+                            <Input
+                              className="h-8"
+                              type="number"
+                              value={k.max ?? mx ?? ""}
+                              onChange={(e) =>
+                                set({ max: e.target.value ? Number(e.target.value) : null })
+                              }
+                            />,
+                          )}
+                          {field(
+                            "Trainer",
+                            <Input
+                              className="h-8"
+                              type="number"
+                              value={k.trainers}
+                              onChange={(e) => set({ trainers: Math.min(10, num(e.target.value)) })}
+                            />,
+                          )}
+                        </div>
+                      </details>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            {programs.some((p) => !kinds.some((k) => k.id === p.id)) && (
-              <Select
-                value=""
-                onValueChange={(id) =>
-                  setKinds((all) => [
-                    ...all,
-                    {
-                      id,
-                      lanes: Math.min(cfg.lanes, /aufbau/i.test(programName(id)) ? 2 : 1),
-                      minutes: 45,
-                      units: unitsFor(id),
-                      trainers: trainersFor(id),
-                      count: 1,
-                      block: 0,
-                      max: null,
-                    },
-                  ])
-                }
-              >
+            {programs.some((p) => !kindRows.some((r) => r.id === p.id)) && (
+              <Select value="" onValueChange={(id) => toggleKind(id, true)}>
                 <SelectTrigger className="h-8 w-72">
-                  <SelectValue placeholder="Kursangebot hinzufügen…" />
+                  <SelectValue placeholder="Weiteres Kursangebot hinzufügen…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Alle Angebote, die zum Bad passenden zuerst */}
                   {programs
-                    .filter((p) => !kinds.some((k) => k.id === p.id))
-                    .sort(
-                      (a, b) =>
-                        Number(cfg.match.test(`${b.location ?? ""} ${b.name}`)) -
-                        Number(cfg.match.test(`${a.location ?? ""} ${a.name}`)),
-                    )
+                    .filter((p) => !kindRows.some((r) => r.id === p.id))
                     .map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
@@ -1235,7 +1287,8 @@ export function Kursplanung() {
                   key={b}
                   className={n > cfg.lanes ? "font-semibold text-red-600" : "text-muted-foreground"}
                 >
-                  Block {Number(b) + 1}: {n}/{cfg.lanes} Bahnen{n > cfg.lanes ? " – zu viele!" : ""}
+                  {Number(b) + 1}. Stunde: {n}/{cfg.lanes} Bahnen
+                  {n > cfg.lanes ? " – zu viele!" : ""}
                 </span>
               ))}
               {noFit.map(({ k, fit }) => (
@@ -1244,15 +1297,6 @@ export function Kursplanung() {
                   ({time(typical)})
                 </span>
               ))}
-              <label className="flex items-center gap-1">
-                Pause zwischen Blöcken (Min.)
-                <Input
-                  className="h-7 w-16"
-                  type="number"
-                  value={pause}
-                  onChange={(e) => setPause(Math.max(0, Number(e.target.value) || 0))}
-                />
-              </label>
             </div>
           </section>
 
@@ -1261,8 +1305,10 @@ export function Kursplanung() {
               <div>
                 <div className="text-sm font-semibold">2. Vorgeschlagene Kurszeiträume</div>
                 <p className="text-xs text-muted-foreground">
-                  Bereits laufende Kurse, gesperrte Termine und Feiertage sind berücksichtigt. Was
-                  du ankreuzt, siehst du im Terminplan gestrichelt.
+                  Bereits laufende Kurse, gesperrte Termine und Feiertage sind berücksichtigt; die
+                  Uhrzeiten richten sich nach der Badzeit des jeweiligen Tages. Unter „Termine“
+                  kannst du einzelne Tage auslassen oder die Uhrzeit ändern. Was du ankreuzt, siehst
+                  du im Terminplan gestrichelt.
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1">
@@ -1277,6 +1323,15 @@ export function Kursplanung() {
                   />
                   gleich auf der Webseite zeigen
                 </label>
+                {Object.keys(adjust).length > 0 && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-muted-foreground underline"
+                    onClick={() => setAdjust({})}
+                  >
+                    {Object.keys(adjust).length} Änderungen zurücksetzen
+                  </button>
+                )}
               </div>
             </div>
             {!terms.length && (
@@ -1293,71 +1348,138 @@ export function Kursplanung() {
                 const th = staffGaps(t);
                 const isFirst = terms.find((x) => x.track.id === t.track.id) === t;
                 const odd = t.sessions.filter((s) => s.start !== first.start);
+                const same = terms.filter((x) => x.track.id === t.track.id);
+                const prev = same[same.indexOf(t) - 1];
+                const prevLast = prev ? prev.sessions[prev.sessions.length - 1].date : "";
+                const byHand = Object.entries(adjust)
+                  .filter(([key, a]) => a.skip && key.startsWith(`${t.track.id}|`))
+                  .map(([key]) => ({ date: key.slice(t.track.id.length + 1) }))
+                  .filter((b) => b.date > prevLast && b.date <= last.date)
+                  .sort((a, b) => a.date.localeCompare(b.date));
                 return (
-                  <label
-                    key={t.id}
-                    className="flex cursor-pointer items-start gap-3 rounded border p-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      className="mt-1"
-                      checked={isSelected(t)}
-                      onChange={(e) => setToggled((m) => ({ ...m, [t.id]: e.target.checked }))}
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">
-                        {programName(t.track.kindId)}
-                        {k.count > 1 ? ` ${t.track.copy}` : ""}
-                        <span className="font-normal text-muted-foreground">
-                          {" "}
-                          · {fmt(first.date)} bis {fmt(last.date)} · {t.sessions.length} Termine ·{" "}
-                          {first.start}–{first.end} Uhr
-                        </span>
+                  <div key={t.id} className="rounded border p-2 text-sm">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={isSelected(t)}
+                        onChange={(e) => setToggled((m) => ({ ...m, [t.id]: e.target.checked }))}
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">
+                          {programName(t.track.kindId)}
+                          {k.count > 1 ? ` ${t.track.copy}` : ""}
+                          <span className="font-normal text-muted-foreground">
+                            {" "}
+                            · {fmt(first.date)} bis {fmt(last.date)} · {t.sessions.length} Termine ·{" "}
+                            {first.start}–{first.end} Uhr
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap gap-1 text-[11px]">
+                          {isFirst && waiting !== null && (
+                            <Badge variant="outline" className="text-emerald-700">
+                              {demandFor(t.track.kindId, first.date)} wartend
+                            </Badge>
+                          )}
+                          {t.breaks.length > 0 && (
+                            <Badge variant="outline">
+                              Pausen: {t.breaks.map((b) => `${short(b.date)} ${b.note}`).join(", ")}
+                            </Badge>
+                          )}
+                          {odd.length > 0 && (
+                            <Badge variant="outline">
+                              andere Zeit:{" "}
+                              {odd.map((s) => `${short(s.date)} ${s.start}`).join(", ")}
+                            </Badge>
+                          )}
+                          {!t.complete && (
+                            <Badge variant="outline" className="text-amber-700">
+                              nur {t.sessions.length} von {k.units} Terminen (Vertragsende)
+                            </Badge>
+                          )}
+                          {th.length > 0 && (
+                            <Badge
+                              variant="outline"
+                              className={th.some((c) => c.hard) ? "text-red-600" : "text-amber-700"}
+                              title="frei / benötigt; „schon eingeteilt“ = Trainer sind zur selben Zeit in einem anderen Kurs"
+                            >
+                              Trainer:{" "}
+                              {th
+                                .map(
+                                  (c) =>
+                                    `${short(c.date)} ${c.st.yes + (surveyed ? 0 : c.st.unknown)}/${c.req}${c.st.busy ? ` (${c.st.busy} schon eingeteilt)` : ""}`,
+                                )
+                                .join(", ")}
+                            </Badge>
+                          )}
+                          {ov && (
+                            <Badge variant="outline" className="text-red-600">
+                              überschneidet {ov}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-0.5 flex flex-wrap gap-1 text-[11px]">
-                        {isFirst && waiting !== null && (
-                          <Badge variant="outline" className="text-emerald-700">
-                            {demandFor(t.track.kindId, first.date)} wartend
-                          </Badge>
-                        )}
-                        {t.breaks.length > 0 && (
-                          <Badge variant="outline">
-                            Pausen: {t.breaks.map((b) => `${short(b.date)} ${b.note}`).join(", ")}
-                          </Badge>
-                        )}
-                        {odd.length > 0 && (
-                          <Badge variant="outline">
-                            andere Zeit: {odd.map((s) => `${short(s.date)} ${s.start}`).join(", ")}
-                          </Badge>
-                        )}
-                        {!t.complete && (
-                          <Badge variant="outline" className="text-amber-700">
-                            nur {t.sessions.length} von {k.units} Terminen (Vertragsende)
-                          </Badge>
-                        )}
-                        {th.length > 0 && (
-                          <Badge
-                            variant="outline"
-                            className={th.some((c) => c.hard) ? "text-red-600" : "text-amber-700"}
-                            title="frei / benötigt; „schon eingeteilt“ = Trainer sind zur selben Zeit in einem anderen Kurs"
-                          >
-                            Trainer:{" "}
-                            {th
-                              .map(
-                                (c) =>
-                                  `${short(c.date)} ${c.st.yes + (surveyed ? 0 : c.st.unknown)}/${c.req}${c.st.busy ? ` (${c.st.busy} schon eingeteilt)` : ""}`,
-                              )
-                              .join(", ")}
-                          </Badge>
-                        )}
-                        {ov && (
-                          <Badge variant="outline" className="text-red-600">
-                            überschneidet {ov}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </label>
+                    </label>
+                    <details className="ml-7 mt-1">
+                      <summary className="cursor-pointer text-xs text-muted-foreground">
+                        Termine anpassen
+                      </summary>
+                      <ul className="mt-1 space-y-1 text-xs">
+                        {t.sessions.map((s) => (
+                          <li key={s.date} className="flex flex-wrap items-center gap-2">
+                            <span className="w-28 font-medium">{fmt(s.date)}</span>
+                            <Input
+                              className="h-7 w-28"
+                              type="time"
+                              step={300}
+                              value={s.start}
+                              onChange={(e) =>
+                                e.target.value &&
+                                setAdj(t.track.id, s.date, { start: e.target.value })
+                              }
+                            />
+                            <span className="text-muted-foreground">bis {s.end} Uhr</span>
+                            {s.manual && (
+                              <button
+                                type="button"
+                                className="underline"
+                                onClick={() => setAdj(t.track.id, s.date, { start: undefined })}
+                              >
+                                Zeit zurücksetzen
+                              </button>
+                            )}
+                            {s.moved && (
+                              <span className="text-amber-700">
+                                frühere Stunde (Badzeit/belegt)
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              className="text-destructive underline"
+                              onClick={() => setAdj(t.track.id, s.date, { skip: true })}
+                            >
+                              Tag auslassen
+                            </button>
+                          </li>
+                        ))}
+                        {byHand.map((b) => (
+                          <li key={b.date} className="flex flex-wrap items-center gap-2">
+                            <span className="w-28 text-muted-foreground line-through">
+                              {fmt(b.date)}
+                            </span>
+                            <span className="text-muted-foreground">ausgelassen</span>
+                            <button
+                              type="button"
+                              className="underline"
+                              onClick={() => setAdj(t.track.id, b.date, { skip: false })}
+                            >
+                              wieder aufnehmen
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </div>
                 );
               })}
             </div>
