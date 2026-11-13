@@ -144,6 +144,8 @@ export type KindSetting = {
   block: number;
   /** Trainer:innen, die ein Kurs dieser Art je Termin braucht. */
   trainers: number;
+  /** Frühestes Datum (YYYY-MM-DD) für den Beginn; leer = ab dem ersten Badtermin. */
+  from?: string | null;
 };
 
 export const POOLS = [
@@ -169,11 +171,25 @@ export const POOLS = [
   },
 ];
 
-/** Anzahl Zeitblöcke, die in einen Termin passen. */
-export function blocksFit(slot: PoolSlot, minutes: number, pause: number): number {
-  if (!slot.start || !slot.end || minutes <= 0) return 0;
-  const len = toMin(slot.end) - toMin(slot.start);
-  return Math.max(0, Math.floor((len + pause) / (minutes + pause)));
+/** Die Wasserzeit ist in Stunden eingeteilt: die 1. Stunde beginnt mit dem Bad, die 2. eine Stunde später. */
+export const HOUR = 60;
+
+/** Beginn der n-ten Stunde (0 = erste) der Wasserzeit eines Termins, in Minuten seit Mitternacht. */
+export function hourStart(slot: PoolSlot, hour: number): number {
+  return toMin(slot.start!) + hour * HOUR;
+}
+
+/** Passt ein Kurs dieser Dauer in die angegebene Stunde der Wasserzeit? */
+export function fitsHour(slot: PoolSlot, hour: number, minutes: number): boolean {
+  if (slot.closed || !slot.start || !slot.end || minutes <= 0) return false;
+  return hourStart(slot, hour) + minutes <= toMin(slot.end);
+}
+
+/** Anzahl Stunden der Wasserzeit, in denen ein Kurs dieser Dauer beginnen kann. */
+export function blocksFit(slot: PoolSlot, minutes: number): number {
+  let n = 0;
+  while (n < 12 && fitsHour(slot, n, minutes)) n++;
+  return n;
 }
 
 /** Belegte Bahnen je Zeitblock (für die Kapazitätsanzeige). */
@@ -281,7 +297,15 @@ export type TakenSession = {
   noTime?: boolean;
 };
 
-export type PlannedSession = { date: string; start: string; end: string };
+export type PlannedSession = {
+  date: string;
+  start: string;
+  end: string;
+  /** Andere Stunde als gewünscht, weil die gewünschte an diesem Tag nicht passt oder belegt ist. */
+  moved?: boolean;
+  /** Uhrzeit von Hand geändert. */
+  manual?: boolean;
+};
 export type PlannedTerm = {
   id: string;
   track: Track;
@@ -291,18 +315,25 @@ export type PlannedTerm = {
   complete: boolean;
 };
 
+/** Handarbeit am Vorschlag, je Kurs (Track) und Datum: Termin auslassen oder andere Startzeit. */
+export type Adjustments = Record<string, { skip?: boolean; start?: string }>;
+export const SKIPPED_BY_HAND = "von dir ausgelassen";
+export const adjustKey = (trackId: string, date: string) => `${trackId}|${date}`;
+
 /**
  * Verteilt die Kurse auf die Termine.
  * `skip` enthält gesperrte Termine mit Grund (Familienschwimmen, entfällt, Feiertag …).
  * Pro Kursart und Kopie entsteht eine Folge hintereinander liegender Kurszeiträume.
+ * Die Startzeit folgt dem Badplan: gewünschte Stunde der Wasserzeit des jeweiligen Tages. Passt sie an
+ * einem Tag nicht (kürzere Badzeit) oder ist belegt, weicht der Termin auf eine frühere Stunde aus.
  */
 export function planTerms(
   slots: PoolSlot[],
   skip: Record<string, string>,
   kinds: KindSetting[],
-  pause: number,
   poolLanes: number,
   taken: Record<string, TakenSession[]> = {},
+  adjust: Adjustments = {},
 ): PlannedTerm[] {
   const out: PlannedTerm[] = [];
   for (const kind of kinds) {
@@ -313,19 +344,35 @@ export function planTerms(
       let pendingBreaks: { date: string; note: string }[] = [];
       let n = 0;
       for (const s of slots) {
-        const fits = blocksFit(s, k.minutes, pause) > k.block;
-        // Bereits angelegte Kurse belegen Bahnen: ist im Zeitblock nicht genug frei, entfällt der Termin.
-        let busy: string | undefined;
-        if (!s.closed && fits && s.start) {
-          const from = toMin(s.start) + k.block * (k.minutes + pause);
-          const clash = (taken[s.date] ?? []).filter(
-            (t) => toMin(t.start) < from + k.minutes && toMin(t.end) > from,
-          );
-          if (clash.reduce((n, t) => n + t.lanes, 0) + k.lanes > poolLanes)
-            busy = `belegt durch ${[...new Set(clash.map((t) => t.name))].join(", ")}`;
+        if (k.from && s.date < k.from) continue;
+        const adj = adjust[adjustKey(track.id, s.date)];
+        let reason: string | undefined = s.closed ? "Hallenbad geschlossen" : skip[s.date];
+        if (!reason && adj?.skip) reason = SKIPPED_BY_HAND;
+        let startMin: number | null = null;
+        let moved = false;
+        if (!reason) {
+          if (adj?.start && s.start) {
+            startMin = toMin(adj.start);
+          } else {
+            // Bereits angelegte Kurse belegen Bahnen: ist in der Stunde nicht genug frei, wird sie übersprungen.
+            let busy: string | undefined;
+            for (let b = k.block; b >= 0 && startMin === null; b--) {
+              if (!fitsHour(s, b, k.minutes)) continue;
+              const from = hourStart(s, b);
+              const clash = (taken[s.date] ?? []).filter(
+                (t) => toMin(t.start) < from + k.minutes && toMin(t.end) > from,
+              );
+              if (clash.reduce((sum, t) => sum + t.lanes, 0) + k.lanes > poolLanes) {
+                busy ??= `belegt durch ${[...new Set(clash.map((t) => t.name))].join(", ")}`;
+                continue;
+              }
+              startMin = from;
+              moved = b !== k.block;
+            }
+            if (startMin === null) reason = busy ?? "zu wenig Zeit im Bad";
+          }
         }
-        const reason = s.closed ? "Hallenbad geschlossen" : (skip[s.date] ?? busy);
-        if (reason || !fits) {
+        if (reason || startMin === null) {
           if (cur) pendingBreaks.push({ date: s.date, note: reason || "zu wenig Zeit im Bad" });
           continue;
         }
@@ -343,11 +390,12 @@ export function planTerms(
           cur.breaks.push(...pendingBreaks);
           pendingBreaks = [];
         }
-        const startMin = toMin(s.start!) + k.block * (k.minutes + pause);
         cur.sessions.push({
           date: s.date,
           start: fromMin(startMin),
           end: fromMin(startMin + k.minutes),
+          ...(moved ? { moved } : {}),
+          ...(adj?.start ? { manual: true } : {}),
         });
         if (cur.sessions.length >= k.units) {
           cur.complete = true;
