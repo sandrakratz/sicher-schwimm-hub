@@ -476,6 +476,11 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                           erhalten.
                         </div>
                       )}
+                      {t.time_notice && (
+                        <div className="text-sm ml-7 rounded bg-accent/15 px-2 py-1 text-foreground">
+                          {t.time_notice}
+                        </div>
+                      )}
                       {(t.min_participants || t.lanes) && (
                         <div className="text-xs text-muted-foreground pl-7">
                           {t.lanes ? `${t.lanes} ${t.lanes === 1 ? "Bahn" : "Bahnen"}` : ""}

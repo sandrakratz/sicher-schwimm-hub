@@ -307,6 +307,15 @@ export function CourseDialog({
               })()}
           </div>
           <div className="rounded-md border p-3 space-y-2">
+            <div className="text-sm">Hinweis „Uhrzeit kann sich ändern“ (optional)</div>
+            <Input
+              value={editing.time_notice || ""}
+              onChange={(e) => setEditing((p) => ({ ...p, time_notice: e.target.value }))}
+              placeholder="Bis zu 5 Tage vorher ist eine Änderung der Uhrzeit möglich …"
+            />
+            <Hint>Wird auf der Kursseite angezeigt. Leer lassen, wenn es keinen Hinweis gibt.</Hint>
+          </div>
+          <div className="rounded-md border p-3 space-y-2">
             <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={!!editing.start_tentative}
