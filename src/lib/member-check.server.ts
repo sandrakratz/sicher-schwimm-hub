@@ -121,6 +121,7 @@ export async function applyMemberCheck(
         course_ends_on: course.ends_on,
         course_description: program?.description ?? course.description,
         course_info: course.course_info ?? program?.course_info ?? null,
+        time_notice: course.time_notice ?? null,
         sessions,
         ics_url: sessions.length ? courseIcsUrl(course.id) : null,
         unit_count: course.unit_count ?? null,

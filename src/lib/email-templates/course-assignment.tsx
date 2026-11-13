@@ -32,6 +32,7 @@ interface Props {
   course_ends_on?: string;
   course_description?: string;
   course_info?: string;
+  time_notice?: string | null;
   issued_at?: string;
   status_label?: string;
   admin_notes?: string;
@@ -266,7 +267,9 @@ const Email = (p: Props) => {
             </Section>
           )}
 
-          {showPayment && <SessionList sessions={p.sessions} icsUrl={p.ics_url} />}
+          {showPayment && (
+            <SessionList sessions={p.sessions} icsUrl={p.ics_url} notice={p.time_notice} />
+          )}
 
           {p.admin_notes && (
             <>

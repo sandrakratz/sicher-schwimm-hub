@@ -367,6 +367,7 @@ export const assignRequestToCourse = createServerFn({ method: "POST" })
         course_ends_on: course.ends_on,
         course_description: course.description,
         course_info: (course as any).course_info ?? null,
+        time_notice: (course as any).time_notice ?? null,
         status_label: statusLabel,
         admin_notes: data.adminNotes || null,
         is_member: isMember,

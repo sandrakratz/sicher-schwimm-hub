@@ -28,9 +28,12 @@ function timeLabel(s: MailSession): string {
 export function SessionList({
   sessions,
   icsUrl,
+  notice,
 }: {
   sessions?: MailSession[] | null;
   icsUrl?: string | null;
+  /** Hinweis zu den Terminen, z. B. dass sich Uhrzeiten kurzfristig ändern können. */
+  notice?: string | null;
 }) {
   if (!sessions || sessions.length === 0) return null;
   return (
@@ -50,6 +53,21 @@ export function SessionList({
             Alle Termine in den Kalender eintragen
           </Link>{" "}
           (öffnet eine Kalenderdatei für Handy, Outlook oder Google-Kalender)
+        </Text>
+      )}
+      {notice && (
+        <Text
+          style={{
+            margin: "8px 0 0",
+            padding: "8px 10px",
+            backgroundColor: "#fff7ed",
+            border: "1px solid #fed7aa",
+            borderRadius: "6px",
+            fontSize: "13px",
+            color: "#7c2d12",
+          }}
+        >
+          {notice}
         </Text>
       )}
       <Text style={{ margin: "6px 0 0", fontSize: "12px", color: "#475569" }}>

@@ -204,6 +204,7 @@ export async function bookWaitlistEntry(
         course_ends_on: course.ends_on,
         course_description: program?.description ?? course.description,
         course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
+        time_notice: (course as any).time_notice ?? null,
         sessions: mailSessions,
         ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
         unit_count: course.unit_count ?? null,
