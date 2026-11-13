@@ -120,8 +120,18 @@ export function SessionsDialog({
                   <span className="w-8 text-sm text-muted-foreground">{s.session_index}.</span>
                   <Input
                     type="date"
-                    value={s.session_date}
-                    onChange={(e) => onDateChange(s.id, e.target.value)}
+                    // Erst beim Verlassen des Feldes / mit Enter speichern: sonst wird jeder Zwischenwert
+                    // beim Tippen, Pfeiltasten oder Mausrad sofort als Termin gespeichert.
+                    key={`${s.id}-${s.session_date}`}
+                    defaultValue={s.session_date}
+                    onBlur={(e) => {
+                      const v = e.target.value;
+                      if (v && v !== s.session_date) onDateChange(s.id, v);
+                      else e.target.value = s.session_date;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
                   />
                   <Input
                     type="time"
