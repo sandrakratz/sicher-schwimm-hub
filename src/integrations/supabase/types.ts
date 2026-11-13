@@ -886,6 +886,7 @@ export type Database = {
           status: Database["public"]["Enums"]["course_status"]
           target_group: string | null
           tentative_note: string | null
+          time_notice: string | null
           trainer_id: string | null
           trainers_needed: number
           unit_count: number | null
@@ -920,6 +921,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           target_group?: string | null
           tentative_note?: string | null
+          time_notice?: string | null
           trainer_id?: string | null
           trainers_needed?: number
           unit_count?: number | null
@@ -954,6 +956,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["course_status"]
           target_group?: string | null
           tentative_note?: string | null
+          time_notice?: string | null
           trainer_id?: string | null
           trainers_needed?: number
           unit_count?: number | null

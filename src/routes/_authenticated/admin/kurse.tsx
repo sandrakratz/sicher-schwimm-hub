@@ -1370,6 +1370,7 @@ function Page() {
       billed_hours: editing.billed_hours && editing.billed_hours > 0 ? editing.billed_hours : null,
       start_tentative: !!editing.start_tentative,
       tentative_note: editing.tentative_note || null,
+      time_notice: editing.time_notice || null,
     };
     if (realList.length > 0) {
       const first = realList[0],

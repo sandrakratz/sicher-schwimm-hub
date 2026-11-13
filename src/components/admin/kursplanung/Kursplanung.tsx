@@ -59,6 +59,16 @@ const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
 const hhmm = (n: number) =>
   `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
+// Bemerkungen, die der Plan-Leser selbst erzeugt, sind keine Hinweise des Bades.
+const AUTO_NOTE = /^(Jahr im PDF|anderer Wochentag|keine Uhrzeit)|bitte im PDF prüfen/i;
+const remarkOf = (n: string | null) =>
+  (n ?? "")
+    .split(" · ")
+    .filter((x) => x && !AUTO_NOTE.test(x))
+    .join(" · ");
+const NOTICE =
+  "Hinweis: Bis zu 5 Tage vorher ist eine Änderung der Uhrzeit aufgrund von Terminen in der Sportschule möglich";
+
 const MODE_LABEL: Record<string, string> = {
   std: "Normal",
   open: "Kurs findet statt",
@@ -111,6 +121,7 @@ export function Kursplanung() {
   const [kinds, setKinds] = useState<Kind[]>([]);
   const [kindsPool, setKindsPool] = useState("");
   const [adjust, setAdjust] = useState<Adjustments>({});
+  const [noticeOn, setNoticeOn] = useState<Record<string, boolean>>({});
   const [publish, setPublish] = useState(false);
   const saveReady = useRef(false);
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
@@ -471,6 +482,17 @@ export function Kursplanung() {
     toggled[t.id] ?? (t.complete && !overlap(t) && staffGaps(t).length === 0);
   const chosen = terms.filter(isSelected);
 
+  // Hinweis „Uhrzeit kann sich ändern“: Termine, für die der Badplan eine Bemerkung enthält.
+  const slotNote = useMemo(() => new Map(slots.map((x) => [x.date, remarkOf(x.note)])), [slots]);
+  const noticeDates = (t: PlannedTerm) =>
+    t.sessions.filter((x) => slotNote.get(x.date)).map((x) => x.date);
+  const hasNotice = (t: PlannedTerm) =>
+    noticeOn[t.id] ?? (cfg.id === "sportschule" && noticeDates(t).length > 0);
+  const noticeText = (t: PlannedTerm) => {
+    const d = noticeDates(t);
+    return `${NOTICE}${d.length ? ` (betrifft: ${d.map(short).join(", ")})` : ""}.`;
+  };
+
   // Bereits vergebene und vorgeschlagene Kurse je Termin.
   const entriesOn = useMemo(() => {
     const m: Record<string, Entry[]> = {};
@@ -717,6 +739,7 @@ export function Kursplanung() {
           lanes: k.lanes,
           trainers_needed: k.trainers,
           session_breaks: t.breaks,
+          time_notice: hasNotice(t) ? noticeText(t) : null,
         } as any)
         .select("id")
         .single();
@@ -744,6 +767,7 @@ export function Kursplanung() {
     if (made) {
       toast.success(`${made} Kurszeiträume angelegt (Status „Geplant“)`);
       setToggled({});
+      setNoticeOn({});
       await Promise.all([loadBase(), loadTaken()]);
     }
   }
@@ -861,6 +885,7 @@ export function Kursplanung() {
             setConflicts([]);
             setToggled({});
             setAdjust({});
+            setNoticeOn({});
           }}
         >
           {p.name} · {p.dayName}s
@@ -1419,6 +1444,23 @@ export function Kursplanung() {
                           )}
                         </div>
                       </div>
+                    </label>
+                    <label className="ml-7 mt-1 flex cursor-pointer items-start gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={hasNotice(t)}
+                        onChange={(e) => setNoticeOn((m) => ({ ...m, [t.id]: e.target.checked }))}
+                      />
+                      <span>
+                        Hinweis für Eltern: Uhrzeit kann sich bis 5 Tage vorher ändern
+                        {noticeDates(t).length > 0 && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            – laut Badplan betrifft das {noticeDates(t).map(short).join(", ")}
+                          </span>
+                        )}
+                      </span>
                     </label>
                     <details className="ml-7 mt-1">
                       <summary className="cursor-pointer text-xs text-muted-foreground">

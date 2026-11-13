@@ -152,6 +152,7 @@ export type Course = {
   billed_hours?: number | null;
   start_tentative?: boolean;
   tentative_note?: string | null;
+  time_notice?: string | null;
 };
 
 export function Hint({ children }: { children: React.ReactNode }) {

@@ -26,6 +26,8 @@ export interface CourseTerm {
   lanes: number | null;
   start_tentative: boolean;
   tentative_note: string | null;
+  /** Hinweis, dass sich Uhrzeiten einzelner Termine kurzfristig ändern können. */
+  time_notice: string | null;
   /** Exakte Kurstermine inkl. Pausen, chronologisch */
   dates: Array<{
     date: string;
@@ -87,7 +89,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
   const { data: courses } = await supabaseAdmin
     .from("courses")
     .select(
-      "id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info,min_participants,lanes,start_tentative,tentative_note,session_breaks",
+      "id,name,program_id,starts_on,ends_on,schedule,location,max_participants,price_member,price_non_member,is_public,status,archived_at,course_info,min_participants,lanes,start_tentative,tentative_note,time_notice,session_breaks",
     )
     .in("program_id", programIds)
     .eq("is_public", true)
@@ -194,6 +196,7 @@ async function loadPrograms(slug?: string): Promise<Array<CourseProgram>> {
           lanes: c.lanes ?? null,
           start_tentative: !!c.start_tentative,
           tentative_note: c.tentative_note ?? null,
+          time_notice: c.time_notice ?? null,
           dates: sessMap.get(c.id) ?? [],
           location: c.location ?? p.location,
           max_participants: c.max_participants,
@@ -684,6 +687,7 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
           course_ends_on: course.ends_on,
           course_description: program?.description ?? course.description,
           course_info: (course as any).course_info ?? (program as any)?.course_info ?? null,
+          time_notice: (course as any).time_notice ?? null,
           sessions: mailSessions,
           ics_url: mailSessions.length ? courseIcsUrl(course.id) : null,
           unit_count: course.unit_count ?? null,

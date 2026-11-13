@@ -28,6 +28,8 @@ interface Props {
   course_ends_on?: string;
   course_description?: string;
   course_info?: string;
+  /** Hinweis, dass sich Uhrzeiten einzelner Termine kurzfristig ändern können */
+  time_notice?: string | null;
   unit_count?: number | null;
   waitlist?: boolean;
   /** Angabe "Mitglied" wird noch geprüft: keine Zahlungsaufforderung, Zahlungsmail folgt nach der Prüfung */
@@ -163,7 +165,7 @@ const Email = (p: Props) => {
               Wenn Sie noch kein Mitglied sind, gilt der Preis für Nichtmitglieder. Bei Fragen
               antworten Sie einfach auf diese E-Mail.
             </Text>
-            <SessionList sessions={p.sessions} icsUrl={p.ics_url} />
+            <SessionList sessions={p.sessions} icsUrl={p.ics_url} notice={p.time_notice} />
             <Hr />
             <Text style={row}>{d.org.signatory}</Text>
             <Text style={{ ...row, fontSize: "12px", color: "#475569" }}>{d.org.name}</Text>
@@ -312,7 +314,7 @@ const Email = (p: Props) => {
             </Section>
           )}
 
-          <SessionList sessions={p.sessions} icsUrl={p.ics_url} />
+          <SessionList sessions={p.sessions} icsUrl={p.ics_url} notice={p.time_notice} />
 
           <Text style={{ marginTop: "16px" }}>
             <strong>Hinweis zur Umsatzsteuer:</strong>
