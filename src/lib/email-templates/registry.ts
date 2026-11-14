@@ -31,6 +31,7 @@ import { template as courseTransfer } from "./course-transfer";
 import { template as courseTransferReminder } from "./course-transfer-reminder";
 import { template as courseWaitlistReturn } from "./course-waitlist-return";
 import { template as courseBroadcast } from "./course-broadcast";
+import { template as courseSessionsInfo } from "./course-sessions-info";
 import { template as accountActivated } from "./account-activated";
 import { template as majorityNotice } from "./majority-notice";
 import { template as pushInvite } from "./push-invite";
@@ -83,6 +84,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "course-transfer-reminder": courseTransferReminder,
   "course-waitlist-return": courseWaitlistReturn,
   "course-broadcast": courseBroadcast,
+  "course-sessions-info": courseSessionsInfo,
   "account-activated": accountActivated,
   "majority-notice": majorityNotice,
   "trainer-payout-changed": trainerPayoutChanged,
