@@ -412,3 +412,136 @@ export const broadcastCourseMessage = createServerFn({ method: "POST" })
     });
     return { sent, total: seen.size, pushSent: push.sent, pushDevices: push.devices };
   });
+
+/**
+ * Terminübersicht an alle gebuchten Eltern eines Kurses nachsenden (z. B. wenn die Kursbestätigung
+ * noch ohne Terminliste verschickt wurde). Familien, die in einer früheren Mail schon die Terminliste
+ * dieses Kurses erhalten haben, werden übersprungen.
+ */
+async function planSessionsMail(courseId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: course } = await supabaseAdmin
+    .from("courses")
+    .select("id,name,location,schedule,starts_on,ends_on,time_notice,course_programs(location)")
+    .eq("id", courseId)
+    .maybeSingle();
+  if (!course) throw new Error("Kurs nicht gefunden");
+
+  const { loadCourseSessionsForMail, courseIcsUrl } =
+    await import("@/lib/course-session-mail.server");
+  const sessions = await loadCourseSessionsForMail(course.id, course.schedule);
+
+  const { data: parts } = await supabaseAdmin
+    .from("course_participants")
+    .select("id,participant_name,participant_email")
+    .eq("course_id", course.id)
+    .eq("status", "confirmed");
+
+  // Eine Mail je Adresse (Geschwister zusammen)
+  const byEmail = new Map<string, { email: string; kids: string[] }>();
+  for (const p of parts ?? []) {
+    const email = p.participant_email?.trim();
+    if (!email) continue;
+    const key = email.toLowerCase();
+    const entry = byEmail.get(key) ?? { email, kids: [] };
+    if (p.participant_name) entry.kids.push(p.participant_name);
+    byEmail.set(key, entry);
+  }
+
+  // Wer die Terminliste dieses Kurses schon per Mail bekommen hat
+  const already = new Set<string>();
+  if (byEmail.size > 0 && sessions.length > 0) {
+    const { fetchIn } = await import("@/lib/fetch-all");
+    const rows = await fetchIn<{ recipient_email: string }>(
+      Array.from(byEmail.values()).map((e) => e.email),
+      (chunk, from, to) =>
+        supabaseAdmin
+          .from("email_send_log")
+          .select("recipient_email")
+          .in("recipient_email", chunk)
+          .eq("status", "sent")
+          .in("template_name", [
+            "course-booking-confirmation",
+            "course-assignment",
+            "course-sessions-info",
+          ])
+          .ilike("body_html", "%Ihre Kurstermine%")
+          .ilike("body_html", `%${escapeLike(course.name)}%`)
+          .order("id")
+          .range(from, to),
+    );
+    for (const r of rows) already.add(r.recipient_email.trim().toLowerCase());
+  }
+
+  const recipients = Array.from(byEmail.entries())
+    .filter(([key]) => !already.has(key))
+    .map(([, v]) => v);
+  return {
+    course,
+    sessions,
+    recipients,
+    total: byEmail.size,
+    skipped: byEmail.size - recipients.length,
+    courseIcsUrl,
+  };
+}
+
+export const previewCourseSessionsMail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ courseId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const plan = await planSessionsMail(data.courseId);
+    return {
+      sessions: plan.sessions.length,
+      recipients: plan.recipients.length,
+      skipped: plan.skipped,
+      total: plan.total,
+    };
+  });
+
+export const sendCourseSessionsMail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ courseId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context.supabase, context.userId);
+    const plan = await planSessionsMail(data.courseId);
+    if (plan.sessions.length === 0)
+      throw new Error(
+        "Für diesen Kurs sind noch keine Einzeltermine angelegt. Bitte zuerst die Termine eintragen.",
+      );
+    const { queueTemplateEmail } = await import("@/lib/email-send.server");
+    const course = plan.course;
+    const location = course.location ?? (course as any).course_programs?.location ?? null;
+    let sent = 0;
+    let failed = 0;
+    for (const r of plan.recipients) {
+      const res = await queueTemplateEmail({
+        templateName: "course-sessions-info",
+        recipientEmail: r.email,
+        senderUserId: context.userId,
+        idempotencyKey: `course-sessions-info-${course.id}-${r.email.toLowerCase()}`,
+        templateData: {
+          child_name: r.kids.join(" und ") || null,
+          course_name: course.name,
+          course_location: location,
+          course_schedule: course.schedule,
+          course_starts_on: course.starts_on,
+          course_ends_on: course.ends_on,
+          time_notice: (course as any).time_notice ?? null,
+          sessions: plan.sessions,
+          ics_url: plan.courseIcsUrl(course.id),
+        },
+      });
+      if (res.queued) sent++;
+      else failed++;
+    }
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "course.sessions_mail",
+      entity: "courses",
+      entity_id: course.id,
+      metadata: { sent, failed, skipped: plan.skipped },
+    });
+    return { sent, failed, skipped: plan.skipped, total: plan.total };
+  });

@@ -10,6 +10,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "course-waitlist-return": "Kurs verschoben – zurück auf die Warteliste (Eltern)",
   "course-rescheduled": "Kursstart verschoben",
   "course-cancelled": "Kurs abgesagt",
+  "course-sessions-info": "Kurstermine – Übersicht nachgesendet (Eltern)",
   "partial-certificate": "Teilleistungsnachweis",
   "contact-message": "Kontaktnachricht (Benachrichtigung an den Verein)",
   "new-registration": "Neue Registrierung (Benachrichtigung an den Verein)",

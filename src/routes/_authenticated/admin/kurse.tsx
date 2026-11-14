@@ -104,9 +104,10 @@ import { ProgramFitFields } from "@/components/admin/ProgramFitFields";
 import { combineReason } from "@/lib/decline-reasons";
 import { listTransferConsents } from "@/lib/course-transfer-consent.functions";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
+import { CourseSessionsMailDialog } from "@/components/admin/CourseSessionsMailDialog";
 import { OfferDeadlinesDialog } from "@/components/admin/OfferDeadlinesDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
-import { Megaphone, ChevronDown, MoreHorizontal, Smartphone } from "lucide-react";
+import { Megaphone, ChevronDown, MoreHorizontal, Smartphone, Mail } from "lucide-react";
 import { sendPushInvites } from "@/lib/push.functions";
 import {
   DropdownMenu,
@@ -191,6 +192,7 @@ function Page() {
   const [editPart, setEditPart] = useState<Participant | null>(null);
   const [transferPart, setTransferPart] = useState<Participant | null>(null);
   const [broadcastCourse, setBroadcastCourse] = useState<Course | null>(null);
+  const [sessionsMailCourse, setSessionsMailCourse] = useState<Course | null>(null);
   const [cancelFor, setCancelFor] = useState<Participant | null>(null);
   const [cancelCategory, setCancelCategory] = useState("");
   const [cancelDetail, setCancelDetail] = useState("");
@@ -1659,6 +1661,9 @@ function Page() {
                   <DropdownMenuItem onSelect={() => setBroadcastCourse(c)}>
                     <Megaphone className="text-destructive" /> Eilnachricht an alle Eltern
                   </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setSessionsMailCourse(c)}>
+                    <Mail /> Kurstermine per E-Mail nachsenden
+                  </DropdownMenuItem>
                   {c.archived_at ? (
                     <DropdownMenuItem onSelect={() => unarchive(c)}>
                       <ArchiveRestore /> Wiederherstellen
@@ -2769,6 +2774,10 @@ function Page() {
         }
       />
       <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
+      <CourseSessionsMailDialog
+        course={sessionsMailCourse}
+        onClose={() => setSessionsMailCourse(null)}
+      />
 
       <TransferParticipantDialog
         participant={transferPart}
