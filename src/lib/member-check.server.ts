@@ -137,6 +137,7 @@ export async function applyMemberCheck(
         issued_at: p.document_issued_at ?? now,
         site_base_url: SITE_BASE_URL,
         push_url: p.push_token ? `${SITE_BASE_URL}/mitteilungen?token=${p.push_token}` : undefined,
+        absence_url: p.push_token ? `${SITE_BASE_URL}/abmelden?token=${p.push_token}` : undefined,
       },
       metadata: { participant_id: participantId, member_check: decision },
     });

@@ -67,7 +67,7 @@ export const Route = createFileRoute('/api/public/hooks/course-start-reminder')(
             .order('session_date', { ascending: true }),
           supabaseAdmin
             .from('course_participants')
-            .select('id,course_id,participant_name,participant_email,created_at,course_requests(parent_name)')
+            .select('id,course_id,participant_name,participant_email,created_at,push_token,course_requests(parent_name)')
             .in('course_id', courseIds)
             .eq('status', 'confirmed')
             .order('created_at', { ascending: true }),
@@ -157,6 +157,7 @@ export const Route = createFileRoute('/api/public/hooks/course-start-reminder')(
               // die Terminzeiten sind die internen Trainer-Zeiten.
               first_session_time: null,
               course_info: (c as any).course_info ?? program?.course_info ?? null,
+              absence_url: p.push_token ? `https://sicher-schwimmen.com/abmelden?token=${p.push_token}` : null,
             },
           })
           if (result.queued) queued += 1

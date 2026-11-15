@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AbmeldenRouteImport } from './routes/abmelden'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as FaqRouteImport } from './routes/faq'
@@ -112,6 +113,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AbmeldenRoute = AbmeldenRouteImport.update({
+  id: '/abmelden',
+  path: '/abmelden',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -634,6 +640,7 @@ const ApiPublicHooksWaitlistSweepRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/abmelden': typeof AbmeldenRoute
   '/auth': typeof AuthRoute
   '/datenschutz': typeof DatenschutzRoute
   '/faq': typeof FaqRoute
@@ -730,6 +737,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/abmelden': typeof AbmeldenRoute
   '/auth': typeof AuthRoute
   '/datenschutz': typeof DatenschutzRoute
   '/faq': typeof FaqRoute
@@ -827,6 +835,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/abmelden': typeof AbmeldenRoute
   '/auth': typeof AuthRoute
   '/datenschutz': typeof DatenschutzRoute
   '/faq': typeof FaqRoute
@@ -925,6 +934,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/abmelden'
     | '/auth'
     | '/datenschutz'
     | '/faq'
@@ -1021,6 +1031,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/abmelden'
     | '/auth'
     | '/datenschutz'
     | '/faq'
@@ -1117,6 +1128,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/abmelden'
     | '/auth'
     | '/datenschutz'
     | '/faq'
@@ -1215,6 +1227,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AbmeldenRoute: typeof AbmeldenRoute
   AuthRoute: typeof AuthRoute
   DatenschutzRoute: typeof DatenschutzRoute
   FaqRoute: typeof FaqRoute
@@ -1276,6 +1289,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/abmelden': {
+      id: '/abmelden'
+      path: '/abmelden'
+      fullPath: '/abmelden'
+      preLoaderRoute: typeof AbmeldenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -2063,6 +2083,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AbmeldenRoute: AbmeldenRoute,
   AuthRoute: AuthRoute,
   DatenschutzRoute: DatenschutzRoute,
   FaqRoute: FaqRoute,

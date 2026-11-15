@@ -77,6 +77,36 @@ export function SessionList({
   );
 }
 
+/** Link zur Abmeldung einzelner Termine (z. B. bei Krankheit), ohne Konto. Nichts, wenn kein Link vorhanden ist. */
+export function AbsenceLink({ url }: { url?: string | null }) {
+  if (!url) return null;
+  return (
+    <Section
+      style={{
+        marginTop: "16px",
+        padding: "12px 16px",
+        backgroundColor: "#f0f9ff",
+        borderRadius: "8px",
+        border: "1px solid #bae6fd",
+      }}
+    >
+      <Text style={{ margin: "0 0 4px" }}>
+        <strong>Ihr Kind kann an einem Termin nicht teilnehmen?</strong>
+      </Text>
+      <Text style={{ margin: "0 0 6px", fontSize: "14px" }}>
+        Melden Sie es hier mit einem Tipp ab, die Trainer sehen es sofort:{" "}
+        <Link href={url} style={{ color: "#0c4a6e" }}>
+          Kind für einen Termin abmelden
+        </Link>
+      </Text>
+      <Text style={{ margin: 0, fontSize: "12px", color: "#475569" }}>
+        Dieser Link gehört nur zu Ihrer Buchung – bitte nicht weitergeben. Eine Abmeldung ändert
+        nichts an der Kursgebühr.
+      </Text>
+    </Section>
+  );
+}
+
 /** „Absagen oder umbuchen“ – die Stufen aus den Kursbedingungen (Abschnitt 3) mit den konkreten Stichtagen. */
 export function CancellationInfo({ startsOn, base }: { startsOn?: string | null; base: string }) {
   const freeUntil = startsOn ? formatDateBerlin(shiftDate(startsOn, -21)) : null;

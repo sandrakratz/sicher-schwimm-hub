@@ -15,7 +15,7 @@ import {
 import type { TemplateEntry } from "./registry";
 import { buildConfirmationDoc } from "@/lib/course-confirmation";
 import { PushHint } from "./push-hint";
-import { CancellationInfo, SessionList, type MailSession } from "./course-blocks";
+import { AbsenceLink, CancellationInfo, SessionList, type MailSession } from "./course-blocks";
 
 interface Props {
   parent_name?: string;
@@ -50,6 +50,8 @@ interface Props {
   payer_city?: string;
   site_base_url?: string;
   push_url?: string;
+  /** Link zum Abmelden einzelner Termine (ohne Konto) */
+  absence_url?: string;
   sessions?: MailSession[] | null;
   ics_url?: string | null;
 }
@@ -339,6 +341,8 @@ const Email = (p: Props) => {
           )}
 
           {!waitlist && p.push_url && <PushHint url={p.push_url} />}
+
+          <AbsenceLink url={p.absence_url} />
 
           <CancellationInfo startsOn={p.course_starts_on} base={base} />
 

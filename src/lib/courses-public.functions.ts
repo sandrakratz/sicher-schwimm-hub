@@ -705,6 +705,7 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
           issued_at: issuedAt,
           site_base_url: SITE_BASE_URL,
           push_url: isFull ? undefined : `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
+          absence_url: isFull ? undefined : `${SITE_BASE_URL}/abmelden?token=${pushToken}`,
         },
       });
 
