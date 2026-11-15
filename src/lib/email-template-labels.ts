@@ -11,6 +11,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "course-rescheduled": "Kursstart verschoben",
   "course-cancelled": "Kurs abgesagt",
   "course-sessions-info": "Kurstermine – Übersicht nachgesendet (Eltern)",
+  "absence-invite": "Info: Kind per Link abmelden (Eltern, einmalig)",
   "partial-certificate": "Teilleistungsnachweis",
   "contact-message": "Kontaktnachricht (Benachrichtigung an den Verein)",
   "new-registration": "Neue Registrierung (Benachrichtigung an den Verein)",
