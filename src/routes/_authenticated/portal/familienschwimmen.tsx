@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/portal/familienschwimmen")
   component: Page,
   head: () => ({
     meta: [
-      { title: "Familienschwimmen – Mitgliederbereich | Sicher Schwimmen e.V." },
+      { title: "Mitgliederschwimmen – Mitgliederbereich | Sicher Schwimmen e.V." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -142,12 +142,29 @@ function Page() {
         <div className="flex items-center gap-2 text-accent text-sm font-semibold uppercase tracking-wider">
           <Waves className="h-4 w-4" /> Für Vereinsmitglieder
         </div>
-        <h1 className="text-3xl font-bold text-primary-deep mt-1">Familienschwimmen</h1>
+        <h1 className="text-3xl font-bold text-primary-deep mt-1">Mitgliederschwimmen</h1>
         <p className="text-muted-foreground mt-2">
           {FAMILY_SWIM.location} · Wasserzeit {FAMILY_SWIM.waterTime} · eine Bahn. Ein Übungsleiter
           ist immer vor Ort.
         </p>
       </div>
+
+      <Card className="border-accent/50">
+        <CardContent className="p-5 space-y-2 text-sm">
+          <h2 className="font-semibold text-primary-deep">Teilnahmebedingungen</h2>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Das Angebot ist ausschließlich für Vereinsmitglieder.</li>
+            <li>
+              Kinder- und Jugendmitglieder dürfen nur teilnehmen, wenn sie mindestens das
+              Bronzeabzeichen besitzen.
+            </li>
+            <li>
+              Außerdem muss eine volljährige Aufsichtsperson außerhalb des Wassers (auf der Tribüne
+              der Sportschule) die Aufsicht übernehmen.
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
 
       {!data?.eligible && (
         <Card>

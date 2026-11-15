@@ -65,7 +65,7 @@ export const Route = createFileRoute("/mitgliedsordnung")({
       </h2>
       <p>
         Der Verein unterscheidet strikt zwischen reinen Vereinsangeboten für Mitglieder (z. B.
-        kostenfreies freies Üben, Familienschwimmen) und zertifizierten Kursangeboten (z. B.
+        kostenfreies freies Üben, Mitgliederschwimmen) und zertifizierten Kursangeboten (z. B.
         Seepferdchen-Kurse). Vereinsmitglieder erhalten einen stark vergünstigten Kurstarif, während
         Nichtmitglieder eine erhöhte, kostendeckende Kursgebühr entrichten.
       </p>

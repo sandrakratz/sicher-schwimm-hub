@@ -169,8 +169,8 @@ async function promoteWaitlist(
       userId: next.userId,
       to: w?.contact_email ?? null,
       name: w?.contact_name ?? null,
-      heading: "Ihr seid nachgerückt – Zusage für das Familienschwimmen",
-      subject: `Nachgerückt: Familienschwimmen ${weekdayDate(event.event_date)}`,
+      heading: "Ihr seid nachgerückt – Zusage für das Mitgliederschwimmen",
+      subject: `Nachgerückt: Mitgliederschwimmen ${weekdayDate(event.event_date)}`,
       intro:
         "Bei diesem Termin ist ein Platz frei geworden. Ihr seid nachgerückt, die Teilnahme ist damit verbindlich zugesagt.",
       sections: [{ title: "Zugesagt", items: [`${slot(event)} · ${personsLabel(next.seats)}`] }],
@@ -264,7 +264,7 @@ export const getMyFamilySwim = createServerFn({ method: "POST" })
       eligible,
       reason: eligible
         ? null
-        : "Das Familienschwimmen ist nur für Vereinsmitglieder. Zu diesem Konto gehört keine aktive Mitgliedschaft, mit der man sich anmelden kann.",
+        : "Das Mitgliederschwimmen ist nur für Vereinsmitglieder. Zu diesem Konto gehört keine aktive Mitgliedschaft, mit der man sich anmelden kann.",
       persons,
       events: (events ?? []).map((e: any) => {
         const r = byEvent.get(e.id) ?? null;
@@ -406,7 +406,7 @@ export const submitFamilySwim = createServerFn({ method: "POST" })
       to: contact.email,
       name: contact.name,
       heading: "Wir haben eure Platzanfrage erhalten",
-      subject: "Familienschwimmen: Platzanfrage eingegangen",
+      subject: "Mitgliederschwimmen: Platzanfrage eingegangen",
       intro:
         "Danke für eure Anmeldung. Wichtig: Das ist noch keine Zusage, sondern zunächst eine Platzanfrage. Verbindlich ist die Teilnahme erst, wenn ihr eine Zusage vom Verein bekommt. Nach dem Anmeldeschluss werden die Plätze fair vergeben, ihr hört dann von uns.",
       sections: [
@@ -461,7 +461,7 @@ export const cancelFamilySwim = createServerFn({ method: "POST" })
       to: r.contact_email,
       name: r.contact_name,
       heading: "Eure Absage ist bei uns angekommen",
-      subject: `Familienschwimmen: Absage ${weekdayDate(e.event_date)}`,
+      subject: `Mitgliederschwimmen: Absage ${weekdayDate(e.event_date)}`,
       intro:
         "Wir haben eure Absage für diesen Termin gespeichert. Danke, dass ihr Bescheid gesagt habt.",
       sections: [{ title: "Abgesagt", items: [slot(e)] }],
@@ -706,8 +706,8 @@ export const cancelFamilySwimEvent = createServerFn({ method: "POST" })
         userId: r.user_id,
         to: r.contact_email,
         name: r.contact_name,
-        heading: "Das Familienschwimmen entfällt",
-        subject: `Familienschwimmen abgesagt: ${weekdayDate(e.event_date)}`,
+        heading: "Das Mitgliederschwimmen entfällt",
+        subject: `Mitgliederschwimmen abgesagt: ${weekdayDate(e.event_date)}`,
         intro:
           "Leider müssen wir diesen Termin absagen. Für euch entsteht kein Nachteil bei der Platzvergabe.",
         sections: [{ title: "Abgesagt", items: [slot(e)] }],
@@ -881,9 +881,9 @@ export const applyFamilySwimAllocation = createServerFn({ method: "POST" })
         to: first.contact_email,
         name: first.contact_name,
         heading: u.conf.length
-          ? "Eure Zusage für das Familienschwimmen"
-          : "Familienschwimmen: Warteliste",
-        subject: u.conf.length ? "Familienschwimmen: Zusage" : "Familienschwimmen: Warteliste",
+          ? "Eure Zusage für das Mitgliederschwimmen"
+          : "Mitgliederschwimmen: Warteliste",
+        subject: u.conf.length ? "Mitgliederschwimmen: Zusage" : "Mitgliederschwimmen: Warteliste",
         intro: u.conf.length
           ? "Wir haben für euch Plätze vergeben. Die Teilnahme an den zugesagten Terminen ist damit verbindlich."
           : "Bei den gewünschten Terminen ist leider kein Platz mehr frei. Ihr steht auf der Warteliste. Wird ein Platz frei, rückt die Familie mit der höchsten Priorität nach und bekommt automatisch Bescheid.",
@@ -961,8 +961,8 @@ export const setFamilySwimRequest = createServerFn({ method: "POST" })
           userId: r.user_id,
           to: r.contact_email,
           name: r.contact_name,
-          heading: "Eure Zusage für das Familienschwimmen",
-          subject: `Familienschwimmen: Zusage ${weekdayDate(e.event_date)}`,
+          heading: "Eure Zusage für das Mitgliederschwimmen",
+          subject: `Mitgliederschwimmen: Zusage ${weekdayDate(e.event_date)}`,
           intro: "Wir haben für euch einen Platz. Die Teilnahme ist damit verbindlich zugesagt.",
           sections: [{ title: "Zugesagt", items: [`${slot(e)} · ${personsLabel(r.seats)}`] }],
           safety: true,

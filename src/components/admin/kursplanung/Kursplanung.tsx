@@ -72,7 +72,7 @@ const NOTICE =
 const MODE_LABEL: Record<string, string> = {
   std: "Normal",
   open: "Kurs findet statt",
-  familie: "Familienschwimmen",
+  familie: "Mitgliederschwimmen",
   entfaellt: "Entfällt",
 };
 
@@ -384,7 +384,7 @@ export function Kursplanung() {
   }, [kinds, pool, kindsPool]);
 
   function skipReason(s: StoredSlot): string | undefined {
-    if (s.mode === "familie") return "Familienschwimmen";
+    if (s.mode === "familie") return "Mitgliederschwimmen";
     if (s.mode === "entfaellt") return "Termin entfällt";
     if (s.mode === "open") return undefined;
     const h = holidayName(s.date);
@@ -569,7 +569,7 @@ export function Kursplanung() {
     setModeMany(
       future.filter((s) => s.date.slice(8) <= "07" && s.mode !== "familie").map((s) => s.date),
       "familie",
-      `Termine als Familienschwimmen markiert`,
+      `Termine als Mitgliederschwimmen markiert`,
     );
 
   const blockUnderstaffed = () =>
@@ -997,7 +997,7 @@ export function Kursplanung() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={markFirstOfMonth}>
-                  Jeden 1. {cfg.dayName} im Monat = Familienschwimmen
+                  Jeden 1. {cfg.dayName} im Monat = Mitgliederschwimmen
                 </Button>
                 {surveyed && (
                   <Button size="sm" variant="outline" onClick={blockUnderstaffed}>

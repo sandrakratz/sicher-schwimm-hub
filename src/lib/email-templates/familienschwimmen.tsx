@@ -28,18 +28,18 @@ interface Props {
 const SAFETY = [
   "Wasserzeit: 12:00–12:45 Uhr in der Sportschule Hennef. Das Bad muss spätestens um 13:00 Uhr verlassen sein.",
   "Jedes Kind wird von einer erwachsenen Begleitperson begleitet. Sie übernimmt die Verantwortung für das eigene Kind.",
-  "Kinder, die ohne erwachsene Begleitung im Wasser sind, brauchen mindestens das Bronzeabzeichen und eine volljährige Aufsichtsperson auf der Tribüne. Bitte den Schwimmausweis des Kindes zum Termin mitbringen.",
+  "Kinder- und Jugendmitglieder dürfen nur teilnehmen, wenn sie mindestens das Bronzeabzeichen besitzen und eine volljährige Aufsichtsperson außerhalb des Wassers (auf der Tribüne der Sportschule) die Aufsicht übernimmt. Bitte den Schwimmausweis des Kindes zum Termin mitbringen.",
   "Bitte komm pünktlich. Wenn du nicht kannst, sag bitte rechtzeitig im Mitgliederbereich ab, damit eine andere Familie nachrücken kann.",
 ];
 
 const Email = (p: Props) => (
   <Html lang="de">
     <Head />
-    <Preview>{p.heading ?? "Familienschwimmen"}</Preview>
+    <Preview>{p.heading ?? "Mitgliederschwimmen"}</Preview>
     <Body style={{ backgroundColor: "#ffffff", fontFamily: "Arial, sans-serif", color: "#0f172a" }}>
       <Container style={{ padding: "24px", maxWidth: "600px" }}>
         <Heading style={{ color: "#0c4a6e", fontSize: "20px" }}>
-          {p.heading ?? "Familienschwimmen"}
+          {p.heading ?? "Mitgliederschwimmen"}
         </Heading>
         <Text>{p.name ? `Hallo ${p.name},` : "Hallo,"}</Text>
         {p.intro && <Text style={{ whiteSpace: "pre-wrap" }}>{p.intro}</Text>}
@@ -96,7 +96,7 @@ const Email = (p: Props) => (
         )}
         <Hr />
         <Text style={{ fontSize: "13px", color: "#475569" }}>
-          Sicher Schwimmen e. V. · Das Familienschwimmen ist ein Angebot für Vereinsmitglieder. Eine
+          Sicher Schwimmen e. V. · Das Mitgliederschwimmen ist ein Angebot für Vereinsmitglieder. Eine
           Anmeldung ist zunächst nur eine Platzanfrage, verbindlich ist erst die Zusage des Vereins.
         </Text>
       </Container>
@@ -106,12 +106,12 @@ const Email = (p: Props) => (
 
 export const template: TemplateEntry = {
   component: Email,
-  displayName: "Familienschwimmen – Mitteilung an Mitglieder",
-  subject: (d: Record<string, any>) => String(d["subject"] ?? d["heading"] ?? "Familienschwimmen"),
+  displayName: "Mitgliederschwimmen – Mitteilung an Mitglieder",
+  subject: (d: Record<string, any>) => String(d["subject"] ?? d["heading"] ?? "Mitgliederschwimmen"),
   previewData: {
     name: "Anna",
-    heading: "Deine Zusage für das Familienschwimmen",
-    subject: "Zusage Familienschwimmen: Sa 21.11.2026",
+    heading: "Deine Zusage für das Mitgliederschwimmen",
+    subject: "Zusage Mitgliederschwimmen: Sa 21.11.2026",
     intro: "Wir haben für euch einen Platz. Die Teilnahme ist damit verbindlich zugesagt.",
     sections: [
       {

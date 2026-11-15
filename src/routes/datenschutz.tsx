@@ -231,9 +231,9 @@ function Page() {
         verarbeitet.
       </p>
 
-      <H2>10a. Familienschwimmen (nur für Vereinsmitglieder)</H2>
+      <H2>10a. Mitgliederschwimmen (nur für Vereinsmitglieder)</H2>
       <p>
-        Wenn Sie sich im Mitgliederbereich für das Familienschwimmen anmelden, verarbeiten wir die
+        Wenn Sie sich im Mitgliederbereich für das Mitgliederschwimmen anmelden, verarbeiten wir die
         Namen und Geburtsdaten der angemeldeten Familienmitglieder (aus Ihrem Mitgliedskonto), Ihre
         Kontaktdaten, die gewünschten Termine, gegebenenfalls den Namen einer Aufsichtsperson auf
         der Tribüne und Ihre Anmerkung. Zweck ist die Durchführung des Angebots und die faire

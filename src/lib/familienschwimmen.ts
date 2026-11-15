@@ -1,9 +1,9 @@
-// Familienschwimmen: Regeln, Priorität und Vergabevorschlag (reine Logik, ohne Datenbank).
+// Mitgliederschwimmen: Regeln, Priorität und Vergabevorschlag (reine Logik, ohne Datenbank).
 // Der Server prüft und vergibt damit; die Plätze selbst werden atomar in der Datenbank
 // (family_swim_confirm) gesetzt, hier entsteht nur der nachvollziehbare Vorschlag.
 
 export const FAMILY_SWIM = {
-  name: "Familienschwimmen",
+  name: "Mitgliederschwimmen",
   location: "Sportschule Hennef",
   waterTime: "12:00–12:45 Uhr",
   leaveBy: "13:00 Uhr",
