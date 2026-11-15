@@ -109,6 +109,7 @@ import { OfferDeadlinesDialog } from "@/components/admin/OfferDeadlinesDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { Megaphone, ChevronDown, MoreHorizontal, Smartphone, Mail } from "lucide-react";
 import { sendPushInvites } from "@/lib/push.functions";
+import { sendAbsenceInvites } from "@/lib/absence.functions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -255,6 +256,34 @@ function Page() {
   const [reminding, setReminding] = useState(false);
   const pushInvitesFn = useServerFn(sendPushInvites);
   const [inviting, setInviting] = useState(false);
+
+  const absenceInvitesFn = useServerFn(sendAbsenceInvites);
+  const [inviteAbsence, setInviteAbsence] = useState(false);
+
+  async function handleSendAbsenceInvites() {
+    if (
+      !confirm(
+        "Einmalige Info-Mail mit dem Abmelde-Link jetzt an alle Familien mit bereits laufenden Kursen senden? Jede Adresse bekommt diese Mail nur ein einziges Mal. Es werden jeweils bis zu 12 Familien pro Klick bedient.",
+      )
+    )
+      return;
+    setInviteAbsence(true);
+    try {
+      const r = await absenceInvitesFn();
+      if (r.sent === 0 && r.remaining === 0 && r.failed === 0)
+        toast.info("Keine neuen Familien – alle haben die Mail bereits erhalten");
+      else
+        toast.success(
+          `Mail an ${r.sent} Familien gesendet` +
+            (r.failed ? `, ${r.failed} fehlgeschlagen` : "") +
+            (r.remaining ? `. Noch ${r.remaining} offen – bitte erneut klicken.` : "."),
+        );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Senden fehlgeschlagen");
+    } finally {
+      setInviteAbsence(false);
+    }
+  }
 
   async function handleSendPushInvites() {
     if (
@@ -1754,6 +1783,15 @@ function Page() {
             >
               <Smartphone className="h-4 w-4" />{" "}
               {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={inviteAbsence}
+              onClick={handleSendAbsenceInvites}
+              title="Einmalige Info-Mail mit Abmelde-Link an Familien mit laufenden Kursen"
+            >
+              <Mail className="h-4 w-4" />{" "}
+              {inviteAbsence ? "Sende…" : "Abmelde-Link an Familien laufender Kurse senden"}
             </Button>
             <Button variant="outline" onClick={() => setDeadlinesOpen(true)}>
               <CalendarDays className="h-4 w-4" /> Angebotsfristen
