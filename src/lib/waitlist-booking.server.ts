@@ -221,6 +221,7 @@ export async function bookWaitlistEntry(
         issued_at: issuedAt,
         site_base_url: SITE_BASE_URL,
         push_url: `${SITE_BASE_URL}/mitteilungen?token=${pushToken}`,
+        absence_url: `${SITE_BASE_URL}/abmelden?token=${pushToken}`,
       },
       metadata: { waitlist_entry_id: entry.id, course_id: course.id },
     }),

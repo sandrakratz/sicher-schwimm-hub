@@ -13,6 +13,7 @@ import {
 import type { TemplateEntry } from "./registry";
 import { formatDateBerlin } from "@/lib/format";
 import { ORG } from "@/lib/billing-config";
+import { AbsenceLink } from "./course-blocks";
 
 interface Props {
   parent_name?: string;
@@ -24,6 +25,7 @@ interface Props {
   first_session_date?: string | null;
   first_session_time?: string | null;
   course_info?: string | null;
+  absence_url?: string | null;
 }
 
 const Email = (p: Props) => {
@@ -80,6 +82,8 @@ const Email = (p: Props) => {
               <Text style={{ whiteSpace: "pre-line" }}>{p.course_info}</Text>
             </>
           )}
+
+          <AbsenceLink url={p.absence_url} />
 
           <Hr />
           <Text>Bei Fragen antworten Sie einfach auf diese E-Mail.</Text>
