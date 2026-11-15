@@ -206,7 +206,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
       },
       {
         key: "family-swim",
-        label: "Familienschwimmen: neue Vormerkungen",
+        label: "Mitgliederschwimmen: neue Vormerkungen",
         count: familyNew.count ?? 0,
         to: "/admin/familienschwimmen",
         tone: "attention",

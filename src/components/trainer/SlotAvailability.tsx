@@ -59,7 +59,7 @@ export function SlotAvailability({ me, blackouts }: { me: string; blackouts: Pla
     if (s.error || a.error) return; // Migration noch nicht eingespielt: Karte bleibt leer.
     setSlots(
       (s.data ?? [])
-        // Familienschwimmen, entfallene Termine und Feiertage brauchen keine Zusage.
+        // Mitgliederschwimmen, entfallene Termine und Feiertage brauchen keine Zusage.
         .filter(
           (r: any) =>
             r.mode !== "familie" &&

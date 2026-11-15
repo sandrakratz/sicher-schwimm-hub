@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/admin/familienschwimmen")(
   component: Page,
   head: () => ({
     meta: [
-      { title: "Familienschwimmen – Adminbereich | Sicher Schwimmen e.V." },
+      { title: "Mitgliederschwimmen – Adminbereich | Sicher Schwimmen e.V." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

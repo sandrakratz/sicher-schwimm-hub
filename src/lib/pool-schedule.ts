@@ -322,7 +322,7 @@ export const adjustKey = (trackId: string, date: string) => `${trackId}|${date}`
 
 /**
  * Verteilt die Kurse auf die Termine.
- * `skip` enthält gesperrte Termine mit Grund (Familienschwimmen, entfällt, Feiertag …).
+ * `skip` enthält gesperrte Termine mit Grund (Mitgliederschwimmen, entfällt, Feiertag …).
  * Pro Kursart und Kopie entsteht eine Folge hintereinander liegender Kurszeiträume.
  * Die Startzeit folgt dem Badplan: gewünschte Stunde der Wasserzeit des jeweiligen Tages. Passt sie an
  * einem Tag nicht (kürzere Badzeit) oder ist belegt, weicht der Termin auf eine frühere Stunde aus.

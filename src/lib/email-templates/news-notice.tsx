@@ -71,9 +71,9 @@ export const template: TemplateEntry = {
   displayName: "News-Hinweis an Mitglieder",
   subject: (d: Record<string, any>) => `Neuigkeiten: ${String(d["title"] ?? "Sicher Schwimmen")}`,
   previewData: {
-    title: "Familienschwimmen startet am 21.11.",
+    title: "Mitgliederschwimmen startet am 21.11.",
     preview:
-      "Ab sofort könnt ihr euch im Mitgliederbereich für das Familienschwimmen in der Sportschule Hennef anmelden …",
+      "Ab sofort könnt ihr euch im Mitgliederbereich für das Mitgliederschwimmen in der Sportschule Hennef anmelden …",
     url: "https://sicher-schwimmen.com/news",
   },
 };
