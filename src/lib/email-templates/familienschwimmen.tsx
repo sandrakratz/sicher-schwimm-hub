@@ -96,8 +96,9 @@ const Email = (p: Props) => (
         )}
         <Hr />
         <Text style={{ fontSize: "13px", color: "#475569" }}>
-          Sicher Schwimmen e. V. · Das Mitgliederschwimmen ist ein Angebot für Vereinsmitglieder. Eine
-          Anmeldung ist zunächst nur eine Platzanfrage, verbindlich ist erst die Zusage des Vereins.
+          Sicher Schwimmen e. V. · Das Mitgliederschwimmen ist ein Angebot für Vereinsmitglieder.
+          Eine Anmeldung ist zunächst nur eine Platzanfrage, verbindlich ist erst die Zusage des
+          Vereins.
         </Text>
       </Container>
     </Body>
@@ -107,7 +108,8 @@ const Email = (p: Props) => (
 export const template: TemplateEntry = {
   component: Email,
   displayName: "Mitgliederschwimmen – Mitteilung an Mitglieder",
-  subject: (d: Record<string, any>) => String(d["subject"] ?? d["heading"] ?? "Mitgliederschwimmen"),
+  subject: (d: Record<string, any>) =>
+    String(d["subject"] ?? d["heading"] ?? "Mitgliederschwimmen"),
   previewData: {
     name: "Anna",
     heading: "Deine Zusage für das Mitgliederschwimmen",
