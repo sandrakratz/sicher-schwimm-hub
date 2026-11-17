@@ -202,10 +202,9 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     // Trainer-Nachweisblock: Namen in Spalte 1, Anwesenheit je Kurstermin
     let trainerList: { id: string; name: string }[] = [];
     const trainerMark = new Map<string, string>(); // `${sessionId}:${trainerId}`
+    const paidTrainers = new Set<string>(); // mindestens ein Termin eingeteilt und anwesend
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      // Nur Trainer, die für den Termin eingeteilt waren UND dort Anwesenheit eingetragen haben
-      // (wer sich ohne Einteilung einloggt, erscheint nicht und bekommt keine Vergütung).
       if (sessions.length > 0) {
         const sessionIds = sessions.map((s) => s.id);
         const [{ data: crs }, { data: assigns }, { data: legacy }, { data: tAtt }] =
@@ -235,11 +234,18 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         const fixedId = (crs as any)?.trainer_id as string | null | undefined;
         if (fixedId) for (const s of sessions) assigned.add(`${s.id}:${fixedId}`);
 
+        // Alle Anwesenden stehen drin (Nachweis bei einem Unfall); vergütungsberechtigt ist nur,
+        // wer für den Termin eingeteilt war. Nicht Eingeteilte werden mit „NE“ gekennzeichnet.
         const shown = new Set<string>();
         for (const r of (tAtt || []) as any[]) {
+          if (!r.present) continue;
           const key = `${r.session_id}:${r.trainer_id}`;
-          if (!r.present || !assigned.has(key)) continue;
-          trainerMark.set(key, r.confirmed_at ? "x" : "(x)");
+          if (assigned.has(key)) {
+            trainerMark.set(key, r.confirmed_at ? "x" : "(x)");
+            paidTrainers.add(r.trainer_id);
+          } else {
+            trainerMark.set(key, "NE");
+          }
           shown.add(r.trainer_id);
         }
         if (shown.size > 0) {
@@ -253,7 +259,11 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
               name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "",
             }))
             .filter((t) => t.name)
-            .sort((a, b) => a.name.localeCompare(b.name, "de"));
+            .sort(
+              (a, b) =>
+                Number(paidTrainers.has(b.id)) - Number(paidTrainers.has(a.id)) ||
+                a.name.localeCompare(b.name, "de"),
+            );
         }
       }
     } catch (err) {
@@ -262,7 +272,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
 
     ws.addRow([]);
     const trainerTitle = ws.addRow([
-      "Trainer – Anwesenheitsnachweis (x = bestätigt · (x) = eingetragen, noch nicht bestätigt · leer = keine Angabe)",
+      "Trainer – Anwesenheitsnachweis (x = eingeteilt und bestätigt · (x) = eingeteilt, noch nicht bestätigt · NE = anwesend, aber nicht eingeteilt, keine Vergütung · leer = keine Angabe)",
     ]);
     trainerTitle.font = { bold: true, size: 12 };
     ws.mergeCells(trainerTitle.number, 1, trainerTitle.number, headers.length);
@@ -302,10 +312,24 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
         if (!s || !t.id) return "";
         return trainerMark.get(`${s.id}:${t.id}`) || "";
       });
-      const row = ws.addRow([t.name, "", "", "", ...marks, "", "", ""]);
+      const unpaid = !!t.id && !paidTrainers.has(t.id);
+      const row = ws.addRow([
+        unpaid ? `${t.name} (nicht eingeteilt, keine Vergütung)` : t.name,
+        "",
+        "",
+        "",
+        ...marks,
+        "",
+        "",
+        "",
+      ]);
       row.alignment = { vertical: "middle", wrapText: true };
       for (let c = 5; c <= lastSessionCol; c++) {
-        row.getCell(c).alignment = { horizontal: "center", vertical: "middle" };
+        const cell = row.getCell(c);
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        if (cell.value === "NE") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFBE4E4" } };
+        }
       }
       row.height = 26;
     }
