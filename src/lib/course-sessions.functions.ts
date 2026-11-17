@@ -204,36 +204,57 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     const trainerMark = new Map<string, string>(); // `${sessionId}:${trainerId}`
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: roleRows } = await supabaseAdmin
-        .from("user_roles")
-        .select("user_id,role")
-        .in("role", ["admin", "board", "trainer"]);
-      const ids = Array.from(new Set((roleRows || []).map((r: any) => r.user_id)));
-      if (ids.length > 0) {
-        const { data: profs } = await supabaseAdmin
-          .from("profiles")
-          .select("id,first_name,last_name,email")
-          .in("id", ids);
-        trainerList = (profs || [])
-          .map((p: any) => ({
-            id: p.id as string,
-            name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "",
-          }))
-          .filter((t) => t.name)
-          .sort((a, b) => a.name.localeCompare(b.name, "de"));
-      }
+      // Nur Trainer, die für den Termin eingeteilt waren UND dort Anwesenheit eingetragen haben
+      // (wer sich ohne Einteilung einloggt, erscheint nicht und bekommt keine Vergütung).
       if (sessions.length > 0) {
-        const { data: tAtt } = await supabaseAdmin
-          .from("trainer_session_attendance")
-          .select("session_id,trainer_id,present,confirmed_at")
-          .in(
-            "session_id",
-            sessions.map((s) => s.id),
-          );
-        (tAtt || []).forEach((r: any) => {
-          if (!r.present) return;
-          trainerMark.set(`${r.session_id}:${r.trainer_id}`, r.confirmed_at ? "x" : "(x)");
-        });
+        const sessionIds = sessions.map((s) => s.id);
+        const [{ data: crs }, { data: assigns }, { data: legacy }, { data: tAtt }] =
+          await Promise.all([
+            supabaseAdmin
+              .from("courses")
+              .select("trainer_id")
+              .eq("id", data.courseId)
+              .maybeSingle(),
+            supabaseAdmin
+              .from("course_session_assignments")
+              .select("session_id,trainer_id")
+              .in("session_id", sessionIds),
+            supabaseAdmin
+              .from("course_sessions")
+              .select("id,assigned_trainer_id")
+              .in("id", sessionIds),
+            supabaseAdmin
+              .from("trainer_session_attendance")
+              .select("session_id,trainer_id,present,confirmed_at")
+              .in("session_id", sessionIds),
+          ]);
+        const assigned = new Set<string>(); // `${sessionId}:${trainerId}`
+        for (const a of assigns || []) assigned.add(`${a.session_id}:${a.trainer_id}`);
+        for (const l of legacy || [])
+          if (l.assigned_trainer_id) assigned.add(`${l.id}:${l.assigned_trainer_id}`);
+        const fixedId = (crs as any)?.trainer_id as string | null | undefined;
+        if (fixedId) for (const s of sessions) assigned.add(`${s.id}:${fixedId}`);
+
+        const shown = new Set<string>();
+        for (const r of (tAtt || []) as any[]) {
+          const key = `${r.session_id}:${r.trainer_id}`;
+          if (!r.present || !assigned.has(key)) continue;
+          trainerMark.set(key, r.confirmed_at ? "x" : "(x)");
+          shown.add(r.trainer_id);
+        }
+        if (shown.size > 0) {
+          const { data: profs } = await supabaseAdmin
+            .from("profiles")
+            .select("id,first_name,last_name,email")
+            .in("id", Array.from(shown));
+          trainerList = (profs || [])
+            .map((p: any) => ({
+              id: p.id as string,
+              name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "",
+            }))
+            .filter((t) => t.name)
+            .sort((a, b) => a.name.localeCompare(b.name, "de"));
+        }
       }
     } catch (err) {
       console.warn("[course-sessions] Nicht-kritischer Fehler:", err);
