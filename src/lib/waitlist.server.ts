@@ -90,10 +90,11 @@ function sortCandidates<T extends { is_member: boolean | null; created_at: strin
 async function resolveMember(
   entry: any,
   rows?: import("@/lib/membership-lookup.server").MemberRow[],
+  courseStart?: string | null,
 ): Promise<boolean | null> {
   const { resolveMembership } = await import("@/lib/membership-lookup.server");
   const m = await resolveMembership(
-    { email: entry.parent_email, childName: entry.child_name },
+    { email: entry.parent_email, childName: entry.child_name, courseStart },
     rows,
   );
   return m.isMember;
@@ -106,9 +107,10 @@ async function resolveMember(
 export async function refreshWaitlistMember(
   entry: any,
   rows?: import("@/lib/membership-lookup.server").MemberRow[],
+  courseStart?: string | null,
 ) {
   if (entry.is_member === true) return;
-  const isMember = await resolveMember(entry, rows);
+  const isMember = await resolveMember(entry, rows, courseStart);
   if (isMember == null || (isMember === false && entry.is_member === false)) return;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   await supabaseAdmin.from("waitlist_entries").update({ is_member: isMember }).eq("id", entry.id);
@@ -135,7 +137,7 @@ async function createOffer(entry: any, course: any, program: any) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { queueTemplateEmail } = await import("@/lib/email-send.server");
 
-  await refreshWaitlistMember(entry);
+  await refreshWaitlistMember(entry, undefined, course.starts_on ?? null);
   const { data: dl } = await supabaseAdmin
     .from("offer_deadline_settings")
     .select("far_weeks,days_far,days_near")
@@ -276,7 +278,8 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
 
     // Mitgliedsstatus nachziehen (auch „Nein“ kann inzwischen überholt sein)
     memberRows ??= await (await import("@/lib/membership-lookup.server")).loadMemberships();
-    for (const c of candidates) await refreshWaitlistMember(c, memberRows);
+    for (const c of candidates)
+      await refreshWaitlistMember(c, memberRows, course.starts_on ?? null);
     candidates = sortCandidates(candidates);
 
     // Alter zum Kursstart prüfen – zu junge und zu alte Kinder bleiben auf der Warteliste

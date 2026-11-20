@@ -76,7 +76,7 @@ export async function bookWaitlistEntry(
 
   // Mitgliedschaft kann seit dem Eintrag/Angebot hinzugekommen sein
   const { refreshWaitlistMember } = await import("@/lib/waitlist.server");
-  await refreshWaitlistMember(entry);
+  await refreshWaitlistMember(entry, undefined, course.starts_on ?? null);
 
   // Mitgliedspreis nur bei bestätigter Mitgliedschaft; reine Selbstangabe → Normalpreis und Prüfung durch die Verwaltung
   const memberCheckPending = entry.member_claimed === true && entry.is_member !== true;

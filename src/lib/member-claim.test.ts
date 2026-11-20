@@ -1,6 +1,6 @@
 // @ts-expect-error bun:test liefert hier keine Typdeklarationen; Ausführung: bun test
 import { describe, expect, test } from "bun:test";
-import { decideMember, priceFor } from "./member-claim";
+import { decideMember, maxMembershipStart, membershipValidOn, priceFor } from "./member-claim";
 import { isAdultProgram } from "./adult-course";
 
 const prices = { member: 159, nonMember: 179 };
@@ -40,5 +40,24 @@ describe("Kursart", () => {
     expect(isAdultProgram({ min_age_years: 18 })).toBe(true);
     expect(isAdultProgram({ min_age_years: 6 })).toBe(false);
     expect(isAdultProgram({ min_age_years: null })).toBe(false);
+  });
+});
+
+describe("Mitgliedschaft: Beginn und Ende der Gültigkeit", () => {
+  test("ohne Datum: durchgehend gültig", () => {
+    expect(membershipValidOn({}, "2026-03-01")).toBe(true);
+  });
+  test("Kurs nach Beginn: gültig, Kurs vor Beginn: nicht", () => {
+    const m = { start_date: "2026-07-01" };
+    expect(membershipValidOn(m, "2026-07-01")).toBe(true);
+    expect(membershipValidOn(m, "2026-06-30")).toBe(false);
+  });
+  test("nach Kündigung zum Jahresende: Kurs im Folgejahr ohne Vergünstigung", () => {
+    const m = { start_date: "2026-01-01", valid_until: "2026-12-31" };
+    expect(membershipValidOn(m, "2026-12-31")).toBe(true);
+    expect(membershipValidOn(m, "2027-01-10")).toBe(false);
+  });
+  test("spätester Beginn: 6 Monate im Voraus", () => {
+    expect(maxMembershipStart("2026-11-20")).toBe("2027-05-20");
   });
 });

@@ -31,6 +31,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MEMBERSHIP_FEES } from "@/lib/billing-config";
+import { todayBerlinIso } from "@/lib/format";
+import { maxMembershipStart } from "@/lib/member-claim";
 import { HoneypotField, SubmitButton } from "@/components/form-support";
 import {
   AlertDialog,
@@ -114,6 +116,12 @@ const schema = z.object({
   first_name: z.string().trim().min(1).max(100),
   last_name: z.string().trim().min(1).max(100),
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  start_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine((v) => v >= todayBerlinIso() && v <= maxMembershipStart(todayBerlinIso()), {
+      message: "Beginn frühestens heute, höchstens 6 Monate im Voraus",
+    }),
   email: z.string().trim().email().max(255),
   phone: z.string().trim().min(5).max(40),
   address_street: z.string().trim().min(3).max(200),
@@ -250,6 +258,7 @@ function Page() {
       first_name: fd.get("first_name"),
       last_name: fd.get("last_name"),
       date_of_birth: fd.get("date_of_birth") || undefined,
+      start_date: fd.get("start_date") || undefined,
       email: fd.get("email"),
       phone: fd.get("phone"),
       address_street: fd.get("address_street"),
@@ -640,6 +649,25 @@ function Page() {
                       defaultValue={defaults.dateOfBirth}
                       onChange={(e) => setDob(e.target.value)}
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="start_date">Mitglied ab *</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      name="start_date"
+                      required
+                      min={todayBerlinIso()}
+                      max={maxMembershipStart(todayBerlinIso())}
+                      defaultValue={todayBerlinIso()}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Frühestens heute, höchstens 6 Monate im Voraus. Der Beitrag gilt ab diesem
+                      Datum (Eintritt nach dem 1. Juli: halber Jahresbeitrag). Kurse, die ab diesem
+                      Datum beginnen, erhalten den Mitgliedspreis, sofern die Mitgliedschaft
+                      zustande kommt. Nach unserer Bestätigung ist sie verbindlich; Austritt ist nur
+                      mit sechs Wochen Frist zum Jahresende möglich.
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="email">E-Mail *</Label>

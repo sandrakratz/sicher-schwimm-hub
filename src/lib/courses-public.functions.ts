@@ -506,6 +506,7 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
         const found = await resolveMembership({
           email: data.parentEmail,
           childName: data.childName,
+          courseStart: course.starts_on ?? null,
         });
         verified = found.isMember;
       } catch (err) {

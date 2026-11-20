@@ -21,6 +21,9 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
   setMembershipStatus,
+  setMembershipDates,
+  listMemberPriceMismatches,
+  chargeNormalPrice,
   deleteMembership as deleteMembershipFn,
 } from "@/lib/membership.functions";
 
@@ -251,6 +254,142 @@ function FamilyEditor({
   );
 }
 
+/** Beginn und Ende der Gültigkeit; „gültig bis“ nach wirksamer Kündigung auf den 31.12. setzen. */
+function DatesEditor({ row, onSaved }: { row: any; onSaved: () => void }) {
+  const save = useServerFn(setMembershipDates);
+  const [start, setStart] = useState<string>(row.start_date ?? "");
+  const [until, setUntil] = useState<string>(row.valid_until ?? "");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setStart(row.start_date ?? "");
+    setUntil(row.valid_until ?? "");
+  }, [row.id, row.start_date, row.valid_until]);
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Mitglied ab</Label>
+          <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Gültig bis (nach Kündigung zum Jahresende)</Label>
+          <Input type="date" value={until} onChange={(e) => setUntil(e.target.value)} />
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Der Mitgliedspreis gilt für Kurse, die zwischen diesen Daten beginnen. Leer = keine
+        Einschränkung.
+      </p>
+      <Button
+        size="sm"
+        variant="accent"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            await save({
+              data: { id: row.id, start_date: start || null, valid_until: until || null },
+            });
+            toast.success("Gültigkeit gespeichert");
+            onSaved();
+          } catch (e: any) {
+            toast.error(e?.message || "Fehler");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        Speichern
+      </Button>
+    </div>
+  );
+}
+
+/** Buchungen mit Mitgliedspreis, obwohl die Mitgliedschaft zum Kursstart nicht gilt. Der Vorstand entscheidet je Fall. */
+function PriceMismatches() {
+  const listFn = useServerFn(listMemberPriceMismatches);
+  const chargeFn = useServerFn(chargeNormalPrice);
+  const [items, setItems] = useState<Awaited<ReturnType<typeof listMemberPriceMismatches>>>([]);
+  async function load() {
+    try {
+      setItems(await listFn());
+    } catch (e: any) {
+      toast.error(e?.message || "Liste konnte nicht geladen werden");
+    }
+  }
+  useEffect(() => {
+    load();
+  }, []);
+  if (items.length === 0) return null;
+  return (
+    <CollapsibleCard
+      title={`Mitgliedspreis ohne gültige Mitgliedschaft (${items.length})`}
+      storageKey="admin-mitgliedschaften-preisabweichung"
+      contentClassName="px-0"
+    >
+      <p className="px-6 pb-3 text-sm text-muted-foreground">
+        Diese Buchungen haben den Mitgliedspreis, aber zum Kursstart gibt es keine gültige
+        Mitgliedschaft (Antrag zurückgezogen, nicht zustande gekommen oder gekündigt). Nichts
+        geschieht automatisch.
+      </p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Teilnehmer</TableHead>
+            <TableHead>Kurs</TableHead>
+            <TableHead>Kursstart</TableHead>
+            <TableHead>Preis jetzt</TableHead>
+            <TableHead>Normalpreis</TableHead>
+            <TableHead>Differenz</TableHead>
+            <TableHead className="text-right">Aktion</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((i) => (
+            <TableRow key={i.id}>
+              <TableCell>
+                {i.participant}
+                <div className="text-xs text-muted-foreground">{i.email}</div>
+              </TableCell>
+              <TableCell>{i.course}</TableCell>
+              <TableCell className="text-xs">{fmtDate(i.startsOn)}</TableCell>
+              <TableCell>{i.current ?? "—"} €</TableCell>
+              <TableCell>{i.normal ?? "—"} €</TableCell>
+              <TableCell>
+                {i.difference ?? "—"} € {i.paid && <Badge variant="outline">bezahlt</Badge>}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={i.normal == null}
+                  onClick={async () => {
+                    const ok = confirm(
+                      i.paid
+                        ? "Auf Normalpreis setzen? Die Buchung ist schon bezahlt: Die Differenz muss die Kasse separat anfordern."
+                        : "Auf Normalpreis setzen? Die Zahlungserinnerung nutzt dann den neuen Preis.",
+                    );
+                    if (!ok) return;
+                    try {
+                      await chargeFn({ data: { participantId: i.id } });
+                      toast.success("Auf Normalpreis gesetzt");
+                      load();
+                    } catch (e: any) {
+                      toast.error(e?.message || "Fehler");
+                    }
+                  }}
+                >
+                  Auf Normalpreis setzen
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </CollapsibleCard>
+  );
+}
+
 function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
@@ -416,6 +555,8 @@ function Page() {
         </Table>
       </CollapsibleCard>
 
+      <PriceMismatches />
+
       <Dialog
         open={!!selected}
         onOpenChange={(o) => {
@@ -445,10 +586,17 @@ function Page() {
                   }
                 />
                 <Row label="Genehmigt am" value={fmtDate(selected.approved_at)} />
+                <Row label="Mitglied ab" value={fmtDate(selected.start_date)} />
+                <Row label="Gültig bis" value={fmtDate(selected.valid_until)} />
                 <Row
                   label="Mitgliedschaftsart"
                   value={TYPE_LABEL[selected.membership_type] || selected.membership_type}
                 />
+              </section>
+
+              <section>
+                <h3 className="font-display font-bold text-primary-deep mb-2">Gültigkeit</h3>
+                <DatesEditor row={selected} onSaved={load} />
               </section>
 
               <section>
