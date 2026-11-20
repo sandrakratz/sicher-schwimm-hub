@@ -30,7 +30,7 @@ import {
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MEMBERSHIP_FEES } from "@/lib/billing-config";
+import { BILLING, MEMBERSHIP_BILLING_NOTE, MEMBERSHIP_FEES } from "@/lib/billing-config";
 import { todayBerlinIso } from "@/lib/format";
 import { maxMembershipStart } from "@/lib/member-claim";
 import { HoneypotField, SubmitButton } from "@/components/form-support";
@@ -108,8 +108,7 @@ const tiers = [
   },
 ];
 
-const billingNote =
-  "Beitrag fällig jeweils zum 1. März per SEPA-Lastschrift. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.";
+const billingNote = MEMBERSHIP_BILLING_NOTE;
 
 const schema = z.object({
   membership_type: z.enum(["children_youth", "adult", "family", "supporting"]),
@@ -997,8 +996,8 @@ function Page() {
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Gläubiger-Identifikationsnummer: <em>wird vom Verein eingetragen</em> ·
-                    Mandatsreferenz: <em>Mitgliedsnummer (wird vergeben)</em>
+                    Gläubiger-Identifikationsnummer: {BILLING.creditorId} · Mandatsreferenz:{" "}
+                    <em>Mitgliedsnummer (wird vergeben)</em>
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">
                     Ich ermächtige den Verein Sicher Schwimmen e.V., Zahlungen von meinem Konto

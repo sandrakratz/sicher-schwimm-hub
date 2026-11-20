@@ -12,6 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
+import { BILLING } from "@/lib/billing-config";
 
 interface Props {
   first_name?: string;
@@ -78,8 +79,10 @@ const Email = ({
         <Text style={p}>
           Jahresbeitrag: {fee_is_minimum ? "mindestens " : ""}
           <strong>{fee_annual}</strong>. Der Beitrag gilt ab dem Beginn der Mitgliedschaft und wird
-          per SEPA-Lastschrift von dem Konto eingezogen, das Sie im Antrag angegeben haben; fällig
-          ist er jeweils zum 1. März.
+          per SEPA-Lastschrift von dem Konto eingezogen, das Sie im Antrag angegeben haben. Bei
+          Neueintritt erfolgt der Einzug innerhalb von vier Wochen nach dieser Aufnahmebestätigung,
+          in den Folgejahren jeweils zum 1. März. Gläubiger-Identifikationsnummer des Vereins:{" "}
+          {BILLING.creditorId}.
           {fee_half ? (
             <>
               {" "}
