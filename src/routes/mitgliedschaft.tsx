@@ -996,8 +996,7 @@ function Page() {
                 <div className="border-t pt-5">
                   <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>
                   <p className="text-xs text-muted-foreground mb-4">
-                    Gläubiger-Identifikationsnummer: {BILLING.creditorId} · Mandatsreferenz:{" "}
-                    <em>Mitgliedsnummer (wird vergeben)</em>
+                    Gläubiger-Identifikationsnummer: {BILLING.creditorId}
                   </p>
                   <p className="text-sm text-muted-foreground mb-4">
                     Ich ermächtige den Verein Sicher Schwimmen e.V., Zahlungen von meinem Konto
