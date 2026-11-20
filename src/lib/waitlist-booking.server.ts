@@ -80,10 +80,14 @@ export async function bookWaitlistEntry(
 
   // Mitgliedspreis nur bei bestätigter Mitgliedschaft; reine Selbstangabe → Normalpreis und Prüfung durch die Verwaltung
   const memberCheckPending = entry.member_claimed === true && entry.is_member !== true;
-  const price =
+  // Bereits gestartete Kurse: Preis anteilig nach den noch ausstehenden Terminen
+  const { proratedCoursePrice } = await import("@/lib/prorated-price.server");
+  const { price } = await proratedCoursePrice(
+    course.id,
     entry.is_member === true
       ? (course.price_member ?? program?.price_member ?? null)
-      : (course.price_non_member ?? program?.price_non_member ?? null);
+      : (course.price_non_member ?? program?.price_non_member ?? null),
+  );
 
   const issuedAt = new Date().toISOString();
 

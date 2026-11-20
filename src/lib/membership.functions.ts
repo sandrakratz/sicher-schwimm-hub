@@ -195,7 +195,7 @@ export const listMemberPriceMismatches = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("course_participants")
       .select(
-        "id,participant_name,participant_email,price_amount,paid,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,price_non_member,course_programs(price_non_member))",
+        "id,participant_name,participant_email,price_amount,paid,course_id,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on,price_non_member,course_programs(price_non_member))",
       )
       .eq("is_member", true)
       .in("status", ["confirmed", "waiting"]);
@@ -220,7 +220,15 @@ export const listMemberPriceMismatches = createServerFn({ method: "GET" })
         courseStart: c.starts_on ?? null,
       });
       if (m.isMember === true) continue;
-      const normal = c.price_non_member ?? c.course_programs?.price_non_member ?? null;
+      // Normalpreis wie bei der Buchung anteilig nach den ab dem Buchungstag ausstehenden Terminen
+      const { proratedCoursePrice, berlinDay } = await import("@/lib/prorated-price.server");
+      const normal = (
+        await proratedCoursePrice(
+          p.course_id,
+          c.price_non_member ?? c.course_programs?.price_non_member ?? null,
+          berlinDay(p.created_at),
+        )
+      ).price;
       const current = p.price_amount == null ? null : Number(p.price_amount);
       out.push({
         id: p.id,
@@ -250,13 +258,20 @@ export const chargeNormalPrice = createServerFn({ method: "POST" })
     const { data: p, error } = await supabaseAdmin
       .from("course_participants")
       .select(
-        "id,price_amount,paid,internal_notes,is_member,courses!course_participants_course_id_fkey(price_non_member,course_programs(price_non_member))",
+        "id,price_amount,paid,internal_notes,is_member,course_id,created_at,courses!course_participants_course_id_fkey(price_non_member,course_programs(price_non_member))",
       )
       .eq("id", data.participantId)
       .maybeSingle();
     if (error || !p) throw new Response("Buchung nicht gefunden", { status: 404 });
     const c = (p as any).courses;
-    const normal = c?.price_non_member ?? c?.course_programs?.price_non_member ?? null;
+    const { proratedCoursePrice, berlinDay } = await import("@/lib/prorated-price.server");
+    const normal = (
+      await proratedCoursePrice(
+        (p as any).course_id,
+        c?.price_non_member ?? c?.course_programs?.price_non_member ?? null,
+        berlinDay((p as any).created_at),
+      )
+    ).price;
     if (normal == null) throw new Response("Kein Normalpreis hinterlegt", { status: 400 });
     const stamp = new Date().toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" });
     const note = `[${stamp}] Mitgliedschaft zum Kursstart nicht gültig – Normalpreis ${Number(normal)} € (vorher ${(p as any).price_amount ?? "–"} €)${(p as any).paid ? "; bereits bezahlt, Differenz anfordern" : ""}.`;

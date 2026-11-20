@@ -113,7 +113,7 @@ export async function repriceMemberParticipants(
   let q = supabaseAdmin
     .from("course_participants")
     .select(
-      "id,participant_name,participant_email,is_member,price_amount,paid,internal_notes,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,price_member,price_non_member,course_programs(price_member,price_non_member))",
+      "id,participant_name,participant_email,is_member,price_amount,paid,internal_notes,course_id,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on,price_member,price_non_member,course_programs(price_member,price_non_member))",
     )
     .in("status", ["confirmed", "waiting"]);
   if (opts.courseId) q = q.eq("course_id", opts.courseId);
@@ -134,8 +134,23 @@ export async function repriceMemberParticipants(
     if (m.isMember !== true) continue;
 
     const program = course.course_programs ?? null;
-    const memberPrice = course.price_member ?? program?.price_member ?? null;
-    const nonMemberPrice = course.price_non_member ?? program?.price_non_member ?? null;
+    // Preise anteilig wie bei der Buchung (Termine ab dem Buchungstag)
+    const { proratedCoursePrice, berlinDay } = await import("@/lib/prorated-price.server");
+    const bookedOn = berlinDay(p.created_at);
+    const memberPrice = (
+      await proratedCoursePrice(
+        p.course_id,
+        course.price_member ?? program?.price_member ?? null,
+        bookedOn,
+      )
+    ).price;
+    const nonMemberPrice = (
+      await proratedCoursePrice(
+        p.course_id,
+        course.price_non_member ?? program?.price_non_member ?? null,
+        bookedOn,
+      )
+    ).price;
     const current = p.price_amount == null ? null : Number(p.price_amount);
     const priceOk = memberPrice == null || current === Number(memberPrice);
     if (p.is_member === true && priceOk) continue;
