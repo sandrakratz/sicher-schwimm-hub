@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { BILLING } from "@/lib/billing-config";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { escapeLike } from "@/lib/like";
 
 const SITE_NAME = "Sicher Schwimmen e.V.";
@@ -204,10 +204,15 @@ export const assignRequestToCourse = createServerFn({ method: "POST" })
       if (membershipId) {
         const { data: mem } = await supabaseAdmin
           .from("memberships")
-          .select("status")
+          .select("status,start_date,valid_until")
           .eq("id", membershipId)
           .maybeSingle();
-        if (mem) isMember = mem.status === "active";
+        if (mem) {
+          const { membershipValidOn } = await import("@/lib/member-claim");
+          isMember =
+            (mem as any).status === "active" &&
+            membershipValidOn(mem as any, course.starts_on || todayBerlinIso());
+        }
       }
       // Nicht nur die verknüpfte Mitgliedschaft: auch E-Mail, Erziehungsberechtigte, Familie, Kindname
       if (isMember !== true) {
@@ -215,6 +220,7 @@ export const assignRequestToCourse = createServerFn({ method: "POST" })
         const found = await resolveMembership({
           email: req.parent_email,
           childName: req.child_name,
+          courseStart: course.starts_on ?? null,
         });
         if (found.isMember != null) isMember = found.isMember;
       }

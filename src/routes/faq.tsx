@@ -61,7 +61,7 @@ const faqs = [
   },
   {
     q: "Wann ist der Beitrag fällig?",
-    a: "Der Jahresbeitrag ist jeweils zum 1. März fällig und wird ausschließlich per SEPA-Basislastschrift eingezogen. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.",
+    a: "Der Jahresbeitrag wird ausschließlich per SEPA-Basislastschrift eingezogen: bei laufenden Mitgliedschaften jeweils zum 1. März, bei Neueintritt innerhalb von 4 Wochen nach der Aufnahmebestätigung. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.",
   },
   {
     q: "Bedeutet Mitgliedschaft automatisch einen Kursplatz?",

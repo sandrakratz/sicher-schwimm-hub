@@ -8,6 +8,7 @@
 //    Partner oder Kind der Familienmitgliedschaft.
 
 import { todayBerlinIso } from "@/lib/format";
+import { membershipValidOn } from "@/lib/member-claim";
 
 export type MemberRow = {
   id: string;
@@ -18,6 +19,9 @@ export type MemberRow = {
   member_email: string | null;
   guardian_email: string | null;
   family_members: any;
+  /** Mitglied ab / gültig bis (leer = keine Einschränkung) */
+  start_date: string | null;
+  valid_until: string | null;
 };
 
 export type MembershipMatch = { isMember: boolean | null; membershipId: string | null };
@@ -26,9 +30,11 @@ const norm = (v: string | null | undefined) => (v ?? "").trim().replace(/\s+/g, 
 
 export async function loadMemberships(): Promise<MemberRow[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("memberships")
-    .select("id,status,first_name,last_name,email,member_email,guardian_email,family_members")
+  // start_date/valid_until fehlen noch in der generierten types.ts → untypisierter Zugriff
+  const { data, error } = await (supabaseAdmin.from("memberships") as any)
+    .select(
+      "id,status,first_name,last_name,email,member_email,guardian_email,family_members,start_date,valid_until",
+    )
     .limit(5000);
   if (error) throw new Error(error.message);
   return (data ?? []) as MemberRow[];
@@ -53,18 +59,25 @@ function namesOf(m: MemberRow): string[] {
     .filter((n) => n.includes(" "));
 }
 
-/** Aktive Mitgliedschaft → true, nur inaktive gefunden → false, nichts gefunden → null. */
+/**
+ * Aktive und am Stichtag gültige Mitgliedschaft → true; nur inaktive, noch nicht begonnene oder
+ * abgelaufene gefunden → false; nichts gefunden → null.
+ * Stichtag `courseStart` = Kursbeginn (der Mitgliedspreis hängt am Kursstart, nicht am Buchungstag);
+ * ohne Angabe gilt heute.
+ */
 export function matchMembership(
   rows: MemberRow[],
-  q: { email?: string | null; childName?: string | null },
+  q: { email?: string | null; childName?: string | null; courseStart?: string | null },
 ): MembershipMatch {
   const email = norm(q.email);
   const name = norm(q.childName);
+  const day = q.courseStart || todayBerlinIso();
+  const valid = (m: MemberRow) => m.status === "active" && membershipValidOn(m, day);
   const byEmail = email ? rows.filter((m) => emailsOf(m).includes(email)) : [];
-  const active = byEmail.find((m) => m.status === "active");
+  const active = byEmail.find(valid);
   if (active) return { isMember: true, membershipId: active.id };
   if (name.includes(" ")) {
-    const byName = rows.find((m) => m.status === "active" && namesOf(m).includes(name));
+    const byName = rows.find((m) => valid(m) && namesOf(m).includes(name));
     if (byName) return { isMember: true, membershipId: byName.id };
   }
   if (byEmail.length) return { isMember: false, membershipId: byEmail[0]!.id };
@@ -72,7 +85,7 @@ export function matchMembership(
 }
 
 export async function resolveMembership(
-  q: { email?: string | null; childName?: string | null },
+  q: { email?: string | null; childName?: string | null; courseStart?: string | null },
   rows?: MemberRow[],
 ): Promise<MembershipMatch> {
   return matchMembership(rows ?? (await loadMemberships()), q);
@@ -100,7 +113,7 @@ export async function repriceMemberParticipants(
   let q = supabaseAdmin
     .from("course_participants")
     .select(
-      "id,participant_name,participant_email,is_member,price_amount,paid,internal_notes,course_id,courses!course_participants_course_id_fkey(name,ends_on,price_member,price_non_member,course_programs(price_member,price_non_member))",
+      "id,participant_name,participant_email,is_member,price_amount,paid,internal_notes,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,price_member,price_non_member,course_programs(price_member,price_non_member))",
     )
     .in("status", ["confirmed", "waiting"]);
   if (opts.courseId) q = q.eq("course_id", opts.courseId);
@@ -113,7 +126,11 @@ export async function repriceMemberParticipants(
   for (const p of (data ?? []) as any[]) {
     const course = p.courses;
     if (!course || (course.ends_on && course.ends_on < today)) continue;
-    const m = matchMembership(rows, { email: p.participant_email, childName: p.participant_name });
+    const m = matchMembership(rows, {
+      email: p.participant_email,
+      childName: p.participant_name,
+      courseStart: course.starts_on ?? null,
+    });
     if (m.isMember !== true) continue;
 
     const program = course.course_programs ?? null;

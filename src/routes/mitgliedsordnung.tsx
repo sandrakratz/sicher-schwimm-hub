@@ -15,8 +15,9 @@ export const Route = createFileRoute("/mitgliedsordnung")({
 
       <h2 className="font-display text-2xl font-bold text-primary-deep">1. Beitragsordnung</h2>
       <p>
-        Gemäß § 7 der Vereinssatzung gelten folgende jährliche Mitgliedsbeiträge. Fälligkeit
-        standardmäßig jeweils am 1. März im Voraus per SEPA-Lastschrift.
+        Gemäß § 7 der Vereinssatzung gelten folgende jährliche Mitgliedsbeiträge. Einzug per
+        SEPA-Lastschrift im Voraus: bei laufenden Mitgliedschaften jeweils am 1. März, bei
+        Neueintritt innerhalb von 4 Wochen nach der Aufnahmebestätigung.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">

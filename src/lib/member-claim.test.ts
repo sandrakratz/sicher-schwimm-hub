@@ -1,7 +1,8 @@
 // @ts-expect-error bun:test liefert hier keine Typdeklarationen; Ausführung: bun test
 import { describe, expect, test } from "bun:test";
-import { decideMember, priceFor } from "./member-claim";
+import { decideMember, maxMembershipStart, membershipValidOn, priceFor } from "./member-claim";
 import { isAdultProgram } from "./adult-course";
+import { firstYearFee } from "./billing-config";
 
 const prices = { member: 159, nonMember: 179 };
 
@@ -40,5 +41,37 @@ describe("Kursart", () => {
     expect(isAdultProgram({ min_age_years: 18 })).toBe(true);
     expect(isAdultProgram({ min_age_years: 6 })).toBe(false);
     expect(isAdultProgram({ min_age_years: null })).toBe(false);
+  });
+});
+
+describe("Mitgliedschaft: Beginn und Ende der Gültigkeit", () => {
+  test("ohne Datum: durchgehend gültig", () => {
+    expect(membershipValidOn({}, "2026-03-01")).toBe(true);
+  });
+  test("Kurs nach Beginn: gültig, Kurs vor Beginn: nicht", () => {
+    const m = { start_date: "2026-07-01" };
+    expect(membershipValidOn(m, "2026-07-01")).toBe(true);
+    expect(membershipValidOn(m, "2026-06-30")).toBe(false);
+  });
+  test("nach Kündigung zum Jahresende: Kurs im Folgejahr ohne Vergünstigung", () => {
+    const m = { start_date: "2026-01-01", valid_until: "2026-12-31" };
+    expect(membershipValidOn(m, "2026-12-31")).toBe(true);
+    expect(membershipValidOn(m, "2027-01-10")).toBe(false);
+  });
+  test("spätester Beginn: 6 Monate im Voraus", () => {
+    expect(maxMembershipStart("2026-11-20")).toBe("2027-05-20");
+  });
+});
+
+describe("Beitrag im Beitrittsjahr", () => {
+  test("Eintritt bis einschließlich 1. Juli: voller Beitrag", () => {
+    expect(firstYearFee("family", "2026-07-01")).toEqual({
+      annual: 96,
+      firstYear: 96,
+      half: false,
+    });
+  });
+  test("Eintritt nach dem 1. Juli: halber Beitrag", () => {
+    expect(firstYearFee("adult", "2026-07-02")).toEqual({ annual: 60, firstYear: 30, half: true });
   });
 });

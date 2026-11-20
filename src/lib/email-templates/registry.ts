@@ -33,6 +33,7 @@ import { template as courseWaitlistReturn } from "./course-waitlist-return";
 import { template as courseBroadcast } from "./course-broadcast";
 import { template as courseSessionsInfo } from "./course-sessions-info";
 import { template as accountActivated } from "./account-activated";
+import { template as membershipConfirmation } from "./membership-confirmation";
 import { template as majorityNotice } from "./majority-notice";
 import { template as pushInvite } from "./push-invite";
 import { template as trainerPayoutChanged } from "./trainer-payout-changed";
@@ -87,6 +88,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "course-broadcast": courseBroadcast,
   "course-sessions-info": courseSessionsInfo,
   "account-activated": accountActivated,
+  "membership-confirmation": membershipConfirmation,
   "majority-notice": majorityNotice,
   "trainer-payout-changed": trainerPayoutChanged,
   "dienstplan-trainer": dienstplanTrainer,

@@ -7,6 +7,8 @@ export const BILLING = {
   iban: "DE85 3806 0186 5081 0160 13",
   bic: "GENODED1BRS",
   bankName: "VR Bank Hennef",
+  /** SEPA-Gläubiger-Identifikationsnummer des Vereins (steht auf jedem Lastschriftmandat). */
+  creditorId: "DE32ZZZ00002935195",
   /** Einheitlicher Text für den Verwendungszweck. */
   purpose: "Kursname + Name des Kindes + Kursbeginn (Startdatum)",
   /** Einheitlicher Hinweis zur Fälligkeit der Kursgebühr. */
@@ -60,7 +62,7 @@ export const MEMBERSHIP_FEES = {
 };
 
 export const MEMBERSHIP_BILLING_NOTE =
-  "Beitrag fällig jeweils zum 1. März per SEPA-Lastschrift. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.";
+  "Der Beitrag wird per SEPA-Lastschrift eingezogen: bei laufenden Mitgliedschaften jeweils zum 1. März, bei Neueintritt innerhalb von 4 Wochen nach der Aufnahmebestätigung. Bei Eintritt nach dem 1. Juli wird im Beitrittsjahr nur der halbe Jahresbeitrag (50 %) berechnet.";
 
 /** Kursgebühren-Standardsätze (10 Einheiten à 45 Minuten). */
 export const COURSE_FEES = {
@@ -90,4 +92,17 @@ export const THEME_COLOR = "#0a4d8c";
 
 export function isBillingConfigured() {
   return Boolean(BILLING.iban && BILLING.recipient);
+}
+
+/**
+ * Beitrag im Beitrittsjahr: bei Eintritt nach dem 1. Juli nur der halbe Jahresbeitrag
+ * (muss mit MEMBERSHIP_BILLING_NOTE übereinstimmen). `startIso` = Mitglied ab (JJJJ-MM-TT).
+ */
+export function firstYearFee(
+  type: keyof typeof MEMBERSHIP_FEES | "supporting",
+  startIso: string,
+): { annual: number; firstYear: number; half: boolean } {
+  const annual = type === "supporting" ? MEMBERSHIP_FEES.supporting_min : MEMBERSHIP_FEES[type];
+  const half = startIso > `${startIso.slice(0, 4)}-07-01`;
+  return { annual, firstYear: half ? annual / 2 : annual, half };
 }
