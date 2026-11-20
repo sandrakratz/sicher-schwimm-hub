@@ -37,7 +37,7 @@ export async function applyMemberCheck(
   const { data: p, error } = await supabaseAdmin
     .from("course_participants")
     .select(
-      "id,status,participant_name,participant_email,payer_street,payer_zip,payer_city,document_no,document_issued_at,push_token,member_check,request_id,course_id,courses!course_participants_course_id_fkey(*, course_programs(*))",
+      "id,status,created_at,participant_name,participant_email,payer_street,payer_zip,payer_city,document_no,document_issued_at,push_token,member_check,request_id,course_id,courses!course_participants_course_id_fkey(*, course_programs(*))",
     )
     .eq("id", participantId)
     .maybeSingle();
@@ -53,10 +53,16 @@ export async function applyMemberCheck(
   if (!course) throw new Error("Kurs nicht gefunden.");
 
   const isMember = decision === "confirm";
-  const price = priceFor(isMember, {
-    member: course.price_member ?? program?.price_member ?? null,
-    nonMember: course.price_non_member ?? program?.price_non_member ?? null,
-  });
+  // Anteilig nach den Terminen ab dem Buchungstag (nicht ab der Freigabe)
+  const { proratedCoursePrice, berlinDay } = await import("@/lib/prorated-price.server");
+  const { price } = await proratedCoursePrice(
+    course.id,
+    priceFor(isMember, {
+      member: course.price_member ?? program?.price_member ?? null,
+      nonMember: course.price_non_member ?? program?.price_non_member ?? null,
+    }),
+    berlinDay((p as any).created_at),
+  );
 
   // Zahlungsziel beginnt mit der Freigabe
   const now = new Date().toISOString();

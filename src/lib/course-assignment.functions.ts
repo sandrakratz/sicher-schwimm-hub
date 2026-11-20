@@ -228,11 +228,15 @@ export const assignRequestToCourse = createServerFn({ method: "POST" })
 
     // Preis bestimmen: explizit übergebener Preis ODER aus Kurs ableiten
     let priceAmount: number | null = data.priceAmount ?? null;
+    // (bei bereits gestartetem Kurs anteilig nach den noch ausstehenden Terminen; ein vom Vorstand
+    // ausdrücklich angegebener Preis bleibt unverändert)
     if (priceAmount == null) {
-      if (isMember === true && course.price_member != null)
-        priceAmount = Number(course.price_member);
+      let fullPrice: number | null = null;
+      if (isMember === true && course.price_member != null) fullPrice = Number(course.price_member);
       else if (isMember === false && course.price_non_member != null)
-        priceAmount = Number(course.price_non_member);
+        fullPrice = Number(course.price_non_member);
+      const { proratedCoursePrice } = await import("@/lib/prorated-price.server");
+      priceAmount = (await proratedCoursePrice(course.id, fullPrice)).price;
     }
 
     // Dasselbe Kind (Name + Geburtsdatum) darf im Kurs nur einmal aktiv stehen. Vor der Belegnummer prüfen,

@@ -89,7 +89,8 @@ import { BaderegelnCard } from "@/components/BaderegelnCard";
 import { formatPrice } from "@/lib/format";
 import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { proratePrice } from "@/lib/prorated-price";
 import { NOT_BOOKABLE_NOTE, parseRequirementLines } from "@/lib/upcoming-programs";
 import { AdultCoursePage } from "@/components/AdultCoursePage";
 import { AdultBookingDialog } from "@/components/AdultBookingDialog";
@@ -908,9 +909,15 @@ function BookingDialog({
     Boolean(form.healthInfo.trim()) || siblings.some((k) => k.healthInfo.trim());
   const fullName = (first: string, last: string) => `${first.trim()} ${last.trim()}`.trim();
 
-  const price = form.isMember
-    ? (term?.price_member ?? program.price_member ?? null)
-    : (term?.price_non_member ?? program.price_non_member ?? null);
+  // Bereits gestartete Kurse: anteilig nach den noch ausstehenden Terminen (Server rechnet identisch)
+  const prorated = proratePrice(
+    form.isMember
+      ? (term?.price_member ?? program.price_member ?? null)
+      : (term?.price_non_member ?? program.price_non_member ?? null),
+    (term?.dates ?? []).filter((d) => d.index != null).map((d) => d.date),
+    todayBerlinIso(),
+  );
+  const price = prorated.price;
   const totalPrice = price != null ? price * (1 + siblings.length) : null;
 
   const submit = async (e: React.FormEvent) => {
@@ -1292,6 +1299,14 @@ function BookingDialog({
             paymentDueDays={program.payment_due_days}
             amount={totalPrice}
           />
+          {prorated.prorated && (
+            <p className="text-xs text-muted-foreground">
+              Der Kurs hat bereits begonnen. Die Kursgebühr von {formatPrice(prorated.fullPrice)}{" "}
+              wird um die {prorated.past} von {prorated.total} Terminen gekürzt, die schon
+              stattgefunden haben: {formatPrice(price)} pro Kind. Die Zahlung ist nur per
+              Sofortüberweisung möglich.
+            </p>
+          )}
 
           <div className="flex items-start gap-2">
             <Checkbox

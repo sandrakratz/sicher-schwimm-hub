@@ -516,10 +516,15 @@ export const bookCourseTerm = createServerFn({ method: "POST" })
       const isMember = decision.isMember;
       const memberCheckPending = decision.check === "pending";
 
-      const price = priceFor(isMember, {
-        member: course.price_member ?? program?.price_member ?? null,
-        nonMember: course.price_non_member ?? program?.price_non_member ?? null,
-      });
+      // Bereits gestartete Kurse: Preis anteilig nach den noch ausstehenden Terminen
+      const { proratedCoursePrice } = await import("@/lib/prorated-price.server");
+      const { price } = await proratedCoursePrice(
+        course.id,
+        priceFor(isMember, {
+          member: course.price_member ?? program?.price_member ?? null,
+          nonMember: course.price_non_member ?? program?.price_non_member ?? null,
+        }),
+      );
 
       // Erwachsene: Doppelbuchung (kein Geburtsdatum für die Datenbankprüfung vorhanden) selbst abfangen
       if (data.adult) {
