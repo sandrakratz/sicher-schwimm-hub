@@ -2,6 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { decideMember, maxMembershipStart, membershipValidOn, priceFor } from "./member-claim";
 import { isAdultProgram } from "./adult-course";
+import { firstYearFee } from "./billing-config";
 
 const prices = { member: 159, nonMember: 179 };
 
@@ -59,5 +60,18 @@ describe("Mitgliedschaft: Beginn und Ende der Gültigkeit", () => {
   });
   test("spätester Beginn: 6 Monate im Voraus", () => {
     expect(maxMembershipStart("2026-11-20")).toBe("2027-05-20");
+  });
+});
+
+describe("Beitrag im Beitrittsjahr", () => {
+  test("Eintritt bis einschließlich 1. Juli: voller Beitrag", () => {
+    expect(firstYearFee("family", "2026-07-01")).toEqual({
+      annual: 96,
+      firstYear: 96,
+      half: false,
+    });
+  });
+  test("Eintritt nach dem 1. Juli: halber Beitrag", () => {
+    expect(firstYearFee("adult", "2026-07-02")).toEqual({ annual: 60, firstYear: 30, half: true });
   });
 });

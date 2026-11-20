@@ -91,3 +91,16 @@ export const THEME_COLOR = "#0a4d8c";
 export function isBillingConfigured() {
   return Boolean(BILLING.iban && BILLING.recipient);
 }
+
+/**
+ * Beitrag im Beitrittsjahr: bei Eintritt nach dem 1. Juli nur der halbe Jahresbeitrag
+ * (muss mit MEMBERSHIP_BILLING_NOTE übereinstimmen). `startIso` = Mitglied ab (JJJJ-MM-TT).
+ */
+export function firstYearFee(
+  type: keyof typeof MEMBERSHIP_FEES | "supporting",
+  startIso: string,
+): { annual: number; firstYear: number; half: boolean } {
+  const annual = type === "supporting" ? MEMBERSHIP_FEES.supporting_min : MEMBERSHIP_FEES[type];
+  const half = startIso > `${startIso.slice(0, 4)}-07-01`;
+  return { annual, firstYear: half ? annual / 2 : annual, half };
+}

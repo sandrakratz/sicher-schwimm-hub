@@ -71,23 +71,16 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
     });
     if (data.status === "active") {
       try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: m } = await supabaseAdmin
-          .from("memberships")
-          .select("email, first_name, membership_type")
-          .eq("id", data.id)
-          .maybeSingle();
-        if (m?.email) {
-          const { sendAccountActivatedEmail } = await import("@/lib/account-activation.server");
-          await sendAccountActivatedEmail({
-            email: m.email,
-            firstName: m.first_name,
-            membershipType: m.membership_type,
-            senderUserId: context.userId,
-          });
-        }
+        // Beginn festlegen (Satzung § 3), danach die Aufnahmebestätigung mit allen Angaben versenden
+        const { applyStartOnFirstApproval, sendMembershipConfirmationEmail } =
+          await import("@/lib/membership-confirmation.server");
+        await applyStartOnFirstApproval(data.id);
+        await sendMembershipConfirmationEmail({
+          membershipId: data.id,
+          senderUserId: context.userId,
+        });
       } catch (e) {
-        console.error("[setMembershipStatus] activation mail failed", e);
+        console.error("[setMembershipStatus] confirmation mail failed", e);
       }
     }
     let repriced = 0;

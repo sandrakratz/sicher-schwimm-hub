@@ -26,6 +26,16 @@ export async function sendAccountActivatedEmail(opts: {
     .limit(1);
   if (existing && existing.length) return { sent: false, reason: "already_sent" };
 
+  // Wer schon eine Aufnahmebestätigung (mit Anmeldelink) bekommen hat, braucht diese Mail nicht zusätzlich.
+  const { data: confirmed } = await supabaseAdmin
+    .from("email_send_log")
+    .select("id")
+    .eq("template_name", "membership-confirmation")
+    .ilike("recipient_email", escapeLike(email))
+    .eq("status", "sent")
+    .limit(1);
+  if (confirmed && confirmed.length) return { sent: false, reason: "membership_confirmed" };
+
   let membershipType = opts.membershipType ?? null;
   let firstName = opts.firstName ?? null;
   if (!membershipType || !firstName) {
