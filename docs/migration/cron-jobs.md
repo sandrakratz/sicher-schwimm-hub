@@ -14,6 +14,7 @@ Hinweis: Der `apikey`-Header wurde bereits von der Datenbankschnittstelle geschw
 | partial-certificate-daily | `30 14 * * *` | täglich 14:30 UTC (16:30 Berlin) |
 | payment-check-reminder-daily | `0 6 * * *` | täglich 06:00 UTC |
 | waitlist-sweep-hourly | `0 * * * *` | stündlich |
+| member-account-cleanup-daily | `0 3 * * *` | täglich 03:00 UTC – löscht Logins gekündigter Mitglieder 30 Tage nach „gültig bis“ (Migration `20261121130000_member_account_cleanup_cron.sql`, Endpunkt `/api/public/hooks/member-account-cleanup`) |
 | transfer-consent-reminder-daily | `0 6 * * *` | täglich 06:00 UTC – Erinnerung an Eltern, die einer Kursumbuchung nach 3 Tagen noch nicht zugestimmt haben (Migration `20261002120000_transfer_consent_reminder.sql`, Endpunkt `/api/public/hooks/transfer-consent-reminder`) |
 
 ## Vollständige Befehle
