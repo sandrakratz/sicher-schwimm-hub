@@ -85,6 +85,7 @@ import { Route as AuthenticatedPortalNewsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPortalPostfachRouteImport } from './routes/_authenticated/portal/postfach'
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authenticated/trainer/index'
+import { Route as AuthenticatedTrainerAbnahmeRouteImport } from './routes/_authenticated/trainer/abnahme'
 import { Route as AuthenticatedTrainerKurseRouteImport } from './routes/_authenticated/trainer/kurse'
 import { Route as AuthenticatedTrainerMitgliederRouteImport } from './routes/_authenticated/trainer/mitglieder'
 import { Route as AuthenticatedTrainerOfflineRouteImport } from './routes/_authenticated/trainer/offline'
@@ -522,6 +523,12 @@ const AuthenticatedTrainerIndexRoute =
     path: '/trainer/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTrainerAbnahmeRoute =
+  AuthenticatedTrainerAbnahmeRouteImport.update({
+    id: '/trainer/abnahme',
+    path: '/trainer/abnahme',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTrainerKurseRoute =
   AuthenticatedTrainerKurseRouteImport.update({
     id: '/trainer/kurse',
@@ -711,6 +718,7 @@ export interface FileRoutesByFullPath {
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/postfach': typeof AuthenticatedPortalPostfachRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/trainer/abnahme': typeof AuthenticatedTrainerAbnahmeRoute
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
@@ -807,6 +815,7 @@ export interface FileRoutesByTo {
   '/portal/news': typeof AuthenticatedPortalNewsRoute
   '/portal/postfach': typeof AuthenticatedPortalPostfachRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/trainer/abnahme': typeof AuthenticatedTrainerAbnahmeRoute
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
@@ -906,6 +915,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/news': typeof AuthenticatedPortalNewsRoute
   '/_authenticated/portal/postfach': typeof AuthenticatedPortalPostfachRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
+  '/_authenticated/trainer/abnahme': typeof AuthenticatedTrainerAbnahmeRoute
   '/_authenticated/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/_authenticated/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/_authenticated/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
@@ -1005,6 +1015,7 @@ export interface FileRouteTypes {
     | '/portal/news'
     | '/portal/postfach'
     | '/portal/profil'
+    | '/trainer/abnahme'
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/offline'
@@ -1101,6 +1112,7 @@ export interface FileRouteTypes {
     | '/portal/news'
     | '/portal/postfach'
     | '/portal/profil'
+    | '/trainer/abnahme'
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/offline'
@@ -1199,6 +1211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/news'
     | '/_authenticated/portal/postfach'
     | '/_authenticated/portal/profil'
+    | '/_authenticated/trainer/abnahme'
     | '/_authenticated/trainer/kurse'
     | '/_authenticated/trainer/mitglieder'
     | '/_authenticated/trainer/offline'
@@ -1809,6 +1822,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTrainerIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/trainer/abnahme': {
+      id: '/_authenticated/trainer/abnahme'
+      path: '/trainer/abnahme'
+      fullPath: '/trainer/abnahme'
+      preLoaderRoute: typeof AuthenticatedTrainerAbnahmeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trainer/kurse': {
       id: '/_authenticated/trainer/kurse'
       path: '/trainer/kurse'
@@ -2046,6 +2066,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortalNewsRoute: typeof AuthenticatedPortalNewsRoute
   AuthenticatedPortalPostfachRoute: typeof AuthenticatedPortalPostfachRoute
   AuthenticatedPortalProfilRoute: typeof AuthenticatedPortalProfilRoute
+  AuthenticatedTrainerAbnahmeRoute: typeof AuthenticatedTrainerAbnahmeRoute
   AuthenticatedTrainerKurseRoute: typeof AuthenticatedTrainerKurseRoute
   AuthenticatedTrainerMitgliederRoute: typeof AuthenticatedTrainerMitgliederRoute
   AuthenticatedTrainerOfflineRoute: typeof AuthenticatedTrainerOfflineRoute
@@ -2066,6 +2087,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortalNewsRoute: AuthenticatedPortalNewsRoute,
   AuthenticatedPortalPostfachRoute: AuthenticatedPortalPostfachRoute,
   AuthenticatedPortalProfilRoute: AuthenticatedPortalProfilRoute,
+  AuthenticatedTrainerAbnahmeRoute: AuthenticatedTrainerAbnahmeRoute,
   AuthenticatedTrainerKurseRoute: AuthenticatedTrainerKurseRoute,
   AuthenticatedTrainerMitgliederRoute: AuthenticatedTrainerMitgliederRoute,
   AuthenticatedTrainerOfflineRoute: AuthenticatedTrainerOfflineRoute,

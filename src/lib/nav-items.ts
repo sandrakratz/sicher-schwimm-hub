@@ -6,6 +6,7 @@ import {
   Newspaper,
   Mail,
   BookOpen,
+  ClipboardCheck,
   Shield,
   ShieldBan,
   Users,
@@ -38,6 +39,7 @@ export type AppNavItem = {
     | "/trainer"
     | "/trainer/verfuegbarkeit"
     | "/trainer/kurse"
+    | "/trainer/abnahme"
     | "/trainer/mitglieder"
     | "/admin"
     | "/admin/kalender"
@@ -108,6 +110,12 @@ export const trainerNav: AppNavItem[] = [
     to: "/trainer/kurse",
     icon: BookOpen,
     label: "Meine Kurse",
+    allow: ["admin", "board", "trainer"],
+  },
+  {
+    to: "/trainer/abnahme",
+    icon: ClipboardCheck,
+    label: "Abzeichen abnehmen",
     allow: ["admin", "board", "trainer"],
   },
   {

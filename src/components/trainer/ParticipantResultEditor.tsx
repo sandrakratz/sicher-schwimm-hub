@@ -48,7 +48,41 @@ export function ParticipantResultEditor({
   value: ParticipantResult;
   onSaved?: (participantId: string, result: ParticipantResult) => void;
 }) {
-  const save = useServerFn(updateParticipantResult);
+  const saveFn = useServerFn(updateParticipantResult);
+  return (
+    <ResultForm
+      value={value}
+      save={(input) => saveFn({ data: { participantId, ...input } })}
+      onSaved={(result) => onSaved?.(participantId, result)}
+    />
+  );
+}
+
+export type ResultInput = {
+  goalReached: boolean | null;
+  badge: string;
+  achievement: string;
+  examLevel: string | null;
+  examCriteria: ExamCriteriaState;
+  examDate: string | null;
+  examPassNo: string | null;
+};
+
+/**
+ * Eingabemaske für den Prüfungsnachweis. Wohin gespeichert wird, bestimmt `save`
+ * (Kursteilnehmende oder externe Abnahme). `showExamDate={false}`: das Datum liefert der Aufrufer.
+ */
+export function ResultForm({
+  value,
+  save,
+  onSaved,
+  showExamDate = true,
+}: {
+  value: ParticipantResult;
+  save: (input: ResultInput) => Promise<ParticipantResult>;
+  onSaved?: (result: ParticipantResult) => void;
+  showExamDate?: boolean;
+}) {
   const [goal, setGoal] = useState<boolean | null>(value.goal_reached);
   const [badge, setBadge] = useState(value.badge || "");
   const [achievement, setAchievement] = useState(value.achievement || "");
@@ -93,18 +127,15 @@ export function ParticipantResultEditor({
     setSaving(true);
     try {
       const res = await save({
-        data: {
-          participantId,
-          goalReached: goal,
-          badge,
-          achievement,
-          examLevel: level || null,
-          examCriteria: criteria,
-          examDate: examDate || null,
-          examPassNo: passNo || null,
-        },
+        goalReached: goal,
+        badge,
+        achievement,
+        examLevel: level || null,
+        examCriteria: criteria,
+        examDate: examDate || null,
+        examPassNo: passNo || null,
       });
-      onSaved?.(participantId, {
+      onSaved?.({
         goal_reached: res.goal_reached,
         badge: res.badge,
         achievement: res.achievement,
@@ -214,15 +245,17 @@ export function ParticipantResultEditor({
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">
-        <div>
-          <Label className="text-xs">Prüfungsdatum</Label>
-          <Input
-            type="date"
-            className="h-9"
-            value={examDate}
-            onChange={(e) => setExamDate(e.target.value)}
-          />
-        </div>
+        {showExamDate && (
+          <div>
+            <Label className="text-xs">Prüfungsdatum</Label>
+            <Input
+              type="date"
+              className="h-9"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+            />
+          </div>
+        )}
         <div>
           <Label className="text-xs">Schwimmpass-Nr. (optional)</Label>
           <Input className="h-9" value={passNo} onChange={(e) => setPassNo(e.target.value)} />
