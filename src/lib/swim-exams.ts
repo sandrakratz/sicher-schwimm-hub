@@ -203,3 +203,49 @@ export function firstCriterionDate(state: ExamCriteriaState): string | null {
     .sort();
   return dates[0] ?? null;
 }
+
+/**
+ * Übernimmt die eingegebenen Teilleistungen für ein Abzeichen. Nur bekannte Prüfungsteile werden
+ * gespeichert. Datum und Prüfer:in bleiben je Teilprüfung erhalten, solange sie erfüllt bleibt.
+ * Gemeinsam genutzt für Kursteilnehmende und externe Abnahmen.
+ */
+export function mergeCriteria(opts: {
+  levelKey: string | null | undefined;
+  input: ExamCriteriaState | undefined;
+  previous: ExamCriteriaState | null | undefined;
+  userId: string;
+  userName: string;
+  /** Heutiges Datum (YYYY-MM-DD, Berlin). */
+  today: string;
+}): ExamCriteriaState {
+  const level = findExamLevel(opts.levelKey);
+  const criteria: ExamCriteriaState = {};
+  if (!level) return criteria;
+  const prev = opts.previous ?? {};
+  const isIso = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  for (const c of level.criteria) {
+    const entry = opts.input?.[c.key];
+    if (!entry) continue;
+    const value = typeof entry.value === "string" ? entry.value.trim().slice(0, 40) : null;
+    const total = typeof entry.total === "string" ? entry.total.trim().slice(0, 40) : null;
+    if (!(entry.done || value || total)) continue;
+    const old = prev[c.key];
+    const done = Boolean(entry.done);
+    const wasDone = old?.done === true;
+    criteria[c.key] = {
+      done,
+      value: value || null,
+      total: total || null,
+      date: done
+        ? isIso(entry.date)
+          ? entry.date
+          : isIso(old?.date)
+            ? old.date
+            : opts.today
+        : null,
+      by_id: done ? (wasDone && old?.by_id ? old.by_id : opts.userId) : null,
+      by_name: done ? (wasDone && old?.by_name ? old.by_name : opts.userName) : null,
+    };
+  }
+  return criteria;
+}

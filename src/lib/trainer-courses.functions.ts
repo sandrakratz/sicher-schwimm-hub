@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { ExamCriteriaState } from "@/lib/swim-exams";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
-import { findExamLevel } from "@/lib/swim-exams";
+import { findExamLevel, mergeCriteria } from "@/lib/swim-exams";
+import { todayBerlinIso } from "@/lib/format";
 
 export type TrainerParticipant = {
   id: string;
@@ -518,54 +519,23 @@ export const updateParticipantResult = createServerFn({ method: "POST" })
     const examPassNo = (data.examPassNo || "").trim() || null;
 
     // Nur bekannte Prüfungsteile speichern – keine Fremddaten übernehmen.
-    const { findExamLevel } = await import("@/lib/swim-exams");
-    const level = findExamLevel(examLevel);
-    const criteria: ExamCriteriaState = {};
-    if (level) {
+    let criteria: ExamCriteriaState = {};
+    if (findExamLevel(examLevel)) {
       // Bisherigen Stand laden, damit Datum und Prüfer:in je Teilprüfung erhalten bleiben.
       const { data: prevRow } = await supabaseAdmin
         .from("course_participants")
         .select("exam_criteria")
         .eq("id", data.participantId)
         .maybeSingle();
-      const prev = ((prevRow?.exam_criteria ?? {}) as ExamCriteriaState) || {};
-      const { data: me } = await supabaseAdmin
-        .from("profiles")
-        .select("first_name,last_name,email")
-        .eq("id", context.userId)
-        .maybeSingle();
-      const myName =
-        [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim() ||
-        me?.email ||
-        "Unbekannt";
-      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(
-        new Date(),
-      );
-      const isIso = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
-      for (const c of level.criteria) {
-        const entry = data.examCriteria?.[c.key];
-        if (!entry) continue;
-        const value = typeof entry.value === "string" ? entry.value.trim().slice(0, 40) : null;
-        const total = typeof entry.total === "string" ? entry.total.trim().slice(0, 40) : null;
-        if (!(entry.done || value || total)) continue;
-        const old = prev[c.key];
-        const done = Boolean(entry.done);
-        const wasDone = old?.done === true;
-        criteria[c.key] = {
-          done,
-          value: value || null,
-          total: total || null,
-          date: done
-            ? isIso(entry.date)
-              ? entry.date!
-              : isIso(old?.date)
-                ? old!.date!
-                : today
-            : null,
-          by_id: done ? (wasDone && old?.by_id ? old.by_id : context.userId) : null,
-          by_name: done ? (wasDone && old?.by_name ? old.by_name : myName) : null,
-        };
-      }
+      const { displayNameOf } = await import("@/lib/exam-examiner.server");
+      criteria = mergeCriteria({
+        levelKey: examLevel,
+        input: data.examCriteria,
+        previous: (prevRow?.exam_criteria ?? {}) as ExamCriteriaState,
+        userId: context.userId,
+        userName: await displayNameOf(context.userId),
+        today: todayBerlinIso(),
+      });
     }
 
     const { error: upErr } = await supabaseAdmin
@@ -662,12 +632,15 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
       .neq("status", "cancelled")
       .order("participant_name", { ascending: true });
 
-    const { data: me } = await supabaseAdmin
-      .from("profiles")
-      .select("first_name,last_name")
-      .eq("id", context.userId)
-      .maybeSingle();
-    void me;
+    // Externe Abnahmen (ohne Kursbuchung), die diesem Kurs zugeordnet wurden
+    const { externalExamsTable, EXTERNAL_EXAM_COLUMNS, toProtocolParticipant } =
+      await import("@/lib/external-exams.server");
+    const { data: externalRows, error: extErr } = await externalExamsTable()
+      .select(EXTERNAL_EXAM_COLUMNS)
+      .eq("course_id", data.courseId)
+      .order("person_name");
+    if (extErr) throw new Error(extErr.message);
+
     const { EXAMINER_NAME, EXAMINER_TITLE } = await import("@/lib/partial-certificate-pdf.server");
     const examinerName = `${EXAMINER_NAME}, ${EXAMINER_TITLE}`;
 
@@ -679,18 +652,24 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
       startsOn: (course.starts_on ?? null) as string | null,
       endsOn: (course.ends_on ?? null) as string | null,
       examinerName,
-      participants: (parts || []).map((p) => ({
-        name: (p.participant_name ?? "") as string,
-        dateOfBirth: (p.date_of_birth ?? null) as string | null,
-        examLevel: (p.exam_level ?? null) as string | null,
-        criteria: (p.exam_criteria ?? {}) as ExamCriteriaState,
-        examDate: (p.exam_date ?? null) as string | null,
-        passNo: (p.exam_pass_no ?? null) as string | null,
-        goalReached: (p.goal_reached ?? null) as boolean | null,
-        badge: (p.badge ?? null) as string | null,
-        achievement: (p.achievement ?? null) as string | null,
-        beltBlocks: (p.belt_blocks ?? null) as number | null,
-      })),
+      participants: (parts || [])
+        .map((p) => ({
+          name: (p.participant_name ?? "") as string,
+          dateOfBirth: (p.date_of_birth ?? null) as string | null,
+          examLevel: (p.exam_level ?? null) as string | null,
+          criteria: (p.exam_criteria ?? {}) as ExamCriteriaState,
+          examDate: (p.exam_date ?? null) as string | null,
+          passNo: (p.exam_pass_no ?? null) as string | null,
+          goalReached: (p.goal_reached ?? null) as boolean | null,
+          badge: (p.badge ?? null) as string | null,
+          achievement: (p.achievement ?? null) as string | null,
+          beltBlocks: (p.belt_blocks ?? null) as number | null,
+        }))
+        .concat(
+          ((externalRows ?? []) as Parameters<typeof toProtocolParticipant>[0][]).map(
+            toProtocolParticipant,
+          ),
+        ),
     });
 
     const safe = (s: string) => s.replace(/[^\p{L}\p{N}\-_]+/gu, "_").slice(0, 60);
@@ -702,7 +681,7 @@ export const exportExamProtocol = createServerFn({ method: "POST" })
         action: "exam_protocol_exported",
         entity: "courses",
         entity_id: data.courseId,
-        metadata: { participants: (parts || []).length },
+        metadata: { participants: (parts || []).length, external: (externalRows ?? []).length },
       });
     } catch {
       /* Audit-Fehler dürfen den Export nicht blockieren */

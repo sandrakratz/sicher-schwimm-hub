@@ -54,6 +54,8 @@ export type ExamProtocolParticipant = {
   achievement: string | null;
   /** Klötzchen am Schwimmgurt (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst. */
   beltBlocks: number | null;
+  /** Nur bei externer Abnahme (ohne Kursbuchung): Herkunft, z. B. andere Schwimmschule. */
+  external?: { origin: string | null };
 };
 
 export type ExamProtocolInput = {
@@ -150,6 +152,13 @@ export async function renderExamProtocolPdf(input: ExamProtocolInput): Promise<U
     draw(p.name || "—", { size: 10.5, bold: true });
     draw(`geb. ${deDate(p.dateOfBirth)}`, { size: 9, color: MUTED, x: LEFT + 240 });
     y -= 13;
+    if (p.external) {
+      draw(
+        `Externe Abnahme (ohne Kursbuchung)${p.external.origin ? ` · Herkunft: ${p.external.origin}` : ""}`,
+        { size: 9, color: MUTED },
+      );
+      y -= 12;
+    }
     draw(`Abzeichen: ${p.examLevel ? examLevelLabel(p.examLevel) : p.badge || "—"}`, { size: 9 });
     y -= 12;
     draw(

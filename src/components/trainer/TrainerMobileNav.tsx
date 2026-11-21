@@ -6,6 +6,7 @@ const SHORT_LABEL: Record<string, string> = {
   "/trainer": "Start",
   "/trainer/verfuegbarkeit": "Zeiten",
   "/trainer/kurse": "Kurse",
+  "/trainer/abnahme": "Abnahme",
   "/trainer/mitglieder": "Mitglieder",
 };
 
@@ -24,7 +25,7 @@ export function TrainerMobileNav() {
         aria-label="Trainerbereich"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden"
       >
-        <ul className="grid grid-cols-4">
+        <ul className="grid grid-cols-5">
           {trainerNav.map((n) => (
             <li key={n.to}>
               <Link
