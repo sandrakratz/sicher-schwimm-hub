@@ -101,6 +101,7 @@ import { Route as ApiPublicHooksBadgePrepReminderRouteImport } from './routes/ap
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
 import { Route as ApiPublicHooksDailyDigestRouteImport } from './routes/api/public/hooks/daily-digest'
 import { Route as ApiPublicHooksMajorityNoticeRouteImport } from './routes/api/public/hooks/majority-notice'
+import { Route as ApiPublicHooksMemberAccountCleanupRouteImport } from './routes/api/public/hooks/member-account-cleanup'
 import { Route as ApiPublicHooksPartialCertificateRouteImport } from './routes/api/public/hooks/partial-certificate'
 import { Route as ApiPublicHooksPaymentCheckReminderRouteImport } from './routes/api/public/hooks/payment-check-reminder'
 import { Route as ApiPublicHooksTrainerRemindersRouteImport } from './routes/api/public/hooks/trainer-reminders'
@@ -614,6 +615,12 @@ const ApiPublicHooksMajorityNoticeRoute =
     path: '/api/public/hooks/majority-notice',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksMemberAccountCleanupRoute =
+  ApiPublicHooksMemberAccountCleanupRouteImport.update({
+    id: '/api/public/hooks/member-account-cleanup',
+    path: '/api/public/hooks/member-account-cleanup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPartialCertificateRoute =
   ApiPublicHooksPartialCertificateRouteImport.update({
     id: '/api/public/hooks/partial-certificate',
@@ -737,6 +744,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
   '/api/public/hooks/daily-digest': typeof ApiPublicHooksDailyDigestRoute
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
+  '/api/public/hooks/member-account-cleanup': typeof ApiPublicHooksMemberAccountCleanupRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/trainer-reminders': typeof ApiPublicHooksTrainerRemindersRoute
@@ -834,6 +842,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
   '/api/public/hooks/daily-digest': typeof ApiPublicHooksDailyDigestRoute
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
+  '/api/public/hooks/member-account-cleanup': typeof ApiPublicHooksMemberAccountCleanupRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/trainer-reminders': typeof ApiPublicHooksTrainerRemindersRoute
@@ -934,6 +943,7 @@ export interface FileRoutesById {
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
   '/api/public/hooks/daily-digest': typeof ApiPublicHooksDailyDigestRoute
   '/api/public/hooks/majority-notice': typeof ApiPublicHooksMajorityNoticeRoute
+  '/api/public/hooks/member-account-cleanup': typeof ApiPublicHooksMemberAccountCleanupRoute
   '/api/public/hooks/partial-certificate': typeof ApiPublicHooksPartialCertificateRoute
   '/api/public/hooks/payment-check-reminder': typeof ApiPublicHooksPaymentCheckReminderRoute
   '/api/public/hooks/trainer-reminders': typeof ApiPublicHooksTrainerRemindersRoute
@@ -1034,6 +1044,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/course-start-reminder'
     | '/api/public/hooks/daily-digest'
     | '/api/public/hooks/majority-notice'
+    | '/api/public/hooks/member-account-cleanup'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/trainer-reminders'
@@ -1131,6 +1142,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/course-start-reminder'
     | '/api/public/hooks/daily-digest'
     | '/api/public/hooks/majority-notice'
+    | '/api/public/hooks/member-account-cleanup'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/trainer-reminders'
@@ -1230,6 +1242,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/course-start-reminder'
     | '/api/public/hooks/daily-digest'
     | '/api/public/hooks/majority-notice'
+    | '/api/public/hooks/member-account-cleanup'
     | '/api/public/hooks/partial-certificate'
     | '/api/public/hooks/payment-check-reminder'
     | '/api/public/hooks/trainer-reminders'
@@ -1281,6 +1294,7 @@ export interface RootRouteChildren {
   ApiPublicHooksCourseStartReminderRoute: typeof ApiPublicHooksCourseStartReminderRoute
   ApiPublicHooksDailyDigestRoute: typeof ApiPublicHooksDailyDigestRoute
   ApiPublicHooksMajorityNoticeRoute: typeof ApiPublicHooksMajorityNoticeRoute
+  ApiPublicHooksMemberAccountCleanupRoute: typeof ApiPublicHooksMemberAccountCleanupRoute
   ApiPublicHooksPartialCertificateRoute: typeof ApiPublicHooksPartialCertificateRoute
   ApiPublicHooksPaymentCheckReminderRoute: typeof ApiPublicHooksPaymentCheckReminderRoute
   ApiPublicHooksTrainerRemindersRoute: typeof ApiPublicHooksTrainerRemindersRoute
@@ -1934,6 +1948,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksMajorityNoticeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/member-account-cleanup': {
+      id: '/api/public/hooks/member-account-cleanup'
+      path: '/api/public/hooks/member-account-cleanup'
+      fullPath: '/api/public/hooks/member-account-cleanup'
+      preLoaderRoute: typeof ApiPublicHooksMemberAccountCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/partial-certificate': {
       id: '/api/public/hooks/partial-certificate'
       path: '/api/public/hooks/partial-certificate'
@@ -2148,6 +2169,8 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksCourseStartReminderRoute,
   ApiPublicHooksDailyDigestRoute: ApiPublicHooksDailyDigestRoute,
   ApiPublicHooksMajorityNoticeRoute: ApiPublicHooksMajorityNoticeRoute,
+  ApiPublicHooksMemberAccountCleanupRoute:
+    ApiPublicHooksMemberAccountCleanupRoute,
   ApiPublicHooksPartialCertificateRoute: ApiPublicHooksPartialCertificateRoute,
   ApiPublicHooksPaymentCheckReminderRoute:
     ApiPublicHooksPaymentCheckReminderRoute,
