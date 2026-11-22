@@ -31,6 +31,8 @@ import { FamilySwimDay } from "@/components/trainer/FamilySwimDay";
 
 const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 const NO_DAY = 0;
+/** So viele Tage vor Kursstart erscheint ein Kurs in der Tagesansicht. */
+const UPCOMING_DAYS = 14;
 const isoWeekday = (dateIso: string) =>
   new Date(`${dateIso.slice(0, 10)}T12:00:00Z`).getUTCDay() || 7;
 
@@ -165,7 +167,14 @@ function Page() {
   const isDone = (c: TrainerCourse) =>
     (c.ends_on != null && c.ends_on.slice(0, 10) < today) ||
     !c.participants.some((p) => p.status !== "cancelled");
-  const activeCourses = courses.filter((c) => !isDone(c) && !c.supporting);
+  // Kurse, die erst in mehr als 14 Tagen beginnen, brauchen noch keinen Platz in der Tagesansicht.
+  const soonLimit = new Date(`${today}T12:00:00Z`);
+  soonLimit.setUTCDate(soonLimit.getUTCDate() + UPCOMING_DAYS);
+  const soonIso = soonLimit.toISOString().slice(0, 10);
+  const isLater = (c: TrainerCourse) => c.starts_on != null && c.starts_on.slice(0, 10) > soonIso;
+  const ownCourses = courses.filter((c) => !isDone(c) && !c.supporting);
+  const activeCourses = ownCourses.filter((c) => !isLater(c));
+  const laterCourses = ownCourses.filter(isLater);
   const doneCourses = courses.filter((c) => isDone(c) && !c.supporting);
   // Vorstand/Verwaltung: weitere laufende Kurse ohne Einteilung, eingeklappt in einer eigenen Rubrik
   const supportCourses = courses.filter((c) => c.supporting && !isDone(c));
@@ -255,6 +264,19 @@ function Page() {
           ))}
           {day.courses.map((c, i) => renderCourse(c, i === 0 && day.swim.length === 0))}
         </div>
+      )}
+
+      {laterCourses.length > 0 && (
+        <CollapsibleCard
+          storageKey="trainer-kurse-spaeter"
+          title="Demnächst startende Kurse"
+          subtitle={`Beginnen erst in mehr als ${UPCOMING_DAYS} Tagen – erscheinen dann automatisch unter dem Wochentag`}
+          meta={<Badge variant="outline">{laterCourses.length}</Badge>}
+        >
+          <div className="space-y-4 px-4 pb-4 sm:px-6">
+            {laterCourses.map((c) => renderCourse(c, false))}
+          </div>
+        </CollapsibleCard>
       )}
 
       {supportCourses.length > 0 && (
