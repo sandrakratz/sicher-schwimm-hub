@@ -23,6 +23,16 @@ import { MultiWatch } from "@/components/trainer/MultiWatch";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 import { listTransferTargets } from "@/lib/participant-transfer.functions";
+import {
+  listFamilySwimForTrainers,
+  type TrainerFamilySwimEvent,
+} from "@/lib/familienschwimmen.functions";
+import { FamilySwimDay } from "@/components/trainer/FamilySwimDay";
+
+const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const NO_DAY = 0;
+const isoWeekday = (dateIso: string) =>
+  new Date(`${dateIso.slice(0, 10)}T12:00:00Z`).getUTCDay() || 7;
 
 export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   beforeLoad: async () => {
@@ -51,6 +61,15 @@ function Page() {
   const [courses, setCourses] = useState<TrainerCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const load = useServerFn(listMyTrainerCourses);
+  const [swimEvents, setSwimEvents] = useState<TrainerFamilySwimEvent[]>([]);
+  const [pickedDay, setPickedDay] = useState<number | null>(null);
+  const loadSwim = useServerFn(listFamilySwimForTrainers);
+  useEffect(() => {
+    // Das Mitgliederschwimmen ist eine Zugabe: schlägt es fehl, bleiben die Kurse trotzdem nutzbar.
+    loadSwim()
+      .then(setSwimEvents)
+      .catch(() => setSwimEvents([]));
+  }, []);
 
   const applyPhone = (participantId: string, phone: string | null) => {
     setCourses((prev) =>
@@ -151,6 +170,24 @@ function Page() {
   // Vorstand/Verwaltung: weitere laufende Kurse ohne Einteilung, eingeklappt in einer eigenen Rubrik
   const supportCourses = courses.filter((c) => c.supporting && !isDone(c));
 
+  // Ebene 1: Wochentage. Erst ein Tipp auf den Tag zeigt die Kurse und das Mitgliederschwimmen dieses Tages.
+  const days = [1, 2, 3, 4, 5, 6, 7, NO_DAY]
+    .map((wd) => ({
+      wd,
+      courses: activeCourses.filter((c) =>
+        wd === NO_DAY ? c.weekdays.length === 0 : c.weekdays.includes(wd),
+      ),
+      swim: swimEvents.filter((e) => wd !== NO_DAY && isoWeekday(e.event_date) === wd),
+    }))
+    .filter((d) => d.courses.length > 0 || d.swim.length > 0);
+  const todayWd = isoWeekday(today);
+  const selectedDay = (
+    days.find((d) => d.wd === pickedDay) ??
+    days.find((d) => d.wd === todayWd) ??
+    days[0]
+  )?.wd;
+  const day = days.find((d) => d.wd === selectedDay);
+
   return (
     <div className="space-y-4">
       <div>
@@ -186,7 +223,39 @@ function Page() {
         }}
       />
 
-      {activeCourses.map((c, i) => renderCourse(c, i === 0))}
+      {days.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {days.map((d) => (
+            <button
+              key={d.wd}
+              type="button"
+              onClick={() => setPickedDay(d.wd)}
+              aria-pressed={d.wd === selectedDay}
+              className={`min-h-14 rounded-lg border p-3 text-left transition-colors ${
+                d.wd === selectedDay ? "border-primary bg-primary/10" : "hover:bg-muted"
+              }`}
+            >
+              <div className="font-semibold">
+                {d.wd === NO_DAY ? "Ohne festen Tag" : WEEKDAYS[d.wd - 1]}
+                {d.wd === todayWd && <span className="ml-1 text-xs text-primary">heute</span>}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {d.courses.length} {d.courses.length === 1 ? "Kurs" : "Kurse"}
+                {d.swim.length > 0 && " · Mitgliederschwimmen"}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {day && (
+        <div className="space-y-4">
+          {day.swim.map((e) => (
+            <FamilySwimDay key={e.id} event={e} open={e.event_date === today} />
+          ))}
+          {day.courses.map((c, i) => renderCourse(c, i === 0 && day.swim.length === 0))}
+        </div>
+      )}
 
       {supportCourses.length > 0 && (
         <CollapsibleCard
