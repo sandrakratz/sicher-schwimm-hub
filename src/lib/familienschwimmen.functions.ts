@@ -1049,7 +1049,7 @@ export const promoteFamilySwimWaitlist = createServerFn({ method: "POST" })
   });
 
 // ---------------------------------------------------------------------------
-// Trainerbereich: wer hat für einen Termin den Zuschlag?
+// Trainerbereich: wer hat für einen Termin den Zuschlag, und wer war da?
 // ---------------------------------------------------------------------------
 
 export type TrainerFamilySwimEvent = {
@@ -1063,10 +1063,36 @@ export type TrainerFamilySwimEvent = {
   /** Zugesagte Anmeldungen (je Konto eine) mit den Personen im Wasser. */
   groups: {
     id: string;
-    persons: { name: string; role: "adult" | "child"; age: number | null }[];
+    /** confirmed = Anwesenheit noch nicht erfasst; attended/no_show = erfasst. */
+    status: "confirmed" | "attended" | "no_show";
+    persons: {
+      key: string;
+      name: string;
+      role: "adult" | "child";
+      age: number | null;
+      /** null = noch nicht erfasst. */
+      present: boolean | null;
+    }[];
     grandstand_name: string | null;
   }[];
 };
+
+/** Anwesenheit einer Person laut Erfassung; null = noch nicht erfasst. */
+function presentOf(r: any, key: string): boolean | null {
+  if (r.status === "confirmed" || !Array.isArray(r.attendance)) return null;
+  const hit = (r.attendance as any[]).find((a) => a.key === key);
+  return hit ? !!hit.present : null;
+}
+
+async function assertTrainerRole(ctx: Ctx) {
+  const { data: roleRows } = await ctx.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", ctx.userId);
+  if (!(roleRows ?? []).some((r: any) => ["admin", "board", "trainer"].includes(r.role))) {
+    throw new Error("Forbidden");
+  }
+}
 
 /**
  * Kommende Mitgliederschwimm-Termine mit den zugesagten Personen, für die Trainer vor Ort.
@@ -1075,14 +1101,7 @@ export type TrainerFamilySwimEvent = {
 export const listFamilySwimForTrainers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<TrainerFamilySwimEvent[]> => {
-    const ctx = context as Ctx;
-    const { data: roleRows } = await ctx.supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", ctx.userId);
-    if (!(roleRows ?? []).some((r: any) => ["admin", "board", "trainer"].includes(r.role))) {
-      throw new Error("Forbidden");
-    }
+    await assertTrainerRole(context as Ctx);
     const admin = await db();
     const { data: events, error } = await admin
       .from("family_swim_events")
@@ -1096,7 +1115,7 @@ export const listFamilySwimForTrainers = createServerFn({ method: "POST" })
 
     const { data: reqs, error: rErr } = await admin
       .from("family_swim_requests")
-      .select("id,event_id,persons,seats,grandstand_name,requested_at")
+      .select("id,event_id,status,persons,seats,grandstand_name,attendance,requested_at")
       .in(
         "event_id",
         events.map((e: any) => e.id),
@@ -1117,13 +1136,135 @@ export const listFamilySwimForTrainers = createServerFn({ method: "POST" })
         seats: mine.reduce((s: number, r: any) => s + r.seats, 0),
         groups: mine.map((r: any) => ({
           id: r.id,
+          status: r.status,
           persons: ((r.persons ?? []) as any[]).map((p) => ({
+            key: String(p.key ?? ""),
             name: String(p.name ?? ""),
             role: p.role === "child" ? ("child" as const) : ("adult" as const),
             age: ageOn(p.date_of_birth ?? null, e.event_date),
+            present: presentOf(r, String(p.key ?? "")),
           })),
           grandstand_name: r.grandstand_name ?? null,
         })),
       };
     });
+  });
+
+/**
+ * Anwesenheit je Person erfassen (Trainer vor Ort, Vorstand). Erst ab dem Termintag.
+ * Mindestens eine Person da = „teilgenommen“, niemand da = „nicht erschienen“ (Strafpunkt wie bisher,
+ * der Vorstand kann ihn erlassen). Eine Korrektur ist jederzeit möglich.
+ */
+export const setFamilySwimAttendance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({ requestId: z.string().uuid(), presentKeys: z.array(z.string().max(200)).max(20) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const ctx = context as Ctx;
+    await assertTrainerRole(ctx);
+    const admin = await db();
+    const { data: r } = await admin
+      .from("family_swim_requests")
+      .select("id,status,persons,family_swim_events(id,event_date)")
+      .eq("id", data.requestId)
+      .maybeSingle();
+    if (!r) throw new Error("Anmeldung nicht gefunden.");
+    if (!SEAT_STATUSES.includes(r.status)) throw new Error("Nur zugesagte Anmeldungen.");
+    if (r.family_swim_events.event_date > todayBerlinIso())
+      throw new Error("Die Anwesenheit kann erst am Termintag erfasst werden.");
+    const valid = new Set<string>(((r.persons ?? []) as any[]).map((p) => String(p.key ?? "")));
+    const present = [...new Set(data.presentKeys)];
+    if (present.some((k) => !valid.has(k))) throw new Error("Unbekannte Person.");
+    // Momentaufnahme mit Namen: bleibt als Versicherungsnachweis 2 Jahre, auch nachdem die Anmeldung gelöscht ist.
+    const attendance = ((r.persons ?? []) as any[]).map((p) => ({
+      key: String(p.key ?? ""),
+      name: String(p.name ?? ""),
+      role: p.role === "child" ? "child" : "adult",
+      present: present.includes(String(p.key ?? "")),
+    }));
+
+    const attended = present.length > 0;
+    const { error } = await admin
+      .from("family_swim_requests")
+      .update({
+        attendance,
+        status: attended ? "attended" : "no_show",
+        strike: !attended,
+        attendance_marked_by: ctx.userId,
+        attendance_marked_at: new Date().toISOString(),
+      })
+      .eq("id", r.id);
+    if (error) throw new Error(error.message);
+    await logAudit(null, ctx.userId, {
+      action: "family_swim.attendance_set",
+      entity: "family_swim_requests",
+      entity_id: r.id,
+      metadata: { event_id: r.family_swim_events.id, present: present.length, of: valid.size },
+    });
+    return { ok: true as const, status: attended ? ("attended" as const) : ("no_show" as const) };
+  });
+
+// ---------------------------------------------------------------------------
+// Vorstand: Anwesenheitsnachweis als PDF (Versicherung, 2 Jahre Aufbewahrung)
+// ---------------------------------------------------------------------------
+
+/** Alle erfassten Mitgliederschwimm-Termine eines Kalenderjahres mit Teilnehmenden, als PDF zum Abheften. */
+export const exportFamilySwimAttendance = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
+  )
+  .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
+    await assertStaff(context as Ctx);
+    const admin = await db();
+    const { data: events, error } = await admin
+      .from("family_swim_events")
+      .select("id,event_date,start_time,end_time,location")
+      .gte("event_date", `${data.year}-01-01`)
+      .lte("event_date", `${data.year}-12-31`)
+      .order("event_date");
+    if (error) throw new Error(error.message);
+    const ids = (events ?? []).map((e: any) => e.id);
+    const { data: reqs, error: rErr } = ids.length
+      ? await admin
+          .from("family_swim_requests")
+          .select("event_id,attendance,requested_at")
+          .in("event_id", ids)
+          .not("attendance", "is", null)
+          .order("requested_at")
+      : { data: [], error: null };
+    if (rErr) throw new Error(rErr.message);
+
+    const { renderFamilySwimAttendancePdf } = await import("@/lib/familienschwimmen-pdf.server");
+    const bytes = await renderFamilySwimAttendancePdf({
+      year: data.year,
+      events: (events ?? [])
+        .map((e: any) => ({
+          date: e.event_date as string,
+          time: `${timeShort(e.start_time)}–${timeShort(e.end_time)}`,
+          location: e.location as string,
+          rows: (reqs ?? [])
+            .filter((r: any) => r.event_id === e.id)
+            .flatMap((r: any) => r.attendance as any[])
+            .map((a: any) => ({
+              name: String(a.name ?? ""),
+              role: a.role === "child" ? ("child" as const) : ("adult" as const),
+              present: !!a.present,
+            })),
+        }))
+        .filter((e: any) => e.rows.length > 0),
+    });
+    await logAudit(null, (context as Ctx).userId, {
+      action: "family_swim.attendance_export",
+      entity: "family_swim_requests",
+      entity_id: null,
+      metadata: { year: data.year },
+    });
+    return {
+      filename: `Mitgliederschwimmen-Anwesenheit-${data.year}.pdf`,
+      base64: Buffer.from(bytes).toString("base64"),
+    };
   });

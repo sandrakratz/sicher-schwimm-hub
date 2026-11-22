@@ -249,6 +249,13 @@ function Page() {
         Aufsichtsperson und Anmerkungen. Der Zähler bleibt bis zum Ende der Mitgliedschaft
         gespeichert und wird danach gelöscht.
       </p>
+      <p>
+        Beim Termin hält die anwesende Übungsleitung fest, welche der angemeldeten Personen
+        tatsächlich teilgenommen haben (Name, Kind oder Erwachsener, anwesend ja/nein, Datum). Dies
+        ist unser Nachweis gegenüber der Versicherung und dient dem Versicherungsschutz bei Unfällen
+        (Art. 6 Abs. 1 lit. f DSGVO). Diese Anwesenheitsangaben löschen wir zwei Jahre nach dem
+        Termin; bis dahin sind sie nur für den Vorstand und die Übungsleitung vor Ort einsehbar.
+      </p>
 
       <H2>11. Cookies, Browser-Speicher & Nutzungsmessung</H2>
       <p>

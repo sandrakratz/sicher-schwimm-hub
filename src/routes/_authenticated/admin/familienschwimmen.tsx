@@ -26,6 +26,7 @@ import {
   type RequestStatus,
 } from "@/lib/familienschwimmen";
 import {
+  exportFamilySwimAttendance,
   applyFamilySwimAllocation,
   cancelFamilySwimEvent,
   getFamilySwimAdmin,
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/_authenticated/admin/familienschwimmen")(
 });
 
 const selectClass = "h-10 rounded-md border border-input bg-background px-3 text-sm";
-type Tab = "termine" | "anmeldungen" | "vergabe" | "familien";
+type Tab = "termine" | "anmeldungen" | "vergabe" | "familien" | "anwesenheit";
 
 function toLocalInput(iso: string) {
   const d = new Date(iso);
@@ -118,6 +119,7 @@ function Page() {
     ["anmeldungen", "Anmeldungen"],
     ["vergabe", "Vergabe"],
     ["familien", "Familien"],
+    ["anwesenheit", "Anwesenheit (PDF)"],
   ];
 
   return (
@@ -155,6 +157,7 @@ function Page() {
       )}
       {tab === "vergabe" && <Vergabe events={events} reload={load} />}
       {tab === "familien" && <Familien families={families} />}
+      {tab === "anwesenheit" && <Anwesenheit />}
     </div>
   );
 }
@@ -737,5 +740,64 @@ function Familien({ families }: { families: AdminFamily[] }) {
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+/** Anwesenheitsnachweis für die Versicherung: ein Kalenderjahr als PDF zum Ausdrucken und Abheften. */
+function Anwesenheit() {
+  const thisYear = new Date().getFullYear();
+  const [year, setYear] = useState(thisYear);
+  const [busy, setBusy] = useState(false);
+
+  async function download() {
+    setBusy(true);
+    try {
+      const res = await exportFamilySwimAttendance({ data: { year } });
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Export fehlgeschlagen.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
+        <div>
+          <h2 className="text-lg font-semibold">Anwesenheitsnachweis für die Versicherung</h2>
+          <p className="text-sm text-muted-foreground">
+            Alle Termine des Jahres mit den Personen, die der Trainer vor Ort als anwesend oder
+            nicht anwesend erfasst hat. Das PDF enthält Namen: bitte nur ausdrucken und abheften.
+            Die Anwesenheit wird im System zwei Jahre nach dem Termin automatisch gelöscht.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="h-10 rounded-md border bg-background px-3 text-sm"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            aria-label="Kalenderjahr"
+          >
+            {[thisYear, thisYear - 1, thisYear - 2].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <Button onClick={download} disabled={busy}>
+            {busy ? "Wird erstellt…" : "PDF herunterladen"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
