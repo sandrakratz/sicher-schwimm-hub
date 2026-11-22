@@ -10,7 +10,12 @@ export const AUDIT_AREAS = {
   },
   waitlist: {
     label: "Anfrageliste",
-    entities: ["waitlist_entries", "course_requests", "cancellation_request"],
+    entities: [
+      "waitlist_entries",
+      "course_requests",
+      "cancellation_request",
+      "adult_course_interests",
+    ],
   },
   blocklist: { label: "Sperrliste", entities: ["booking_blocklist"] },
   members: {
@@ -441,6 +446,10 @@ export const listAuditLog = createServerFn({ method: "POST" })
               trainer_proof: "Trainer-Nachweis",
               course_confirmations: "Kursbestätigungen",
               meinverein_csv: "MeinVerein-Datei",
+              trainer_billing: "Übungsleiter-Abrechnung",
+              trainer_iban: "Übungsleitergelder mit IBAN",
+              follow_up_courses: "Folgekurse",
+              adult_interest: "Interessenten Erwachsenenschwimmen",
             };
             if (r.action.endsWith("_exported")) {
               const key = r.action.replace(/_exported$/, "");

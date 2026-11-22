@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { logExport } from "@/lib/export-log.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -130,6 +132,7 @@ function Page() {
     }
   }
 
+  const logExportFn = useServerFn(logExport);
   function exportCsv() {
     const head = [
       "Eingang",
@@ -171,6 +174,8 @@ function Page() {
     a.download = "erwachsenenschwimmen-interessenten.csv";
     a.click();
     URL.revokeObjectURL(a.href);
+    // Im Verwaltungsprotokoll vermerken; ein Fehler dort darf den Download nicht stören.
+    void logExportFn({ data: { kind: "adult_interest", rows: filtered.length } }).catch(() => {});
   }
 
   const counts = useMemo(() => {

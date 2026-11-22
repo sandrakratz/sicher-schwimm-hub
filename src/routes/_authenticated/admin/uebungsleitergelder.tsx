@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { logExport } from "@/lib/export-log.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -108,6 +110,7 @@ function IbanList() {
     }
   }
 
+  const logExportFn = useServerFn(logExport);
   function exportCsv() {
     const header = ["Name", "E-Mail", "Kontoinhaber:in", "IBAN", "Zuletzt geändert"];
     const lines = withIban.map((r) =>
@@ -131,6 +134,8 @@ function IbanList() {
     a.download = `uebungsleitergelder-iban-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    // Im Verwaltungsprotokoll vermerken; ein Fehler dort darf den Download nicht stören.
+    void logExportFn({ data: { kind: "trainer_iban", rows: withIban.length } }).catch(() => {});
   }
 
   return (

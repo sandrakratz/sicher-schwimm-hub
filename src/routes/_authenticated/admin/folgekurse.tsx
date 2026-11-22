@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { logExport } from "@/lib/export-log.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,6 +194,7 @@ function Page() {
       : list;
   }, [candidates, group, search, onlyOk, maxBelt]);
 
+  const logExportFn = useServerFn(logExport);
   async function download() {
     const ExcelJS = (await import("exceljs")).default;
     const wb = new ExcelJS.Workbook();
@@ -253,6 +256,10 @@ function Page() {
     a.download = `folgekurse-${todayBerlinIso()}.xlsx`;
     a.click();
     URL.revokeObjectURL(a.href);
+    // Im Verwaltungsprotokoll vermerken; ein Fehler dort darf den Download nicht stören.
+    void logExportFn({ data: { kind: "follow_up_courses", rows: candidates.length } }).catch(
+      () => {},
+    );
   }
 
   return (
