@@ -27,7 +27,11 @@ import {
   listFamilySwimForTrainers,
   type TrainerFamilySwimEvent,
 } from "@/lib/familienschwimmen.functions";
-import { FamilySwimDay } from "@/components/trainer/FamilySwimDay";
+import {
+  FamilySwimDay,
+  FamilySwimUpcoming,
+  type AttendanceSaved,
+} from "@/components/trainer/FamilySwimDay";
 
 const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 const NO_DAY = 0;
@@ -66,6 +70,22 @@ function Page() {
   const [swimEvents, setSwimEvents] = useState<TrainerFamilySwimEvent[]>([]);
   const [pickedDay, setPickedDay] = useState<number | null>(null);
   const loadSwim = useServerFn(listFamilySwimForTrainers);
+  // Nach dem Speichern der Anwesenheit die Liste lokal nachziehen (ohne Neuladen).
+  const applyAttendance: AttendanceSaved = (requestId, presentKeys) =>
+    setSwimEvents((prev) =>
+      prev.map((e) => ({
+        ...e,
+        groups: e.groups.map((g) =>
+          g.id !== requestId
+            ? g
+            : {
+                ...g,
+                status: presentKeys.length ? "attended" : "no_show",
+                persons: g.persons.map((p) => ({ ...p, present: presentKeys.includes(p.key) })),
+              },
+        ),
+      })),
+    );
   useEffect(() => {
     // Das Mitgliederschwimmen ist eine Zugabe: schlägt es fehl, bleiben die Kurse trotzdem nutzbar.
     loadSwim()
@@ -179,6 +199,11 @@ function Page() {
   // Vorstand/Verwaltung: weitere laufende Kurse ohne Einteilung, eingeklappt in einer eigenen Rubrik
   const supportCourses = courses.filter((c) => c.supporting && !isDone(c));
 
+  // Mitgliederschwimmen: ohne Zusagen irrelevant (ausgeblendet); weiter als 14 Tage entfernt → Sammelkarte.
+  const swimWithSeats = swimEvents.filter((e) => e.groups.length > 0);
+  const swimSoon = swimWithSeats.filter((e) => e.event_date <= soonIso);
+  const swimLater = swimWithSeats.filter((e) => e.event_date > soonIso);
+
   // Ebene 1: Wochentage. Erst ein Tipp auf den Tag zeigt die Kurse und das Mitgliederschwimmen dieses Tages.
   const days = [1, 2, 3, 4, 5, 6, 7, NO_DAY]
     .map((wd) => ({
@@ -186,7 +211,7 @@ function Page() {
       courses: activeCourses.filter((c) =>
         wd === NO_DAY ? c.weekdays.length === 0 : c.weekdays.includes(wd),
       ),
-      swim: swimEvents.filter((e) => wd !== NO_DAY && isoWeekday(e.event_date) === wd),
+      swim: swimSoon.filter((e) => wd !== NO_DAY && isoWeekday(e.event_date) === wd),
     }))
     .filter((d) => d.courses.length > 0 || d.swim.length > 0);
   const todayWd = isoWeekday(today);
@@ -260,7 +285,12 @@ function Page() {
       {day && (
         <div className="space-y-4">
           {day.swim.map((e) => (
-            <FamilySwimDay key={e.id} event={e} open={e.event_date === today} />
+            <FamilySwimDay
+              key={e.id}
+              event={e}
+              open={e.event_date === today}
+              onSaved={applyAttendance}
+            />
           ))}
           {day.courses.map((c, i) => renderCourse(c, i === 0 && day.swim.length === 0))}
         </div>
@@ -278,6 +308,8 @@ function Page() {
           </div>
         </CollapsibleCard>
       )}
+
+      {swimLater.length > 0 && <FamilySwimUpcoming events={swimLater} onSaved={applyAttendance} />}
 
       {supportCourses.length > 0 && (
         <CollapsibleCard

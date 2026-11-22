@@ -27,6 +27,14 @@ Die Mitgliedschaft bleibt als Beleg bestehen (Kontoverknüpfung wird leer, 10 Ja
 mit noch laufenden Kursbuchungen (`parent_user_id`) oder mit einer Mitgliedschaft ohne „gültig bis“. Jede Löschung steht im Verwaltungsprotokoll (`user.deleted_after_membership_end`).
 Voraussetzung: Die Verwaltung trägt nach gültiger Kündigung „gültig bis“ ein (Mitgliedschaften → Details).
 
+## Mitgliederschwimmen (eigener Job)
+
+`public.family_swim_scrub()` läuft täglich 03:30 UTC (`family-swim-scrub-daily`):
+- **6 Monate nach dem Termin:** Personen-, Kontakt- und Aufsichtsangaben sowie Anmerkungen werden geleert, der Zähler (Teilnahmen, Strafpunkte) bleibt.
+- **2 Jahre nach dem Termin:** die Anwesenheitserfassung `family_swim_requests.attendance` (Name, Kind/Erwachsen, anwesend ja/nein) wird gelöscht.
+  Sie dient als Versicherungsnachweis; der Vorstand kann das Jahr vorher unter /admin/familienschwimmen → „Anwesenheit (PDF)“ ausdrucken und abheften.
+  Migration: `20261122120000_family_swim_attendance.sql`.
+
 ## Einspielen und Kontrolle
 
 1. Migration im Supabase SQL-Editor ausführen (setzt `pg_cron` voraus, ist laut `neue-einrichtung.md` eingeschaltet).
