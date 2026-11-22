@@ -91,6 +91,10 @@ import { termStatus, programAvailability } from "@/lib/course-status";
 import { LABELS } from "@/lib/labels";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { proratePrice } from "@/lib/prorated-price";
+
+/** Immer sichtbar: der Mitgliedsrabatt hängt an der im System bestätigten Mitgliedschaft (siehe member-claim.ts). */
+const MEMBER_DISCOUNT_NOTE =
+  "Der Mitgliedsrabatt wird erst dann automatisch abgezogen, wenn die Mitgliedschaft durch den Vorstand bestätigt wurde.";
 import { NOT_BOOKABLE_NOTE, parseRequirementLines } from "@/lib/upcoming-programs";
 import { AdultCoursePage } from "@/components/AdultCoursePage";
 import { AdultBookingDialog } from "@/components/AdultBookingDialog";
@@ -427,6 +431,7 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                     Wählen Sie einfach einen passenden Zeitraum aus und buchen Sie verbindlich einen
                     Platz.
                   </p>
+                  <p className="text-sm text-muted-foreground">{MEMBER_DISCOUNT_NOTE}</p>
                 </div>
               </div>
 
@@ -469,6 +474,13 @@ function BookableProgramPage({ program }: { program: CourseProgram }) {
                           ? `Max. ${t.max_participants} Kinder pro Kurs`
                           : "Plätze auf Anfrage"}
                       </div>
+                      {t.starts_on && t.starts_on.slice(0, 10) < todayBerlinIso() && (
+                        <p className="pl-7 pt-1 text-sm font-medium text-primary-deep">
+                          Dieser Kurs läuft bereits. Bei späterem Einstieg reduziert sich der
+                          Kursbeitrag bei der Buchung automatisch um die schon stattgefundenen
+                          Termine.
+                        </p>
+                      )}
                       {t.start_tentative && (
                         <div className="text-sm ml-7 rounded bg-accent/15 px-2 py-1 text-foreground">
                           Voraussichtlicher Kursstart –{" "}
@@ -1287,6 +1299,7 @@ function BookingDialog({
               {program.price_member != null ? ` ${formatPrice(program.price_member)}` : ""})
             </Label>
           </div>
+          <p className="text-xs text-muted-foreground">{MEMBER_DISCOUNT_NOTE}</p>
           {form.isMember && (
             <p className="text-xs text-muted-foreground">
               Wir prüfen die Mitgliedschaft. Wird sie nicht sofort im System gefunden, erhalten Sie
