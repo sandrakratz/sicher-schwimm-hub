@@ -19,6 +19,14 @@ Beispiel: Ein Widerruf vom 15.06.2022 wird ab dem 01.01.2026 gelöscht. Einer au
 Bei Gesundheits- und Notizfeldern bleibt der Datensatz bestehen, weil Buchungs- und Zahlungsbelege 10 Jahre aufbewahrt werden müssen (§ 147 AO).
 Jeder Lauf mit Treffern wird im Verwaltungsprotokoll (`audit_logs`, Aktion `retention_cleanup`) mit den Anzahlen vermerkt.
 
+## Mitgliederzugänge nach Kündigung (eigener Job)
+
+Täglich 03:00 UTC (`member-account-cleanup-daily`, Endpunkt `/api/public/hooks/member-account-cleanup`, Migration `20261121130000_member_account_cleanup_cron.sql`):
+Das **Login** eines Mitglieds wird gelöscht, wenn alle seine Mitgliedschaften ein „gültig bis“ haben, das **30 Tage** oder länger zurückliegt.
+Die Mitgliedschaft bleibt als Beleg bestehen (Kontoverknüpfung wird leer, 10 Jahre Aufbewahrung). Nie gelöscht werden Konten mit Rolle Admin/Vorstand/Trainer,
+mit noch laufenden Kursbuchungen (`parent_user_id`) oder mit einer Mitgliedschaft ohne „gültig bis“. Jede Löschung steht im Verwaltungsprotokoll (`user.deleted_after_membership_end`).
+Voraussetzung: Die Verwaltung trägt nach gültiger Kündigung „gültig bis“ ein (Mitgliedschaften → Details).
+
 ## Einspielen und Kontrolle
 
 1. Migration im Supabase SQL-Editor ausführen (setzt `pg_cron` voraus, ist laut `neue-einrichtung.md` eingeschaltet).
@@ -33,5 +41,5 @@ Gelöscht wird endgültig. Wer frühere Daten noch braucht, sollte vor dem Einsp
 - Übrige Mitglieds- und Kursdaten nach Austritt bzw. Kursjahr („bis zu 3 Jahre“): Mitgliedschaften und Teilnehmer enthalten Belegdaten mit 10 Jahren Frist, daher keine Massenlöschung.
 - Sperrliste: Einträge nach spätestens 2 Jahren prüfen und löschen (siehe Seite „Sperrliste“ im Verwaltungsbereich).
 - Verwaltungsprotokoll `audit_logs` (mit IP-Adressen): derzeit unbegrenzt, Empfehlung 12 Monate.
-- Mitglieder- und Trainerkonten nach Kündigung.
+- Trainerkonten nach Ausscheiden.
 - Trainer-Bankverbindungen `trainer_payout_details` (IBAN für Übungsleitergelder): werden mit dem Benutzerkonto gelöscht; scheidet jemand aus, nach der letzten Abrechnung (Aufbewahrung der Abrechnungsbelege 10 Jahre bleibt davon unberührt) den Eintrag entfernen.
