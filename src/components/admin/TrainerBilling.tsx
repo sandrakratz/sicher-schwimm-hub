@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { logExport } from "@/lib/export-log.functions";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, ChevronDown, ChevronRight, Download, Trash2 } from "lucide-react";
@@ -197,6 +199,7 @@ export function TrainerBilling() {
     }
   }
 
+  const logExportFn = useServerFn(logExport);
   function exportCsv() {
     const header = [
       "Trainer:in",
@@ -235,6 +238,8 @@ export function TrainerBilling() {
     a.download = `uebungsleiter-abrechnung-${from || "anfang"}-${to || "heute"}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    // Im Verwaltungsprotokoll vermerken; ein Fehler dort darf den Download nicht stören.
+    void logExportFn({ data: { kind: "trainer_billing", rows: rows.length } }).catch(() => {});
   }
 
   return (
