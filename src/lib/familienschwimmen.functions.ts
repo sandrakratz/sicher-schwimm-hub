@@ -13,6 +13,7 @@ import {
   proposeAllocation,
   validateSelection,
   weekdayDate,
+  ageOn,
   EMPTY_STANDING,
   needsGrandstandSupervision,
   type AllocRequest,
@@ -1045,4 +1046,84 @@ export const promoteFamilySwimWaitlist = createServerFn({ method: "POST" })
     const admin = await db();
     const n = await promoteWaitlist(admin, data.eventId, (context as Ctx).userId);
     return { ok: true as const, promoted: n };
+  });
+
+// ---------------------------------------------------------------------------
+// Trainerbereich: wer hat für einen Termin den Zuschlag?
+// ---------------------------------------------------------------------------
+
+export type TrainerFamilySwimEvent = {
+  id: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  notes: string | null;
+  seats: number;
+  /** Zugesagte Anmeldungen (je Konto eine) mit den Personen im Wasser. */
+  groups: {
+    id: string;
+    persons: { name: string; role: "adult" | "child"; age: number | null }[];
+    grandstand_name: string | null;
+  }[];
+};
+
+/**
+ * Kommende Mitgliederschwimm-Termine mit den zugesagten Personen, für die Trainer vor Ort.
+ * Bewusst nur Name, Erwachsen/Kind, Alter und Aufsichtsperson: keine Kontaktdaten, keine Anmerkungen der Familie.
+ */
+export const listFamilySwimForTrainers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<TrainerFamilySwimEvent[]> => {
+    const ctx = context as Ctx;
+    const { data: roleRows } = await ctx.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", ctx.userId);
+    if (!(roleRows ?? []).some((r: any) => ["admin", "board", "trainer"].includes(r.role))) {
+      throw new Error("Forbidden");
+    }
+    const admin = await db();
+    const { data: events, error } = await admin
+      .from("family_swim_events")
+      .select("id,event_date,start_time,end_time,location,notes")
+      .eq("status", "open")
+      .gte("event_date", todayBerlinIso())
+      .order("event_date")
+      .limit(8);
+    if (error) throw new Error(error.message);
+    if (!events?.length) return [];
+
+    const { data: reqs, error: rErr } = await admin
+      .from("family_swim_requests")
+      .select("id,event_id,persons,seats,grandstand_name,requested_at")
+      .in(
+        "event_id",
+        events.map((e: any) => e.id),
+      )
+      .in("status", SEAT_STATUSES)
+      .order("requested_at");
+    if (rErr) throw new Error(rErr.message);
+
+    return events.map((e: any) => {
+      const mine = (reqs ?? []).filter((r: any) => r.event_id === e.id);
+      return {
+        id: e.id,
+        event_date: e.event_date,
+        start_time: timeShort(e.start_time),
+        end_time: timeShort(e.end_time),
+        location: e.location,
+        notes: e.notes ?? null,
+        seats: mine.reduce((s: number, r: any) => s + r.seats, 0),
+        groups: mine.map((r: any) => ({
+          id: r.id,
+          persons: ((r.persons ?? []) as any[]).map((p) => ({
+            name: String(p.name ?? ""),
+            role: p.role === "child" ? ("child" as const) : ("adult" as const),
+            age: ageOn(p.date_of_birth ?? null, e.event_date),
+          })),
+          grandstand_name: r.grandstand_name ?? null,
+        })),
+      };
+    });
   });

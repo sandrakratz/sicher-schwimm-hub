@@ -45,6 +45,8 @@ export type TrainerCourse = {
   ends_on: string | null;
   /** Nur Vorstand/Verwaltung: laufender Kurs, in dem die Person nicht eingeteilt ist. */
   supporting: boolean;
+  /** ISO-Wochentage (1 = Montag … 7 = Sonntag), an denen der Kurs Termine hat. Leer = keine Termine angelegt. */
+  weekdays: number[];
   participants: TrainerParticipant[];
 };
 
@@ -144,6 +146,25 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       .filter((c) => !(c.archived_at && (!c.ends_on || c.ends_on >= todayIso)));
     ids = courses.map((c) => c.id as string);
 
+    // Wochentage aus den tatsächlichen Terminen: das Freitextfeld „schedule“ ist dafür nicht verlässlich.
+    const sessionRows = await fetchIn<{ course_id: string; session_date: string }>(
+      ids,
+      (chunk, f, t) =>
+        supabaseAdmin
+          .from("course_sessions")
+          .select("course_id,session_date")
+          .in("course_id", chunk)
+          .order("id")
+          .range(f, t),
+    );
+    const weekdaysByCourse = new Map<string, Set<number>>();
+    for (const s of sessionRows) {
+      const wd = new Date(`${String(s.session_date).slice(0, 10)}T12:00:00Z`).getUTCDay() || 7;
+      const set = weekdaysByCourse.get(s.course_id) ?? new Set<number>();
+      set.add(wd);
+      weekdaysByCourse.set(s.course_id, set);
+    }
+
     const parts = await fetchIn<any>(ids, (chunk, f, t) =>
       supabaseAdmin
         .from("course_participants")
@@ -231,6 +252,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
       starts_on: (c.starts_on ?? null) as string | null,
       ends_on: (c.ends_on ?? null) as string | null,
       supporting: !own.has(c.id as string),
+      weekdays: [...(weekdaysByCourse.get(c.id as string) ?? [])].sort((a, b) => a - b),
       participants: parts
         .filter((p) => p.course_id === c.id)
         .map((p) => ({
