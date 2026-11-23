@@ -8,6 +8,8 @@ import {
   RemoveParticipantDialog,
 } from "@/components/admin/kurse/ParticipantDialogs";
 import { ProgramDialog } from "@/components/admin/kurse/ProgramDialog";
+import { useCourseExports } from "@/components/admin/kurse/useCourseExports";
+import { useCourseMailings } from "@/components/admin/kurse/useCourseMailings";
 import {
   ageAt,
   addDaysIso,
@@ -26,7 +28,6 @@ import {
   type Participant,
   type ProgramRow,
 } from "@/components/admin/kurse/shared";
-import { exportExamProtocol } from "@/lib/trainer-courses.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,14 +80,6 @@ import {
   Lock,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
-import {
-  generateCourseListXlsx,
-  generateTaxParticipantListXlsx,
-  generateCourseConfirmations,
-  generateMeinVereinCsv,
-  generateTrainerProofXlsx,
-} from "@/lib/course-sessions.functions";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { getMyAdminRoles } from "@/lib/role-guard";
 import {
@@ -108,8 +101,6 @@ import { CourseSessionsMailDialog } from "@/components/admin/CourseSessionsMailD
 import { OfferDeadlinesDialog } from "@/components/admin/OfferDeadlinesDialog";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { Megaphone, ChevronDown, MoreHorizontal, Smartphone, Mail } from "lucide-react";
-import { sendPushInvites } from "@/lib/push.functions";
-import { sendAbsenceInvites } from "@/lib/absence.functions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -235,96 +226,30 @@ function Page() {
   const [sessAssign, setSessAssign] = useState<{ session_id: string; trainer_id: string }[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const trainersFn = useServerFn(listTrainers);
-  const [exporting, setExporting] = useState<string | null>(null);
-  const [exportingTax, setExportingTax] = useState<string | null>(null);
-  const exportXlsx = useServerFn(generateCourseListXlsx);
-  const exportTrainerProof = useServerFn(generateTrainerProofXlsx);
-  const [proofBusy, setProofBusy] = useState(false);
-  // Im Januar/Februar wird meist der Nachweis fürs Vorjahr gebraucht
-  const [proofYear, setProofYear] = useState(() => {
-    const now = new Date();
-    return now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear();
-  });
-  const exportTaxXlsx = useServerFn(generateTaxParticipantListXlsx);
-  const [exportingConf, setExportingConf] = useState<string | null>(null);
-  const exportConfirmationsFn = useServerFn(generateCourseConfirmations);
-  const exportProtocolFn = useServerFn(exportExamProtocol);
-  const [exportingProtocol, setExportingProtocol] = useState<string | null>(null);
-  const [exportingCsv, setExportingCsv] = useState<string | null>(null);
-  const exportMeinVereinFn = useServerFn(generateMeinVereinCsv);
-  const remindFn = useServerFn(sendPaymentReminders);
-  const [reminding, setReminding] = useState(false);
-  const pushInvitesFn = useServerFn(sendPushInvites);
-  const [inviting, setInviting] = useState(false);
-
-  const absenceInvitesFn = useServerFn(sendAbsenceInvites);
-  const [inviteAbsence, setInviteAbsence] = useState(false);
-
-  async function handleSendAbsenceInvites() {
-    if (
-      !confirm(
-        "Einmalige Info-Mail mit dem Abmelde-Link jetzt an alle Familien mit bereits laufenden Kursen senden? Jede Adresse bekommt diese Mail nur ein einziges Mal. Es werden jeweils bis zu 12 Familien pro Klick bedient.",
-      )
-    )
-      return;
-    setInviteAbsence(true);
-    try {
-      const r = await absenceInvitesFn();
-      if (r.sent === 0 && r.remaining === 0 && r.failed === 0)
-        toast.info("Keine neuen Familien – alle haben die Mail bereits erhalten");
-      else
-        toast.success(
-          `Mail an ${r.sent} Familien gesendet` +
-            (r.failed ? `, ${r.failed} fehlgeschlagen` : "") +
-            (r.remaining ? `. Noch ${r.remaining} offen – bitte erneut klicken.` : "."),
-        );
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Senden fehlgeschlagen");
-    } finally {
-      setInviteAbsence(false);
-    }
-  }
-
-  async function handleSendPushInvites() {
-    if (
-      !confirm(
-        "Info-Mail zu den Handy-Mitteilungen jetzt an alle Familien mit laufenden Kursen senden? Jede Familie bekommt diese Mail nur ein einziges Mal.",
-      )
-    )
-      return;
-    setInviting(true);
-    try {
-      const r = await pushInvitesFn();
-      toast.success(
-        r.sent > 0
-          ? `Info-Mail an ${r.sent} Familien gesendet`
-          : "Keine neuen Familien – alle haben die Info-Mail bereits erhalten",
-      );
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Senden fehlgeschlagen");
-    } finally {
-      setInviting(false);
-    }
-  }
-
-  async function handleSendReminders(courseId?: string | null) {
-    if (
-      !confirm(
-        "Zahlungserinnerung an alle offenen Fälle (Sofortzahlung erwartet oder überfällig) senden?",
-      )
-    )
-      return;
-    setReminding(true);
-    try {
-      const res: any = await remindFn({ data: { courseId: courseId ?? null } });
-      if (!res?.sentCount) toast.info("Keine offenen Fälle für eine Erinnerung gefunden.");
-      else toast.success(`${res.sentCount} Zahlungserinnerung(en) versendet`);
-    } catch (e: any) {
-      toast.error(e?.message || "Versand fehlgeschlagen");
-    } finally {
-      setReminding(false);
-    }
-  }
+  const {
+    exporting,
+    exportingTax,
+    exportingConf,
+    exportingProtocol,
+    exportingCsv,
+    proofBusy,
+    proofYear,
+    setProofYear,
+    exportCourseList,
+    downloadTrainerProof,
+    exportTaxList,
+    exportConfirmations,
+    exportProtocol,
+    exportMeinVerein,
+  } = useCourseExports();
+  const {
+    reminding,
+    inviting,
+    inviteAbsence,
+    handleSendAbsenceInvites,
+    handleSendPushInvites,
+    handleSendReminders,
+  } = useCourseMailings();
 
   async function openSessions(c: Course) {
     setSessCourse(c);
@@ -513,162 +438,6 @@ function Page() {
     if (sessCourse) {
       await syncCourseDates(sessCourse.id);
       await openSessions(sessCourse);
-    }
-  }
-
-  async function exportCourseList(c: Course) {
-    setExporting(c.id);
-    try {
-      const res = await exportXlsx({ data: { courseId: c.id } });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Excel-Kursliste erstellt");
-    } catch (e: any) {
-      toast.error(e?.message || "Export fehlgeschlagen");
-    } finally {
-      setExporting(null);
-    }
-  }
-
-  async function downloadTrainerProof() {
-    setProofBusy(true);
-    try {
-      const res = await exportTrainerProof({ data: { year: proofYear } });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Trainer-Nachweis erstellt");
-    } catch (e: any) {
-      toast.error(e?.message || "Export fehlgeschlagen");
-    } finally {
-      setProofBusy(false);
-    }
-  }
-
-  async function exportTaxList(c: Course) {
-    setExportingTax(c.id);
-    try {
-      const res = await exportTaxXlsx({ data: { courseId: c.id } });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Teilnehmerliste (Steuer) erstellt");
-    } catch (e: any) {
-      toast.error(e?.message || "Export fehlgeschlagen");
-    } finally {
-      setExportingTax(null);
-    }
-  }
-
-  async function exportConfirmations(c: Course, format: "pdf" | "zip") {
-    setExportingConf(`${c.id}-${format}`);
-    try {
-      const res = await exportConfirmationsFn({ data: { courseId: c.id, format } });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], {
-        type: format === "pdf" ? "application/pdf" : "application/zip",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Kursbestätigungen erstellt");
-    } catch (e: any) {
-      toast.error(e?.message || "Export fehlgeschlagen");
-    } finally {
-      setExportingConf(null);
-    }
-  }
-
-  // Prüfungsprotokoll nach DPO für die Vereinsakte.
-  async function exportProtocol(c: Course) {
-    setExportingProtocol(c.id);
-    try {
-      const res = await exportProtocolFn({ data: { courseId: c.id } });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success("Prüfungsprotokoll erstellt");
-    } catch (e: any) {
-      toast.error(e?.message || "Export fehlgeschlagen");
-    } finally {
-      setExportingProtocol(null);
-    }
-  }
-
-  async function exportMeinVerein(c: Course) {
-    setExportingCsv(c.id);
-    try {
-      const res = await exportMeinVereinFn({ data: { courseId: c.id } });
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = res.filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      toast.success(
-        res.missingDocNo > 0
-          ? `CSV erstellt (${res.rows} Posten, davon ${res.missingDocNo} ohne Rechnungsnummer)`
-          : `CSV erstellt (${res.rows} Posten)`,
-      );
-    } catch (e: any) {
-      toast.error(e?.message || "Export fehlgeschlagen");
-    } finally {
-      setExportingCsv(null);
     }
   }
 
@@ -1643,12 +1412,15 @@ function Page() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Downloads</DropdownMenuLabel>
-              <DropdownMenuItem disabled={exporting === c.id} onSelect={() => exportCourseList(c)}>
+              <DropdownMenuItem
+                disabled={exporting === c.id}
+                onSelect={() => exportCourseList(c.id)}
+              >
                 <FileSpreadsheet /> {exporting === c.id ? "Erstelle…" : "Teilnehmerliste (Excel)"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={exportingTax === c.id || !hasStarted(c)}
-                onSelect={() => exportTaxList(c)}
+                onSelect={() => exportTaxList(c.id)}
               >
                 <Receipt />{" "}
                 {exportingTax === c.id
@@ -1659,27 +1431,27 @@ function Page() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={exportingConf === `${c.id}-pdf`}
-                onSelect={() => exportConfirmations(c, "pdf")}
+                onSelect={() => exportConfirmations(c.id, "pdf")}
               >
                 <FileText />{" "}
                 {exportingConf === `${c.id}-pdf` ? "Erstelle…" : "Kursbestätigungen (PDF)"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={exportingConf === `${c.id}-zip`}
-                onSelect={() => exportConfirmations(c, "zip")}
+                onSelect={() => exportConfirmations(c.id, "zip")}
               >
                 <FileArchive />{" "}
                 {exportingConf === `${c.id}-zip` ? "Erstelle…" : "Kursbestätigungen einzeln (ZIP)"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={exportingProtocol === c.id}
-                onSelect={() => exportProtocol(c)}
+                onSelect={() => exportProtocol(c.id)}
               >
                 <FileText /> {exportingProtocol === c.id ? "Erstelle…" : "Prüfungsprotokoll (DPO)"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={exportingCsv === c.id}
-                onSelect={() => exportMeinVerein(c)}
+                onSelect={() => exportMeinVerein(c.id)}
               >
                 <FileDown /> {exportingCsv === c.id ? "Erstelle…" : "MeinVerein (CSV)"}
               </DropdownMenuItem>
