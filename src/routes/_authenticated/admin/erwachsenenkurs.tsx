@@ -34,6 +34,7 @@ import {
   updateAdultInterest,
   type AdultInterest,
 } from "@/lib/adult-interest.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/erwachsenenkurs")({
   ssr: false,
@@ -54,8 +55,6 @@ export const Route = createFileRoute("/_authenticated/admin/erwachsenenkurs")({
     ],
   }),
 });
-
-const selectClass = "h-10 rounded-md border border-input bg-background px-3 text-sm";
 
 function memberLabel(r: AdultInterest) {
   if (r.is_member === true) return "Mitglied (System)";
@@ -207,8 +206,8 @@ function Page() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <select
-              className={selectClass}
+            <NativeSelect
+              size="lg"
               aria-label="Schwimmstand filtern"
               value={fLevel}
               onChange={(e) => setFLevel(e.target.value)}
@@ -219,9 +218,9 @@ function Page() {
                   {v}
                 </option>
               ))}
-            </select>
-            <select
-              className={selectClass}
+            </NativeSelect>
+            <NativeSelect
+              size="lg"
               aria-label="Verfügbarkeit filtern"
               value={fAvail}
               onChange={(e) => setFAvail(e.target.value)}
@@ -232,9 +231,9 @@ function Page() {
                   {v}
                 </option>
               ))}
-            </select>
-            <select
-              className={selectClass}
+            </NativeSelect>
+            <NativeSelect
+              size="lg"
               aria-label="Status filtern"
               value={fStatus}
               onChange={(e) => setFStatus(e.target.value)}
@@ -245,7 +244,7 @@ function Page() {
                   {v} ({counts[k] ?? 0})
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0}>
               <Download className="mr-2 h-4 w-4" /> CSV exportieren
             </Button>
@@ -296,8 +295,8 @@ function Page() {
                       <TableCell>{PRICE_PREFERENCE_SHORT[r.price_preference]}</TableCell>
                       <TableCell className="text-xs">{memberLabel(r)}</TableCell>
                       <TableCell>
-                        <select
-                          className={selectClass}
+                        <NativeSelect
+                          size="lg"
                           aria-label={`Status für ${r.first_name} ${r.last_name}`}
                           value={r.status}
                           onChange={(e) => void setStatus(r, e.target.value as InterestStatus)}
@@ -307,7 +306,7 @@ function Page() {
                               {v}
                             </option>
                           ))}
-                        </select>
+                        </NativeSelect>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">
                         <Button

@@ -28,9 +28,7 @@ import {
   type BillingOverview,
   type BillingRow,
 } from "@/lib/trainer-billing.functions";
-
-const selectCls =
-  "h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+import { NativeSelect } from "@/components/ui/native-select";
 
 function csvCell(v: string) {
   return `"${v.replace(/"/g, '""')}"`;
@@ -265,8 +263,9 @@ export function TrainerBilling() {
         </label>
         <label className="text-xs text-muted-foreground">
           Kurs
-          <select
-            className={`${selectCls} mt-1 block`}
+          <NativeSelect
+            size="lg"
+            className="mt-1 block"
             value={courseId}
             onChange={(e) => setCourseId(e.target.value)}
           >
@@ -276,12 +275,13 @@ export function TrainerBilling() {
                 {c.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-xs text-muted-foreground">
           Trainer:in
-          <select
-            className={`${selectCls} mt-1 block`}
+          <NativeSelect
+            size="lg"
+            className="mt-1 block"
             value={trainerId}
             onChange={(e) => setTrainerId(e.target.value)}
           >
@@ -291,7 +291,7 @@ export function TrainerBilling() {
                 {t.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
           <Download className="mr-2 h-4 w-4" /> Als CSV
@@ -681,8 +681,9 @@ export function TrainerRates() {
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-xs text-muted-foreground">
               Trainer:in
-              <select
-                className={`${selectCls} mt-1 block`}
+              <NativeSelect
+                size="lg"
+                className="mt-1 block"
                 value={trainerId}
                 onChange={(e) => setTrainerId(e.target.value)}
               >
@@ -692,12 +693,13 @@ export function TrainerRates() {
                     {t.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="text-xs text-muted-foreground">
               Kursart
-              <select
-                className={`${selectCls} mt-1 block`}
+              <NativeSelect
+                size="lg"
+                className="mt-1 block"
                 value={programId}
                 onChange={(e) => setProgramId(e.target.value)}
               >
@@ -707,7 +709,7 @@ export function TrainerRates() {
                     {p.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="text-xs text-muted-foreground">
               Satz je Stunde (€)
@@ -735,8 +737,9 @@ export function TrainerRates() {
 
       <label className="block text-xs text-muted-foreground">
         Anzeigen für
-        <select
-          className={`${selectCls} mt-1 block`}
+        <NativeSelect
+          size="lg"
+          className="mt-1 block"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         >
@@ -746,7 +749,7 @@ export function TrainerRates() {
               {t.name}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
 
       <Card className="border-0 shadow-soft">

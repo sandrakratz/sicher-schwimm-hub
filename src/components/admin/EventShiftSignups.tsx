@@ -23,6 +23,7 @@ import {
 import type { TrainerOption } from "@/lib/trainers.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { listHelperGroups, syncHelperGroupFill } from "@/lib/event-helpers.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type HelperGroup = {
   id: string;
@@ -316,8 +317,8 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
                         }}
                       />
                       {groups.filter((g) => g.event_id === e.id).length > 0 && (
-                        <select
-                          className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                        <NativeSelect
+                          size="xs"
                           value={s.group_id || ""}
                           onChange={(ev) => assignGroup(s.id, e.id, ev.target.value || null)}
                         >
@@ -329,7 +330,7 @@ export function EventShiftSignups({ me, trainers }: { me: string; trainers: Trai
                                 {g.name}
                               </option>
                             ))}
-                        </select>
+                        </NativeSelect>
                       )}
                       <Button
                         variant="ghost"

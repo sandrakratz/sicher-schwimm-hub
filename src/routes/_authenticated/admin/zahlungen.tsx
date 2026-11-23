@@ -18,6 +18,7 @@ import {
   effectiveAssignee,
   useAssignmentContext,
 } from "@/components/admin/AssignControl";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/zahlungen")({
   ssr: false,
@@ -274,11 +275,7 @@ function Page() {
           )}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="text-sm text-muted-foreground">Zuständig:</span>
-            <select
-              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-              value={who}
-              onChange={(e) => setWho(e.target.value)}
-            >
+            <NativeSelect size="sm" value={who} onChange={(e) => setWho(e.target.value)}>
               <option value="">Alle</option>
               <option value="__none">Nicht zugewiesen</option>
               {(ctx.data?.staff ?? []).map((s) => (
@@ -287,7 +284,7 @@ function Page() {
                   {s === ctx.data?.me ? " (ich)" : ""}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
             <span className="text-sm text-muted-foreground">Sortieren nach:</span>
             {SORT_OPTIONS.map((o) => (
               <Button

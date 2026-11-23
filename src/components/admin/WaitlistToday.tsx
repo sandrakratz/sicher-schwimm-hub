@@ -9,6 +9,7 @@ import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/fo
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { checkFit } from "@/lib/swim-fit";
 import type { listWaitlist } from "@/lib/waitlist.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type Data = Awaited<ReturnType<typeof listWaitlist>>;
 export type TodayEntry = Data["entries"][number];
@@ -349,9 +350,9 @@ export function WaitlistToday({
         <label className="text-muted-foreground" htmlFor="today-assignee">
           Zuständig:
         </label>
-        <select
+        <NativeSelect
           id="today-assignee"
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          size="sm"
           value={assignee}
           onChange={(ev) => setAssignee(ev.target.value)}
         >
@@ -363,7 +364,7 @@ export function WaitlistToday({
               {n === ctx.data?.me ? " (ich)" : ""}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <Button size="sm" variant="outline" className="h-8" onClick={onGuide}>
           Leitfaden
         </Button>

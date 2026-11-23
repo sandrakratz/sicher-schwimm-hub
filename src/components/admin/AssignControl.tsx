@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { assignItem, getAssignmentContext, type AssignmentArea } from "@/lib/assignments.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** Vorstand/Verwaltung, angemeldete Person und Standard-Zuständigkeiten (gemeinsam zwischengespeichert). */
 export function useAssignmentContext() {
@@ -107,8 +108,8 @@ export function AssignControl({
           <div className="space-y-3 text-sm">
             <label className="block">
               <span className="text-xs text-muted-foreground">Zuständig</span>
-              <select
-                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              <NativeSelect
+                className="mt-1 w-full"
                 value={person}
                 onChange={(e) => setPerson(e.target.value)}
               >
@@ -121,7 +122,7 @@ export function AssignControl({
                     {n === ctx.data?.me ? " (ich)" : ""}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="block">
               <span className="text-xs text-muted-foreground">

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AUDIT_AREAS, listAuditLog, type AuditArea } from "@/lib/audit-log.functions";
 import { formatDateTimeBerlin } from "@/lib/format";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/audit")({
   beforeLoad: async () => {
@@ -22,8 +23,6 @@ export const Route = createFileRoute("/_authenticated/admin/audit")({
   },
   component: Page,
 });
-
-const selectCls = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
 function Page() {
   const [actorId, setActorId] = useState("");
@@ -81,8 +80,8 @@ function Page() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-xs text-muted-foreground">
           Person
-          <select
-            className={`${selectCls} mt-1 block`}
+          <NativeSelect
+            className="mt-1 block"
             value={actorId}
             onChange={(e) => setActorId(e.target.value)}
           >
@@ -92,12 +91,12 @@ function Page() {
                 {a.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-xs text-muted-foreground">
           Bereich
-          <select
-            className={`${selectCls} mt-1 block`}
+          <NativeSelect
+            className="mt-1 block"
             value={area}
             onChange={(e) => setArea(e.target.value as "" | AuditArea)}
           >
@@ -107,7 +106,7 @@ function Page() {
                 {a.label}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-xs text-muted-foreground">
           Von

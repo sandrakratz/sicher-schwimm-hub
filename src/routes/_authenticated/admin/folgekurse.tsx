@@ -23,6 +23,7 @@ import {
   type Candidate,
   type Group,
 } from "@/lib/follow-up-candidates";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/folgekurse")({
   ssr: false,
@@ -312,9 +313,9 @@ function Page() {
             <Label htmlFor="max-belt" className="text-sm">
               Gurt-Stand
             </Label>
-            <select
+            <NativeSelect
               id="max-belt"
-              className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+
               value={maxBelt}
               onChange={(e) => setMaxBelt(e.target.value)}
             >
@@ -324,7 +325,7 @@ function Page() {
               <option value="2">höchstens 2 Klötzchen</option>
               <option value="1">höchstens 1 Klötzchen</option>
               <option value="0">ohne Gurt</option>
-            </select>
+            </NativeSelect>
           </div>
         }
       </div>

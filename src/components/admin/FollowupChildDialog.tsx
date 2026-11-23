@@ -28,6 +28,7 @@ import { placeFollowupChild } from "@/lib/followup-booking.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { beltLabel } from "@/lib/belt";
 import { LEVEL_LABEL, type Candidate, type Group } from "@/lib/follow-up-candidates";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export type CourseOption = {
   id: string;
@@ -171,8 +172,8 @@ export function FollowupChildDialog({
                 Buchungsbestätigung mit Zahlungsfrist. Die Rechnungsadresse wird aus der früheren
                 Buchung (sonst der Mitgliedschaft) übernommen.
               </p>
-              <select
-                className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              <NativeSelect
+                className="w-full"
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
                 aria-label="Folgekurs wählen"
@@ -196,7 +197,7 @@ export function FollowupChildDialog({
                     ))}
                   </optgroup>
                 )}
-              </select>
+              </NativeSelect>
               {chosen?.schedule && (
                 <p className="text-xs text-muted-foreground">Termine: {chosen.schedule}</p>
               )}
