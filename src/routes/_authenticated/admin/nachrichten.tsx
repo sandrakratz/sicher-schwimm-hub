@@ -46,6 +46,7 @@ import {
   effectiveAssignee,
   useAssignmentContext,
 } from "@/components/admin/AssignControl";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/nachrichten")({
   // ?zustaendig=ich öffnet die Liste gefiltert auf die angemeldete Person (Link aus „Mir zugewiesen“)
@@ -237,9 +238,9 @@ function Page() {
               <label className="text-muted-foreground" htmlFor="inbox-who">
                 Zuständig:
               </label>
-              <select
+              <NativeSelect
                 id="inbox-who"
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                size="sm"
                 value={who}
                 onChange={(e) => setWho(e.target.value)}
               >
@@ -251,7 +252,7 @@ function Page() {
                     {s === ctx.data?.me ? " (ich)" : ""}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             {needReply.length === 0 ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-900">

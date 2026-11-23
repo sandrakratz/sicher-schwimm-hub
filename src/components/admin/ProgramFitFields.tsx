@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { SWIM_LEVELS, WEEKDAYS } from "@/lib/swim-fit";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** Mindest-Schwimmniveau und Kurstag eines Angebots (Grundlage der „Passt das?“-Prüfung). */
 export function ProgramFitFields({
@@ -11,13 +12,12 @@ export function ProgramFitFields({
   weekday: number | null | undefined;
   onChange: (v: { min_swim_level?: number | null; weekday?: number | null }) => void;
 }) {
-  const cls = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm";
   return (
     <>
       <div>
         <Label>Mindest-Schwimmniveau</Label>
-        <select
-          className={cls}
+        <NativeSelect
+          className="mt-1 w-full"
           value={minSwimLevel ?? ""}
           onChange={(e) =>
             onChange({ min_swim_level: e.target.value === "" ? null : Number(e.target.value) })
@@ -30,7 +30,7 @@ export function ProgramFitFields({
               mindestens: {l.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <p className="mt-1 text-xs text-muted-foreground">
           Familien mit niedrigerem oder unbekanntem Niveau bekommen keinen automatischen Platz; der
           Vorstand prüft sie unter „Heute“ → „Passt das?“.
@@ -38,8 +38,8 @@ export function ProgramFitFields({
       </div>
       <div>
         <Label>Kurstag</Label>
-        <select
-          className={cls}
+        <NativeSelect
+          className="mt-1 w-full"
           value={weekday ?? ""}
           onChange={(e) =>
             onChange({ weekday: e.target.value === "" ? null : Number(e.target.value) })
@@ -51,7 +51,7 @@ export function ProgramFitFields({
               {d.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <p className="mt-1 text-xs text-muted-foreground">
           Nennen die Eltern einen anderen Wunschtag, wird nicht automatisch angeboten.
         </p>

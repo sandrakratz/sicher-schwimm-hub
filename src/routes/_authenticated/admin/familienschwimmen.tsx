@@ -39,6 +39,7 @@ import {
   type AdminRequest,
   type ProposalView,
 } from "@/lib/familienschwimmen.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/familienschwimmen")({
   ssr: false,
@@ -60,7 +61,6 @@ export const Route = createFileRoute("/_authenticated/admin/familienschwimmen")(
   }),
 });
 
-const selectClass = "h-10 rounded-md border border-input bg-background px-3 text-sm";
 type Tab = "termine" | "anmeldungen" | "vergabe" | "familien" | "anwesenheit";
 
 function toLocalInput(iso: string) {
@@ -257,8 +257,9 @@ function Termine({
             </label>
             <label className="text-sm">
               Kapazität ({FAMILY_SWIM.capacityMin}–{FAMILY_SWIM.capacityMax} Personen)
-              <select
-                className={`${selectClass} w-full`}
+              <NativeSelect
+                size="lg"
+                className="w-full"
                 value={edit.capacity}
                 onChange={(e) => setEdit({ ...edit, capacity: Number(e.target.value) })}
               >
@@ -267,7 +268,7 @@ function Termine({
                     {n}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="text-sm">
               Anmeldeschluss (leer = 7 Tage vorher)
@@ -279,8 +280,9 @@ function Termine({
             </label>
             <label className="text-sm">
               Status
-              <select
-                className={`${selectClass} w-full`}
+              <NativeSelect
+                size="lg"
+                className="w-full"
                 value={edit.status}
                 onChange={(e) =>
                   setEdit({ ...edit, status: e.target.value as "open" | "inactive" })
@@ -288,7 +290,7 @@ function Termine({
               >
                 <option value="open">Offen</option>
                 <option value="inactive">Deaktiviert (nicht sichtbar)</option>
-              </select>
+              </NativeSelect>
             </label>
             <div className="sm:col-span-4 flex gap-2">
               <Button size="sm" onClick={save} disabled={!edit.event_date}>
@@ -434,17 +436,13 @@ function Anmeldungen({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <select
-          className={selectClass}
-          value={eventId}
-          onChange={(e) => setEventId(e.target.value)}
-        >
+        <NativeSelect size="lg" value={eventId} onChange={(e) => setEventId(e.target.value)}>
           {events.map((e) => (
             <option key={e.id} value={e.id}>
               {weekdayDate(e.event_date)} ({EVENT_STATUS_LABEL[e.status as EventStatus]})
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {event && (
           <span className="text-sm text-muted-foreground">
             {event.confirmedSeats} / {event.capacity} Personen bestätigt ·{" "}
@@ -781,8 +779,8 @@ function Anwesenheit() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            className="h-10 rounded-md border bg-background px-3 text-sm"
+          <NativeSelect
+            size="lg"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
             aria-label="Kalenderjahr"
@@ -792,7 +790,7 @@ function Anwesenheit() {
                 {y}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <Button onClick={download} disabled={busy}>
             {busy ? "Wird erstellt…" : "PDF herunterladen"}
           </Button>

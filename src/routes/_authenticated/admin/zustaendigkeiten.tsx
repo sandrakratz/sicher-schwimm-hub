@@ -10,6 +10,7 @@ import {
   setDigestSetting,
   type AssignmentArea,
 } from "@/lib/assignments.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/zustaendigkeiten")({
   beforeLoad: async () => {
@@ -68,8 +69,8 @@ function Page() {
           {(Object.keys(ASSIGNMENT_AREAS) as AssignmentArea[]).map((area) => (
             <label key={area} className="flex flex-wrap items-center justify-between gap-3 p-4">
               <span className="font-medium">{ASSIGNMENT_AREAS[area]}</span>
-              <select
-                className="h-9 min-w-[14rem] rounded-md border border-input bg-background px-2 text-sm"
+              <NativeSelect
+                className="min-w-[14rem]"
                 value={ctx.data?.rules?.[area] ?? ""}
                 disabled={ctx.isLoading || save.isPending}
                 onChange={(e) => save.mutate({ area, assignee: e.target.value || null })}
@@ -80,7 +81,7 @@ function Page() {
                     {n}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
           ))}
         </CardContent>

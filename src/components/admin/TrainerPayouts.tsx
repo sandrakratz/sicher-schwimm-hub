@@ -23,9 +23,7 @@ import {
   listTrainerPayouts,
   type PayoutListEntry,
 } from "@/lib/trainer-billing.functions";
-
-const selectCls =
-  "h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /** Auszahlungen eines Jahres: nachtragen (bereits Überwiesenes), löschen, Jahresbescheinigung drucken. */
 export function TrainerPayouts() {
@@ -130,8 +128,9 @@ export function TrainerPayouts() {
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-xs text-muted-foreground">
               Trainer:in
-              <select
-                className={`${selectCls} mt-1 block`}
+              <NativeSelect
+                size="lg"
+                className="mt-1 block"
                 value={manualTrainer}
                 onChange={(e) => setManualTrainer(e.target.value)}
               >
@@ -141,7 +140,7 @@ export function TrainerPayouts() {
                     {t.name}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
             <label className="text-xs text-muted-foreground">
               Überwiesen am
@@ -179,8 +178,9 @@ export function TrainerPayouts() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-xs text-muted-foreground">
           Jahr
-          <select
-            className={`${selectCls} mt-1 block`}
+          <NativeSelect
+            size="lg"
+            className="mt-1 block"
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
           >
@@ -189,12 +189,13 @@ export function TrainerPayouts() {
                 {y}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <label className="text-xs text-muted-foreground">
           Trainer:in
-          <select
-            className={`${selectCls} mt-1 block`}
+          <NativeSelect
+            size="lg"
+            className="mt-1 block"
             value={trainerId}
             onChange={(e) => setTrainerId(e.target.value)}
           >
@@ -204,7 +205,7 @@ export function TrainerPayouts() {
                 {t.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         <Button variant="outline" onClick={printCertificate}>
           <Printer className="mr-2 h-4 w-4" /> Jahresbescheinigung drucken

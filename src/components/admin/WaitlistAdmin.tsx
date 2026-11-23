@@ -66,6 +66,7 @@ import {
   recordWaitlistDecline,
   resolveBlockSuggestion,
 } from "@/lib/waitlist.functions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 const PAYMENT_LABEL: Record<string, { label: string; className: string }> = {
   none: { label: "Nicht gebucht", className: "bg-slate-100 text-slate-700" },
@@ -287,8 +288,8 @@ function OriginalRequestDialog({
                 </label>
                 <label className="text-sm">
                   Mitglied
-                  <select
-                    className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                  <NativeSelect
+                    className="mt-1 w-full"
                     value={form.isMember}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, isMember: e.target.value as "" | "yes" | "no" }))
@@ -297,7 +298,7 @@ function OriginalRequestDialog({
                     <option value="">Unbekannt</option>
                     <option value="yes">Ja</option>
                     <option value="no">Nein</option>
-                  </select>
+                  </NativeSelect>
                 </label>
                 <label className="text-sm">
                   Erst zuteilen ab (Zurückstellung)
@@ -1575,8 +1576,8 @@ export function WaitlistAdmin({
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap items-center gap-2">
                           {e.status === "waiting" && courses.length > 0 && (
-                            <select
-                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                            <NativeSelect
+                              size="xs"
                               defaultValue=""
                               onChange={(ev) => {
                                 const courseId = ev.target.value;
@@ -1629,11 +1630,11 @@ export function WaitlistAdmin({
                                     : ""}
                                 </option>
                               ))}
-                            </select>
+                            </NativeSelect>
                           )}
                           {e.status !== "accepted" && bookCourses.length > 0 && (
-                            <select
-                              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                            <NativeSelect
+                              size="xs"
                               defaultValue=""
                               disabled={bookDirect.isPending}
                               onChange={(ev) => {
@@ -1676,7 +1677,7 @@ export function WaitlistAdmin({
                                     : ""}
                                 </option>
                               ))}
-                            </select>
+                            </NativeSelect>
                           )}
                           {e.status === "offered" && (
                             <Button
@@ -1766,8 +1767,9 @@ export function WaitlistAdmin({
                               <p className="text-xs font-semibold uppercase text-muted-foreground">
                                 Kurswunsch
                               </p>
-                              <select
-                                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              <NativeSelect
+                                size="xs"
+                                className="w-full"
                                 value={e.program_id ?? ""}
                                 onChange={(ev) =>
                                   update.mutate({
@@ -1782,7 +1784,7 @@ export function WaitlistAdmin({
                                     {p.name}
                                   </option>
                                 ))}
-                              </select>
+                              </NativeSelect>
                               {wish && (
                                 <div className="mt-1 text-xs text-muted-foreground">
                                   Wunsch: {wish}
