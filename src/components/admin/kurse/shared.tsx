@@ -177,6 +177,7 @@ export type ProgramRow = {
   payment_due_days: number;
   is_public: boolean;
   bookable: boolean;
+  waitlist_open?: boolean;
   sort_order: number;
   course_info: string | null;
 };
