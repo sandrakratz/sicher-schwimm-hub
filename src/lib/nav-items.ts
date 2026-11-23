@@ -132,7 +132,7 @@ export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
 
 /**
  * Gebündelte Verwaltungsbereiche: ein Menüpunkt, oben Reiter.
- * Gegliedert nach Arbeitsablauf: Heute → Anmeldungen → Kurse → Geld → Mitglieder → Kommunikation.
+ * Gegliedert nach Arbeitsablauf: Heute → Anmeldungen → Kurse → Trainer → Geld → Mitglieder → Kommunikation.
  */
 export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label: string }[] }[] = [
   {
@@ -153,8 +153,12 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
       { to: "/admin/folgekurse", label: "Folgekurse" },
       { to: "/admin/kalender", label: "Kurse & Termine" },
       { to: "/admin/kursplanung", label: "Kursplanung" },
+    ],
+  },
+  {
+    label: "Trainer & Einsatz",
+    tabs: [
       { to: "/admin/dienstplan", label: "Dienstplan" },
-      { to: "/admin/familienschwimmen", label: "Mitgliederschwimmen" },
       { to: "/admin/qualifikationen", label: "Trainer-Qualifikationen" },
     ],
   },
@@ -170,6 +174,7 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
     tabs: [
       { to: "/admin/benutzer", label: "Benutzer" },
       { to: "/admin/mitgliedschaften", label: "Mitgliedschaften" },
+      { to: "/admin/familienschwimmen", label: "Mitgliederschwimmen" },
       { to: "/admin/zustaendigkeiten", label: "Zuständigkeiten" },
     ],
   },
@@ -212,10 +217,11 @@ export const adminNav: (AppNavItem & { group?: string[] })[] = [
   { to: "/admin", icon: Shield, label: "Heute", exact: true, allow: ["admin", "board"] },
   sectionNav(0, Hourglass, ["admin", "board"]),
   sectionNav(1, BookOpen, ["admin", "board"]),
-  sectionNav(2, Euro, ["admin", "board"]),
-  sectionNav(3, Users, ["admin", "board"]),
-  sectionNav(4, MailOpen, ["admin", "board"]),
-  sectionNav(5, Newspaper, ["admin", "board"]),
+  sectionNav(2, ClipboardCheck, ["admin", "board"]),
+  sectionNav(3, Euro, ["admin", "board"]),
+  sectionNav(4, Users, ["admin", "board"]),
+  sectionNav(5, MailOpen, ["admin", "board"]),
+  sectionNav(6, Newspaper, ["admin", "board"]),
   { to: "/admin/statistik", icon: BarChart3, label: "Statistik", allow: ["admin", "board"] },
   { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin", "board"] },
 ];
