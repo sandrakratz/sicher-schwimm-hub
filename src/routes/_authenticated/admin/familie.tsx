@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FamilyTimeline } from "@/components/admin/FamilyTimeline";
 import { getFamilyOverview } from "@/lib/family.functions";
 import { resolveBlockSuggestion } from "@/lib/waitlist.functions";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 import {
   Table,
   TableBody,
@@ -293,10 +293,7 @@ function FamilyPage() {
                           ? "–"
                           : `offen${b.due ? ` (fällig ${formatDateBerlin(b.due)})` : ""}`}
                       {b.price != null && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          · {Number(b.price).toFixed(2).replace(".", ",")} €
-                        </span>
+                        <span className="text-muted-foreground"> · {formatEuro(b.price)}</span>
                       )}
                     </TableCell>
                     <TableCell className="py-2 pr-3 pl-0">

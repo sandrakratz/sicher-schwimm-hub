@@ -10,7 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
 import { CalendarClock, Check, Euro, Mail } from "lucide-react";
 import { MemberCheckPanel } from "@/components/admin/MemberCheckPanel";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
 import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
 import { paymentState, paymentTerms } from "@/lib/payment-status";
 import {
@@ -270,7 +270,7 @@ function Page() {
           </p>
           {!loading && (
             <p className="text-sm font-medium">
-              {shownRows.length} offen · insgesamt {total.toFixed(2).replace(".", ",")} €
+              {shownRows.length} offen · insgesamt {formatEuro(total)}
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -358,9 +358,7 @@ function Page() {
                   }
                 />
                 <div className="font-semibold whitespace-nowrap">
-                  {r.price_amount != null
-                    ? `${Number(r.price_amount).toFixed(2).replace(".", ",")} €`
-                    : "–"}
+                  {r.price_amount != null ? formatEuro(r.price_amount) : "–"}
                 </div>
                 <div className="flex flex-col gap-2 md:w-96">
                   <div className="flex flex-col sm:flex-row gap-2">

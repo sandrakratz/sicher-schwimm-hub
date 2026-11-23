@@ -11,7 +11,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
-import { formatDateTimeBerlin } from "@/lib/format";
+import { formatDateTimeBerlin, fullName } from "@/lib/format";
 
 interface Props {
   first_name?: string;
@@ -35,7 +35,7 @@ const Email = (p: Props) => (
         <Hr />
         <Section>
           <Text>
-            <strong>Name:</strong> {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
+            <strong>Name:</strong> {fullName(p.first_name, p.last_name) || "—"}
           </Text>
           <Text>
             <strong>E-Mail:</strong> {p.email || "—"}
@@ -56,7 +56,7 @@ const Email = (p: Props) => (
 export const template = {
   component: Email,
   subject: (d: Record<string, any>) =>
-    `Neue Registrierung – ${[d.first_name, d.last_name].filter(Boolean).join(" ") || d.email || "Unbekannt"}`,
+    `Neue Registrierung – ${fullName(d.first_name, d.last_name) || d.email || "Unbekannt"}`,
   displayName: "Neue Registrierung (Admin-Benachrichtigung)",
   to: "info@sicher-schwimmen.com",
   previewData: {

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { answerWaitlistFollowup, getWaitlistFollowup } from "@/lib/waitlist.functions";
 
 export const Route = createFileRoute("/warteliste_/rueckfrage")({
@@ -54,7 +54,7 @@ export function StayChoice({
   date: string;
   setDate: (v: string) => void;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayBerlinIso();
   return (
     <div className="space-y-4">
       <div className="space-y-2">

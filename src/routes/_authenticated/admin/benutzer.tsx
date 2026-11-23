@@ -36,7 +36,7 @@ import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { deleteUser, setUserRole, setUserStatus } from "@/lib/admin-users.functions";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, fullName } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/benutzer")({
   beforeLoad: async () => {
@@ -258,7 +258,7 @@ function Page() {
                 onClick={() => canManage && setSelected(p)}
               >
                 <TableCell className="font-medium">
-                  {[p.first_name, p.last_name].filter(Boolean).join(" ") || "—"}
+                  {fullName(p.first_name, p.last_name) || "—"}
                 </TableCell>
                 <TableCell className="text-sm">{p.email}</TableCell>
                 {canManage && (
@@ -313,8 +313,7 @@ function Page() {
               <>
                 <DialogHeader>
                   <DialogTitle>
-                    {[selected.first_name, selected.last_name].filter(Boolean).join(" ") ||
-                      selected.email}
+                    {fullName(selected.first_name, selected.last_name) || selected.email}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">

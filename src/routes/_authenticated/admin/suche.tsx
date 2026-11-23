@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, formatEuro, fullName } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/suche")({
   beforeLoad: async () => {
@@ -161,7 +161,7 @@ function Page() {
           .select("id,first_name,last_name,email")
           .in("id", ids);
         (data || []).forEach((u: any) => {
-          names[u.id] = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email;
+          names[u.id] = fullName(u.first_name, u.last_name) || u.email;
         });
       }
       if (cancelled) return;
@@ -244,8 +244,7 @@ function Page() {
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {r.participant_email} {r.participant_phone && `· ${r.participant_phone}`}
-                  {r.price_amount != null &&
-                    ` · ${Number(r.price_amount).toFixed(2).replace(".", ",")} €`}
+                  {r.price_amount != null && ` · ${formatEuro(r.price_amount)}`}
                   {r.paid &&
                     r.paid_at &&
                     ` · bezahlt vermerkt am ${formatDateTimeBerlin(r.paid_at)}${r.paid_by && res.names[r.paid_by] ? ` von ${res.names[r.paid_by]}` : ""}`}

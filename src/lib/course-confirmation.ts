@@ -1,6 +1,6 @@
 // Gemeinsame Datenaufbereitung für die Kursbestätigung (E-Mail und PDF).
 import { BILLING, ORG } from "@/lib/billing-config";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 import { buildEpcPayload, buildPayQrUrl } from "@/lib/epc-qr";
 
 export interface ConfirmationInput {
@@ -50,11 +50,6 @@ export interface ConfirmationDoc {
   epcPayload: string | null;
   /** Absolute URL zum QR-Code-Bild – nur bei Sofortzahlung gesetzt. */
   payQrUrl: string | null;
-}
-
-export function formatEuro(v?: number | null): string {
-  if (v == null) return "—";
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(v));
 }
 
 function addDays(iso: string, days: number): Date {

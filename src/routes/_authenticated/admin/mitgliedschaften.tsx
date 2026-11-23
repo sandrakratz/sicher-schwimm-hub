@@ -26,6 +26,7 @@ import {
   chargeNormalPrice,
   deleteMembership as deleteMembershipFn,
 } from "@/lib/membership.functions";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/mitgliedschaften")({
   beforeLoad: async () => {
@@ -67,18 +68,11 @@ function majorityBadge(dob?: string | null): string | null {
   if (isNaN(d.getTime())) return null;
   const b18 = new Date(d.getFullYear() + 18, d.getMonth(), d.getDate());
   const days = Math.round((b18.getTime() - Date.now()) / 86400000);
-  if (days > 0 && days <= 120) return `wird 18 am ${b18.toLocaleDateString("de-DE")}`;
-  if (days <= 0 && days > -365)
-    return `18 geworden am ${b18.toLocaleDateString("de-DE")} – Beitrag prüfen`;
+  if (days > 0 && days <= 120) return `wird 18 am ${formatDateBerlin(b18)}`;
+  if (days <= 0 && days > -365) return `18 geworden am ${formatDateBerlin(b18)} – Beitrag prüfen`;
   return null;
 }
 type FamilyMembers = { partner?: Member | null; children?: Member[] } | null;
-
-import { formatDateBerlin } from "@/lib/format";
-
-function fmtDate(d?: string | null) {
-  return formatDateBerlin(d);
-}
 
 function Row({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
@@ -352,11 +346,11 @@ function PriceMismatches() {
                 <div className="text-xs text-muted-foreground">{i.email}</div>
               </TableCell>
               <TableCell>{i.course}</TableCell>
-              <TableCell className="text-xs">{fmtDate(i.startsOn)}</TableCell>
-              <TableCell>{i.current ?? "—"} €</TableCell>
-              <TableCell>{i.normal ?? "—"} €</TableCell>
+              <TableCell className="text-xs">{formatDateBerlin(i.startsOn)}</TableCell>
+              <TableCell>{formatEuro(i.current)}</TableCell>
+              <TableCell>{formatEuro(i.normal)}</TableCell>
               <TableCell>
-                {i.difference ?? "—"} € {i.paid && <Badge variant="outline">bezahlt</Badge>}
+                {formatEuro(i.difference)} {i.paid && <Badge variant="outline">bezahlt</Badge>}
               </TableCell>
               <TableCell className="text-right">
                 <Button
@@ -498,7 +492,7 @@ function Page() {
                   setEditingFamily(false);
                 }}
               >
-                <TableCell className="text-xs">{fmtDate(r.created_at)}</TableCell>
+                <TableCell className="text-xs">{formatDateBerlin(r.created_at)}</TableCell>
                 <TableCell>
                   {r.first_name} {r.last_name}
                 </TableCell>
@@ -576,7 +570,7 @@ function Page() {
             <div className="space-y-6">
               <section>
                 <h3 className="font-display font-bold text-primary-deep mb-2">Antragsdaten</h3>
-                <Row label="Eingegangen" value={fmtDate(selected.created_at)} />
+                <Row label="Eingegangen" value={formatDateBerlin(selected.created_at)} />
                 <Row
                   label="Status"
                   value={
@@ -585,9 +579,9 @@ function Page() {
                     </Badge>
                   }
                 />
-                <Row label="Genehmigt am" value={fmtDate(selected.approved_at)} />
-                <Row label="Mitglied ab" value={fmtDate(selected.start_date)} />
-                <Row label="Gültig bis" value={fmtDate(selected.valid_until)} />
+                <Row label="Genehmigt am" value={formatDateBerlin(selected.approved_at)} />
+                <Row label="Mitglied ab" value={formatDateBerlin(selected.start_date)} />
+                <Row label="Gültig bis" value={formatDateBerlin(selected.valid_until)} />
                 <Row
                   label="Mitgliedschaftsart"
                   value={TYPE_LABEL[selected.membership_type] || selected.membership_type}
@@ -602,7 +596,7 @@ function Page() {
               <section>
                 <h3 className="font-display font-bold text-primary-deep mb-2">Person</h3>
                 <Row label="Name" value={`${selected.first_name} ${selected.last_name}`} />
-                <Row label="Geburtsdatum" value={fmtDate(selected.date_of_birth)} />
+                <Row label="Geburtsdatum" value={formatDateBerlin(selected.date_of_birth)} />
                 {(selected as any).member_email && (
                   <Row label="E-Mail des Mitglieds" value={(selected as any).member_email} />
                 )}
@@ -626,7 +620,7 @@ function Page() {
                 {(selected as any).minor_consents && (
                   <Row
                     label="Zustimmungen Minderjährige"
-                    value={`alle 5 bestätigt${(selected as any).minor_consents.accepted_at ? ` am ${fmtDate((selected as any).minor_consents.accepted_at)}` : ""}`}
+                    value={`alle 5 bestätigt${(selected as any).minor_consents.accepted_at ? ` am ${formatDateBerlin((selected as any).minor_consents.accepted_at)}` : ""}`}
                   />
                 )}
                 <Row label="E-Mail" value={selected.email} />
@@ -674,14 +668,14 @@ function Page() {
                     {fm?.partner?.name && (
                       <Row
                         label="Partner/in"
-                        value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${fmtDate(fm.partner.date_of_birth)})` : ""}${fm.partner.email ? ` · ${fm.partner.email}` : ""}${fm.partner.phone ? ` · ${fm.partner.phone}` : ""}`}
+                        value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${formatDateBerlin(fm.partner.date_of_birth)})` : ""}${fm.partner.email ? ` · ${fm.partner.email}` : ""}${fm.partner.phone ? ` · ${fm.partner.phone}` : ""}`}
                       />
                     )}
                     {(fm?.children || []).map((c, i) => (
                       <Row
                         key={i}
                         label={`Kind ${i + 1}`}
-                        value={`${c.name}${c.date_of_birth ? ` (geb. ${fmtDate(c.date_of_birth)})` : ""}${c.email ? ` · ${c.email}` : ""}${c.phone ? ` · ${c.phone}` : ""}`}
+                        value={`${c.name}${c.date_of_birth ? ` (geb. ${formatDateBerlin(c.date_of_birth)})` : ""}${c.email ? ` · ${c.email}` : ""}${c.phone ? ` · ${c.phone}` : ""}`}
                       />
                     ))}
                   </>
@@ -707,7 +701,7 @@ function Page() {
                 <Row label="Kreditinstitut" value={selected.sepa_bank_name} />
                 <Row
                   label="Ort, Datum"
-                  value={`${selected.sepa_signature_place || "—"}, ${fmtDate(selected.sepa_signature_date)}`}
+                  value={`${selected.sepa_signature_place || "—"}, ${formatDateBerlin(selected.sepa_signature_date)}`}
                 />
                 <Row
                   label="Mandat erteilt"
@@ -726,7 +720,7 @@ function Page() {
                   label="Datenschutz"
                   value={selected.accepted_privacy ? "Akzeptiert" : "Nein"}
                 />
-                <Row label="Einwilligung am" value={fmtDate(selected.consent_at)} />
+                <Row label="Einwilligung am" value={formatDateBerlin(selected.consent_at)} />
               </section>
 
               <div className="flex flex-wrap gap-2 pt-2 border-t">

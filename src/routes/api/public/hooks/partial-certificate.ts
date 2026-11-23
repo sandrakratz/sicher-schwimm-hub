@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { addDaysIso as addDays } from '@/lib/format'
 
 // Täglich am Nachmittag: Teilleistungsnachweise für Kurse, die heute enden.
 export const Route = createFileRoute('/api/public/hooks/partial-certificate')({
@@ -44,8 +45,3 @@ export const Route = createFileRoute('/api/public/hooks/partial-certificate')({
   },
 })
 
-function addDays(iso: string, n: number): string {
-  const d = new Date(`${iso}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + n)
-  return d.toISOString().slice(0, 10)
-}

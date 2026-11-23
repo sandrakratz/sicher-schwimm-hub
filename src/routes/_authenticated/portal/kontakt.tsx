@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { fullName } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -35,7 +36,7 @@ function PortalContact() {
     setLoading(true);
     const { error } = await supabase.from("messages").insert({
       from_user_id: u.user.id,
-      from_name: [p?.first_name, p?.last_name].filter(Boolean).join(" ") || u.user.email!,
+      from_name: fullName(p?.first_name, p?.last_name) || u.user.email!,
       from_email: p?.email || u.user.email!,
       category: cat,
       subject: String(fd.get("subject") || ""),

@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { addDaysIso as addDays, todayBerlinIso } from '@/lib/format'
 
 /**
  * Höchstzahl Mails pro Aufruf. Cloudflare erlaubt im kostenlosen Tarif nur ca. 50 Abfragen nach außen
@@ -10,21 +11,10 @@ const MAX_MAILS_PER_RUN = 18
 /** Nach so vielen fehlgeschlagenen Versuchen für dieselbe Person wird nicht weiter versucht. */
 const MAX_FAILED_ATTEMPTS = 20
 
-function berlinTodayPlus(days: number): string {
-  const now = new Date()
-  const berlin = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
-  berlin.setDate(berlin.getDate() + days)
-  const y = berlin.getFullYear()
-  const m = String(berlin.getMonth() + 1).padStart(2, '0')
-  const d = String(berlin.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
-function addDays(isoDate: string, days: number): string {
-  const d = new Date(`${isoDate}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
+
+/** Datum in Berliner Zeit, um `days` Tage verschoben (YYYY-MM-DD). */
+const berlinTodayPlus = (days: number) => addDays(todayBerlinIso(), days)
 
 export const Route = createFileRoute('/api/public/hooks/course-start-reminder')({
   server: {

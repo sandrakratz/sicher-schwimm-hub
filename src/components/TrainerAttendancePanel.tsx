@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { toast } from "sonner";
 
 function sessionLabel(s: TrainerSessionRow): string {
@@ -49,7 +49,7 @@ export function TrainerAttendancePanel({ courseId }: { courseId: string }) {
     setIsStaff(res.isStaff);
     setSessionId((prev) => {
       if (prev && res.sessions.some((s) => s.id === prev)) return prev;
-      const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+      const today = todayBerlinIso();
       const next =
         res.sessions.find((s) => s.session_date === today) ||
         res.sessions.find((s) => s.session_date >= today) ||

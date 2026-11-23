@@ -11,6 +11,8 @@ import {
   exportMyCourseConfirmation,
 } from "@/lib/trainer-courses.functions";
 import { toast } from "sonner";
+import { formatDateBerlin, formatDuration, formatEuro, todayBerlinIso } from "@/lib/format";
+import { beltLabel } from "@/lib/belt";
 
 export const Route = createFileRoute("/_authenticated/portal/kurse")({
   component: Page,
@@ -51,20 +53,6 @@ const STATUS_LABEL: Record<
   cancelled: { label: "Abgesagt", variant: "destructive" },
 };
 
-import { formatDateBerlin } from "@/lib/format";
-import { beltLabel } from "@/lib/belt";
-
-function fmt(d: string | null) {
-  if (!d) return null;
-  return formatDateBerlin(d);
-}
-function fmtDuration(d: string | null) {
-  if (!d) return null;
-  const t = String(d).trim();
-  if (/^\d+(\.\d+)?$/.test(t)) return `${t} Wochen`;
-  return t;
-}
-
 function Page() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +79,7 @@ function Page() {
       setBusy(null);
     }
   }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayBerlinIso();
   const groups = new Map<string, Row[]>();
   for (const r of rows) {
     const k = r.participant_name?.trim() || "Ohne Namen";
@@ -189,12 +177,11 @@ function Page() {
                             {(c?.starts_on || c?.ends_on) && (
                               <div className="flex items-center gap-2">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                {fmt(c?.starts_on || null) || "—"} –{" "}
-                                {fmt(c?.ends_on || null) || "—"}
+                                {formatDateBerlin(c?.starts_on)} – {formatDateBerlin(c?.ends_on)}
                                 {c?.duration && (
                                   <span className="text-muted-foreground">
                                     {" "}
-                                    · {fmtDuration(c.duration)}
+                                    · {formatDuration(c.duration)}
                                   </span>
                                 )}
                               </div>
@@ -217,7 +204,7 @@ function Page() {
                             {r.price_amount != null && (
                               <div className="flex items-center gap-1 text-sm">
                                 <Euro className="h-4 w-4" />
-                                {Number(r.price_amount).toFixed(2)} €
+                                {formatEuro(r.price_amount)}
                               </div>
                             )}
                             {r.paid ? (

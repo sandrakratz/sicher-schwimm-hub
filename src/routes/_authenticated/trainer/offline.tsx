@@ -5,7 +5,7 @@ import { CalendarDays, CloudOff, MapPin, RefreshCw, Users, WifiOff } from "lucid
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import {
   enqueueMark,
   listQueue,
@@ -144,8 +144,8 @@ function OfflinePage() {
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            Stand: {new Date(snap.generatedAt).toLocaleString("de-DE")} · Die Daten werden nach 48
-            Stunden und beim Abmelden von diesem Gerät gelöscht.
+            Stand: {formatDateTimeBerlin(snap.generatedAt)} · Die Daten werden nach 48 Stunden und
+            beim Abmelden von diesem Gerät gelöscht.
           </p>
           {snap.sessions.map((s) => (
             <Card key={s.id} className="border-0 shadow-soft">

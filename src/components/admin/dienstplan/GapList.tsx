@@ -159,6 +159,7 @@ export function GapList({
                     <Badge variant="secondary" title="Ersatz wurde per Mail angefragt">
                       angefragt{" "}
                       {new Date(s.replacementRequestedAt).toLocaleDateString("de-DE", {
+                        timeZone: "Europe/Berlin",
                         day: "2-digit",
                         month: "2-digit",
                       })}

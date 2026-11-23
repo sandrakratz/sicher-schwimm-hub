@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { PayoutIbanCard } from "@/components/trainer/PayoutIbanCard";
 import { useServerFn } from "@tanstack/react-start";
 import { updateOwnFamilyContacts } from "@/lib/family-contacts.functions";
+import { formatDateBerlin, fullName } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/portal/profil")({
   component: Profile,
@@ -186,9 +187,7 @@ function Profile() {
         </CardContent>
       </Card>
       {isTrainer && (
-        <PayoutIbanCard
-          defaultHolder={[p.first_name, p.last_name].filter(Boolean).join(" ") || undefined}
-        />
+        <PayoutIbanCard defaultHolder={fullName(p.first_name, p.last_name) || undefined} />
       )}
       {family.length > 0 && (
         <Card className="border-0 shadow-soft mt-6">
@@ -205,7 +204,7 @@ function Profile() {
                       <span className="text-xs text-muted-foreground font-normal">({f.role})</span>
                     </span>
                     <span className="text-muted-foreground">
-                      {f.date_of_birth ? new Date(f.date_of_birth).toLocaleDateString("de-DE") : ""}
+                      {f.date_of_birth ? formatDateBerlin(f.date_of_birth) : ""}
                     </span>
                   </div>
                   {f.slot ? (

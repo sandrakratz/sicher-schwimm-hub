@@ -19,6 +19,7 @@ import { listTrainers } from "@/lib/trainers.functions";
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, RefreshCw, HandHelping } from "lucide-react";
 import { CourseRosterMatrix } from "@/components/admin/CourseRosterMatrix";
+import { formatMonthYear, formatWeekdayLong } from "@/lib/format";
 
 function shortDate(d: string) {
   return new Date(d + "T12:00:00").toLocaleDateString("de-DE", {
@@ -47,36 +48,8 @@ export const Route = createFileRoute("/_authenticated/admin/kalender")({
   component: Page,
 });
 
-const MONTHS = [
-  "Januar",
-  "Februar",
-  "März",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-];
-const WEEKDAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
-
-function fmtDay(date: string): string {
-  const [y, m, d] = date.split("-").map(Number);
-  if (!y || !m || !d) return date;
-  const wd = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-  return `${wd}, ${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}.${y}`;
-}
-
 function monthKey(date: string): string {
   return date.slice(0, 7);
-}
-
-function fmtMonth(key: string): string {
-  const [y, m] = key.split("-").map(Number);
-  return `${MONTHS[(m ?? 1) - 1]} ${y}`;
 }
 
 function timeLabel(e: CalendarEntry): string {
@@ -324,7 +297,7 @@ function Page() {
             <CollapsibleCard
               key={mk}
               storageKey={`cal-${mk}`}
-              title={fmtMonth(mk)}
+              title={formatMonthYear(mk)}
               subtitle={`${[...days.values()].reduce((s, l) => s + l.length, 0)} Termin(e)`}
             >
               <div className="space-y-4">
@@ -333,7 +306,7 @@ function Page() {
                   .map(([day, list]) => (
                     <div key={day}>
                       <div className="mb-2 text-sm font-semibold">
-                        {fmtDay(day)}
+                        {formatWeekdayLong(day)}
                         {day === today && <Badge className="ml-2">heute</Badge>}
                       </div>
                       <div className="space-y-2">

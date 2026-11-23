@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/form-support";
 import { toast } from "sonner";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
 import { getWaitlistOffer, respondWaitlistOffer } from "@/lib/waitlist.functions";
 import { useContactDefaults } from "@/hooks/use-contact-defaults";
 import { Textarea } from "@/components/ui/textarea";
@@ -259,10 +259,7 @@ function OfferResponsePage() {
             )}
             {course.price != null && (
               <p>
-                <strong>Kursgebühr:</strong>{" "}
-                {new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
-                  Number(course.price),
-                )}
+                <strong>Kursgebühr:</strong> {formatEuro(course.price)}
               </p>
             )}
           </CardContent>
@@ -329,7 +326,7 @@ function OfferResponsePage() {
                   name="child_dob"
                   type="date"
                   required
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={todayBerlinIso()}
                 />
               </div>
             )}

@@ -1,15 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { addDaysIso, todayBerlinIso } from '@/lib/format'
 
 /** Datum in Berliner Zeit, um `days` Tage verschoben (YYYY-MM-DD). */
-function berlinTodayPlus(days: number): string {
-  const now = new Date()
-  const berlin = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }))
-  berlin.setDate(berlin.getDate() + days)
-  const y = berlin.getFullYear()
-  const m = String(berlin.getMonth() + 1).padStart(2, '0')
-  const d = String(berlin.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+const berlinTodayPlus = (days: number) => addDaysIso(todayBerlinIso(), days)
 
 export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')({
   server: {
