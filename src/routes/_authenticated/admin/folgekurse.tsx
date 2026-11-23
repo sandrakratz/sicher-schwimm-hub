@@ -24,6 +24,14 @@ import {
   type Group,
 } from "@/lib/follow-up-candidates";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/admin/folgekurse")({
   ssr: false,
@@ -340,20 +348,20 @@ function Page() {
         </Card>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left">
-              <tr>
-                <th className="p-2">Kind</th>
-                <th className="p-2">Eltern / Kontakt</th>
-                <th className="p-2">Letzter Kurs</th>
-                <th className="p-2">Stand des Kindes</th>
-                <th className="p-2">Kontakt</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-muted/50 text-left">
+              <TableRow>
+                <TableHead className="p-2 h-auto">Kind</TableHead>
+                <TableHead className="p-2 h-auto">Eltern / Kontakt</TableHead>
+                <TableHead className="p-2 h-auto">Letzter Kurs</TableHead>
+                <TableHead className="p-2 h-auto">Stand des Kindes</TableHead>
+                <TableHead className="p-2 h-auto">Kontakt</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {visible.map((c) => (
-                <tr key={c.key} className="border-t border-border align-top">
-                  <td className="p-2">
+                <TableRow key={c.key} className="border-t border-border align-top">
+                  <TableCell className="p-2">
                     <button
                       type="button"
                       className="text-left font-semibold text-primary underline-offset-2 hover:underline"
@@ -364,20 +372,20 @@ function Page() {
                     <div className="text-xs text-muted-foreground">
                       {c.age != null ? `${c.age} Jahre` : "Alter unbekannt"}
                     </div>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell className="p-2">
                     <div>{c.parent || "—"}</div>
                     <div className="text-xs text-muted-foreground">{c.email}</div>
                     <div className="text-xs text-muted-foreground">{c.phone}</div>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell className="p-2">
                     <div>{c.lastCourse}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatDateBerlin(c.lastStart)} – {formatDateBerlin(c.lastEnd)}
                     </div>
                     <Badge variant={c.phase === "läuft" ? "default" : "secondary"}>{c.phase}</Badge>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell className="p-2">
                     {!BELT_GROUPS.includes(c.group) && (
                       <>
                         <div>{LEVEL_LABEL[c.level]}</div>
@@ -396,15 +404,15 @@ function Page() {
                         {c.courses.length} Kurse bei uns
                       </div>
                     )}
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell className="p-2">
                     <div>{contactText(c)}</div>
                     {c.onWaitlist && <Badge variant="outline">auf Warteliste</Badge>}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
