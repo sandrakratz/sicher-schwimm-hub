@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const SITE_BASE_URL = "https://sicher-schwimmen.com";
 /** Nur frisch eingetragene Zahlungen lösen die Mail aus – nicht das Speichern einer älteren Buchung. */
@@ -14,9 +15,8 @@ export const notifyPaymentReceived = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ participantId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: staff } = await supabase.rpc("is_staff", { _user_id: userId });
-    if (!staff) throw new Error("Forbidden");
+    const { userId } = context;
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: p } = await supabaseAdmin

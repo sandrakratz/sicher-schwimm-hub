@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, FileText, Waves, Newspaper, User as UserIcon } from "lucide-react";
 import { getMyMembership } from "@/lib/membership.functions";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 
 const MEMBERSHIP_STATUS_LABEL: Record<string, string> = {
   active: "Aktiv",
@@ -77,7 +77,7 @@ function Dashboard() {
           .limit(3),
         supabase.from("documents").select("id", { count: "exact", head: true }),
       ]);
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayBerlinIso();
       const { data: cp } = await supabase
         .from("course_participants")
         .select("id,courses!course_participants_course_id_fkey(ends_on)")
@@ -96,9 +96,6 @@ function Dashboard() {
       setEvents((evList.data as EventItem[]) ?? []);
     })();
   }, []);
-
-  const fmtDate = formatDateBerlin;
-  const fmtDateTime = formatDateTimeBerlin;
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -184,7 +181,7 @@ function Dashboard() {
                       </div>
                       {n.published_at && (
                         <div className="text-xs text-muted-foreground">
-                          {fmtDate(n.published_at)}
+                          {formatDateBerlin(n.published_at)}
                         </div>
                       )}
                       {n.excerpt && (
@@ -221,7 +218,7 @@ function Dashboard() {
                         {e.title}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {fmtDateTime(e.starts_at)}
+                        {formatDateTimeBerlin(e.starts_at)}
                         {e.location ? ` · ${e.location}` : ""}
                       </div>
                     </Link>

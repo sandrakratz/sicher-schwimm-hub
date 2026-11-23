@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll } from "@/lib/fetch-all";
+import { assertStaff } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export type MyAssignments = {
   me: string | null;
@@ -16,8 +18,7 @@ export type MyAssignments = {
 export const getMyAssignments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyAssignments> => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Response("Forbidden", { status: 403 });
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: me } = await supabaseAdmin
@@ -25,7 +26,7 @@ export const getMyAssignments = createServerFn({ method: "POST" })
       .select("first_name,last_name")
       .eq("id", context.userId)
       .maybeSingle();
-    const name = [me?.first_name, me?.last_name].filter(Boolean).join(" ").trim() || null;
+    const name = fullName(me?.first_name, me?.last_name) || null;
     if (!name) return { me: null, payments: 0, messages: 0, waitlist: 0 };
 
     const { data: ruleRows } = await supabaseAdmin.from("assignment_rules").select("area,assignee");

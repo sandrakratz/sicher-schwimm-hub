@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { escapeLike } from "@/lib/like";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const norm = (v: string | null | undefined) => (v ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -47,8 +48,7 @@ export const getFamilyOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const email = norm(data.email);

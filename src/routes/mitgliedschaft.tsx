@@ -1,11 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Check, Heart } from "lucide-react";
+import { toast } from "sonner";
 import { useFormTracking } from "@/lib/analytics/forms";
 import { PublicLayout } from "@/components/PublicLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -13,42 +15,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useRef, useState } from "react";
+import { HoneypotField, SubmitButton } from "@/components/form-support";
+import { TextField } from "@/components/public/TextField";
 import {
-  Check,
-  Users,
-  Heart,
-  User,
-  HandHeart,
-  Waves,
-  Euro,
-  Star,
-  Vote,
-  Plus,
-  Minus,
-} from "lucide-react";
-import { z } from "zod";
+  MembershipBenefits,
+  MembershipSubmittedDialog,
+  TierCards,
+  type AccountResult,
+} from "@/components/public/MembershipIntro";
+import { MembershipFamilySection } from "@/components/public/MembershipFamilySection";
+import { useFamilyMembers } from "@/components/public/use-family-members";
+import {
+  AccountPasswordSection,
+  GuardianSection,
+  MembershipConsents,
+  SepaMandateSection,
+} from "@/components/public/MembershipFormSections";
+import {
+  familyMembersPayload,
+  isMinorDob,
+  TIERS,
+  validateMembership,
+  type MembershipTier,
+  type ValidMembership,
+} from "@/components/public/membership-form";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { BILLING, MEMBERSHIP_BILLING_NOTE, MEMBERSHIP_FEES } from "@/lib/billing-config";
+import type { TablesInsert } from "@/integrations/supabase/types";
+import { MEMBERSHIP_BILLING_NOTE } from "@/lib/billing-config";
 import { todayBerlinIso } from "@/lib/format";
 import { maxMembershipStart } from "@/lib/member-claim";
-import { HoneypotField, SubmitButton } from "@/components/form-support";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useServerFn } from "@tanstack/react-start";
 import { submitMembershipSignup } from "@/lib/membership-signup.functions";
 import { useContactDefaults } from "@/hooks/use-contact-defaults";
-
-// Technische Obergrenze im Formular (Missbrauchsschutz); die Satzung kennt keine Begrenzung.
-const MAX_CHILDREN = 20;
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
@@ -77,293 +74,83 @@ export const Route = createFileRoute("/mitgliedschaft")({
   component: Page,
 });
 
-const tiers = [
-  {
-    type: "children_youth",
-    icon: User,
-    name: "Kinder & Jugend",
-    price: `${MEMBERSHIP_FEES.children_youth} €/Jahr`,
-    desc: "Einzelmitgliedschaft für alle unter 18.",
-  },
-  {
-    type: "adult",
-    icon: User,
-    name: "Erwachsene",
-    price: `${MEMBERSHIP_FEES.adult} €/Jahr`,
-    desc: "Einzelmitgliedschaft ab 18 Jahren.",
-  },
-  {
-    type: "family",
-    icon: Users,
-    name: "Familie",
-    price: `${MEMBERSHIP_FEES.family} €/Jahr`,
-    desc: "Ab 3 Personen, max. 2 Erwachsene + Kinder unter 18 im selben Haushalt.",
-  },
-  {
-    type: "supporting",
-    icon: HandHeart,
-    name: "Förderung",
-    price: `ab ${MEMBERSHIP_FEES.supporting_min} €/Jahr`,
-    desc: "Passive Mitgliedschaft ohne Stimmrecht, Beitrag nach oben frei wählbar.",
-  },
-];
-
-const billingNote = MEMBERSHIP_BILLING_NOTE;
-
-const schema = z.object({
-  membership_type: z.enum(["children_youth", "adult", "family", "supporting"]),
-  first_name: z.string().trim().min(1).max(100),
-  last_name: z.string().trim().min(1).max(100),
-  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  start_date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .refine((v) => v >= todayBerlinIso() && v <= maxMembershipStart(todayBerlinIso()), {
-      message: "Beginn frühestens heute, höchstens 6 Monate im Voraus",
+/** Benachrichtigung an den Vorstand (ohne Antwort abzuwarten) – keine Bankdaten per E-Mail. */
+function notifyAdmin(v: ValidMembership, createdAt: string) {
+  const idem =
+    typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+  const d = v.data;
+  fetch("/api/public/notify-admin", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      templateName: "membership-application",
+      idempotencyKey: `membership-${idem}`,
+      templateData: {
+        full_name: `${d.first_name} ${d.last_name}`,
+        email: d.email,
+        phone: d.phone,
+        city: d.address_city,
+        membership_type: d.membership_type,
+        // Nur das Ergebnis der Pflichtfeld-Prüfung: alle Blöcke sind Pflicht
+        // und wurden in validateMembership bereits geprüft.
+        checks: {
+          personal: true,
+          address: true,
+          sepa: true,
+          consents: true,
+          minor: v.isMinorMember,
+          minor_ok: v.isMinorMember ? Boolean(v.minorConsents) : undefined,
+        },
+        created_at: createdAt,
+      },
     }),
-  email: z.string().trim().email().max(255),
-  phone: z.string().trim().min(5).max(40),
-  address_street: z.string().trim().min(3).max(200),
-  address_zip: z.string().trim().min(4).max(20),
-  address_city: z.string().trim().min(2).max(100),
-  guardian_name: z.string().trim().max(200).optional(),
-  guardian_email: z.string().trim().max(255).optional(),
-  guardian_phone: z.string().trim().max(40).optional(),
-  sepa_account_holder: z.string().trim().min(1, "Kontoinhaber erforderlich").max(200),
-  sepa_iban: z
-    .string()
-    .trim()
-    .min(15, "IBAN ungültig")
-    .max(42)
-    .regex(/^[A-Z]{2}[0-9A-Z ]+$/i, "IBAN ungültig"),
-  sepa_bic: z.string().trim().max(11).optional(),
-  sepa_bank_name: z.string().trim().min(1, "Bank erforderlich").max(200),
-  sepa_signature_place: z.string().trim().min(1, "Ort erforderlich").max(120),
-  sepa_signature_date: z.string().min(1, "Datum erforderlich"),
-  sepa_mandate_accepted: z.boolean().refine((v) => v, "SEPA-Mandat erforderlich"),
-  accepted_statutes: z.boolean().refine((v) => v),
-  accepted_rules: z.boolean().refine((v) => v),
-  accepted_privacy: z.boolean().refine((v) => v),
-});
-
-type FamilyMember = {
-  name: string;
-  last_name: string;
-  date_of_birth: string;
-  email?: string;
-  phone?: string;
-};
-
-function isMinorDob(dob?: string | null) {
-  if (!dob) return false;
-  const d = new Date(dob);
-  if (isNaN(d.getTime())) return false;
-  return new Date(d.getFullYear() + 18, d.getMonth(), d.getDate()) > new Date();
+  }).catch(() => {});
 }
 
-const MINOR_CONSENTS = [
-  {
-    key: "minor_apply",
-    text: "Ich beantrage die Mitgliedschaft für das oben genannte minderjährige Kind und stimme dessen Aufnahme in Sicher Schwimmen e.V. zu.",
-  },
-  {
-    key: "minor_continues",
-    text: "Ich habe zur Kenntnis genommen, dass die Mitgliedschaft meines Kindes mit Eintritt der Volljährigkeit nicht automatisch endet, sondern grundsätzlich als Mitgliedschaft eines erwachsenen Mitglieds fortgeführt wird, sofern keine wirksame Kündigung erfolgt.",
-  },
-  {
-    key: "minor_inform_child",
-    text: "Ich verpflichte mich, mein Kind rechtzeitig vor seinem 18. Geburtstag über die bestehende Mitgliedschaft und den bevorstehenden Statuswechsel zu informieren.",
-  },
-  {
-    key: "minor_data_duty",
-    text: "Ich habe zur Kenntnis genommen, dass mein Kind nach Eintritt der Volljährigkeit dem Verein seine aktuellen Kontaktdaten und gegebenenfalls die für die weitere Beitragszahlung erforderlichen Zahlungsinformationen mitteilen muss.",
-  },
-  {
-    key: "minor_contact",
-    text: "Ich stimme zu, dass Sicher Schwimmen e.V. mein Kind bereits vor bzw. spätestens mit Erreichen der Volljährigkeit unmittelbar über die bestehende Mitgliedschaft, den Statuswechsel, die Änderung der Beitragszuordnung und die erforderlichen nächsten Schritte informiert.",
-  },
-] as const;
-
 function Page() {
-  const [partner, setPartner] = useState<FamilyMember>({
-    name: "",
-    last_name: "",
-    date_of_birth: "",
-  });
-  const [children, setChildren] = useState<FamilyMember[]>([
-    { name: "", last_name: "", date_of_birth: "" },
-    { name: "", last_name: "", date_of_birth: "" },
-    { name: "", last_name: "", date_of_birth: "" },
-    { name: "", last_name: "", date_of_birth: "" },
-  ]);
-  // Ab dem 4. eingetragenen Kind: Hinweis auf die Haushaltsbescheinigung (einmalig als Popup).
-  const filledChildren = children.filter((c) => c.name.trim()).length;
-  const manyChildren = filledChildren > 3;
-  const [proofDialogOpen, setProofDialogOpen] = useState(false);
-  const proofShown = useRef(false);
-  useEffect(() => {
-    if (manyChildren && !proofShown.current) {
-      proofShown.current = true;
-      setProofDialogOpen(true);
-    }
-  }, [manyChildren]);
-  const addChild = () =>
-    setChildren((prev) =>
-      prev.length >= MAX_CHILDREN
-        ? prev
-        : [...prev, { name: "", last_name: "", date_of_birth: "" }],
-    );
-  const removeLastChild = () => setChildren((prev) => (prev.length > 4 ? prev.slice(0, -1) : prev));
-  const updateChild = (i: number, patch: Partial<FamilyMember>) =>
-    setChildren((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
-
-  const [tier, setTier] = useState("family");
+  const family = useFamilyMembers();
+  const [tier, setTier] = useState<MembershipTier>("family");
   const [dob, setDob] = useState("");
   const showMinor = tier === "children_youth" || isMinorDob(dob);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const ft = useFormTracking("mitgliedschaft");
-  const [accountResult, setAccountResult] = useState<
-    "none" | "created" | "created_no_password" | "exists" | "failed"
-  >("none");
+  const [accountResult, setAccountResult] = useState<AccountResult>("none");
   const signupFn = useServerFn(submitMembershipSignup);
   const { defaults, ready } = useContactDefaults();
+  const today = todayBerlinIso();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    // Spamschutz (Honeypot)
     if (String(fd.get("website") || "").trim() !== "") {
       setDone(true);
       return;
-    } // Spamschutz (Honeypot)
-    const rawPassword = String(fd.get("account_password") || "").trim();
-    const rawPasswordConfirm = String(fd.get("account_password_confirm") || "").trim();
-
-    if (rawPassword || rawPasswordConfirm) {
-      if (rawPassword.length < 8) {
-        ft.invalid(["account_password"], "zu_kurz");
-        toast.error("Passwort muss mindestens 8 Zeichen lang sein.");
-        return;
-      }
-      if (rawPassword !== rawPasswordConfirm) {
-        ft.invalid(["account_password_confirm"], "ungleich");
-        toast.error("Passwörter stimmen nicht überein.");
-        return;
-      }
     }
-
-    const obj: Record<string, unknown> = {
-      membership_type: tier,
-      first_name: fd.get("first_name"),
-      last_name: fd.get("last_name"),
-      date_of_birth: fd.get("date_of_birth") || undefined,
-      start_date: fd.get("start_date") || undefined,
-      email: fd.get("email"),
-      phone: fd.get("phone"),
-      address_street: fd.get("address_street"),
-      address_zip: fd.get("address_zip"),
-      address_city: fd.get("address_city"),
-      guardian_name: fd.get("guardian_name"),
-      guardian_email: fd.get("guardian_email"),
-      guardian_phone: fd.get("guardian_phone"),
-      sepa_account_holder: fd.get("sepa_account_holder"),
-      sepa_iban: (fd.get("sepa_iban") as string | null)?.replace(/\s+/g, "").toUpperCase(),
-      sepa_bic: (fd.get("sepa_bic") as string | null)?.toUpperCase() || undefined,
-      sepa_bank_name: fd.get("sepa_bank_name"),
-      sepa_signature_place: fd.get("sepa_signature_place"),
-      sepa_signature_date: fd.get("sepa_signature_date"),
-      sepa_mandate_accepted: fd.get("sepa_mandate_accepted") === "on",
-      accepted_statutes: fd.get("accepted_statutes") === "on",
-      accepted_rules: fd.get("accepted_rules") === "on",
-      accepted_privacy: fd.get("accepted_privacy") === "on",
-    };
-    const parsed = schema.safeParse(obj);
-    if (!parsed.success) {
-      ft.invalid(parsed.error.issues.map((i) => String(i.path[0] ?? "")));
-      toast.error("Bitte alle Pflichtfelder & Zustimmungen ausfüllen.");
-      return;
-    }
-    const isMinorMember = isMinorDob(parsed.data.date_of_birth) || tier === "children_youth";
-    let minor_consents: Record<string, unknown> | null = null;
-    {
-      const g = parsed.data;
-      if (
-        isMinorMember &&
-        (!g.guardian_name ||
-          g.guardian_name.split(/\s+/).length < 2 ||
-          !g.guardian_email ||
-          !g.guardian_phone)
-      ) {
-        ft.invalid(["guardian_name", "guardian_email", "guardian_phone"], "fehlt");
-        toast.error(
-          "Bei Minderjährigen bitte Vor- und Nachname, E-Mail und Telefon der Erziehungsberechtigten angeben.",
-        );
-        return;
-      }
-      if (isMinorMember) {
-        const memberEmail = String(fd.get("member_email") || "").trim();
-        if (!z.string().email().safeParse(memberEmail).success) {
-          ft.invalid(["member_email"]);
-          toast.error("Bitte die E-Mail-Adresse des minderjährigen Mitglieds angeben.");
-          return;
-        }
-        const keys = MINOR_CONSENTS.map((c) => c.key);
-        if (keys.some((k) => fd.get(k) !== "on")) {
-          ft.invalid(
-            keys.filter((k) => fd.get(k) !== "on"),
-            "fehlt",
-          );
-          toast.error("Bitte alle Zustimmungen für minderjährige Mitglieder bestätigen.");
-          return;
-        }
-        minor_consents = {
-          ...Object.fromEntries(keys.map((k) => [k, true])),
-          accepted_at: new Date().toISOString(),
-          accepted_by: g.guardian_name,
-        };
-      }
-    }
-    if (tier === "family" && children.some((c) => c.name.trim() && !c.date_of_birth)) {
-      ft.invalid(["child_date_of_birth"], "fehlt");
-      toast.error("Bitte bei jedem Kind das Geburtsdatum angeben.");
+    const v = validateMembership(fd, tier, family.children);
+    if (!v.ok) {
+      ft.invalid(v.fields, v.code);
+      toast.error(v.message);
       return;
     }
     ft.attempt();
     setLoading(true);
-    const family_members =
-      tier === "family"
-        ? {
-            partner: partner.name.trim()
-              ? {
-                  name: `${partner.name.trim()} ${partner.last_name.trim() || String(fd.get("last_name") || "").trim()}`.trim(),
-                  date_of_birth: partner.date_of_birth || null,
-                  email: partner.email?.trim() || null,
-                  phone: partner.phone?.trim() || null,
-                }
-              : null,
-            children: children
-              .filter((c) => c.name.trim())
-              .map((c) => ({
-                name: `${c.name.trim()} ${c.last_name.trim() || String(fd.get("last_name") || "").trim()}`.trim(),
-                date_of_birth: c.date_of_birth || null,
-                email: c.email?.trim() || null,
-                phone: c.phone?.trim() || null,
-              })),
-          }
-        : null;
-    const idem =
-      typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
     const createdAt = new Date().toISOString();
+    // start_date fehlt noch in den generierten Supabase-Typen, daher die Typzusicherung
     const { error } = await supabase.from("memberships").insert({
-      ...parsed.data,
-      date_of_birth: parsed.data.date_of_birth || null,
-      family_members,
+      ...v.data,
+      date_of_birth: v.data.date_of_birth || null,
+      family_members:
+        tier === "family"
+          ? familyMembersPayload(family.partner, family.children, v.data.last_name)
+          : null,
       consent_at: createdAt,
-      member_email: isMinorMember ? String(fd.get("member_email") || "").trim() : null,
-      member_phone: isMinorMember ? String(fd.get("member_phone") || "").trim() || null : null,
-      minor_consents: minor_consents as any,
-      payer_role: String(fd.get("payer_role") || "member"),
-    } as any);
+      member_email: v.memberEmail,
+      member_phone: v.memberPhone,
+      minor_consents: v.minorConsents,
+      payer_role: v.payerRole,
+    } as TablesInsert<"memberships">);
     if (error) {
       setLoading(false);
       console.warn("[memberships.insert]", error.code, error.message);
@@ -372,59 +159,16 @@ function Page() {
       return;
     }
     ft.succeeded();
-    // Fire-and-forget admin notification email
-    fetch("/api/public/notify-admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        templateName: "membership-application",
-        idempotencyKey: `membership-${idem}`,
-        templateData: {
-          full_name: `${parsed.data.first_name} ${parsed.data.last_name}`,
-          email: parsed.data.email,
-          phone: parsed.data.phone,
-          city: parsed.data.address_city,
-          membership_type: parsed.data.membership_type,
-          // Keine Bankdaten per E-Mail: nur das Ergebnis der Pflichtfeld-Prüfung (alles wurde oben validiert).
-          checks: {
-            personal: Boolean(
-              parsed.data.first_name &&
-              parsed.data.last_name &&
-              parsed.data.date_of_birth &&
-              parsed.data.email &&
-              parsed.data.phone,
-            ),
-            address: Boolean(
-              parsed.data.address_street && parsed.data.address_zip && parsed.data.address_city,
-            ),
-            sepa: Boolean(
-              parsed.data.sepa_account_holder &&
-              parsed.data.sepa_iban &&
-              parsed.data.sepa_bank_name &&
-              parsed.data.sepa_signature_place &&
-              parsed.data.sepa_signature_date &&
-              parsed.data.sepa_mandate_accepted,
-            ),
-            consents:
-              parsed.data.accepted_statutes &&
-              parsed.data.accepted_rules &&
-              parsed.data.accepted_privacy,
-            minor: isMinorMember,
-            minor_ok: isMinorMember ? Boolean(minor_consents) : undefined,
-          },
-          created_at: createdAt,
-        },
-      }),
-    }).catch(() => {});
+    notifyAdmin(v, createdAt);
 
     // Konto automatisch anlegen (pending bis Admin-Freigabe)
     try {
       const result = await signupFn({
         data: {
-          email: parsed.data.email,
-          first_name: parsed.data.first_name,
-          last_name: parsed.data.last_name,
-          password: rawPassword || undefined,
+          email: v.data.email,
+          first_name: v.data.first_name,
+          last_name: v.data.last_name,
+          password: v.password || undefined,
         },
       });
       setAccountResult(result.status);
@@ -440,60 +184,14 @@ function Page() {
 
   return (
     <PublicLayout>
-      <AlertDialog open={done}>
-        <AlertDialogContent className="max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mitgliedsantrag eingegangen</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ihr Mitgliedsantrag ist eingegangen. Er wird vom Vereinsvorstand geprüft. Sie erhalten
-              eine Rückmeldung per E-Mail.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          {accountResult === "created" && (
-            <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-              Ihr Konto wurde angelegt. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den
-              wir Ihnen gerade gesendet haben. Die Freischaltung erfolgt anschließend durch den
-              Vereinsvorstand.
-            </div>
-          )}
-
-          {accountResult === "created_no_password" && (
-            <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">
-              Ihr Konto wurde angelegt. Wir haben Ihnen eine E-Mail gesendet, mit der Sie Ihr
-              Passwort vergeben können. Nach Bestätigung Ihrer E-Mail wird Ihr Konto vom
-              Vereinsvorstand freigeschaltet.
-            </div>
-          )}
-
-          {accountResult === "exists" && (
-            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 space-y-2">
-              <p>Für diese E-Mail existiert bereits ein Konto. Sie können sich direkt anmelden.</p>
-              <Button asChild variant="outline" size="sm">
-                <Link to="/auth">Zum Login</Link>
-              </Button>
-            </div>
-          )}
-
-          {accountResult === "failed" && (
-            <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              Ihr Antrag wurde gespeichert, das automatische Anlegen Ihres Kontos ist jedoch
-              fehlgeschlagen. Der Vorstand wird Sie kontaktieren.
-            </div>
-          )}
-
-          <AlertDialogFooter>
-            <AlertDialogAction
-              onClick={() => {
-                setDone(false);
-                setAccountResult("none");
-              }}
-            >
-              Schließen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <MembershipSubmittedDialog
+        open={done}
+        accountResult={accountResult}
+        onClose={() => {
+          setDone(false);
+          setAccountResult("none");
+        }}
+      />
       <section className="bg-hero text-white py-20">
         <div className="container mx-auto px-4 text-center max-w-3xl">
           <Heart className="h-12 w-12 mx-auto text-accent mb-4" />
@@ -506,71 +204,10 @@ function Page() {
       </section>
 
       <section className="container mx-auto px-4 py-16">
-        <div className="max-w-5xl mx-auto mb-16">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-deep text-center mb-3">
-            Warum sich eine Mitgliedschaft lohnt
-          </h2>
-          <p className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Als Mitglied profitieren Sie nicht nur von vergünstigten Kursen, sondern unterstützen
-            aktiv sichere Schwimmausbildung in Hennef.
-          </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              {
-                icon: Waves,
-                title: "Kostenlose Wasserzeit",
-                desc: "Einmal im Monat exklusive Wasserzeit für Mitglieder – Termine werden vom Verein bekannt gegeben.",
-              },
-              {
-                icon: Euro,
-                title: "Vergünstigte Kurse",
-                desc: "Mitglieder zahlen für Schwimmkurse weniger als Nichtmitglieder. Die Preise stehen in der jeweiligen Kursausschreibung.",
-              },
-              {
-                icon: Star,
-                title: "Bevorzugte Plätze",
-                desc: "Bei der Kursvergabe werden Vereinsmitglieder bevorzugt berücksichtigt.",
-              },
-              {
-                icon: Vote,
-                title: "Mitbestimmung",
-                desc: "Stimmrecht in der Mitgliederversammlung und aktive Mitgestaltung des Vereins.",
-              },
-            ].map((b) => (
-              <Card key={b.title} className="shadow-soft border-0">
-                <CardContent className="p-6 text-center">
-                  <b.icon className="h-10 w-10 text-accent mx-auto mb-3" />
-                  <h3 className="font-display font-bold text-primary-deep mb-2">{b.title}</h3>
-                  <p className="text-sm text-muted-foreground">{b.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
-          {tiers.map((t) => (
-            <Card
-              key={t.type}
-              onClick={() => setTier(t.type)}
-              className={`cursor-pointer transition-all border-2 ${tier === t.type ? "border-accent shadow-glow -translate-y-1" : "border-transparent shadow-soft hover:-translate-y-1"}`}
-            >
-              <CardContent className="p-6 text-center">
-                <t.icon className="h-10 w-10 text-primary mx-auto mb-3" />
-                <h3 className="font-display font-bold text-lg text-primary-deep">{t.name}</h3>
-                <div className="text-2xl font-bold text-accent my-2">{t.price}</div>
-                <p className="text-sm text-muted-foreground">{t.desc}</p>
-                {tier === t.type && (
-                  <div className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent">
-                    <Check className="h-3.5 w-3.5" /> Ausgewählt
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <MembershipBenefits />
+        <TierCards tier={tier} onSelect={setTier} />
         <p className="text-center text-sm text-muted-foreground max-w-2xl mx-auto mb-12 -mt-6">
-          {billingNote}
+          {MEMBERSHIP_BILLING_NOTE}
         </p>
 
         {done ? (
@@ -596,6 +233,7 @@ function Page() {
                 Hinweis: Die Mitgliedschaft wird erst nach Genehmigung durch den Vereinsvorstand
                 aktiv.
               </p>
+              {/* key: nach dem Laden bekannter Kontaktdaten neu aufbauen, damit sie vorbelegt sind */}
               <form
                 key={ready ? "prefilled" : "loading"}
                 onSubmit={onSubmit}
@@ -604,12 +242,12 @@ function Page() {
               >
                 <div>
                   <Label>Mitgliedschaftsart</Label>
-                  <Select value={tier} onValueChange={setTier}>
+                  <Select value={tier} onValueChange={(t) => setTier(t as MembershipTier)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {tiers.map((t) => (
+                      {TIERS.map((t) => (
                         <SelectItem key={t.type} value={t.type}>
                           {t.name} – {t.price}
                         </SelectItem>
@@ -618,37 +256,31 @@ function Page() {
                   </Select>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="first_name">Vorname *</Label>
-                    <Input
-                      id="first_name"
-                      name="first_name"
-                      required
-                      maxLength={100}
-                      defaultValue={defaults.firstName}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="last_name">Nachname *</Label>
-                    <Input
-                      id="last_name"
-                      name="last_name"
-                      required
-                      maxLength={100}
-                      defaultValue={defaults.lastName}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="date_of_birth">Geburtsdatum *</Label>
-                    <Input
-                      id="date_of_birth"
-                      type="date"
-                      name="date_of_birth"
-                      required
-                      defaultValue={defaults.dateOfBirth}
-                      onChange={(e) => setDob(e.target.value)}
-                    />
-                  </div>
+                  <TextField
+                    id="first_name"
+                    name="first_name"
+                    label="Vorname *"
+                    required
+                    maxLength={100}
+                    defaultValue={defaults.firstName}
+                  />
+                  <TextField
+                    id="last_name"
+                    name="last_name"
+                    label="Nachname *"
+                    required
+                    maxLength={100}
+                    defaultValue={defaults.lastName}
+                  />
+                  <TextField
+                    id="date_of_birth"
+                    type="date"
+                    name="date_of_birth"
+                    label="Geburtsdatum *"
+                    required
+                    defaultValue={defaults.dateOfBirth}
+                    onChange={(e) => setDob(e.target.value)}
+                  />
                   <div>
                     <Label htmlFor="start_date">Mitglied ab *</Label>
                     <Input
@@ -656,9 +288,9 @@ function Page() {
                       type="date"
                       name="start_date"
                       required
-                      min={todayBerlinIso()}
-                      max={maxMembershipStart(todayBerlinIso())}
-                      defaultValue={todayBerlinIso()}
+                      min={today}
+                      max={maxMembershipStart(today)}
+                      defaultValue={today}
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
                       Frühestens heute, höchstens 6 Monate im Voraus. Der Beitrag gilt ab diesem
@@ -668,492 +300,59 @@ function Page() {
                       mit sechs Wochen Frist zum Jahresende möglich.
                     </p>
                   </div>
-                  <div>
-                    <Label htmlFor="email">E-Mail *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      name="email"
-                      required
-                      maxLength={255}
-                      defaultValue={defaults.email}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Telefon *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      name="phone"
-                      required
-                      minLength={5}
-                      maxLength={40}
-                      defaultValue={defaults.phone}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address_street">Straße & Nr. *</Label>
-                    <Input
-                      id="address_street"
-                      name="address_street"
-                      required
-                      maxLength={200}
-                      defaultValue={defaults.street}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address_zip">PLZ *</Label>
-                    <Input
-                      id="address_zip"
-                      name="address_zip"
-                      required
-                      maxLength={20}
-                      defaultValue={defaults.zip}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address_city">Ort *</Label>
-                    <Input
-                      id="address_city"
-                      name="address_city"
-                      required
-                      maxLength={100}
-                      defaultValue={defaults.city}
-                    />
-                  </div>
-                </div>
-                <div className="border-t pt-5">
-                  <h3 className="font-semibold text-primary-deep mb-3">
-                    Erziehungsberechtigte/r (bei Minderjährigen){showMinor ? " *" : ""}
-                  </h3>
-                  {showMinor && (
-                    <p className="text-xs text-muted-foreground -mt-2 mb-3">
-                      Die oben eingetragenen Personendaten sind die des Mitglieds (Kind). Hier bitte
-                      die gesetzlichen Vertreter eintragen.
-                    </p>
-                  )}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="guardian_name">Name</Label>
-                      <Input id="guardian_name" name="guardian_name" maxLength={200} />
-                    </div>
-                    <div>
-                      <Label htmlFor="guardian_email">E-Mail</Label>
-                      <Input
-                        id="guardian_email"
-                        type="email"
-                        name="guardian_email"
-                        maxLength={255}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="guardian_phone">Telefon</Label>
-                      <Input id="guardian_phone" name="guardian_phone" maxLength={40} />
-                    </div>
-                  </div>
-                  {showMinor && (
-                    <div className="mt-5 space-y-4">
-                      <div className="rounded-lg border-2 border-accent/40 bg-accent/5 p-4 text-sm space-y-2">
-                        <p className="font-semibold text-primary-deep">
-                          Mitgliedschaft bei Minderjährigen
-                        </p>
-                        <p>
-                          Die Mitgliedschaft wird für das minderjährige Mitglied selbst beantragt.
-                          Die gesetzlichen Vertreter stimmen der Aufnahme in Sicher Schwimmen e.V.
-                          zu und handeln bis zum Eintritt der Volljährigkeit als gesetzliche
-                          Vertreter des minderjährigen Mitglieds.
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-primary-deep mb-1">
-                          Kontaktdaten des Mitglieds (Kind/Jugendliche/r)
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Wir benötigen die Kontaktdaten des Mitglieds, damit wir es rechtzeitig vor
-                          Erreichen der Volljährigkeit direkt über seine bestehende Mitgliedschaft
-                          und die weiteren Schritte informieren können.
-                        </p>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="member_email">E-Mail des Mitglieds *</Label>
-                            <Input
-                              id="member_email"
-                              type="email"
-                              name="member_email"
-                              required
-                              maxLength={255}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="member_phone">Telefon des Mitglieds (optional)</Label>
-                            <Input
-                              id="member_phone"
-                              type="tel"
-                              name="member_phone"
-                              maxLength={40}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        {MINOR_CONSENTS.map((c) => (
-                          <label
-                            key={c.key}
-                            className="flex gap-3 items-start text-sm cursor-pointer"
-                          >
-                            <Checkbox name={c.key} required /> <span>{c.text} *</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="hidden"></div>
+                  <TextField
+                    id="email"
+                    type="email"
+                    name="email"
+                    label="E-Mail *"
+                    required
+                    maxLength={255}
+                    defaultValue={defaults.email}
+                  />
+                  <TextField
+                    id="phone"
+                    type="tel"
+                    name="phone"
+                    label="Telefon *"
+                    required
+                    minLength={5}
+                    maxLength={40}
+                    defaultValue={defaults.phone}
+                  />
+                  <TextField
+                    id="address_street"
+                    name="address_street"
+                    label="Straße & Nr. *"
+                    required
+                    maxLength={200}
+                    defaultValue={defaults.street}
+                  />
+                  <TextField
+                    id="address_zip"
+                    name="address_zip"
+                    label="PLZ *"
+                    required
+                    maxLength={20}
+                    defaultValue={defaults.zip}
+                  />
+                  <TextField
+                    id="address_city"
+                    name="address_city"
+                    label="Ort *"
+                    required
+                    maxLength={100}
+                    defaultValue={defaults.city}
+                  />
                 </div>
 
-                {tier === "family" && (
-                  <div className="border-t pt-5">
-                    <h3 className="font-semibold text-primary-deep mb-1">Familienangaben</h3>
-                    <div className="my-4 rounded-lg border-2 border-accent/40 bg-accent/5 p-4 text-sm space-y-2">
-                      <p className="font-semibold text-primary-deep">
-                        Wichtig bei minderjährigen Familienmitgliedern
-                      </p>
-                      <p>
-                        Bei einer Familienmitgliedschaft sind die einzelnen Familienangehörigen
-                        jeweils eigenständige Vereinsmitglieder.
-                      </p>
-                      <p>
-                        Der Familienbeitrag gilt gemäß der Beitragsordnung für maximal zwei
-                        Erwachsene und die im selben Haushalt lebenden Kinder und Jugendlichen bis
-                        zur Vollendung des 18. Lebensjahres.
-                      </p>
-                      <p>
-                        Wird ein minderjähriges Familienmitglied volljährig, endet dadurch nicht
-                        automatisch dessen Vereinsmitgliedschaft. Das Mitglied wird ab diesem
-                        Zeitpunkt als erwachsenes Mitglied geführt und fällt aus der
-                        Familienbeitragsregelung heraus. Für das erwachsene Mitglied gilt der
-                        jeweils gültige Beitrag für erwachsene Mitglieder.
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Bitte tragen Sie Partner/in und alle Kinder ein. Weitere Kinder können Sie mit
-                      „Weiteres Kind hinzufügen“ ergänzen. Nicht ausgefüllte Felder werden
-                      ignoriert.
-                    </p>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium mb-2">Partner/in</h4>
-                        <div className="grid md:grid-cols-3 gap-4">
-                          <div>
-                            <Label>Vorname</Label>
-                            <Input
-                              value={partner.name}
-                              onChange={(e) => setPartner((p) => ({ ...p, name: e.target.value }))}
-                              maxLength={100}
-                            />
-                          </div>
-                          <div>
-                            <Label>Nachname</Label>
-                            <Input
-                              value={partner.last_name}
-                              placeholder="wie oben, falls leer"
-                              onChange={(e) =>
-                                setPartner((p) => ({ ...p, last_name: e.target.value }))
-                              }
-                              maxLength={100}
-                            />
-                          </div>
-                          <div>
-                            <Label>Geburtsdatum</Label>
-                            <Input
-                              type="date"
-                              value={partner.date_of_birth}
-                              onChange={(e) =>
-                                setPartner((p) => ({ ...p, date_of_birth: e.target.value }))
-                              }
-                            />
-                          </div>
-                          <div className="md:col-span-2">
-                            <Label>E-Mail (optional)</Label>
-                            <Input
-                              type="email"
-                              value={partner.email ?? ""}
-                              onChange={(e) => setPartner((p) => ({ ...p, email: e.target.value }))}
-                              maxLength={255}
-                            />
-                          </div>
-                          <div>
-                            <Label>Telefon (optional)</Label>
-                            <Input
-                              type="tel"
-                              value={partner.phone ?? ""}
-                              onChange={(e) => setPartner((p) => ({ ...p, phone: e.target.value }))}
-                              maxLength={40}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      {children.map((c, i) => (
-                        <div key={i}>
-                          <h4 className="text-sm font-medium mb-2">Kind {i + 1}</h4>
-                          <div className="grid md:grid-cols-3 gap-4">
-                            <div>
-                              <Label>Vorname</Label>
-                              <Input
-                                value={c.name}
-                                onChange={(e) => updateChild(i, { name: e.target.value })}
-                                maxLength={100}
-                              />
-                            </div>
-                            <div>
-                              <Label>Nachname</Label>
-                              <Input
-                                value={c.last_name}
-                                placeholder="wie oben, falls leer"
-                                onChange={(e) => updateChild(i, { last_name: e.target.value })}
-                                maxLength={100}
-                              />
-                            </div>
-                            <div>
-                              <Label>Geburtsdatum{c.name.trim() ? " *" : ""}</Label>
-                              <Input
-                                type="date"
-                                required={!!c.name.trim()}
-                                value={c.date_of_birth}
-                                onChange={(e) => updateChild(i, { date_of_birth: e.target.value })}
-                              />
-                            </div>
-                            <div className="md:col-span-2">
-                              <Label>E-Mail des Kindes (optional, v. a. für Jugendliche)</Label>
-                              <Input
-                                type="email"
-                                value={c.email ?? ""}
-                                onChange={(e) => updateChild(i, { email: e.target.value })}
-                                maxLength={255}
-                              />
-                            </div>
-                            <div>
-                              <Label>Telefon (optional)</Label>
-                              <Input
-                                type="tel"
-                                value={c.phone ?? ""}
-                                onChange={(e) => updateChild(i, { phone: e.target.value })}
-                                maxLength={40}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {manyChildren && (
-                        <div className="rounded-lg border-2 border-accent/40 bg-accent/5 p-4 text-sm">
-                          <p className="font-semibold text-primary-deep mb-1">
-                            Nachweis erforderlich (Haushaltsbescheinigung)
-                          </p>
-                          <p>
-                            Bei mehr als 3 Kindern benötigen wir einen Nachweis, aus dem hervorgeht,
-                            dass alle Familienmitglieder unter der Haushaltsadresse gemeldet sind
-                            (z. B. eine Haushaltsbescheinigung des Einwohnermeldeamts). Bitte senden
-                            Sie uns diesen nach der Anmeldung zu.
-                          </p>
-                        </div>
-                      )}
-                      <div className="flex flex-wrap items-center gap-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addChild}
-                          disabled={children.length >= MAX_CHILDREN}
-                        >
-                          <Plus className="h-4 w-4 mr-1" /> Weiteres Kind hinzufügen
-                        </Button>
-                        {children.length > 4 && (
-                          <Button type="button" variant="ghost" size="sm" onClick={removeLastChild}>
-                            <Minus className="h-4 w-4 mr-1" /> Letztes Kind entfernen
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <AlertDialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Haushaltsbescheinigung erforderlich</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Bei mehr als 3 Kindern benötigen wir einen Nachweis, aus dem eindeutig
-                        hervorgeht, dass alle Familienmitglieder unter der Haushaltsadresse gemeldet
-                        sind (z. B. eine Haushaltsbescheinigung des Einwohnermeldeamts). Bitte
-                        senden Sie uns diesen nach der Anmeldung zu.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogAction>Verstanden</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
-                <div className="border-t pt-5">
-                  <h3 className="font-semibold text-primary-deep mb-1">SEPA-Lastschriftmandat</h3>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Gläubiger-Identifikationsnummer: {BILLING.creditorId}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Ich ermächtige den Verein Sicher Schwimmen e.V., Zahlungen von meinem Konto
-                    mittels Lastschrift einzuziehen. Zugleich weise ich mein Kreditinstitut an, die
-                    auf mein Konto gezogenen Lastschriften einzulösen.
-                  </p>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="payer_role">
-                        Wer ist Kontoinhaber/in bzw. zahlt den Beitrag? *
-                      </Label>
-                      <select
-                        id="payer_role"
-                        name="payer_role"
-                        defaultValue={showMinor ? "guardian" : "member"}
-                        key={showMinor ? "m" : "a"}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="member">Das Mitglied selbst</option>
-                        <option value="guardian">Erziehungsberechtigte/r</option>
-                        <option value="other">Andere Person</option>
-                      </select>
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="sepa_account_holder">Name Kontoinhaber/in *</Label>
-                      <Input
-                        id="sepa_account_holder"
-                        name="sepa_account_holder"
-                        required
-                        maxLength={200}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="sepa_iban">IBAN *</Label>
-                      <Input
-                        id="sepa_iban"
-                        name="sepa_iban"
-                        required
-                        maxLength={42}
-                        placeholder="DE00 0000 0000 0000 0000 00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="sepa_bic">BIC</Label>
-                      <Input id="sepa_bic" name="sepa_bic" maxLength={11} />
-                    </div>
-                    <div>
-                      <Label htmlFor="sepa_bank_name">Kreditinstitut *</Label>
-                      <Input id="sepa_bank_name" name="sepa_bank_name" required maxLength={200} />
-                    </div>
-                    <div>
-                      <Label htmlFor="sepa_signature_place">Ort *</Label>
-                      <Input
-                        id="sepa_signature_place"
-                        name="sepa_signature_place"
-                        required
-                        maxLength={120}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="sepa_signature_date">Datum *</Label>
-                      <Input
-                        id="sepa_signature_date"
-                        type="date"
-                        name="sepa_signature_date"
-                        required
-                        defaultValue={new Date().toISOString().slice(0, 10)}
-                      />
-                    </div>
-                  </div>
-                  <label className="flex gap-3 items-start text-sm cursor-pointer mt-4">
-                    <Checkbox name="sepa_mandate_accepted" required />
-                    <span>
-                      Ich erteile das SEPA-Lastschriftmandat. Bei Minderjährigen erfolgt die
-                      Unterschrift durch die gesetzlichen Vertreter. *
-                    </span>
-                  </label>
-                  {(showMinor || tier === "family") && (
-                    <p className="mt-3 rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-primary-deep">
-                      Wenn ein minderjähriges Mitglied volljährig wird und die Mitgliedschaft
-                      fortgeführt wird, kann für die weitere Beitragszahlung ein neues bzw.
-                      gesondertes SEPA-Lastschriftmandat erforderlich sein. Der Verein wird das
-                      Mitglied rechtzeitig darüber informieren.
-                    </p>
-                  )}
-                  <label className="hidden">
-                    <span />
-                  </label>
-                </div>
-
-                <div className="space-y-3 border-t pt-5">
-                  <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_statutes" required />{" "}
-                    <span>
-                      Ich akzeptiere die{" "}
-                      <Link to="/satzung" className="text-primary underline">
-                        Vereinssatzung
-                      </Link>
-                      . *
-                    </span>
-                  </label>
-                  <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_rules" required />{" "}
-                    <span>
-                      Ich akzeptiere die{" "}
-                      <Link to="/mitgliedsordnung" className="text-primary underline">
-                        Mitgliedsordnung
-                      </Link>
-                      . *
-                    </span>
-                  </label>
-                  <label className="flex gap-3 items-start text-sm cursor-pointer">
-                    <Checkbox name="accepted_privacy" required />{" "}
-                    <span>
-                      Ich akzeptiere die{" "}
-                      <Link to="/datenschutz" className="text-primary underline">
-                        Datenschutzerklärung
-                      </Link>
-                      . *
-                    </span>
-                  </label>
-                </div>
-
-                <div className="border-t pt-5">
-                  <h3 className="font-semibold text-primary-deep mb-1">
-                    Mitgliederkonto (optional)
-                  </h3>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Wir legen für Sie automatisch ein Konto für den Mitgliederbereich an. Sie können
-                    hier direkt ein Passwort vergeben — oder das Feld leer lassen, dann erhalten Sie
-                    per E-Mail einen Link, um Ihr Passwort selbst zu setzen. Die Freischaltung
-                    erfolgt nach Prüfung durch den Vereinsvorstand.
-                  </p>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="account_password">Passwort (mind. 8 Zeichen, optional)</Label>
-                      <Input
-                        id="account_password"
-                        type="password"
-                        name="account_password"
-                        minLength={8}
-                        autoComplete="new-password"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="account_password_confirm">Passwort wiederholen</Label>
-                      <Input
-                        id="account_password_confirm"
-                        type="password"
-                        name="account_password_confirm"
-                        minLength={8}
-                        autoComplete="new-password"
-                      />
-                    </div>
-                  </div>
-                </div>
-
+                <GuardianSection showMinor={showMinor} />
+                {tier === "family" && <MembershipFamilySection family={family} />}
+                <SepaMandateSection
+                  showMinor={showMinor}
+                  minorHint={showMinor || tier === "family"}
+                />
+                <MembershipConsents />
+                <AccountPasswordSection />
                 <HoneypotField />
 
                 <SubmitButton

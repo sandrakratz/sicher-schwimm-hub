@@ -11,6 +11,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
+import { formatEuro } from "@/lib/format";
 
 interface Props {
   audience?: "member" | "parent";
@@ -35,7 +36,7 @@ const Email = ({
   confirm_url,
 }: Props) => {
   const name = member_first_name || "Dein Kind";
-  const fee = `${adult_fee.toFixed(2).replace(".", ",")} €`;
+  const fee = formatEuro(adult_fee);
   const url = confirm_url || "https://sicher-schwimmen.com/portal/profil";
   if (audience === "parent") {
     return (

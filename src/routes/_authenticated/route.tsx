@@ -19,6 +19,7 @@ import { SkipLink } from "@/components/SkipLink";
 import { clearOfflineData } from "@/lib/offline-store";
 import { clearShellCache, registerServiceWorker } from "@/lib/register-sw";
 import { useReplacementCount } from "@/lib/use-replacement-count";
+import { fullName } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -74,9 +75,7 @@ function AuthLayout() {
         .select("first_name,last_name")
         .eq("id", u.user.id)
         .maybeSingle();
-      setName(
-        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || u.user.email || "",
-      );
+      setName(fullName(profile?.first_name, profile?.last_name) || u.user.email || "");
     })();
   }, []);
 

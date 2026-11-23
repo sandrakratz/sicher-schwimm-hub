@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import {
   EVENT_STATUS_LABEL,
   FAMILY_SWIM,
@@ -93,7 +93,7 @@ function Page() {
       setEventId(
         (cur) =>
           cur ||
-          r.events.find((e) => e.event_date >= new Date().toISOString().slice(0, 10))?.id ||
+          r.events.find((e) => e.event_date >= todayBerlinIso())?.id ||
           r.events[0]?.id ||
           "",
       );
@@ -431,7 +431,7 @@ function Anmeldungen({
     }
   }
 
-  const past = event ? event.event_date <= new Date().toISOString().slice(0, 10) : false;
+  const past = event ? event.event_date <= todayBerlinIso() : false;
 
   return (
     <div className="space-y-4">

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { escapeLike } from "@/lib/like";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { todayBerlinIso } from "@/lib/format";
+import { assertStaff, hasRole, isStaff } from "@/lib/auth-guards.server";
 
 const SITE_BASE_URL = "https://sicher-schwimmen.com";
 const tokenSchema = z.string().regex(/^[a-f0-9]{20,80}$/);
@@ -95,12 +96,9 @@ export const unsubscribePush = createServerFn({ method: "POST" })
   });
 
 async function assertCourseSender(context: any, courseId: string) {
-  const { data: staff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+  const staff = await isStaff(context.supabase, context.userId);
   if (staff) return;
-  const { data: isTrainer } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "trainer",
-  });
+  const isTrainer = await hasRole(context.supabase, context.userId, "trainer");
   const { data: ofCourse } = await context.supabase.rpc("is_trainer_of_course", {
     _trainer_id: context.userId,
     _course_id: courseId,
@@ -142,8 +140,7 @@ export const countCoursePush = createServerFn({ method: "GET" })
 export const sendPushInvites = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: staff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!staff) throw new Error("Forbidden");
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { newPushToken } = await import("@/lib/push.server");
     const { queueTemplateEmail } = await import("@/lib/email-send.server");

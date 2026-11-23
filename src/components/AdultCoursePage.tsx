@@ -64,6 +64,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** Sprung zum Interessenformular weiter unten auf der Seite. */
+function InterestLink({ className }: { className: string }) {
+  return (
+    <a
+      href="#interesse"
+      className={`inline-flex items-center rounded-md bg-accent font-semibold text-accent-foreground ${className}`}
+    >
+      Unverbindlich Interesse anmelden
+    </a>
+  );
+}
+
 function RadioGroup({
   legend,
   name,
@@ -171,10 +183,11 @@ function InterestForm({
       privacyAccepted: form.privacyAccepted,
     });
     if (!parsed.success) {
+      // Je Feld nur die erste Meldung anzeigen
       const next: Record<string, string> = {};
-      for (const issue of parsed.error.issues) {
-        const key = String(issue.path[0] ?? "");
-        if (key && !next[key]) next[key] = issue.message;
+      for (const { path, message } of parsed.error.issues) {
+        const key = String(path[0] ?? "");
+        if (key) next[key] ??= message;
       }
       setErrors(next);
       ft.invalid(Object.keys(next));
@@ -364,6 +377,13 @@ function InterestForm({
 export function AdultCoursePage({ program }: { program: CourseProgram }) {
   const member = program.price_member ?? ADULT_COURSE_PRICE_MEMBER;
   const nonMember = program.price_non_member ?? ADULT_COURSE_PRICE_NON_MEMBER;
+  const facts: Array<[typeof Clock, string]> = [
+    [CalendarDays, `Geplanter Start: ${ADULT_COURSE_START_LABEL}`],
+    [Clock, "Samstags, 10 × 45 Minuten Wasserzeit"],
+    [MapPin, "Sportschule Hennef"],
+    [Users, "Kleine Gruppe, zunächst max. 8 Personen"],
+    [Tag, `${member} € Mitglieder / ${nonMember} € Nichtmitglieder`],
+  ];
 
   return (
     <PublicLayout>
@@ -374,12 +394,7 @@ export function AdultCoursePage({ program }: { program: CourseProgram }) {
           </Link>
           <h1 className="mb-3 mt-3 font-display text-4xl font-bold md:text-5xl">{program.name}</h1>
           <p className="max-w-2xl text-lg text-white/90">Schwimmen lernen kennt kein Alter.</p>
-          <a
-            href="#interesse"
-            className="mt-6 inline-flex h-12 items-center rounded-md bg-accent px-6 font-semibold text-accent-foreground"
-          >
-            Unverbindlich Interesse anmelden
-          </a>
+          <InterestLink className="mt-6 h-12 px-6" />
         </div>
       </section>
 
@@ -526,29 +541,12 @@ export function AdultCoursePage({ program }: { program: CourseProgram }) {
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Card className="border-0 shadow-soft">
             <CardContent className="space-y-3 p-6 text-sm text-muted-foreground">
-              <div className="flex items-start gap-2">
-                <CalendarDays className="mt-0.5 h-4 w-4" /> Geplanter Start:{" "}
-                {ADULT_COURSE_START_LABEL}
-              </div>
-              <div className="flex items-start gap-2">
-                <Clock className="mt-0.5 h-4 w-4" /> Samstags, 10 × 45 Minuten Wasserzeit
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4" /> Sportschule Hennef
-              </div>
-              <div className="flex items-start gap-2">
-                <Users className="mt-0.5 h-4 w-4" /> Kleine Gruppe, zunächst max. 8 Personen
-              </div>
-              <div className="flex items-start gap-2">
-                <Tag className="mt-0.5 h-4 w-4" /> {member} € Mitglieder / {nonMember} €
-                Nichtmitglieder
-              </div>
-              <a
-                href="#interesse"
-                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-md bg-accent px-4 font-semibold text-accent-foreground"
-              >
-                Unverbindlich Interesse anmelden
-              </a>
+              {facts.map(([Icon, text]) => (
+                <div key={text} className="flex items-start gap-2">
+                  <Icon className="mt-0.5 h-4 w-4" /> {text}
+                </div>
+              ))}
+              <InterestLink className="mt-2 h-11 w-full justify-center px-4" />
             </CardContent>
           </Card>
         </aside>

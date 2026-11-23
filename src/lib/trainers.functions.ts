@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertTeam } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export type TrainerOption = { id: string; name: string; email: string };
 
@@ -11,13 +13,7 @@ export type TrainerOption = { id: string; name: string; email: string };
 export const listTrainers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<TrainerOption[]> => {
-    const { supabase, userId } = context;
-    const [admin, board, trainer] = await Promise.all([
-      supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-      supabase.rpc("has_role", { _user_id: userId, _role: "board" }),
-      supabase.rpc("has_role", { _user_id: userId, _role: "trainer" }),
-    ]);
-    if (!admin.data && !board.data && !trainer.data) throw new Error("Forbidden");
+    await assertTeam(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: roleRows, error: rErr } = await supabaseAdmin
@@ -38,7 +34,7 @@ export const listTrainers = createServerFn({ method: "GET" })
     return (profiles || [])
       .map((p: any) => ({
         id: p.id as string,
-        name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || (p.email as string),
+        name: fullName(p.first_name, p.last_name) || (p.email as string),
         email: p.email as string,
       }))
       .sort((a, b) => a.name.localeCompare(b.name, "de"));

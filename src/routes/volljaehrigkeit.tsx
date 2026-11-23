@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { getMajorityConfirmation, submitMajorityConfirmation } from "@/lib/majority.functions";
+import { formatDateBerlin } from "@/lib/format";
 
 export const Route = createFileRoute("/volljaehrigkeit")({
   validateSearch: (s) => z.object({ token: z.string().optional() }).parse(s),
@@ -155,9 +156,7 @@ function Page() {
                 <strong className="text-foreground">
                   {info.first_name} {info.last_name}
                 </strong>
-                {info.date_of_birth
-                  ? `, geb. ${new Date(info.date_of_birth).toLocaleDateString("de-DE")}`
-                  : ""}
+                {info.date_of_birth ? `, geb. ${formatDateBerlin(info.date_of_birth)}` : ""}
               </div>
               <div className="md:col-span-2">
                 <Label htmlFor="email">Deine E-Mail-Adresse *</Label>

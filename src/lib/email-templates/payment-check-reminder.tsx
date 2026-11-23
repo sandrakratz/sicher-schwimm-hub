@@ -11,8 +11,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
-import { formatDateBerlin } from "@/lib/format";
-import { formatEuro } from "@/lib/course-confirmation";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 
 interface Props {
   child_name?: string;

@@ -2,13 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { escapeLike } from "@/lib/like";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const STATUSES = ["pending", "active", "suspended", "terminated"] as const;
-
-async function assertStaff(supabase: any, userId: string) {
-  const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-  if (!isStaff) throw new Response("Forbidden", { status: 403 });
-}
 
 export const getMyMembership = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -54,7 +50,7 @@ export const setMembershipStatus = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), status: z.enum(STATUSES) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { error } = await context.supabase
       .from("memberships")
       .update({
@@ -116,7 +112,7 @@ export const syncMemberPrices = createServerFn({ method: "POST" })
     z.object({ courseId: z.string().uuid().nullable().optional() }).parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { repriceMemberParticipants } = await import("@/lib/membership-lookup.server");
     const res = await repriceMemberParticipants({ courseId: data.courseId ?? null });
     const { logAudit } = await import("@/lib/audit.server");
@@ -133,7 +129,7 @@ export const deleteMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { error } = await context.supabase.from("memberships").delete().eq("id", data.id);
     if (error) throw new Response(error.message, { status: 500 });
     const { logAudit } = await import("@/lib/audit.server");
@@ -163,7 +159,7 @@ export const setMembershipDates = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { error } = await context.supabase
       .from("memberships")
       .update({ start_date: data.start_date, valid_until: data.valid_until } as never)
@@ -186,7 +182,7 @@ export const setMembershipDates = createServerFn({ method: "POST" })
 export const listMemberPriceMismatches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { loadMemberships, matchMembership } = await import("@/lib/membership-lookup.server");
     const { todayBerlinIso } = await import("@/lib/format");
@@ -253,7 +249,7 @@ export const chargeNormalPrice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ participantId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: p, error } = await supabaseAdmin
       .from("course_participants")

@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
+import { todayBerlinIso } from "@/lib/format";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 export type AdminTask = {
   key: string;
@@ -14,23 +16,16 @@ export type AdminTask = {
   hint?: string;
 };
 
-function berlinToday(): string {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Berlin" }))
-    .toISOString()
-    .slice(0, 10);
-}
-
 /**
  * Arbeitsliste für die Admin-Startseite: offene Aufgaben statt reiner Zahlen.
  */
 export const getAdminTasks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ tasks: AdminTask[] }> => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Response("Forbidden", { status: 403 });
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const today = berlinToday();
+    const today = todayBerlinIso();
     const now = new Date();
     const in48h = new Date(now.getTime() + 48 * 3600 * 1000).toISOString();
     const in14d = new Date(now.getTime() + 14 * 24 * 3600 * 1000).toISOString().slice(0, 10);

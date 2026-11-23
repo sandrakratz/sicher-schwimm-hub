@@ -2,6 +2,7 @@
 // Zählt offene Vorgänge, die der Person ausdrücklich oder per Standard-Zuständigkeit gehören.
 
 import { fetchAll } from "@/lib/fetch-all";
+import { fullName, todayBerlinIso } from "@/lib/format";
 
 const SITE = "https://sicher-schwimmen.com";
 
@@ -14,19 +15,10 @@ export type Digest = {
   lines: DigestLine[];
 };
 
-const fullName = (p: { first_name: string | null; last_name: string | null }) =>
-  [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
-
-function berlinToday(): string {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Berlin" }))
-    .toISOString()
-    .slice(0, 10);
-}
-
 /** Zusammenfassungen für alle Vorstandsmitglieder mit E-Mail, die etwas zu tun haben und nicht abbestellt haben. */
 export async function buildDigests(): Promise<Digest[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const today = berlinToday();
+  const today = todayBerlinIso();
   const in48h = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
 
   const { data: roleRows } = await supabaseAdmin
@@ -79,7 +71,7 @@ export async function buildDigests(): Promise<Digest[]> {
   const out: Digest[] = [];
   for (const p of profs ?? []) {
     if (!p.email || off.has(p.id)) continue;
-    const name = fullName(p);
+    const name = fullName(p.first_name, p.last_name);
     if (!name) continue;
     const mine = <T extends { assigned_to: string | null }>(rows: T[], area: string) =>
       rows.filter((r) => (r.assigned_to || rule(area)) === name);

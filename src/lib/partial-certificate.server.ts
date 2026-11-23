@@ -1,9 +1,9 @@
 // Server-only: Teilleistungsnachweis speichern und per E-Mail (Download-Link) an Eltern senden.
 import { buildPartialCertificate, deDate } from "@/lib/partial-certificate-pdf.server";
+import { todayBerlinIso } from "@/lib/format";
 
-export function berlinToday(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
-}
+/** Heutiges Datum in Berlin (YYYY-MM-DD); Name bleibt für den Cron-Endpunkt erhalten. */
+export const berlinToday = todayBerlinIso;
 
 /** Sendet genau einmal pro Kind und Kurs. Liefert den Status zurück. */
 export async function sendPartialCertificate(

@@ -2,8 +2,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff, assertTeam } from "@/lib/auth-guards.server";
 import { fetchIn } from "@/lib/fetch-all";
 import { checkKeyOf } from "@/lib/trainer-qualifications";
+import { fullName } from "@/lib/format";
 
 const SITE = "https://sicher-schwimmen.com";
 
@@ -82,12 +84,7 @@ export const teamForSessions = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     // Nur Team-Rollen (Trainer, Vorstand, Admin) dürfen Namen der Kolleg:innen sehen
-    const { data: staff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    const { data: trainer } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "trainer",
-    });
-    if (!staff && !trainer) throw new Error("Forbidden");
+    await assertTeam(context);
 
     const rows = await fetchIn<{ session_id: string; trainer_id: string }>(
       data.sessionIds,
@@ -104,10 +101,7 @@ export const teamForSessions = createServerFn({ method: "POST" })
       db.from("profiles").select("id,first_name,last_name").in("id", chunk).order("id").range(f, t),
     );
     const name = new Map(
-      profiles.map((p) => [
-        p.id as string,
-        [p.first_name, p.last_name].filter(Boolean).join(" ") || "Unbekannt",
-      ]),
+      profiles.map((p) => [p.id as string, fullName(p.first_name, p.last_name) || "Unbekannt"]),
     );
     const team: Record<string, { id: string; name: string }[]> = {};
     for (const r of rows)
@@ -133,16 +127,11 @@ export type QualificationOverviewRow = {
   }[];
 };
 
-async function assertBoard(context: { supabase: any; userId: string }) {
-  const { data } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!data) throw new Error("Forbidden");
-}
-
 /** Alle Trainer:innen mit ihren Nachweisen und dem Prüfstatus (nur Vorstand/Verwaltung). */
 export const listQualificationOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<QualificationOverviewRow[]> => {
-    await assertBoard(context);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     const { fetchAll } = await import("@/lib/fetch-all");
@@ -184,7 +173,7 @@ export const listQualificationOverview = createServerFn({ method: "POST" })
     return profiles
       .map((p) => ({
         trainerId: p.id as string,
-        name: [p.first_name, p.last_name].filter(Boolean).join(" ") || (p.email as string) || "?",
+        name: fullName(p.first_name, p.last_name) || (p.email as string) || "?",
         email: (p.email as string) ?? "",
         qualifications: quals
           .filter((q) => q.trainer_id === p.id)
@@ -215,7 +204,7 @@ export const setQualificationChecked = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertBoard(context);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const db = supabaseAdmin as any;
     const { data: q, error } = await db

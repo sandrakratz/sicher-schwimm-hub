@@ -96,12 +96,6 @@ export function ageAt(
   return age;
 }
 
-export function addDaysIso(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 export function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
 }
@@ -177,6 +171,7 @@ export type ProgramRow = {
   payment_due_days: number;
   is_public: boolean;
   bookable: boolean;
+  waitlist_open?: boolean;
   sort_order: number;
   course_info: string | null;
 };

@@ -4,8 +4,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { parseTimeRange } from "@/lib/ics";
-import { todayBerlinIso } from "@/lib/format";
+import { todayBerlinIso, fullName } from "@/lib/format";
 import { logAudit } from "@/lib/audit.server";
+import { assertAdmin, assertStaff, assertTeam, isStaff } from "@/lib/auth-guards.server";
 import {
   shortDate,
   overlaps,
@@ -18,32 +19,11 @@ import {
 
 const SITE = "https://sicher-schwimmen.com";
 
-type Ctx = { supabase: any; userId: string };
-
-async function isStaff(context: Ctx): Promise<boolean> {
-  const { data } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  return !!data;
-}
-
-async function assertStaff(context: Ctx) {
-  if (!(await isStaff(context))) throw new Error("Forbidden");
-}
-
-/** Vorstand/Verwaltung oder Trainer:in. */
-async function assertTeam(context: Ctx) {
-  if (await isStaff(context)) return;
-  const { data } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "trainer",
-  });
-  if (!data) throw new Error("Forbidden");
-}
-
-const fullName = (p: {
+const nameOf = (p: {
   first_name?: string | null;
   last_name?: string | null;
   email?: string | null;
-}) => [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "Unbekannt";
+}) => fullName(p.first_name, p.last_name) || p.email || "Unbekannt";
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -56,7 +36,7 @@ async function profileOf(db: any, id: string): Promise<PlanTrainer> {
     .select("id,first_name,last_name,email")
     .eq("id", id)
     .maybeSingle();
-  return { id, name: data ? fullName(data) : "Unbekannt", email: data?.email ?? "" };
+  return { id, name: data ? nameOf(data) : "Unbekannt", email: data?.email ?? "" };
 }
 
 /** Alle Personen, die Termine übernehmen können (Trainer, Admin, Vorstand). */
@@ -76,7 +56,7 @@ async function loadTrainerList(db: any): Promise<PlanTrainer[]> {
       .range(f, t),
   );
   return profiles
-    .map((p) => ({ id: p.id as string, name: fullName(p), email: (p.email as string) ?? "" }))
+    .map((p) => ({ id: p.id as string, name: nameOf(p), email: (p.email as string) ?? "" }))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
@@ -501,7 +481,7 @@ export const withdrawFromSessions = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => withdrawSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertTeam(context);
-    const staff = await isStaff(context);
+    const staff = await isStaff(context.supabase, context.userId);
     const targetId = data.trainerId ?? context.userId;
     const byStaff = targetId !== context.userId;
     if (byStaff && !staff) throw new Error("Forbidden");
@@ -792,11 +772,7 @@ export const listDienstplanLog = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<DienstplanLogRow[]> => {
     // Das Protokoll sieht ausschließlich der Administrator (nicht der übrige Vorstand)
-    const { data: isAdminRole } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdminRole) throw new Error("Forbidden");
+    await assertAdmin(context);
     const db = await admin();
     const { data: rows, error } = await db
       .from("dienstplan_log")

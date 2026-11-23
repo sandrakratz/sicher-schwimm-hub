@@ -2,16 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-async function assertTeam(context: { supabase: any; userId: string }) {
-  const { data: staff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (staff) return;
-  const { data } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "trainer",
-  });
-  if (!data) throw new Error("Forbidden");
-}
+import { assertTeam } from "@/lib/auth-guards.server";
 
 /** Öffentlicher VAPID-Schlüssel für das Abo im Browser. */
 export const getTrainerPushKey = createServerFn({ method: "GET" })

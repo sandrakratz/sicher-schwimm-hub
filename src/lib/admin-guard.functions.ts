@@ -12,18 +12,6 @@ async function fetchRoles(supabase: any, userId: string): Promise<Role[]> {
 }
 
 /**
- * Server-side check that the calling user has admin or board role.
- */
-export const assertIsStaff = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const roles = await fetchRoles(context.supabase, context.userId);
-    const ok = roles.includes("admin") || roles.includes("board");
-    if (!ok) throw new Response("Forbidden", { status: 403 });
-    return { ok: true };
-  });
-
-/**
  * Generic guard: throws 403 unless the user has at least one of the given roles.
  */
 export const assertHasAnyRole = createServerFn({ method: "POST" })

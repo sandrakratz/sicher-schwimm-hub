@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 export type BlocklistEntry = {
   id: string;
@@ -23,15 +24,10 @@ export type BlocklistEntry = {
   } | null;
 };
 
-async function assertStaff(context: { supabase: any; userId: string }) {
-  const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!isStaff) throw new Error("Forbidden");
-}
-
 export const listBlocklist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("booking_blocklist")
@@ -82,7 +78,7 @@ export const addBlocklistEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => addSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const email = (data.email || "").trim().toLowerCase() || null;
     const child = (data.childName || "").trim().replace(/\s+/g, " ").toLowerCase() || null;
     const dob = data.childDob || null;
@@ -117,7 +113,7 @@ export const setBlocklistActive = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), active: z.boolean() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("booking_blocklist")
@@ -138,7 +134,7 @@ export const deleteBlocklistEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("booking_blocklist").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

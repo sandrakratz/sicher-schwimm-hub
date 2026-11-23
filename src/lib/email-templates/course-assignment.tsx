@@ -13,7 +13,7 @@ import {
   Text,
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDuration, formatEuro } from "@/lib/format";
 import { paymentTerms } from "@/lib/payment-status";
 import { ORG } from "@/lib/billing-config";
 import { buildPayQrUrl } from "@/lib/epc-qr";
@@ -49,21 +49,6 @@ interface Props {
   site_base_url?: string;
   sessions?: MailSession[] | null;
   ics_url?: string | null;
-}
-
-function fmtDate(d?: string) {
-  return formatDateBerlin(d);
-}
-function fmtDuration(d?: string) {
-  if (!d) return undefined;
-  const trimmed = String(d).trim();
-  // Wenn nur eine Zahl angegeben ist, automatisch "Wochen" anhängen
-  if (/^\d+(\.\d+)?$/.test(trimmed)) return `${trimmed} Wochen`;
-  return trimmed;
-}
-function fmtPrice(p?: number | null) {
-  if (p == null) return "—";
-  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number(p));
 }
 
 const Email = (p: Props) => {
@@ -114,7 +99,7 @@ const Email = (p: Props) => {
             )}
             {p.course_duration && (
               <Text style={{ margin: "4px 0" }}>
-                <strong>Dauer:</strong> {fmtDuration(p.course_duration)}
+                <strong>Dauer:</strong> {formatDuration(p.course_duration)}
               </Text>
             )}
             {p.course_schedule && (
@@ -124,8 +109,8 @@ const Email = (p: Props) => {
             )}
             {(p.course_starts_on || p.course_ends_on) && (
               <Text style={{ margin: "4px 0" }}>
-                <strong>Zeitraum:</strong> {fmtDate(p.course_starts_on)} –{" "}
-                {fmtDate(p.course_ends_on)}
+                <strong>Zeitraum:</strong> {formatDateBerlin(p.course_starts_on)} –{" "}
+                {formatDateBerlin(p.course_ends_on)}
               </Text>
             )}
             {p.course_location && (
@@ -175,7 +160,7 @@ const Email = (p: Props) => {
               {p.price_amount != null && (
                 <Text style={{ margin: "4px 0", fontSize: "16px" }}>
                   <strong>Kursgebühr:</strong>{" "}
-                  <strong style={{ color: "#0c4a6e" }}>{fmtPrice(p.price_amount)}</strong>
+                  <strong style={{ color: "#0c4a6e" }}>{formatEuro(p.price_amount)}</strong>
                 </Text>
               )}
               <Text style={{ margin: "4px 0" }}>

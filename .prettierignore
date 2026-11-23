@@ -9,6 +9,6 @@ routeTree.gen.ts
 .claude
 docs
 roadmap.md
-public
+/public
 wrangler.jsonc
 src/integrations/supabase

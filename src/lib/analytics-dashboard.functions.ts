@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 import { EVENT_SCHEMAS, SERVER_EVENT_SCHEMAS } from "@/lib/analytics/events";
 import { analyzeVariants, type VariantResult } from "@/lib/analytics/stats";
 
@@ -74,15 +75,7 @@ export const getAnalyticsDashboard = createServerFn({ method: "POST" })
     z.object({ days: z.number().int().min(1).max(90) }).parse(input),
   )
   .handler(async ({ context, data }): Promise<DashboardData> => {
-    const { data: roleRows, error: roleError } = await context.supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId);
-    if (roleError) throw new Response("Forbidden", { status: 403 });
-    const roles = (roleRows || []).map((r: any) => r.role as string);
-    if (!roles.includes("admin") && !roles.includes("board")) {
-      throw new Response("Forbidden", { status: 403 });
-    }
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Test-Definitionen aus dem Code in die Datenbank übernehmen (neue Versionen, beendete Tests)

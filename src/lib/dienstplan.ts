@@ -1,5 +1,6 @@
 // Planungslogik für den Dienstplan (rein rechnerisch, client- und serverseitig nutzbar):
 // Besetzung, Lücken, Ersatz-Rangliste und Vorschlag für die Einteilung.
+import { addDaysIso, formatWeekdayLong, formatWeekdayShort } from "@/lib/format";
 
 export type PlanSession = {
   id: string;
@@ -67,33 +68,19 @@ export function isoWeekday(date: string): number {
   return d === 0 ? 7 : d;
 }
 
-export function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+/** Kalendertag verschieben (gemeinsamer Helfer aus format.ts). */
+export const addDays = addDaysIso;
 
 /** Montag der Woche, in der `date` liegt. */
 export function mondayOf(date: string): string {
   return addDays(date, 1 - isoWeekday(date));
 }
 
-export function shortDate(date: string): string {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  });
-}
+/** z. B. „Mo., 05.01.“ */
+export const shortDate = formatWeekdayShort;
 
-export function longDate(date: string): string {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
+/** z. B. „Montag, 05.01.2026“ */
+export const longDate = formatWeekdayLong;
 
 export function timeText(s: { start: string | null; end: string | null }): string {
   if (!s.start) return "Zeit offen";

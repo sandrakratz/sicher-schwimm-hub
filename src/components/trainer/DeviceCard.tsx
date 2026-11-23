@@ -20,6 +20,7 @@ import {
   type SnapshotRow,
 } from "@/lib/offline-sync";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { formatDateTimeBerlin } from "@/lib/format";
 
 /**
  * „Auf diesem Gerät“: Mitteilungen und Offline-Modus (Einsätze und Teilnehmerliste der nächsten Tage im
@@ -110,9 +111,7 @@ export function DeviceCard({
           </label>
           {enabled && (
             <div className="flex flex-wrap items-center gap-2 pl-7 text-xs text-muted-foreground">
-              <span>
-                Stand: {stamp ? new Date(stamp).toLocaleString("de-DE") : "noch nicht gespeichert"}
-              </span>
+              <span>Stand: {stamp ? formatDateTimeBerlin(stamp) : "noch nicht gespeichert"}</span>
               {pending > 0 && (
                 <span className="inline-flex items-center gap-1 text-amber-700">
                   <CloudOff className="h-3 w-3" /> {pending} Eintrag{pending === 1 ? "" : "träge"}{" "}

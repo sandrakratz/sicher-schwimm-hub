@@ -6,16 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { CalendarEntry } from "@/lib/calendar.functions";
+import { formatWeekdayShort } from "@/lib/format";
 
 type Trainer = { id: string; name: string };
-
-function shortDay(d: string) {
-  return new Date(d + "T12:00:00").toLocaleDateString("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  });
-}
 
 /**
  * Dienstplan eines Kurses: Termine als Spalten, Trainer:innen als Zeilen.
@@ -98,7 +91,7 @@ export function CourseRosterMatrix({
                 const required = s.trainersNeeded ?? 2;
                 return (
                   <th key={s.id} className="p-1 text-center font-normal whitespace-nowrap">
-                    <div>{shortDay(s.date)}</div>
+                    <div>{formatWeekdayShort(s.date)}</div>
                     <Badge
                       variant={n >= required ? "secondary" : "outline"}
                       className={n >= required ? "" : "border-destructive text-destructive"}

@@ -14,7 +14,7 @@ import {
 } from "@react-email/components";
 import type { TemplateEntry } from "./registry";
 import { ORG } from "@/lib/billing-config";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 
 interface Props {
   parent_name?: string | null;
@@ -48,12 +48,7 @@ const Email = (p: Props) => {
   const period = [p.course_starts_on, p.course_ends_on]
     .filter(Boolean)
     .map((d) => formatDateBerlin(d as string));
-  const priceLabel =
-    p.price_amount != null
-      ? new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
-          Number(p.price_amount),
-        )
-      : null;
+  const priceLabel = p.price_amount != null ? formatEuro(p.price_amount) : null;
   return (
     <Html lang="de">
       <Head />

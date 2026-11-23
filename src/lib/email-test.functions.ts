@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 /** Vorlagen, die beim Testversand geprüft werden (mit Beispieldaten). */
 export const TEST_TEMPLATES = [
@@ -25,10 +26,8 @@ export const sendTestEmails = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    const { supabase, userId } = context;
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-    const { data: isBoard } = await supabase.rpc("has_role", { _user_id: userId, _role: "board" });
-    if (!isAdmin && !isBoard) throw new Error("Forbidden");
+    const { userId } = context;
+    await assertStaff(context);
 
     const { runTestSend } = await import("@/lib/email-test.server");
     return runTestSend(data.recipients, [...data.templates], userId);

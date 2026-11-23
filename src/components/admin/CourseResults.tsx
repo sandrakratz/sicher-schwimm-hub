@@ -13,8 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
-import { formatEuro } from "@/lib/trainer-billing";
+import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
 import {
   deleteCourseCost,
   getCourseResults,

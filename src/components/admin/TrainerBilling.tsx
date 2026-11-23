@@ -16,8 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
-import { ANNUAL_ALLOWANCE, WARN_FRACTION, formatEuro } from "@/lib/trainer-billing";
+import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
+import { ANNUAL_ALLOWANCE, WARN_FRACTION } from "@/lib/trainer-billing";
 import {
   createTrainerPayout,
   deleteTrainerPayout,

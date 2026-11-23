@@ -25,7 +25,7 @@ import { Download, Search, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { listCancellations, setCancellationStatus } from "@/lib/cancellation.functions";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { csvCell } from "@/lib/csv-safe";
 
 export const Route = createFileRoute("/_authenticated/admin/widerrufe")({
@@ -161,7 +161,7 @@ function Page() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-2xl font-bold text-primary-deep">Widerrufe</h1>
         <Button asChild variant="outline">
-          <a href={csvHref} download={`widerrufe-${new Date().toISOString().slice(0, 10)}.csv`}>
+          <a href={csvHref} download={`widerrufe-${todayBerlinIso()}.csv`}>
             <Download className="h-4 w-4" /> CSV-Export
           </a>
         </Button>

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
-import { formatDateBerlin } from "@/lib/format";
-import { formatEuro } from "@/lib/trainer-billing";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 import { getMyPayouts, getPayoutCertificate, type MyPayout } from "@/lib/trainer-billing.functions";
 import { openCertificate } from "@/lib/trainer-certificate";
 import { Printer } from "lucide-react";

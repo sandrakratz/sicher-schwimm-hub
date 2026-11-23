@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 export type MemberCheckRow = {
   id: string;
@@ -14,16 +15,11 @@ export type MemberCheckRow = {
   price_non_member: number | null;
 };
 
-async function assertStaff(context: { supabase: any; userId: string }) {
-  const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!isStaff) throw new Error("Forbidden");
-}
-
 /** Anmeldungen, bei denen "Mitglied" angegeben, aber nicht bestätigt wurde. */
 export const listMemberChecks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("course_participants")
@@ -56,7 +52,7 @@ export const resolveMemberCheck = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { applyMemberCheck } = await import("@/lib/member-check.server");
     const result = await applyMemberCheck(data.participantId, data.decision, context.userId);
 

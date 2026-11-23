@@ -51,6 +51,5 @@ export function amountOf(hours: number, rate: number): number {
   return Math.round(hours * rate * 100) / 100;
 }
 
-export function formatEuro(value: number): string {
-  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-}
+/** Weiterhin hier erreichbar für bestehende Importe (z. B. trainer-certificate.ts). */
+export { formatEuro } from "@/lib/format";

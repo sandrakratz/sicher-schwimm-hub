@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertTeam } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export type FamilyPerson = {
   name: string;
@@ -38,15 +40,7 @@ function toPerson(v: unknown): FamilyPerson | null {
 export const listActiveMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ActiveMember[]> => {
-    const { data: roleRows, error: roleErr } = await context.supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId);
-    if (roleErr) throw new Response("Forbidden", { status: 403 });
-    const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    if (!roles.some((r) => ["admin", "board", "trainer"].includes(r))) {
-      throw new Response("Forbidden", { status: 403 });
-    }
+    await assertTeam(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
@@ -64,7 +58,7 @@ export const listActiveMembers = createServerFn({ method: "GET" })
       const childrenRaw = Array.isArray(fm?.["children"]) ? (fm["children"] as unknown[]) : [];
       return {
         id: m.id as string,
-        name: `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim(),
+        name: fullName(m.first_name, m.last_name),
         membership_type: m.membership_type as string,
         member_since: (m.approved_at ?? m.created_at) as string | null,
         date_of_birth: (m.date_of_birth ?? null) as string | null,

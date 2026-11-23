@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { applyAssignments, requestReplacement } from "@/lib/dienstplan.functions";
+import { formatDateBerlin } from "@/lib/format";
 import {
   gapOf,
   indexPlan,
@@ -188,8 +189,7 @@ export function ReplacementDialog({
               </Button>
               {session.replacementRequestedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Bereits angefragt am{" "}
-                  {new Date(session.replacementRequestedAt).toLocaleDateString("de-DE")}.
+                  Bereits angefragt am {formatDateBerlin(session.replacementRequestedAt)}.
                 </p>
               )}
             </div>

@@ -109,7 +109,7 @@ export const listMyTrainerCourses = createServerFn({ method: "GET" })
     );
     assignedSessions.forEach((s) => allowed.add(s.course_id));
 
-    const todayIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" });
+    const todayIso = todayBerlinIso();
 
     // Vorstand/Verwaltung: zusätzlich alle aktuell laufenden Kurse (zur spontanen Unterstützung, auch ohne
     // Einteilung). Eigene Kurse bleiben unverändert; die übrigen werden als „supporting“ markiert.
@@ -745,8 +745,7 @@ export const exportPartialCertificate = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
     await assertCourseAccessForParticipant(context.supabase, context.userId, data.participantId);
     const { buildPartialCertificate } = await import("@/lib/partial-certificate-pdf.server");
-    const { berlinToday } = await import("@/lib/partial-certificate.server");
-    const cert = await buildPartialCertificate(data.participantId, berlinToday());
+    const cert = await buildPartialCertificate(data.participantId, todayBerlinIso());
     if (!cert)
       throw new Error(
         "Kein Teilleistungsnachweis möglich: Es sind keine oder bereits alle Prüfungsteile bestanden.",
@@ -788,8 +787,7 @@ export const exportMyPartialCertificate = createServerFn({ method: "POST" })
       throw new Response("Forbidden", { status: 403 });
     }
     const { buildPartialCertificate } = await import("@/lib/partial-certificate-pdf.server");
-    const { berlinToday } = await import("@/lib/partial-certificate.server");
-    const cert = await buildPartialCertificate(data.participantId, berlinToday());
+    const cert = await buildPartialCertificate(data.participantId, todayBerlinIso());
     if (!cert) throw new Error("Für dieses Kind liegt kein Teilleistungsnachweis vor.");
     return { filename: cert.filename, base64: Buffer.from(cert.bytes).toString("base64") };
   });

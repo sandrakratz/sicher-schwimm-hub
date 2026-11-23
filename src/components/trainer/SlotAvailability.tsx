@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { supabase } from "@/integrations/supabase/client";
 import { blackoutOn, type PlanBlackout } from "@/lib/dienstplan";
-import { todayBerlinIso } from "@/lib/format";
+import { formatMonthYear, formatWeekdayShort, todayBerlinIso } from "@/lib/format";
 import { POOLS, holidayName } from "@/lib/pool-schedule";
 
 type Slot = {
@@ -18,14 +18,6 @@ type Slot = {
 };
 
 const MONTHS = 6;
-const dayText = (d: string) =>
-  new Date(`${d}T12:00:00`).toLocaleDateString("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  });
-const monthText = (d: string) =>
-  new Date(`${d}T12:00:00`).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
 
 /**
  * Einsatzmöglichkeit für die nächsten Monate: Der Vorstand plant Kurse anhand der Zusagen,
@@ -151,7 +143,7 @@ export function SlotAvailability({ me, blackouts }: { me: string; blackouts: Pla
             <div key={k}>
               <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                 <div className="text-sm font-semibold">
-                  {monthText(list[0].date)} · {pool?.name}
+                  {formatMonthYear(list[0].date)} · {pool?.name}
                 </div>
                 <div className="flex gap-1">
                   <Button
@@ -187,7 +179,7 @@ export function SlotAvailability({ me, blackouts }: { me: string; blackouts: Pla
                       className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
                     >
                       <div>
-                        <span className="font-medium">{dayText(s.date)}</span>{" "}
+                        <span className="font-medium">{formatWeekdayShort(s.date)}</span>{" "}
                         <span className="text-muted-foreground">
                           {s.start ? `${s.start}–${s.end} Uhr` : ""}
                         </span>

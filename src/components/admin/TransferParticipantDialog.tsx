@@ -27,7 +27,7 @@ import {
   type TransferPreview,
 } from "@/lib/participant-transfer.functions";
 import { cancellationFeeRule } from "@/lib/billing-config";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, formatEuro } from "@/lib/format";
 
 type CourseOpt = {
   id: string;
@@ -39,7 +39,6 @@ type CourseOpt = {
 
 type Mode = "course" | "waitlist";
 
-const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const REASONS = [
   "Trainer-Empfehlung: Kind ist schon weiter",
@@ -129,8 +128,8 @@ export function TransferParticipantDialog({
     if (!Number.isFinite(finalDue)) return toast.error("Betrag ungültig.");
     setBusy(true);
     try {
-      const oldNote = `alt ${eur(pv.oldPrice)}${pv.oldPaid ? " bezahlt" : " offen"}, ${used}/${pv.oldTotal} Termine genutzt`;
-      const manualNote = override.trim() ? `; Betrag manuell ${eur(finalDue)}` : "";
+      const oldNote = `alt ${formatEuro(pv.oldPrice)}${pv.oldPaid ? " bezahlt" : " offen"}, ${used}/${pv.oldTotal} Termine genutzt`;
+      const manualNote = override.trim() ? `; Betrag manuell ${formatEuro(finalDue)}` : "";
       const canNotify = notify && !!participant.participant_email;
       if (mode === "waitlist") {
         const r = await waitlistFn({
@@ -156,7 +155,7 @@ export function TransferParticipantDialog({
             reason: reason.trim(),
             amountDue: finalDue,
             cancellationFee: feeNum,
-            calcNote: `${oldNote}; neu ${remaining}/${pv.newTotal} Termine à ${eur(calc.perNew)}${manualNote}`,
+            calcNote: `${oldNote}; neu ${remaining}/${pv.newTotal} Termine à ${formatEuro(calc.perNew)}${manualNote}`,
             notify: canNotify,
           },
         });
@@ -252,10 +251,10 @@ export function TransferParticipantDialog({
                 <div className="space-y-1">
                   <div className="font-semibold">Bisher: {pv.oldCourse}</div>
                   <div>
-                    Preis {eur(pv.oldPrice)} · {pv.oldPaid ? "bezahlt" : "nicht bezahlt"}
+                    Preis {formatEuro(pv.oldPrice)} · {pv.oldPaid ? "bezahlt" : "nicht bezahlt"}
                   </div>
                   <div>
-                    {pv.oldTotal} Termine → {eur(calc.perOld)} pro Termin
+                    {pv.oldTotal} Termine → {formatEuro(calc.perOld)} pro Termin
                   </div>
                   <Label className="text-xs">Bereits genutzte Termine</Label>
                   <Input
@@ -268,7 +267,9 @@ export function TransferParticipantDialog({
                     }
                     className="h-9 w-24"
                   />
-                  <div className="text-muted-foreground">Verbraucht: {eur(calc.usedValue)}</div>
+                  <div className="text-muted-foreground">
+                    Verbraucht: {formatEuro(calc.usedValue)}
+                  </div>
                 </div>
                 {waitlist ? (
                   <div className="space-y-1">
@@ -283,10 +284,11 @@ export function TransferParticipantDialog({
                   <div className="space-y-1">
                     <div className="font-semibold">Neu: {pv.newCourse}</div>
                     <div>
-                      Preis {eur(pv.newPrice)} ({pv.isMember ? "Mitglied" : "Nicht-Mitglied"})
+                      Preis {formatEuro(pv.newPrice)} ({pv.isMember ? "Mitglied" : "Nicht-Mitglied"}
+                      )
                     </div>
                     <div>
-                      {pv.newTotal} Termine → {eur(calc.perNew)} pro Termin
+                      {pv.newTotal} Termine → {formatEuro(calc.perNew)} pro Termin
                     </div>
                     <Label className="text-xs">Noch anstehende Termine</Label>
                     <Input
@@ -301,7 +303,7 @@ export function TransferParticipantDialog({
                       }
                       className="h-9 w-24"
                     />
-                    <div className="text-muted-foreground">Kosten: {eur(calc.newCost)}</div>
+                    <div className="text-muted-foreground">Kosten: {formatEuro(calc.newCost)}</div>
                   </div>
                 )}
               </div>
@@ -334,7 +336,7 @@ export function TransferParticipantDialog({
                       className="h-7 text-xs"
                       onClick={() => setFee(calc.suggestedFee.toFixed(2).replace(".", ","))}
                     >
-                      Vorschlag übernehmen: {eur(calc.suggestedFee)}
+                      Vorschlag übernehmen: {formatEuro(calc.suggestedFee)}
                       {calc.usedValue > 0 ? " (abzgl. genutzter Termine)" : ""}
                     </Button>
                   )}
@@ -343,23 +345,24 @@ export function TransferParticipantDialog({
 
               <div className="border-t pt-2">
                 <div>
-                  Guthaben aus bisherigem Kurs: <strong>{eur(calc.credit)}</strong>
+                  Guthaben aus bisherigem Kurs: <strong>{formatEuro(calc.credit)}</strong>
                   {feeNum > 0 && (
                     <>
                       {" "}
-                      · Stornogebühr: <strong>{eur(feeNum)}</strong>
+                      · Stornogebühr: <strong>{formatEuro(feeNum)}</strong>
                     </>
                   )}
                 </div>
                 <div className="text-base">
                   {calc.due > 0 ? (
                     <>
-                      {waitlist ? "Noch zu zahlen" : "Zuzahlung"}: <strong>{eur(calc.due)}</strong>
+                      {waitlist ? "Noch zu zahlen" : "Zuzahlung"}:{" "}
+                      <strong>{formatEuro(calc.due)}</strong>
                     </>
                   ) : calc.due < 0 ? (
                     <>
                       Guthaben{waitlist ? " für den nächsten Kurs" : " / Erstattung"}:{" "}
-                      <strong>{eur(-calc.due)}</strong>
+                      <strong>{formatEuro(-calc.due)}</strong>
                     </>
                   ) : (
                     <strong>

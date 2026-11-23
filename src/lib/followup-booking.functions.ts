@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const inputSchema = z.object({
   mode: z.enum(["offer", "book"]),
@@ -31,8 +32,7 @@ export const placeFollowupChild = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: course } = await supabaseAdmin

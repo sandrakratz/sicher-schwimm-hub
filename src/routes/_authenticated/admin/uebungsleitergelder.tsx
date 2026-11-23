@@ -19,7 +19,7 @@ import { TrainerPayouts } from "@/components/admin/TrainerPayouts";
 import { CourseResults } from "@/components/admin/CourseResults";
 import { toast } from "sonner";
 import { Copy, Download } from "lucide-react";
-import { formatDateTimeBerlin } from "@/lib/format";
+import { formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { formatIban } from "@/lib/iban";
 import { listPayoutDetails, type PayoutListRow } from "@/lib/trainer-payout.functions";
 
@@ -131,7 +131,7 @@ function IbanList() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `uebungsleitergelder-iban-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `uebungsleitergelder-iban-${todayBerlinIso()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     // Im Verwaltungsprotokoll vermerken; ein Fehler dort darf den Download nicht stören.

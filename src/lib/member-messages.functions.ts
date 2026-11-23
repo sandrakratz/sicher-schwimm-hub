@@ -2,19 +2,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 import { logAudit } from "@/lib/audit.server";
+import { fullName } from "@/lib/format";
 
 const TEMPLATE = "member-message-notice";
 const INBOX_URL = "https://sicher-schwimmen.com/portal/postfach";
 /** So viele Empfänger je Nachricht (Mail-Tageslimit und Aufruf-Limit des Servers). */
 export const MAX_RECIPIENTS = 25;
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertStaff(context: Ctx) {
-  const { data } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!data) throw new Error("Nur Admin/Vorstand erlaubt.");
-}
 
 export type MessageCandidate = {
   userId: string;
@@ -27,7 +22,7 @@ export type MessageCandidate = {
 export const listMessageCandidates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context, "Nur Admin/Vorstand erlaubt.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const { data, error } = await admin
@@ -51,7 +46,7 @@ export const listMessageCandidates = createServerFn({ method: "GET" })
       seen.add(m.user_id);
       candidates.push({
         userId: m.user_id,
-        name: `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || "—",
+        name: fullName(m.first_name, m.last_name) || "—",
         email: emails.get(m.user_id) ?? m.email ?? null,
         membershipType: m.membership_type,
       });
@@ -75,7 +70,7 @@ export const sendMemberMessage = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context, "Nur Admin/Vorstand erlaubt.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const userIds = [...new Set(data.userIds)];
@@ -95,7 +90,7 @@ export const sendMemberMessage = createServerFn({ method: "POST" })
     const { data: msg, error: msgErr } = await admin
       .from("member_messages")
       .insert({
-        sender_user_id: (context as Ctx).userId,
+        sender_user_id: context.userId,
         subject: data.subject,
         body: data.body,
       })
@@ -128,7 +123,7 @@ export const sendMemberMessage = createServerFn({ method: "POST" })
             templateName: TEMPLATE,
             recipientEmail: to,
             idempotencyKey: `member-message-${msg.id}-${userId}`,
-            senderUserId: (context as Ctx).userId,
+            senderUserId: context.userId,
             templateData: { firstName: firstNames.get(userId) || undefined, url: INBOX_URL },
             metadata: { member_message_id: msg.id },
           });
@@ -146,7 +141,7 @@ export const sendMemberMessage = createServerFn({ method: "POST" })
         .eq("user_id", userId);
     }
 
-    await logAudit(null, (context as Ctx).userId, {
+    await logAudit(null, context.userId, {
       action: "member_message.sent",
       entity: "member_messages",
       entity_id: msg.id,
@@ -167,7 +162,7 @@ export type SentMessage = {
 export const listSentMessages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<SentMessage[]> => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context, "Nur Admin/Vorstand erlaubt.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const { data: msgs, error } = await admin
@@ -190,7 +185,7 @@ export const listSentMessages = createServerFn({ method: "GET" })
         .select("id,first_name,last_name,email")
         .in("id", userIds);
       for (const p of (profs ?? []) as any[]) {
-        names.set(p.id, `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || p.email || "—");
+        names.set(p.id, fullName(p.first_name, p.last_name) || p.email || "—");
       }
     }
     return ((msgs ?? []) as any[]).map((m) => ({
@@ -225,7 +220,7 @@ export const listMyMessages = createServerFn({ method: "GET" })
     const { data, error } = await admin
       .from("member_message_recipients")
       .select("id,read_at,created_at,member_messages(subject,body)")
-      .eq("user_id", (context as Ctx).userId)
+      .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
@@ -245,7 +240,7 @@ export const countMyUnreadMessages = createServerFn({ method: "GET" })
     const { count } = await (supabaseAdmin as any)
       .from("member_message_recipients")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", (context as Ctx).userId)
+      .eq("user_id", context.userId)
       .is("read_at", null);
     return { unread: (count ?? 0) as number };
   });
@@ -259,7 +254,7 @@ export const markMyMessageRead = createServerFn({ method: "POST" })
       .from("member_message_recipients")
       .update({ read_at: new Date().toISOString() })
       .eq("id", data.recipientId)
-      .eq("user_id", (context as Ctx).userId)
+      .eq("user_id", context.userId)
       .is("read_at", null);
     if (error) throw new Error(error.message);
     return { ok: true as const };

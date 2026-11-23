@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { todayBerlinIso } from "@/lib/format";
+import { todayBerlinIso, fullName } from "@/lib/format";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { escapeLike } from "@/lib/like";
 import type { Database } from "@/integrations/supabase/types";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 type WaitlistRow = Database["public"]["Tables"]["waitlist_entries"]["Row"];
 type BookedPart = Pick<
@@ -23,8 +24,6 @@ type BookedPart = Pick<
   | "created_at"
   | "online_booking"
 >;
-
-const SITE_BASE_URL = "https://sicher-schwimmen.com";
 
 const joinSchema = z.object({
   programId: z.string().uuid().optional().nullable(),
@@ -376,11 +375,6 @@ async function audit(
   });
 }
 
-async function assertStaff(context: any) {
-  const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!isStaff) throw new Error("Forbidden");
-}
-
 export const listWaitlist = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -660,7 +654,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
       ? await supabaseAdmin.from("profiles").select("first_name,last_name").in("id", staffIds)
       : { data: [] as Array<{ first_name: string | null; last_name: string | null }> };
     const staff = (staffProfiles ?? [])
-      .map((p) => `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim())
+      .map((p) => fullName(p.first_name, p.last_name))
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, "de"));
 
