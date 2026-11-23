@@ -29,6 +29,14 @@ import { TestSendDialog } from "@/components/admin/TestSendDialog";
 import { toast } from "sonner";
 import { fetchAll } from "@/lib/fetch-all";
 import { getMyAdminRoles } from "@/lib/role-guard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/admin/emails")({
   beforeLoad: async () => {
@@ -327,43 +335,43 @@ function Page() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-left">
-                <tr>
-                  <th className="p-3">Zeitpunkt</th>
-                  <th className="p-3">Art der E-Mail</th>
-                  <th className="p-3">Empfänger</th>
-                  <th className="p-3">Betreff</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Aktion</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm">
+              <TableHeader className="bg-muted/40 text-left">
+                <TableRow>
+                  <TableHead className="p-3 h-auto">Zeitpunkt</TableHead>
+                  <TableHead className="p-3 h-auto">Art der E-Mail</TableHead>
+                  <TableHead className="p-3 h-auto">Empfänger</TableHead>
+                  <TableHead className="p-3 h-auto">Betreff</TableHead>
+                  <TableHead className="p-3 h-auto">Status</TableHead>
+                  <TableHead className="p-3 text-right h-auto">Aktion</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paged.map((r) => (
-                  <tr key={r.id} className="border-t">
-                    <td className="p-3 whitespace-nowrap text-xs">
+                  <TableRow key={r.id} className="border-t">
+                    <TableCell className="p-3 whitespace-nowrap text-xs">
                       {formatDateTimeBerlin(r.created_at)}
-                    </td>
-                    <td className="p-3">{templateLabel(r.template_name)}</td>
-                    <td className="p-3">{r.recipient_email || "—"}</td>
-                    <td className="p-3 max-w-xs truncate">
+                    </TableCell>
+                    <TableCell className="p-3">{templateLabel(r.template_name)}</TableCell>
+                    <TableCell className="p-3">{r.recipient_email || "—"}</TableCell>
+                    <TableCell className="p-3 max-w-xs truncate">
                       {r.subject || <span className="text-muted-foreground italic">—</span>}
-                    </td>
-                    <td className="p-3">
+                    </TableCell>
+                    <TableCell className="p-3">
                       <Badge variant={statusVariant(r.status)}>
                         {STATUS_LABEL[r.status] || r.status}
                       </Badge>
-                    </td>
-                    <td className="p-3 text-right">
+                    </TableCell>
+                    <TableCell className="p-3 text-right">
                       <Button size="sm" variant="outline" onClick={() => void openRow(r)}>
                         <Eye className="h-4 w-4 mr-1" />
                         Ansehen
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
         {totalPages > 1 && (

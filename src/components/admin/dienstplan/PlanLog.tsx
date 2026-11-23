@@ -3,6 +3,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { Input } from "@/components/ui/input";
 import { listDienstplanLog, type DienstplanLogRow } from "@/lib/dienstplan.functions";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const ACTIONS: Record<string, string> = {
   assigned: "eingeteilt",
@@ -54,35 +62,37 @@ export function PlanLog({ reloadKey }: { reloadKey: number }) {
         <div className="text-sm text-muted-foreground">Noch keine Einträge.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="p-1.5">Wann</th>
-                <th className="p-1.5">Wer</th>
-                <th className="p-1.5">Was</th>
-                <th className="p-1.5">Termin</th>
-                <th className="p-1.5">Grund / Hinweis</th>
-                <th className="p-1.5">Durch</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="text-left text-xs text-muted-foreground">
+                <TableHead className="p-1.5 h-auto">Wann</TableHead>
+                <TableHead className="p-1.5 h-auto">Wer</TableHead>
+                <TableHead className="p-1.5 h-auto">Was</TableHead>
+                <TableHead className="p-1.5 h-auto">Termin</TableHead>
+                <TableHead className="p-1.5 h-auto">Grund / Hinweis</TableHead>
+                <TableHead className="p-1.5 h-auto">Durch</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filtered.map((r) => (
-                <tr key={r.id} className="border-t align-top">
-                  <td className="whitespace-nowrap p-1.5 text-xs">
+                <TableRow key={r.id} className="border-t align-top">
+                  <TableCell className="whitespace-nowrap p-1.5 text-xs">
                     {formatDateTimeBerlin(r.createdAt)}
-                  </td>
-                  <td className="p-1.5 font-medium">{r.trainerName ?? "–"}</td>
-                  <td className="p-1.5">{ACTIONS[r.action] ?? r.action}</td>
-                  <td className="p-1.5">
+                  </TableCell>
+                  <TableCell className="p-1.5 font-medium">{r.trainerName ?? "–"}</TableCell>
+                  <TableCell className="p-1.5">{ACTIONS[r.action] ?? r.action}</TableCell>
+                  <TableCell className="p-1.5">
                     {r.sessionLabel ?? "–"}
                     {r.sessionDate ? ` · ${formatDateBerlin(r.sessionDate)}` : ""}
-                  </td>
-                  <td className="p-1.5">{r.reason ?? ""}</td>
-                  <td className="p-1.5 text-xs text-muted-foreground">{r.actorName ?? ""}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="p-1.5">{r.reason ?? ""}</TableCell>
+                  <TableCell className="p-1.5 text-xs text-muted-foreground">
+                    {r.actorName ?? ""}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

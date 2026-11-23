@@ -9,6 +9,14 @@ import { FamilyTimeline } from "@/components/admin/FamilyTimeline";
 import { getFamilyOverview } from "@/lib/family.functions";
 import { resolveBlockSuggestion } from "@/lib/waitlist.functions";
 import { formatDateBerlin } from "@/lib/format";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const Route = createFileRoute("/_authenticated/admin/familie")({
   validateSearch: (search: Record<string, unknown>): { email?: string; name?: string } => ({
@@ -248,21 +256,23 @@ function FamilyPage() {
           {data.bookings.length === 0 ? (
             <p className="text-sm text-muted-foreground">Keine Buchungen.</p>
           ) : (
-            <table className="w-full min-w-[640px] text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-2 pr-3">Kind</th>
-                  <th className="py-2 pr-3">Kurs</th>
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2 pr-3">Zahlung</th>
-                  <th className="py-2 pr-3">Gebucht am</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[640px] text-sm">
+              <TableHeader>
+                <TableRow className="border-b text-left text-muted-foreground">
+                  <TableHead className="py-2 pr-3 h-auto pl-0">Kind</TableHead>
+                  <TableHead className="py-2 pr-3 h-auto pl-0">Kurs</TableHead>
+                  <TableHead className="py-2 pr-3 h-auto pl-0">Status</TableHead>
+                  <TableHead className="py-2 pr-3 h-auto pl-0">Zahlung</TableHead>
+                  <TableHead className="py-2 pr-3 h-auto pl-0">Gebucht am</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.bookings.map((b) => (
-                  <tr key={b.id} className="border-b align-top">
-                    <td className="py-2 pr-3 font-medium">{b.child_name ?? "–"}</td>
-                    <td className="py-2 pr-3">
+                  <TableRow key={b.id} className="border-b align-top">
+                    <TableCell className="py-2 pr-3 font-medium pl-0">
+                      {b.child_name ?? "–"}
+                    </TableCell>
+                    <TableCell className="py-2 pr-3 pl-0">
                       {b.course}
                       {b.starts_on && (
                         <div className="text-xs text-muted-foreground">
@@ -272,11 +282,11 @@ function FamilyPage() {
                             : ""}
                         </div>
                       )}
-                    </td>
-                    <td className="py-2 pr-3">
+                    </TableCell>
+                    <TableCell className="py-2 pr-3 pl-0">
                       <Badge variant="secondary">{BOOKING_STATUS[b.status] ?? b.status}</Badge>
-                    </td>
-                    <td className="py-2 pr-3">
+                    </TableCell>
+                    <TableCell className="py-2 pr-3 pl-0">
                       {b.paid
                         ? `bezahlt${b.paid_at ? ` am ${formatDateBerlin(b.paid_at)}` : ""}`
                         : b.status === "cancelled"
@@ -288,12 +298,14 @@ function FamilyPage() {
                           · {Number(b.price).toFixed(2).replace(".", ",")} €
                         </span>
                       )}
-                    </td>
-                    <td className="py-2 pr-3">{formatDateBerlin(b.created_at)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="py-2 pr-3 pl-0">
+                      {formatDateBerlin(b.created_at)}
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

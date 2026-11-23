@@ -3,6 +3,14 @@ import { formatDateBerlin } from "@/lib/format";
 import { categorizeReason, NO_REASON } from "@/lib/decline-reasons";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import type { listWaitlist } from "@/lib/waitlist.functions";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Data = Awaited<ReturnType<typeof listWaitlist>>;
 
@@ -82,34 +90,34 @@ export function WaitlistReport({ data }: { data: Data | undefined }) {
         die Plätze für Bronze, Silber und Gold mit.
       </p>
       <div className="overflow-x-auto rounded-lg border bg-card">
-        <table className="w-full min-w-[900px] text-sm">
-          <thead>
-            <tr className="border-b text-left text-muted-foreground">
-              <th className="p-3">Angebot</th>
-              <th className="p-3">Wartend</th>
-              <th className="p-3">davon Mitglieder</th>
-              <th className="p-3">Freie Plätze</th>
-              <th className="p-3">Überhang</th>
-              <th className="p-3">Ø Wartezeit</th>
-              <th className="p-3">Älteste Anfrage</th>
-              <th className="p-3">Absagen</th>
-              <th className="p-3">Häufigster Grund</th>
-              <th className="p-3">Empfehlung</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="w-full min-w-[900px] text-sm">
+          <TableHeader>
+            <TableRow className="border-b text-left text-muted-foreground">
+              <TableHead className="p-3 h-auto">Angebot</TableHead>
+              <TableHead className="p-3 h-auto">Wartend</TableHead>
+              <TableHead className="p-3 h-auto">davon Mitglieder</TableHead>
+              <TableHead className="p-3 h-auto">Freie Plätze</TableHead>
+              <TableHead className="p-3 h-auto">Überhang</TableHead>
+              <TableHead className="p-3 h-auto">Ø Wartezeit</TableHead>
+              <TableHead className="p-3 h-auto">Älteste Anfrage</TableHead>
+              <TableHead className="p-3 h-auto">Absagen</TableHead>
+              <TableHead className="p-3 h-auto">Häufigster Grund</TableHead>
+              <TableHead className="p-3 h-auto">Empfehlung</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {active.map((r) => (
-              <tr key={r.id ?? "none"} className="border-b">
-                <td className="p-3 font-medium">{r.name}</td>
-                <td className="p-3">{r.waiting}</td>
-                <td className="p-3">{r.members}</td>
-                <td className="p-3">{r.free}</td>
-                <td className="p-3">{r.overhang > 0 ? r.overhang : 0}</td>
-                <td className="p-3">{r.waiting ? `${r.avg} Tage` : "–"}</td>
-                <td className="p-3">{r.oldest ? formatDateBerlin(r.oldest) : "–"}</td>
-                <td className="p-3">{r.declines}</td>
-                <td className="p-3">{r.topReason ?? "–"}</td>
-                <td className="p-3">
+              <TableRow key={r.id ?? "none"} className="border-b">
+                <TableCell className="p-3 font-medium">{r.name}</TableCell>
+                <TableCell className="p-3">{r.waiting}</TableCell>
+                <TableCell className="p-3">{r.members}</TableCell>
+                <TableCell className="p-3">{r.free}</TableCell>
+                <TableCell className="p-3">{r.overhang > 0 ? r.overhang : 0}</TableCell>
+                <TableCell className="p-3">{r.waiting ? `${r.avg} Tage` : "–"}</TableCell>
+                <TableCell className="p-3">{r.oldest ? formatDateBerlin(r.oldest) : "–"}</TableCell>
+                <TableCell className="p-3">{r.declines}</TableCell>
+                <TableCell className="p-3">{r.topReason ?? "–"}</TableCell>
+                <TableCell className="p-3">
                   {r.overhang >= 5 ? (
                     <Badge className="bg-red-100 text-red-900" variant="secondary">
                       Zusätzlicher Kurs sinnvoll
@@ -125,20 +133,20 @@ export function WaitlistReport({ data }: { data: Data | undefined }) {
                   ) : (
                     "–"
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-            <tr className="font-semibold">
-              <td className="p-3">Gesamt</td>
-              <td className="p-3">{total.waiting}</td>
-              <td className="p-3" />
-              <td className="p-3">{total.free}</td>
-              <td className="p-3" colSpan={3} />
-              <td className="p-3">{total.declines}</td>
-              <td className="p-3" colSpan={2} />
-            </tr>
-          </tbody>
-        </table>
+            <TableRow className="font-semibold">
+              <TableCell className="p-3">Gesamt</TableCell>
+              <TableCell className="p-3">{total.waiting}</TableCell>
+              <TableCell className="p-3" />
+              <TableCell className="p-3">{total.free}</TableCell>
+              <TableCell className="p-3" colSpan={3} />
+              <TableCell className="p-3">{total.declines}</TableCell>
+              <TableCell className="p-3" colSpan={2} />
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

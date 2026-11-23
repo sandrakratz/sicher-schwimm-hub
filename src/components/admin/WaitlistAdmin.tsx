@@ -67,6 +67,14 @@ import {
   resolveBlockSuggestion,
 } from "@/lib/waitlist.functions";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const PAYMENT_LABEL: Record<string, { label: string; className: string }> = {
   none: { label: "Nicht gebucht", className: "bg-slate-100 text-slate-700" },
@@ -1173,22 +1181,22 @@ export function WaitlistAdmin({
             Absagen in der Teilnehmerliste, Umbuchungen und „zurück auf die Warteliste“ durch die
             Familie. Jede zählt wie eine Absage. Kursabsagen des Vereins zählen nicht.
           </p>
-          <table className="w-full min-w-[800px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="py-2 pr-3">Kind</th>
-                <th className="py-2 pr-3">E-Mail</th>
-                <th className="py-2 pr-3">Kurs</th>
-                <th className="py-2 pr-3">Datum</th>
-                <th className="py-2 pr-3">Art / Grund</th>
-                <th className="py-2 pr-3">Gesamt</th>
-                <th className="py-2 pr-3">Sperrliste</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full min-w-[800px] text-sm">
+            <TableHeader>
+              <TableRow className="border-b text-left text-muted-foreground">
+                <TableHead className="py-2 pr-3 h-auto pl-0">Kind</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">E-Mail</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Kurs</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Datum</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Art / Grund</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Gesamt</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Sperrliste</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {cancellationsShown.map((c) => (
-                <tr key={c.id} className="border-b align-top">
-                  <td className="py-2 pr-3 font-medium">
+                <TableRow key={c.id} className="border-b align-top">
+                  <TableCell className="py-2 pr-3 font-medium pl-0">
                     {c.parent_email ? (
                       <Link
                         to="/admin/familie"
@@ -1200,13 +1208,13 @@ export function WaitlistAdmin({
                     ) : (
                       (c.child_name ?? "–")
                     )}
-                  </td>
-                  <td className="py-2 pr-3">{c.parent_email ?? "–"}</td>
-                  <td className="py-2 pr-3">{c.course_name}</td>
-                  <td className="py-2 pr-3 whitespace-nowrap">
+                  </TableCell>
+                  <TableCell className="py-2 pr-3 pl-0">{c.parent_email ?? "–"}</TableCell>
+                  <TableCell className="py-2 pr-3 pl-0">{c.course_name}</TableCell>
+                  <TableCell className="py-2 pr-3 whitespace-nowrap pl-0">
                     {c.cancelled_at ? formatDateBerlin(c.cancelled_at) : "–"}
-                  </td>
-                  <td className="py-2 pr-3">
+                  </TableCell>
+                  <TableCell className="py-2 pr-3 pl-0">
                     <Badge variant="secondary">
                       {c.kind === "transfer"
                         ? `Umbuchung → ${c.moved_to}`
@@ -1217,8 +1225,8 @@ export function WaitlistAdmin({
                     {c.reason && (
                       <div className="mt-1 text-xs text-muted-foreground">{c.reason}</div>
                     )}
-                  </td>
-                  <td className="py-2 pr-3">
+                  </TableCell>
+                  <TableCell className="py-2 pr-3 pl-0">
                     <Badge
                       variant="secondary"
                       className={
@@ -1231,8 +1239,8 @@ export function WaitlistAdmin({
                     >
                       {c.declines_total}×
                     </Badge>
-                  </td>
-                  <td className="py-2 pr-3 text-xs">
+                  </TableCell>
+                  <TableCell className="py-2 pr-3 text-xs pl-0">
                     {c.blocked ? (
                       <span className="text-muted-foreground">gesperrt</span>
                     ) : c.block_suggestion ? (
@@ -1275,11 +1283,11 @@ export function WaitlistAdmin({
                     ) : (
                       "–"
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CollapsibleCard>
       )}
 
@@ -1310,17 +1318,17 @@ export function WaitlistAdmin({
           }
           contentClassName="overflow-x-auto"
         >
-          <table className="w-full min-w-[820px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="py-2 pr-3">Kind</th>
-                <th className="py-2 pr-3">Eltern</th>
-                <th className="py-2 pr-3">Status</th>
-                <th className="py-2 pr-3">Zuständig</th>
-                <th className="py-2 pr-3">Aktion</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full min-w-[820px] text-sm">
+            <TableHeader>
+              <TableRow className="border-b text-left text-muted-foreground">
+                <TableHead className="py-2 pr-3 h-auto pl-0">Kind</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Eltern</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Status</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Zuständig</TableHead>
+                <TableHead className="py-2 pr-3 h-auto pl-0">Aktion</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {entries.map((e) => {
                 const st = STATUS_LABEL[e.status] ?? { label: e.status, className: "" };
                 const program = programById(e.program_id);
@@ -1347,8 +1355,8 @@ export function WaitlistAdmin({
 
                 return (
                   <Fragment key={e.id}>
-                    <tr className="border-b align-top">
-                      <td className="py-2 pr-3 font-medium">
+                    <TableRow className="border-b align-top">
+                      <TableCell className="py-2 pr-3 font-medium pl-0">
                         <button
                           type="button"
                           className="text-left text-primary underline underline-offset-2"
@@ -1407,16 +1415,16 @@ export function WaitlistAdmin({
                           )}
                           Kurswunsch, Notiz, Zahlung
                         </button>
-                      </td>
+                      </TableCell>
 
-                      <td className="py-2 pr-3">
+                      <TableCell className="py-2 pr-3 pl-0">
                         {e.parent_name}
                         <div className="text-xs text-muted-foreground">{e.parent_email}</div>
                         {e.parent_phone && (
                           <div className="text-xs text-muted-foreground">{e.parent_phone}</div>
                         )}
-                      </td>
-                      <td className="py-2 pr-3">
+                      </TableCell>
+                      <TableCell className="py-2 pr-3 pl-0">
                         <Badge className={st.className} variant="secondary">
                           {st.label}
                         </Badge>
@@ -1562,8 +1570,8 @@ export function WaitlistAdmin({
                             {formatDateBerlin(e.offer_expires_at)}
                           </div>
                         )}
-                      </td>
-                      <td className="py-2 pr-3">
+                      </TableCell>
+                      <TableCell className="py-2 pr-3 pl-0">
                         <AssignControl
                           kind="waitlist"
                           id={e.id}
@@ -1572,8 +1580,8 @@ export function WaitlistAdmin({
                           label={`Anfrageliste – ${e.child_name}`}
                           onDone={() => invalidate()}
                         />
-                      </td>
-                      <td className="py-2 pr-3">
+                      </TableCell>
+                      <TableCell className="py-2 pr-3 pl-0">
                         <div className="flex flex-wrap items-center gap-2">
                           {e.status === "waiting" && courses.length > 0 && (
                             <NativeSelect
@@ -1757,11 +1765,11 @@ export function WaitlistAdmin({
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                     {isOpen && (
-                      <tr className="border-b bg-muted/30">
-                        <td colSpan={5} className="p-3">
+                      <TableRow className="border-b bg-muted/30">
+                        <TableCell colSpan={5} className="p-3">
                           <div className="grid gap-4 md:grid-cols-4">
                             <div className="space-y-1">
                               <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -1881,14 +1889,14 @@ export function WaitlistAdmin({
                               </div>
                             </div>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )}
                   </Fragment>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CollapsibleCard>
       ))}
 
