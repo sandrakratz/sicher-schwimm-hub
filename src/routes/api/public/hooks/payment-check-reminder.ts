@@ -1,82 +1,80 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { addDaysIso, todayBerlinIso } from '@/lib/format'
+import { createFileRoute } from "@tanstack/react-router";
+import { addDaysIso, todayBerlinIso } from "@/lib/format";
 
 /** Datum in Berliner Zeit, um `days` Tage verschoben (YYYY-MM-DD). */
-const berlinTodayPlus = (days: number) => addDaysIso(todayBerlinIso(), days)
+const berlinTodayPlus = (days: number) => addDaysIso(todayBerlinIso(), days);
 
-export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')({
+export const Route = createFileRoute("/api/public/hooks/payment-check-reminder")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { cronUnauthorized, isCronAuthorized } = await import('@/lib/cron-auth.server')
-        if (!isCronAuthorized(request)) return cronUnauthorized()
+        const { cronUnauthorized, isCronAuthorized } = await import("@/lib/cron-auth.server");
+        if (!isCronAuthorized(request)) return cronUnauthorized();
 
-        const { supabaseAdmin } = await import('@/integrations/supabase/client.server')
-        const { queueTemplateEmail } = await import('@/lib/email-send.server')
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { queueTemplateEmail } = await import("@/lib/email-send.server");
 
-        const inThreeDays = berlinTodayPlus(3)
-        const tomorrow = berlinTodayPlus(1)
+        const inThreeDays = berlinTodayPlus(3);
+        const tomorrow = berlinTodayPlus(1);
 
         const { data: participants, error } = await supabaseAdmin
-          .from('course_participants')
+          .from("course_participants")
           .select(
-            'id,participant_name,participant_email,price_amount,document_no,document_issued_at,created_at,payment_due_date,payer_street,payer_zip,payer_city,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,schedule,location,unit_count,payment_due_days,course_programs(name))',
+            "id,participant_name,participant_email,price_amount,document_no,document_issued_at,created_at,payment_due_date,payer_street,payer_zip,payer_city,course_id,courses!course_participants_course_id_fkey(name,starts_on,ends_on,schedule,location,unit_count,payment_due_days,course_programs(name))",
           )
-          .eq('online_booking', true)
-          .eq('status', 'confirmed')
-          .eq('paid', false)
+          .eq("online_booking", true)
+          .eq("status", "confirmed")
+          .eq("paid", false)
           // Angabe "Mitglied" noch nicht geprüft: keine Zahlungsmails vor der Entscheidung der Verwaltung
-          .or('member_check.is.null,member_check.neq.pending')
-          .in('payment_due_date', [inThreeDays, tomorrow])
+          .or("member_check.is.null,member_check.neq.pending")
+          .in("payment_due_date", [inThreeDays, tomorrow]);
 
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' },
-          })
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         /** Prüft, ob eine Vorlage für diesen Vorgang bereits versendet wurde. */
         async function alreadySent(templateName: string, idempotencyKey: string) {
           const { data } = await supabaseAdmin
-            .from('email_send_log')
-            .select('id')
-            .eq('template_name', templateName)
-            .contains('metadata', { idempotency_key: idempotencyKey })
-            .limit(1)
-          return Boolean(data && data.length > 0)
+            .from("email_send_log")
+            .select("id")
+            .eq("template_name", templateName)
+            .contains("metadata", { idempotency_key: idempotencyKey })
+            .limit(1);
+          return Boolean(data && data.length > 0);
         }
 
-        let queuedInternal = 0
-        let queuedFriendly = 0
-        let queuedFinal = 0
+        let queuedInternal = 0;
+        let queuedFriendly = 0;
+        let queuedFinal = 0;
 
         for (const p of participants ?? []) {
-          const course = (p as any).courses as
-            | {
-                name?: string
-                starts_on?: string | null
-                ends_on?: string | null
-                schedule?: string | null
-                location?: string | null
-                unit_count?: number | null
-                payment_due_days?: number | null
-                course_programs?: { name?: string } | null
-              }
-            | null
+          const course = (p as any).courses as {
+            name?: string;
+            starts_on?: string | null;
+            ends_on?: string | null;
+            schedule?: string | null;
+            location?: string | null;
+            unit_count?: number | null;
+            payment_due_days?: number | null;
+            course_programs?: { name?: string } | null;
+          } | null;
 
-          const isFinal = p.payment_due_date === tomorrow
-          const email = (p.participant_email || '').trim()
+          const isFinal = p.payment_due_date === tomorrow;
+          const email = (p.participant_email || "").trim();
           const paymentReference = p.document_no
-            ? `${p.document_no} / ${p.participant_name ?? ''}`.trim()
-            : (p.participant_name ?? null)
+            ? `${p.document_no} / ${p.participant_name ?? ""}`.trim()
+            : (p.participant_name ?? null);
 
           // Interne Prüf-Mail an den Verein – 3 Tage vor Fristablauf, einmalig.
           if (!isFinal) {
-            const internalKey = `payment-check-${p.id}`
-            if (!(await alreadySent('payment-check-reminder', internalKey))) {
+            const internalKey = `payment-check-${p.id}`;
+            if (!(await alreadySent("payment-check-reminder", internalKey))) {
               const res = await queueTemplateEmail({
-                templateName: 'payment-check-reminder',
+                templateName: "payment-check-reminder",
                 idempotencyKey: internalKey,
                 metadata: { participant_id: p.id },
                 templateData: {
@@ -93,16 +91,16 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
                   document_no: p.document_no,
                   payment_reference: paymentReference,
                 },
-              })
-              if (res.queued) queuedInternal += 1
+              });
+              if (res.queued) queuedInternal += 1;
             }
           }
 
-          if (!email) continue
+          if (!email) continue;
 
-          const templateName = isFinal ? 'payment-due-final' : 'payment-due-friendly'
-          const key = `${templateName}-${p.id}`
-          if (await alreadySent(templateName, key)) continue
+          const templateName = isFinal ? "payment-due-final" : "payment-due-friendly";
+          const key = `${templateName}-${p.id}`;
+          if (await alreadySent(templateName, key)) continue;
 
           const res = await queueTemplateEmail({
             templateName,
@@ -128,10 +126,10 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
               payment_due_days: course?.payment_due_days ?? null,
               payment_due_date: p.payment_due_date,
             },
-          })
+          });
           if (res.queued) {
-            if (isFinal) queuedFinal += 1
-            else queuedFriendly += 1
+            if (isFinal) queuedFinal += 1;
+            else queuedFriendly += 1;
           }
         }
 
@@ -144,9 +142,9 @@ export const Route = createFileRoute('/api/public/hooks/payment-check-reminder')
             queuedFriendly,
             queuedFinal,
           }),
-          { headers: { 'Content-Type': 'application/json' } },
-        )
+          { headers: { "Content-Type": "application/json" } },
+        );
       },
     },
   },
-})
+});

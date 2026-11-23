@@ -1,11 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { batchSchema, EVENT_SCHEMAS, isTrackablePath, type EventName } from "@/lib/analytics/events";
+import {
+  batchSchema,
+  EVENT_SCHEMAS,
+  isTrackablePath,
+  type EventName,
+} from "@/lib/analytics/events";
 import { CONSENT_VERSION } from "@/lib/analytics/consent";
 import { isKnownExperimentRef } from "@/lib/analytics/experiments";
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const BOT_PATTERN = /bot|crawl|spider|slurp|headless|lighthouse|preview|monitor|curl|wget|python|node-fetch/i;
+const BOT_PATTERN =
+  /bot|crawl|spider|slurp|headless|lighthouse|preview|monitor|curl|wget|python|node-fetch/i;
 
 // Öffentlicher Endpunkt für Messereignisse. Er speichert keine IP-Adresse und keinen User-Agent.
 // Unbekannte oder ungültige Ereignisse werden verworfen, nicht gemeldet, damit nichts durchsickert.
