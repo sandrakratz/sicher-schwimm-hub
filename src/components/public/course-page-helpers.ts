@@ -14,11 +14,6 @@ export function availableText(freeTotal: number): string {
   return freeTotal > 0 ? `${freeSlotsText(freeTotal)} verfügbar!` : "Freie Plätze verfügbar!";
 }
 
-/** Reine Zahl in der Kursdauer bedeutet Wochen („10“ → „10 Wochen“). */
-export function formatDuration(duration: string): string {
-  return /^\d+$/.test(duration.trim()) ? `${duration.trim()} Wochen` : duration;
-}
-
 /** „01.03.2026 – 31.05.2026“; ohne Startdatum „Termin folgt“. */
 export function formatTermRange(startsOn: string | null, endsOn: string | null): string {
   return `${startsOn ? formatDateBerlin(startsOn) : "Termin folgt"}${endsOn ? ` – ${formatDateBerlin(endsOn)}` : ""}`;

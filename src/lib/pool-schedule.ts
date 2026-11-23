@@ -118,8 +118,8 @@ export function holidayName(date: string): string | null {
   return nrwHolidays(Number(date.slice(0, 4)))[date] ?? null;
 }
 
-const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
-const fromMin = (n: number) => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
+export const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+export const fromMin = (n: number) => `${pad(Math.floor(n / 60))}:${pad(n % 60)}`;
 
 export type Track = {
   id: string;

@@ -96,12 +96,6 @@ export function ageAt(
   return age;
 }
 
-export function addDaysIso(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 export function fmtDate(s: string | null | undefined) {
   return formatDateBerlin(s);
 }

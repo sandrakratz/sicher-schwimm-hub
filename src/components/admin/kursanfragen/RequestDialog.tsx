@@ -23,7 +23,7 @@ import {
   unassignRequestFromCourse,
 } from "@/lib/course-assignment.functions";
 import { replyToCourseRequest } from "@/lib/course-requests.functions";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { errorText, formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
 import { Row, SharkyButton, StatusBadge, type Sharky } from "./parts";
 import type { CourseLabel, CourseOpt, Item, RequestStatus } from "./types";
 
@@ -33,9 +33,6 @@ type Actions = {
   reload: () => Promise<void>;
   close: () => void;
 };
-
-const errorText = (e: unknown, fallback: string) =>
-  (e as { message?: string } | null)?.message || fallback;
 
 function Box({ children, className = "space-y-2" }: { children: ReactNode; className?: string }) {
   return <div className={`${className} rounded-md border bg-muted/30 p-3`}>{children}</div>;

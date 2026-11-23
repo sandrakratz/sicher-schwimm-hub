@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
+import { errorText } from "@/lib/format";
 import { combineReason } from "@/lib/decline-reasons";
 import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { syncMemberPrices } from "@/lib/membership.functions";
@@ -61,9 +62,6 @@ import {
 type RemoveState = Parameters<typeof RemoveParticipantDialog>[0]["state"];
 
 const PAY_RANK: Record<string, number> = { immediate: 0, overdue: 1, expected: 2, paid: 3 };
-
-const errorText = (e: unknown, fallback: string) =>
-  (e as { message?: string } | null)?.message || fallback;
 
 /** Teilnehmerliste eines Kurses mit Zahlungsfilter, Aktionen und „Teilnehmer hinzufügen“. */
 export function ParticipantsDialog({

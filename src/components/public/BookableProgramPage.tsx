@@ -31,19 +31,14 @@ import { track } from "@/lib/analytics/client";
 import { useExperiment } from "@/lib/analytics/useExperiment";
 import { BILLING } from "@/lib/billing-config";
 import { programAvailability } from "@/lib/course-status";
-import { formatPrice } from "@/lib/format";
+import { formatDuration, formatPrice } from "@/lib/format";
 import { parseRequirementLines } from "@/lib/upcoming-programs";
 import { isAdultProgram } from "@/lib/adult-course";
 import type { CourseProgram, CourseTerm } from "@/lib/courses-public.functions";
 import { BlockedBookingDialog, BookingResultDialog } from "./BookingOutcomeDialogs";
 import { ChildBookingDialog } from "./ChildBookingDialog";
 import { CourseTermCard } from "./CourseTermCard";
-import {
-  MEMBER_DISCOUNT_NOTE,
-  availableText,
-  formatDuration,
-  splitParagraphs,
-} from "./course-page-helpers";
+import { MEMBER_DISCOUNT_NOTE, availableText, splitParagraphs } from "./course-page-helpers";
 
 function InfoItem({
   value,
@@ -106,7 +101,11 @@ function programFacts(program: CourseProgram): Fact[] {
   if (program.location) facts.push({ icon: MapPin, label: "Ort", value: program.location });
   if (program.age_range) facts.push({ icon: Baby, label: "Alter", value: program.age_range });
   if (program.duration)
-    facts.push({ icon: CalendarDays, label: "Kursdauer", value: formatDuration(program.duration) });
+    facts.push({
+      icon: CalendarDays,
+      label: "Kursdauer",
+      value: formatDuration(program.duration) ?? "",
+    });
   const maxP = program.terms.find((t) => t.max_participants != null)?.max_participants;
   if (maxP) facts.push({ icon: Users, label: "Gruppengröße", value: `max. ${maxP} Kinder` });
   return facts;

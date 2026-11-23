@@ -4,11 +4,11 @@ import { PublicLayout } from "@/components/PublicLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatPrice } from "@/lib/format";
+import { formatDuration, formatPrice } from "@/lib/format";
 import { LABELS } from "@/lib/labels";
 import { NOT_BOOKABLE_NOTE, parseRequirementLines } from "@/lib/upcoming-programs";
 import type { CourseProgram } from "@/lib/courses-public.functions";
-import { formatDuration, splitParagraphs } from "./course-page-helpers";
+import { splitParagraphs } from "./course-page-helpers";
 
 /** Geplantes, noch nicht buchbares Angebot: nur Infos und Warteliste. */
 export function UpcomingProgramPage({ up }: { up: CourseProgram }) {

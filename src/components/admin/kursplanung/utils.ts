@@ -1,5 +1,14 @@
-import { formatDateBerlin } from "@/lib/format";
-import { holidayName, type KindSetting, type POOLS, type PoolSlot } from "@/lib/pool-schedule";
+import { formatDateBerlin, formatMonthYear } from "@/lib/format";
+import {
+  fromMin,
+  holidayName,
+  toMin,
+  type KindSetting,
+  type POOLS,
+  type PoolSlot,
+} from "@/lib/pool-schedule";
+
+export { toMin, fromMin as hhmm };
 
 export type PoolConfig = (typeof POOLS)[number];
 export type Mode = "open" | "familie" | "entfaellt" | null;
@@ -23,13 +32,9 @@ export const wd = (d: string) =>
 export const fmt = (d: string) => `${wd(d)} ${formatDateBerlin(d)}`;
 /** „05.12.“ */
 export const short = (d: string) => `${d.slice(8)}.${d.slice(5, 7)}.`;
-export const monthLabel = (d: string) =>
-  new Date(`${d}T12:00:00`).toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+export const monthLabel = formatMonthYear;
 export const time = (s: PoolSlot | undefined) =>
   !s ? "—" : s.closed || !s.start ? "geschlossen" : `${s.start}–${s.end}`;
-export const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
-export const hhmm = (n: number) =>
-  `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 /** Überschneidet sich start–end (HH:MM) mit dem Zeitfenster from–to (Minuten)? */
 export const overlaps = (start: string, end: string, from: number, to: number) =>
   toMin(start) < to && toMin(end) > from;

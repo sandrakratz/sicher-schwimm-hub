@@ -17,7 +17,7 @@ import { HoneypotField } from "@/components/form-support";
 import { PaymentSummary } from "@/components/PaymentSummary";
 import type { BookingSuccess } from "@/components/AdultBookingDialog";
 import { useFormTracking } from "@/lib/analytics/forms";
-import { formatPrice, todayBerlinIso } from "@/lib/format";
+import { formatPrice, fullName, todayBerlinIso } from "@/lib/format";
 import { proratePrice } from "@/lib/prorated-price";
 import {
   bookCourseTerm,
@@ -46,8 +46,6 @@ const emptyKid = (childLastName = ""): Kid => ({
   childDob: "",
   healthInfo: "",
 });
-
-const fullName = (first: string, last: string) => `${first.trim()} ${last.trim()}`.trim();
 
 /**
  * Angaben zu einem Kind. Das erste Kind (`primary`) trägt die festen Feld-IDs und

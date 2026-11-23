@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { formatDateBerlin } from "@/lib/format";
+import { errorText, formatDateBerlin } from "@/lib/format";
 import {
   bookWaitlistPlaceDirect,
   deleteWaitlistEntry,
@@ -36,7 +36,7 @@ export type EntryPatch = {
   declineCount?: number;
 };
 
-const errorText = (fallback: string) => (e: Error) => toast.error(e.message || fallback);
+const toastError = (fallback: string) => (e: Error) => toast.error(errorText(e, fallback));
 
 /** Alle Server-Aktionen der Anfrageliste; nach Erfolg wird die Liste neu geladen. */
 export function useWaitlistMutations() {
@@ -70,7 +70,7 @@ export function useWaitlistMutations() {
       toast.success("Platzangebot verschickt");
       invalidate();
     },
-    onError: errorText("Angebot fehlgeschlagen"),
+    onError: toastError("Angebot fehlgeschlagen"),
   });
 
   const bookDirect = useMutation({
@@ -83,7 +83,7 @@ export function useWaitlistMutations() {
       );
       invalidate();
     },
-    onError: errorText("Buchung fehlgeschlagen"),
+    onError: toastError("Buchung fehlgeschlagen"),
   });
 
   const recordDecline = useMutation({
@@ -101,13 +101,13 @@ export function useWaitlistMutations() {
       );
       invalidate();
     },
-    onError: errorText("Absage konnte nicht erfasst werden"),
+    onError: toastError("Absage konnte nicht erfasst werden"),
   });
 
   const update = useMutation({
     mutationFn: (v: EntryPatch) => updateWaitlistEntry({ data: v }),
     onSuccess: () => invalidate(),
-    onError: errorText("Aktualisierung fehlgeschlagen"),
+    onError: toastError("Aktualisierung fehlgeschlagen"),
   });
 
   const resolveSuggestion = useMutation({
@@ -121,7 +121,7 @@ export function useWaitlistMutations() {
       toast.success(v.action === "block" ? "Auf die Sperrliste gesetzt" : "Vorschlag ignoriert");
       invalidate();
     },
-    onError: errorText("Aktion fehlgeschlagen"),
+    onError: toastError("Aktion fehlgeschlagen"),
   });
 
   const remove = useMutation({

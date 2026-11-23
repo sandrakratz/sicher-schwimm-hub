@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { addDaysIso, errorText, formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { parseSessionList } from "@/lib/session-list";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
-import { addDaysIso, type Course } from "@/components/admin/kurse/shared";
+import { type Course } from "@/components/admin/kurse/shared";
 import type { SessionRow, SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
 
 type Availability = { session_id: string; trainer_id: string; available: boolean };
@@ -151,7 +151,7 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
       setBulkText("");
       await openSessions(course);
     } catch (e) {
-      toast.error((e as { message?: string })?.message || "Übernahme fehlgeschlagen");
+      toast.error(errorText(e, "Übernahme fehlgeschlagen"));
     } finally {
       setBulkBusy(false);
     }

@@ -124,6 +124,11 @@ export function formatDuration(value: string | number | null | undefined): strin
 }
 
 /** Vor- und Nachname zusammensetzen, fehlende Teile weglassen. Beide leer → "". */
+/** Fehlermeldung aus einem unbekannten Fehler, sonst der Ersatztext. */
+export function errorText(e: unknown, fallback: string): string {
+  return (e as { message?: string } | null)?.message || fallback;
+}
+
 export function fullName(first?: string | null, last?: string | null): string {
   return [first, last]
     .map((s) => s?.trim())
