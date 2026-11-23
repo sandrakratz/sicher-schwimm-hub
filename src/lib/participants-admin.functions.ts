@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const removeSchema = z.object({
   participantId: z.string().uuid(),
@@ -21,8 +22,7 @@ export const removeCourseParticipant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => removeSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: part } = await supabaseAdmin
@@ -136,8 +136,7 @@ export const cancelCourseParticipant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => cancelSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: part } = await supabaseAdmin

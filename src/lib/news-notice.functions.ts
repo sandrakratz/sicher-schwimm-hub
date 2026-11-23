@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 import { logAudit } from "@/lib/audit.server";
 import {
   BATCH_SIZE,
@@ -13,13 +14,6 @@ import {
 } from "@/lib/news-notice";
 
 const TEMPLATE = "news-notice";
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertStaff(context: Ctx) {
-  const { data } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!data) throw new Error("Forbidden");
-}
 
 async function loadNews(admin: any, newsId: string) {
   const { data, error } = await admin
@@ -96,7 +90,7 @@ export const getNewsNoticeInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ newsId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const news = await loadNews(admin, data.newsId);
@@ -121,14 +115,14 @@ export const sendNewsNoticeTest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ newsId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const news = await loadNews(admin, data.newsId);
     const { data: profile } = await admin
       .from("profiles")
       .select("email")
-      .eq("id", (context as Ctx).userId)
+      .eq("id", context.userId)
       .maybeSingle();
     const to = (profile?.email as string | undefined)?.trim();
     if (!to) throw new Error("Für dein Konto ist keine E-Mail-Adresse hinterlegt.");
@@ -155,7 +149,7 @@ export const sendNewsNoticeBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ newsId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = supabaseAdmin as any;
     const news = await loadNews(admin, data.newsId);
@@ -183,7 +177,7 @@ export const sendNewsNoticeBatch = createServerFn({ method: "POST" })
     }
 
     if (delivered > 0 || open.length === 0) {
-      await logAudit(null, (context as Ctx).userId, {
+      await logAudit(null, context.userId, {
         action: "news.notice_sent",
         entity: "news",
         entity_id: news.id,

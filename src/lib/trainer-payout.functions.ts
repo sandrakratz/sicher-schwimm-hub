@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isValidIban, maskIban, normalizeIban } from "@/lib/iban";
+import { assertStaff, assertTrainer } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export type PayoutDetails = {
   iban: string;
@@ -18,18 +20,11 @@ export type PayoutListRow = {
   updated_at: string | null;
 };
 
-async function rolesOf(supabase: any, userId: string): Promise<string[]> {
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  if (error) throw new Response("Forbidden", { status: 403 });
-  return (data || []).map((r: { role: string }) => r.role);
-}
-
 /** Eigene Bankverbindung für Übungsleitergelder (nur mit Rolle Trainer:in). */
 export const getMyPayoutDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ details: PayoutDetails }> => {
-    const roles = await rolesOf(context.supabase, context.userId);
-    if (!roles.includes("trainer")) throw new Response("Forbidden", { status: 403 });
+    await assertTrainer(context);
     const { data } = await context.supabase
       .from("trainer_payout_details")
       .select("iban,account_holder,updated_at")
@@ -55,8 +50,7 @@ export const saveMyPayoutDetails = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }): Promise<{ details: PayoutDetails; notified: boolean }> => {
     const { supabase, userId } = context;
-    const roles = await rolesOf(supabase, userId);
-    if (!roles.includes("trainer")) throw new Response("Forbidden", { status: 403 });
+    await assertTrainer(context);
 
     const iban = normalizeIban(data.iban);
     if (!isValidIban(iban)) {
@@ -107,9 +101,7 @@ export const saveMyPayoutDetails = createServerFn({ method: "POST" })
         .eq("id", userId)
         .maybeSingle();
       const name =
-        [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
-        profile?.email ||
-        "Trainer:in";
+        fullName(profile?.first_name, profile?.last_name) || profile?.email || "Trainer:in";
       const { queueTemplateEmail } = await import("@/lib/email-send.server");
       const res = await queueTemplateEmail({
         templateName: "trainer-payout-changed",
@@ -139,8 +131,7 @@ export const listPayoutDetails = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ rows: PayoutListRow[] }> => {
     const { supabase, userId } = context;
-    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Response("Forbidden", { status: 403 });
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: roleRows }, { data: details }] = await Promise.all([
@@ -169,7 +160,7 @@ export const listPayoutDetails = createServerFn({ method: "GET" })
         const d = detailById.get(id);
         return {
           user_id: id,
-          name: [p?.first_name, p?.last_name].filter(Boolean).join(" ") || p?.email || "Unbekannt",
+          name: fullName(p?.first_name, p?.last_name) || p?.email || "Unbekannt",
           email: p?.email ?? null,
           iban: d?.iban ?? null,
           account_holder: d?.account_holder ?? null,

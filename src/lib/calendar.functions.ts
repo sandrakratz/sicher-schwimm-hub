@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 import { fetchAll } from "@/lib/fetch-all";
 import { helperKey } from "@/lib/event-shifts";
+import { fullName } from "@/lib/format";
 
 export type CalendarPerson = { id: string; name: string };
 
@@ -52,14 +54,7 @@ function berlinParts(iso: string): { date: string; time: string } {
 export const listAdminCalendar = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<CalendarEntry[]> => {
-    const { data: roleRows } = await context.supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId);
-    const roles = (roleRows || []).map((r: { role: string }) => r.role);
-    if (!roles.some((r) => ["admin", "board"].includes(r))) {
-      throw new Response("Forbidden", { status: 403 });
-    }
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -136,7 +131,7 @@ export const listAdminCalendar = createServerFn({ method: "GET" })
 
     const nameOf = new Map<string, string>();
     profiles.forEach((p) => {
-      const n = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      const n = fullName(p.first_name, p.last_name);
       nameOf.set(p.id as string, n || (p.email as string) || "Unbekannt");
     });
 

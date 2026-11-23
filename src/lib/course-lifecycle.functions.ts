@@ -1,19 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { formatDateBerlin } from "@/lib/format";
+import { addDaysIso, formatDateBerlin } from "@/lib/format";
 import { escapeLike } from "@/lib/like";
-
-function shiftIso(iso: string, days: number) {
-  const d = new Date(`${iso}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-async function assertStaff(supabase: any, userId: string) {
-  const { data } = await supabase.rpc("is_staff", { _user_id: userId });
-  if (!data) throw new Error("Forbidden");
-}
+import { assertStaff, hasRole, isStaff } from "@/lib/auth-guards.server";
 
 /** Verschiebt Kursstart + alle Kurstage und informiert gebuchte Eltern. */
 export const rescheduleCourse = createServerFn({ method: "POST" })
@@ -30,7 +20,7 @@ export const rescheduleCourse = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: course } = await supabaseAdmin
       .from("courses")
@@ -42,7 +32,7 @@ export const rescheduleCourse = createServerFn({ method: "POST" })
       throw new Error("Kurs hat noch kein Startdatum – bitte über „Bearbeiten“ eintragen.");
 
     const delta = Math.round((Date.parse(data.newStart) - Date.parse(course.starts_on)) / 86400000);
-    const newEnd = course.ends_on ? shiftIso(course.ends_on, delta) : null;
+    const newEnd = course.ends_on ? addDaysIso(course.ends_on, delta) : null;
 
     if (delta !== 0) {
       const { data: sessions } = await supabaseAdmin
@@ -53,7 +43,7 @@ export const rescheduleCourse = createServerFn({ method: "POST" })
       for (const s of sessions ?? []) {
         const { error: sErr } = await supabaseAdmin
           .from("course_sessions")
-          .update({ session_date: shiftIso(s.session_date, delta) })
+          .update({ session_date: addDaysIso(s.session_date, delta) })
           .eq("id", s.id);
         if (sErr) failed.push(s.session_date);
       }
@@ -70,7 +60,7 @@ export const rescheduleCourse = createServerFn({ method: "POST" })
       : null;
     const shiftedBreaks =
       breaks && delta !== 0
-        ? breaks.map((b) => ({ ...b, date: shiftIso(b.date, delta) }))
+        ? breaks.map((b) => ({ ...b, date: addDaysIso(b.date, delta) }))
         : undefined;
     const { error } = await supabaseAdmin
       .from("courses")
@@ -142,7 +132,7 @@ export const cancelCourse = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: course } = await supabaseAdmin
       .from("courses")
@@ -341,12 +331,9 @@ export const broadcastCourseMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     // Vorstand/Admin immer; Trainer:innen nur für Kurse, in denen sie eingeteilt sind.
-    const { data: staff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
+    const staff = await isStaff(context.supabase, context.userId);
     if (!staff) {
-      const { data: isTrainer } = await context.supabase.rpc("has_role", {
-        _user_id: context.userId,
-        _role: "trainer",
-      });
+      const isTrainer = await hasRole(context.supabase, context.userId, "trainer");
       const { data: ofCourse } = await context.supabase.rpc("is_trainer_of_course", {
         _trainer_id: context.userId,
         _course_id: data.courseId,
@@ -490,7 +477,7 @@ export const previewCourseSessionsMail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ courseId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const plan = await planSessionsMail(data.courseId);
     return {
       sessions: plan.sessions.length,
@@ -504,7 +491,7 @@ export const sendCourseSessionsMail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ courseId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const plan = await planSessionsMail(data.courseId);
     if (plan.sessions.length === 0)
       throw new Error(

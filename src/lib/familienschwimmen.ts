@@ -1,6 +1,7 @@
 // Mitgliederschwimmen: Regeln, Priorität und Vergabevorschlag (reine Logik, ohne Datenbank).
 // Der Server prüft und vergibt damit; die Plätze selbst werden atomar in der Datenbank
 // (family_swim_confirm) gesetzt, hier entsteht nur der nachvollziehbare Vorschlag.
+import { fullName } from "@/lib/format";
 
 export const FAMILY_SWIM = {
   name: "Mitgliederschwimmen",
@@ -92,7 +93,7 @@ export function personsFromMemberships(
   const out: SwimPerson[] = [];
   for (const m of memberships) {
     if (m.status !== "active" || m.membership_type === "supporting") continue;
-    const holderName = `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || "Mitglied";
+    const holderName = fullName(m.first_name, m.last_name) || "Mitglied";
     const holderAge = ageOn(m.date_of_birth, todayIso);
 
     if (m.membership_type === "children_youth") {

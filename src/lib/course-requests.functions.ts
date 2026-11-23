@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const SITE_NAME = "Sicher Schwimmen e.V.";
 const REPLY_TO = "info@sicher-schwimmen.com";
@@ -28,8 +29,7 @@ export const replyToCourseRequest = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

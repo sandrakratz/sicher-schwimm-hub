@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll } from "@/lib/fetch-all";
+import { todayBerlinIso } from "@/lib/format";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 export type CourseCost = {
   id: string;
@@ -31,22 +33,15 @@ export type CourseResult = {
   costs: CourseCost[];
 };
 
-async function assertStaff(supabase: any, userId: string) {
-  const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-  if (!isStaff) throw new Response("Forbidden", { status: 403 });
-}
-
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Pro Kurs: Einnahmen, Übungsleitergelder, erfasste Kosten. Alle Kurse mit Terminen. */
 export const getCourseResults = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ results: CourseResult[] }> => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(
-      new Date(),
-    );
+    const today = todayBerlinIso();
 
     const [courses, sessions, attendance, items, participants, costs] = await Promise.all([
       fetchAll<any>((f, t) =>
@@ -194,7 +189,7 @@ export const saveCourseCost = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const row = {
       course_id: data.courseId,
@@ -226,7 +221,7 @@ export const deleteCourseCost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("course_costs" as any)

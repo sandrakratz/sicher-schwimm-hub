@@ -1,16 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { assertTeam, hasRole, isStaff } from "@/lib/auth-guards.server";
 
 /** Vorstand/Admin immer; Trainer:innen nur für Kinder aus Kursen, in denen sie eingeteilt sind. */
 async function assertMayTransfer(supabase: any, userId: string, participantId: string) {
-  const { data: staff } = await supabase.rpc("is_staff", { _user_id: userId });
+  const staff = await isStaff(supabase, userId);
   if (staff) return;
-  const { data: isTrainer } = await supabase.rpc("has_role", {
-    _user_id: userId,
-    _role: "trainer",
-  });
+  const isTrainer = await hasRole(supabase, userId, "trainer");
   if (!isTrainer) throw new Error("Forbidden");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: p } = await supabaseAdmin
@@ -27,17 +25,6 @@ async function assertMayTransfer(supabase: any, userId: string, participantId: s
 }
 
 /** Zielkurse auswählen darf jede Person im Team. */
-async function assertTeam(supabase: any, userId: string) {
-  for (const role of ["admin", "board", "trainer"]) {
-    const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: role });
-    if (data) return;
-  }
-  throw new Error("Forbidden");
-}
-
-function todayBerlin() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
-}
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 
@@ -105,7 +92,7 @@ export const previewTransfer = createServerFn({ method: "POST" })
       .eq("id", data.participantId)
       .maybeSingle();
     if (!p) throw new Error("Teilnehmer nicht gefunden");
-    const today = todayBerlin();
+    const today = todayBerlinIso();
     const oldI = await loadCourseInfo(supabaseAdmin, p.course_id);
     const newI = data.targetCourseId
       ? await loadCourseInfo(supabaseAdmin, data.targetCourseId)
@@ -189,7 +176,7 @@ export const transferParticipant = createServerFn({ method: "POST" })
     const due = round2(data.amountDue);
     const fee = round2(data.cancellationFee);
     const now = new Date().toISOString();
-    const today = todayBerlin();
+    const today = todayBerlinIso();
     const dueDate =
       due > 0
         ? (() => {
@@ -388,7 +375,7 @@ export const returnParticipantToWaitlist = createServerFn({ method: "POST" })
 
     const due = round2(data.amountDue);
     const fee = round2(data.cancellationFee);
-    const today = todayBerlin();
+    const today = todayBerlinIso();
     const dueDate =
       due > 0
         ? (() => {
@@ -457,7 +444,7 @@ export const returnParticipantToWaitlist = createServerFn({ method: "POST" })
 export const listTransferTargets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertTeam(context.supabase, context.userId);
+    await assertTeam(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: courses } = await supabaseAdmin
       .from("courses")

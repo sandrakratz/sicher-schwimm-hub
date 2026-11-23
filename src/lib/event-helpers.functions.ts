@@ -2,11 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { helperKey } from "@/lib/event-shifts";
-
-async function assertStaff(context: any) {
-  const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!isStaff) throw new Error("Forbidden");
-}
+import { assertStaff, assertTeam } from "@/lib/auth-guards.server";
 
 /** Helfergruppen eines Termins inkl. Anzahl der Zusagen. */
 export const listHelperGroups = createServerFn({ method: "POST" })
@@ -94,12 +90,7 @@ export const syncHelperGroupFill = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     // Nur Team-Rollen (Trainer:innen melden sich selbst für Helferstellen an, Vorstand pflegt sie)
-    const roles = await Promise.all(
-      (["admin", "board", "trainer"] as const).map((r) =>
-        context.supabase.rpc("has_role", { _user_id: context.userId, _role: r }),
-      ),
-    );
-    if (!roles.some((r) => r.data)) throw new Error("Forbidden");
+    await assertTeam(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: groups }, { data: signups }] = await Promise.all([
       supabaseAdmin.from("event_helper_groups").select("*").eq("event_id", data.eventId),

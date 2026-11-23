@@ -1,7 +1,7 @@
 // Server-only: Aufnahmebestätigung per E-Mail, sobald der Vorstand eine Mitgliedschaft freigibt.
 // Ersetzt die frühere „Konto freigeschaltet“-Mail. Je Mitgliedschaft höchstens einmal.
 import { firstYearFee } from "@/lib/billing-config";
-import { todayBerlinIso } from "@/lib/format";
+import { todayBerlinIso, fullName } from "@/lib/format";
 
 const TYPE_LABEL: Record<string, string> = {
   children_youth: "Kinder & Jugend",
@@ -79,7 +79,7 @@ export async function sendMembershipConfirmationEmail(opts: {
     recipientEmail: email,
     templateData: {
       first_name: m.first_name ?? undefined,
-      member_name: `${m.first_name ?? ""} ${m.last_name ?? ""}`.trim() || undefined,
+      member_name: fullName(m.first_name, m.last_name) || undefined,
       membership_label: TYPE_LABEL[type] ?? type,
       start_date_label: dayLabel(start),
       members,

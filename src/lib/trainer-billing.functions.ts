@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
 import { amountOf, pickRate, resolveHours, type Rate } from "@/lib/trainer-billing";
+import { assertStaff } from "@/lib/auth-guards.server";
+import { fullName, todayBerlinIso } from "@/lib/format";
 
 export type BillingRow = {
   sessionId: string;
@@ -51,13 +53,8 @@ export type MyPayout = {
   }[];
 };
 
-async function assertStaff(supabase: any, userId: string) {
-  const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-  if (!isStaff) throw new Response("Forbidden", { status: 403 });
-}
-
 function nameOf(p?: { first_name: string | null; last_name: string | null; email: string | null }) {
-  return [p?.first_name, p?.last_name].filter(Boolean).join(" ") || p?.email || "Unbekannt";
+  return fullName(p?.first_name, p?.last_name) || p?.email || "Unbekannt";
 }
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Datum ungültig");
@@ -75,7 +72,7 @@ export const getBillingOverview = createServerFn({ method: "GET" })
       .parse(input ?? {}),
   )
   .handler(async ({ context, data }): Promise<BillingOverview> => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const att = await fetchAll<any>((f, t) => {
@@ -183,9 +180,7 @@ export const getBillingOverview = createServerFn({ method: "GET" })
       );
 
     // Bereits ausgezahlt im laufenden Jahr (alle Trainer:innen, unabhängig vom Filter)
-    const year = Number(
-      new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" }).slice(0, 4),
-    );
+    const year = Number(todayBerlinIso().slice(0, 4));
     const payouts = await fetchAll<{ trainer_id: string; total_amount: number }>((f, t) =>
       supabaseAdmin
         .from("trainer_payouts")
@@ -245,7 +240,7 @@ export const setProgramBilledHours = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("course_programs")
@@ -276,7 +271,7 @@ export const saveTrainerRate = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const hourly = Math.round(data.hourlyRate * 100) / 100;
 
@@ -316,7 +311,7 @@ export const deleteTrainerRate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("trainer_rates").delete().eq("id", data.id);
     if (error) throw new Error("Satz konnte nicht gelöscht werden.");
@@ -348,7 +343,7 @@ export const createTrainerPayout = createServerFn({ method: "POST" })
   )
   .handler(
     async ({ context, data }): Promise<{ payoutId: string; total: number; count: number }> => {
-      await assertStaff(context.supabase, context.userId);
+      await assertStaff(context);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const att = await fetchIn<any>(data.sessionIds, (chunk, f, t) =>
@@ -482,7 +477,7 @@ export const deleteTrainerPayout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: payout } = await supabaseAdmin
       .from("trainer_payouts")
@@ -581,7 +576,7 @@ export const createManualPayout = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const amount = Math.round(data.amount * 100) / 100;
     const { data: payout, error } = await supabaseAdmin
@@ -618,7 +613,7 @@ export const listTrainerPayouts = createServerFn({ method: "GET" })
       .parse(input),
   )
   .handler(async ({ context, data }): Promise<{ payouts: PayoutListEntry[] }> => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const payouts = await fetchAll<any>((f, t) => {
       let q = supabaseAdmin
@@ -674,7 +669,7 @@ export const getPayoutCertificate = createServerFn({ method: "GET" })
   )
   .handler(async ({ context, data }): Promise<Certificate> => {
     const trainerId = data.trainerId ?? context.userId;
-    if (trainerId !== context.userId) await assertStaff(context.supabase, context.userId);
+    if (trainerId !== context.userId) await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: payouts, error } = await supabaseAdmin
       .from("trainer_payouts")

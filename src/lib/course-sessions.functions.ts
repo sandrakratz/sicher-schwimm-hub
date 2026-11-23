@@ -1,5 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff, hasRole, isStaff } from "@/lib/auth-guards.server";
+import { formatDateBerlin, fullName } from "@/lib/format";
+
+/** Datum für Listen und Exporte (TT.MM.JJJJ, Berliner Zeit); leer bleibt leer. */
+const deDate = (d: Date | string | null | undefined) => (d ? formatDateBerlin(d) : "");
 
 export const generateCourseListXlsx = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -13,10 +18,8 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     // Kursliste: Vorstand/Admin oder Trainer:in dieses Kurses (nicht jeder Trainer für jeden Kurs)
-    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
-    if (!isStaff) {
-      const isTrainer = (await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" }))
-        .data;
+    if (!(await isStaff(supabase, userId))) {
+      const isTrainer = await hasRole(supabase, userId, "trainer");
       const ofCourse = (
         await supabase.rpc("is_trainer_of_course", {
           _trainer_id: userId,
@@ -85,13 +88,6 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       return String(a);
     }
 
-    function fmtDe(s: string | null): string {
-      if (!s) return "";
-      const [y, m, d] = s.split("-");
-      if (!y || !m || !d) return s;
-      return `${d}.${m}.${y}`;
-    }
-
     // Spalten je Kurstermin: mindestens 10 (Vordruck), bei längeren Kursen entsprechend mehr
     const nSess = Math.max(10, ...sessions.map((s) => s.session_index));
     const lastSessionCol = 4 + nSess;
@@ -122,7 +118,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     // Header rows
     const period =
       course.starts_on || course.ends_on
-        ? `${fmtDe(course.starts_on)}${course.ends_on ? ` – ${fmtDe(course.ends_on)}` : ""}`
+        ? `${deDate(course.starts_on)}${course.ends_on ? ` – ${deDate(course.ends_on)}` : ""}`
         : "";
     const titleRow = ws.addRow([`Kursliste: ${course.name}`]);
     titleRow.font = { bold: true, size: 14 };
@@ -156,7 +152,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       "Klötze",
       ...Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
-        return s ? fmtDe(s.session_date) : `${i + 1}. Kurstermin`;
+        return s ? deDate(s.session_date) : `${i + 1}. Kurstermin`;
       }),
       "Telefonnummer",
       "Alter bei Kursbeginn",
@@ -168,7 +164,6 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
     headerRow.height = 32;
 
     // Data rows
-    const dataRowsStart = headerRow.number + 1;
     const formatName = (n: string | null): string =>
       (n || "").replace(/[,;]+/g, " ").replace(/\s+/g, " ").trim();
     participants.forEach((p, idx) => {
@@ -256,7 +251,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
           trainerList = (profs || [])
             .map((p: any) => ({
               id: p.id as string,
-              name: [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "",
+              name: fullName(p.first_name, p.last_name) || p.email || "",
             }))
             .filter((t) => t.name)
             .sort(
@@ -284,7 +279,7 @@ export const generateCourseListXlsx = createServerFn({ method: "POST" })
       "",
       ...Array.from({ length: nSess }, (_, i) => {
         const s = sessions.find((x) => x.session_index === i + 1);
-        return s ? fmtDe(s.session_date) : `${i + 1}. Kurstermin`;
+        return s ? deDate(s.session_date) : `${i + 1}. Kurstermin`;
       }),
       "",
       "",
@@ -426,8 +421,7 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     // Enthält Zahlungs-, Rechnungs- und Adressdaten: nur Vorstand/Admin, nicht Trainer:innen
-    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { data: course, error: cErr } = await supabase
       .from("courses")
@@ -475,25 +469,6 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
       for (const r of reqs) if (r.parent_name) parentByRequest.set(r.id, r.parent_name);
     }
 
-    function fmtDe(s: string | null): string {
-      if (!s) return "";
-      const [y, m, d] = s.split("-");
-      if (!y || !m || !d) return s;
-      return `${d}.${m}.${y}`;
-    }
-    function fmtTs(s: string | null): string {
-      if (!s) return "";
-      try {
-        return new Intl.DateTimeFormat("de-DE", {
-          timeZone: "Europe/Berlin",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(new Date(s));
-      } catch {
-        return "";
-      }
-    }
     function ageAt(dob: string | null, ref: string | null): string {
       if (!dob || !ref) return "";
       const d = new Date(dob);
@@ -526,7 +501,7 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
 
     const period =
       course.starts_on || course.ends_on
-        ? `${fmtDe(course.starts_on)}${course.ends_on ? ` – ${fmtDe(course.ends_on)}` : ""}`
+        ? `${deDate(course.starts_on)}${course.ends_on ? ` – ${deDate(course.ends_on)}` : ""}`
         : "";
     const titleRow = ws.addRow([`Teilnehmerliste (Steuer): ${course.name}`]);
     titleRow.font = { bold: true, size: 14 };
@@ -537,7 +512,7 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
         period && `Zeitraum: ${period}`,
         course.location && `Ort: ${course.location}`,
         course.schedule && `Zeitplan: ${course.schedule}`,
-        `Erstellt: ${fmtTs(new Date().toISOString())}`,
+        `Erstellt: ${deDate(new Date().toISOString())}`,
       ]
         .filter(Boolean)
         .join("    ·    "),
@@ -573,7 +548,7 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
       const row = ws.addRow([
         idx + 1,
         p.participant_name || "",
-        fmtDe(p.date_of_birth),
+        deDate(p.date_of_birth),
         ageAt(p.date_of_birth, course.starts_on),
         (p.request_id && parentByRequest.get(p.request_id)) || "",
         p.participant_email || "",
@@ -583,9 +558,9 @@ export const generateTaxParticipantListXlsx = createServerFn({ method: "POST" })
         p.online_booking ? "online gebucht" : "manuell",
         p.price_amount != null ? Number(p.price_amount) : null,
         p.paid ? "ja" : "nein",
-        fmtTs(p.paid_at),
+        deDate(p.paid_at),
         p.payment_note || "",
-        fmtTs(p.created_at),
+        deDate(p.created_at),
       ]);
       row.alignment = { vertical: "middle", wrapText: true };
       row.getCell(11).numFmt = '#,##0.00 "€"';
@@ -676,8 +651,7 @@ export const generateCourseConfirmations = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     // Enthält Zahlungs-, Rechnungs- und Adressdaten: nur Vorstand/Admin, nicht Trainer:innen
-    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { data: course, error: cErr } = await supabase
       .from("courses")
@@ -789,8 +763,7 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     // Enthält Zahlungs-, Rechnungs- und Adressdaten: nur Vorstand/Admin, nicht Trainer:innen
-    const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { data: course, error: cErr } = await supabase
       .from("courses")
@@ -826,17 +799,6 @@ export const generateMeinVereinCsv = createServerFn({ method: "POST" })
     }
 
     const { computeDueDate } = await import("@/lib/course-confirmation");
-    const deDate = (d: Date | string | null | undefined) => {
-      if (!d) return "";
-      const dt = typeof d === "string" ? new Date(d) : d;
-      if (isNaN(dt.getTime())) return "";
-      return dt.toLocaleDateString("de-DE", {
-        timeZone: "Europe/Berlin",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    };
     const deAmount = (v: number | null) =>
       v == null ? "" : Number(v).toFixed(2).replace(".", ",");
     const splitName = (full: string) => {
@@ -937,11 +899,8 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
     return { year: y };
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const isStaff =
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "admin" })).data ||
-      (await supabase.rpc("has_role", { _user_id: userId, _role: "board" })).data;
-    if (!isStaff) throw new Error("Forbidden");
+    const { userId } = context;
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const from = `${data.year}-01-01`;
@@ -992,18 +951,10 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
           .range(f, t),
       );
       profs.forEach((p: any) => {
-        nameOf.set(
-          p.id,
-          [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—",
-        );
+        nameOf.set(p.id, fullName(p.first_name, p.last_name) || p.email || "—");
       });
     }
 
-    function fmtDe2(s: string | null): string {
-      if (!s) return "";
-      const [y, m, d] = s.split("-");
-      return y && m && d ? `${d}.${m}.${y}` : s;
-    }
     function hours(start: string | null, end: string | null): number {
       if (!start || !end) return 0;
       const [sh, sm] = start.split(":").map(Number);
@@ -1075,7 +1026,7 @@ export const generateTrainerProofXlsx = createServerFn({ method: "POST" })
         const h = hours(s.start_time, s.end_time);
         sumHours += h;
         ws.addRow([
-          fmtDe2(s.session_date),
+          deDate(s.session_date),
           s.courses?.name || "—",
           s.courses?.location || "—",
           s.start_time ? s.start_time.slice(0, 5) : "—",

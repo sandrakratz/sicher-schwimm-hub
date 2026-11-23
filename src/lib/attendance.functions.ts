@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isStaff, type AuthCtx } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export type AttendanceStatus = "present" | "excused" | "absent";
 
@@ -25,13 +27,9 @@ export type CourseAttendance = {
   records: AttendanceRecord[];
 };
 
-async function assertCourseAccess(
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
-  userId: string,
-  courseId: string,
-): Promise<void> {
-  const isStaff = (await supabase.rpc("is_staff", { _user_id: userId })).data;
-  if (isStaff) return;
+/** Vorstand/Admin immer; Trainer:innen nur für Kurse, in denen sie eingeteilt sind. */
+async function assertCourseAccess({ supabase, userId }: AuthCtx, courseId: string): Promise<void> {
+  if (await isStaff(supabase, userId)) return;
   const isTrainer = (
     await supabase.rpc("is_trainer_of_course", {
       _trainer_id: userId,
@@ -50,8 +48,7 @@ export const listCourseAttendance = createServerFn({ method: "POST" })
     return d;
   })
   .handler(async ({ data, context }): Promise<CourseAttendance> => {
-    const { supabase, userId } = context;
-    await assertCourseAccess(supabase as never, userId, data.courseId);
+    await assertCourseAccess(context, data.courseId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -90,8 +87,7 @@ export const listCourseAttendance = createServerFn({ method: "POST" })
         .select("id,first_name,last_name,email")
         .in("id", recorderIds);
       (profs || []).forEach((p) => {
-        const name =
-          [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || (p.email as string) || "";
+        const name = fullName(p.first_name, p.last_name) || (p.email as string) || "";
         nameById.set(p.id as string, name);
       });
     }
@@ -128,7 +124,7 @@ export const setAttendance = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: session } = await supabaseAdmin
@@ -138,7 +134,7 @@ export const setAttendance = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!session) throw new Error("Kurstermin nicht gefunden");
 
-    await assertCourseAccess(supabase as never, userId, session.course_id as string);
+    await assertCourseAccess(context, session.course_id as string);
 
     const { data: part } = await supabaseAdmin
       .from("course_participants")

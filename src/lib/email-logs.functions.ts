@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const EVENT_TYPES = [
   "sent",
@@ -45,15 +46,7 @@ export const listDeliveryEvents = createServerFn({ method: "POST" })
       .parse(input ?? {}),
   )
   .handler(async ({ context, data }) => {
-    const { data: roleRows, error: roleError } = await context.supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId);
-    if (roleError) throw new Response("Forbidden", { status: 403 });
-    const roles = (roleRows || []).map((r: any) => r.role as string);
-    if (!roles.includes("admin") && !roles.includes("board")) {
-      throw new Response("Forbidden", { status: 403 });
-    }
+    await assertStaff(context);
 
     const GROUP_STATUSES: Record<string, string[]> = {
       sent: ["sent"],

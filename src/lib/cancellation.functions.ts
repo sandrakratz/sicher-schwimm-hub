@@ -1,17 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const STATUSES = ["eingegangen", "in_bearbeitung", "abgeschlossen"] as const;
-
-async function assertStaff(supabase: any, userId: string) {
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-  if (error) throw new Error("Forbidden");
-  const roles = (data || []).map((r: any) => r.role);
-  if (!roles.includes("admin") && !roles.includes("board")) {
-    throw new Error("Forbidden");
-  }
-}
 
 export const listCancellations = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -32,7 +24,7 @@ export const listCancellations = createServerFn({ method: "POST" })
       .parse(input ?? {}),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     let q = context.supabase
       .from("cancellation_requests")
       .select("*")
@@ -67,7 +59,7 @@ export const setCancellationStatus = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    await assertStaff(context.supabase, context.userId);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: before } = await supabaseAdmin
       .from("cancellation_requests")

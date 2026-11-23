@@ -2,11 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { DEFAULT_OFFER_DEADLINES, type OfferDeadlineSettings } from "@/lib/offer-deadline";
-
-async function assertManager(context: { supabase: any; userId: string }) {
-  const { data } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!data) throw new Error("Forbidden");
-}
+import { assertStaff } from "@/lib/auth-guards.server";
 
 export type OfferDeadlineCourse = {
   id: string;
@@ -21,7 +17,7 @@ export type OfferDeadlineCourse = {
 export const getOfferDeadlines = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertManager(context);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: s } = await supabaseAdmin
       .from("offer_deadline_settings")
@@ -69,7 +65,7 @@ export const saveOfferDeadlines = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => saveSchema.parse(d))
   .handler(async ({ data, context }) => {
-    await assertManager(context);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("offer_deadline_settings").upsert({
       id: true,

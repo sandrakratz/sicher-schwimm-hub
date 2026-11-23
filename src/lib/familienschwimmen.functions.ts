@@ -2,7 +2,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { todayBerlinIso } from "@/lib/format";
+import { assertStaff, assertTeam } from "@/lib/auth-guards.server";
+import { todayBerlinIso, fullName } from "@/lib/format";
 import { logAudit } from "@/lib/audit.server";
 import {
   FAMILY_SWIM,
@@ -24,13 +25,6 @@ import {
 
 const SITE = "https://sicher-schwimmen.com";
 const MEMBER_URL = `${SITE}/portal/familienschwimmen`;
-
-type Ctx = { supabase: any; userId: string };
-
-async function assertStaff(context: Ctx) {
-  const { data } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!data) throw new Error("Forbidden");
-}
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -208,7 +202,7 @@ async function contactOf(admin: any, userId: string, fallbackName: string) {
     .select("email,first_name,last_name")
     .eq("id", userId)
     .maybeSingle();
-  const name = [data?.first_name, data?.last_name].filter(Boolean).join(" ").trim() || fallbackName;
+  const name = fullName(data?.first_name, data?.last_name) || fallbackName;
   return { email: (data?.email as string | null) ?? null, name };
 }
 
@@ -241,7 +235,7 @@ export const getMyFamilySwim = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MyFamilySwim> => {
     const admin = await db();
-    const userId = (context as Ctx).userId;
+    const userId = context.userId;
     const today = todayBerlinIso();
     const persons = personsFromMemberships(await loadMembershipsOf(admin, userId), today);
     const eligible = persons.length > 0;
@@ -320,7 +314,7 @@ export const submitFamilySwim = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const admin = await db();
-    const userId = (context as Ctx).userId;
+    const userId = context.userId;
     const today = todayBerlinIso();
 
     // Mitgliedschaft und Personen immer neu aus der Datenbank ermitteln – nie dem Browser glauben
@@ -436,7 +430,7 @@ export const cancelFamilySwim = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ requestId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const admin = await db();
-    const userId = (context as Ctx).userId;
+    const userId = context.userId;
     const { data: r } = await admin
       .from("family_swim_requests")
       .select("*, family_swim_events(*)")
@@ -535,7 +529,7 @@ export type AdminFamily = {
 export const getFamilySwimAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
     const { data: events, error } = await admin
       .from("family_swim_events")
@@ -609,7 +603,7 @@ export const getFamilySwimAdmin = createServerFn({ method: "POST" })
         const s = stMap.get(id);
         return {
           user_id: id,
-          name: p ? [p.first_name, p.last_name].filter(Boolean).join(" ") || null : null,
+          name: p ? fullName(p.first_name, p.last_name) || null : null,
           email: p?.email ?? null,
           participations: Number(s?.participations) || 0,
           strikes: Number(s?.strikes) || 0,
@@ -640,7 +634,7 @@ export const saveFamilySwimEvent = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
     const patch = {
       event_date: data.event_date,
@@ -665,7 +659,7 @@ export const saveFamilySwimEvent = createServerFn({ method: "POST" })
       }
       id = row.id;
     }
-    await logAudit(null, (context as Ctx).userId, {
+    await logAudit(null, context.userId, {
       action: data.id ? "family_swim.event_updated" : "family_swim.event_created",
       entity: "family_swim_events",
       entity_id: id,
@@ -673,7 +667,7 @@ export const saveFamilySwimEvent = createServerFn({ method: "POST" })
     });
     // Eine höhere Kapazität schafft Platz: Warteliste nachrücken lassen.
     // Eine niedrigere löscht niemanden – bestätigte Teilnehmer bleiben bestehen.
-    if (data.id) await promoteWaitlist(admin, data.id, (context as Ctx).userId);
+    if (data.id) await promoteWaitlist(admin, data.id, context.userId);
     return { ok: true as const, id };
   });
 
@@ -681,7 +675,7 @@ export const cancelFamilySwimEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
     const { data: e } = await admin
       .from("family_swim_events")
@@ -715,7 +709,7 @@ export const cancelFamilySwimEvent = createServerFn({ method: "POST" })
         key: `fs-event-cancel-${r.id}`,
       });
     }
-    await logAudit(null, (context as Ctx).userId, {
+    await logAudit(null, context.userId, {
       action: "family_swim.event_cancelled",
       entity: "family_swim_events",
       entity_id: e.id,
@@ -792,7 +786,7 @@ export const proposeFamilySwim = createServerFn({ method: "POST" })
     z.object({ eventIds: z.array(z.string().uuid()).min(1).max(30) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<ProposalView> => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
     const p = await computeProposal(admin, data.eventIds);
     const view = (id: string, outcome: "confirmed" | "waitlist", round: number | null) => {
@@ -827,9 +821,9 @@ export const applyFamilySwimAllocation = createServerFn({ method: "POST" })
     z.object({ eventIds: z.array(z.string().uuid()).min(1).max(30) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
-    const actor = (context as Ctx).userId;
+    const actor = context.userId;
     const p = await computeProposal(admin, data.eventIds);
 
     const outcome = new Map<string, "confirmed" | "waitlist">();
@@ -937,9 +931,9 @@ export const setFamilySwimRequest = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
-    const actor = (context as Ctx).userId;
+    const actor = context.userId;
     const { data: r } = await admin
       .from("family_swim_requests")
       .select("*, family_swim_events(*)")
@@ -1042,9 +1036,9 @@ export const promoteFamilySwimWaitlist = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
-    const n = await promoteWaitlist(admin, data.eventId, (context as Ctx).userId);
+    const n = await promoteWaitlist(admin, data.eventId, context.userId);
     return { ok: true as const, promoted: n };
   });
 
@@ -1084,16 +1078,6 @@ function presentOf(r: any, key: string): boolean | null {
   return hit ? !!hit.present : null;
 }
 
-async function assertTrainerRole(ctx: Ctx) {
-  const { data: roleRows } = await ctx.supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", ctx.userId);
-  if (!(roleRows ?? []).some((r: any) => ["admin", "board", "trainer"].includes(r.role))) {
-    throw new Error("Forbidden");
-  }
-}
-
 /**
  * Kommende Mitgliederschwimm-Termine mit den zugesagten Personen, für die Trainer vor Ort.
  * Bewusst nur Name, Erwachsen/Kind, Alter und Aufsichtsperson: keine Kontaktdaten, keine Anmerkungen der Familie.
@@ -1101,7 +1085,7 @@ async function assertTrainerRole(ctx: Ctx) {
 export const listFamilySwimForTrainers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<TrainerFamilySwimEvent[]> => {
-    await assertTrainerRole(context as Ctx);
+    await assertTeam(context);
     const admin = await db();
     const { data: events, error } = await admin
       .from("family_swim_events")
@@ -1163,8 +1147,7 @@ export const setFamilySwimAttendance = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const ctx = context as Ctx;
-    await assertTrainerRole(ctx);
+    await assertTeam(context);
     const admin = await db();
     const { data: r } = await admin
       .from("family_swim_requests")
@@ -1193,12 +1176,12 @@ export const setFamilySwimAttendance = createServerFn({ method: "POST" })
         attendance,
         status: attended ? "attended" : "no_show",
         strike: !attended,
-        attendance_marked_by: ctx.userId,
+        attendance_marked_by: context.userId,
         attendance_marked_at: new Date().toISOString(),
       })
       .eq("id", r.id);
     if (error) throw new Error(error.message);
-    await logAudit(null, ctx.userId, {
+    await logAudit(null, context.userId, {
       action: "family_swim.attendance_set",
       entity: "family_swim_requests",
       entity_id: r.id,
@@ -1218,7 +1201,7 @@ export const exportFamilySwimAttendance = createServerFn({ method: "POST" })
     z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
   )
   .handler(async ({ data, context }): Promise<{ filename: string; base64: string }> => {
-    await assertStaff(context as Ctx);
+    await assertStaff(context);
     const admin = await db();
     const { data: events, error } = await admin
       .from("family_swim_events")
@@ -1257,7 +1240,7 @@ export const exportFamilySwimAttendance = createServerFn({ method: "POST" })
         }))
         .filter((e: any) => e.rows.length > 0),
     });
-    await logAudit(null, (context as Ctx).userId, {
+    await logAudit(null, context.userId, {
       action: "family_swim.attendance_export",
       entity: "family_swim_requests",
       entity_id: null,

@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchIn } from "@/lib/fetch-all";
+import { assertStaff } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export const AUDIT_AREAS = {
   courses: {
@@ -95,8 +97,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Mit Suchtext wird breiter geladen und nach dem Aufbereiten gefiltert
@@ -230,7 +231,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
       first_name: string | null;
       last_name: string | null;
       email?: string;
-    }) => [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Unbekannt";
+    }) => fullName(p.first_name, p.last_name) || p.email || "Unbekannt";
     const actorName = new Map(actorRows.map((a) => [a.id as string, personName(a)]));
 
     const partMap = new Map(parts.map((p) => [p.id as string, p]));

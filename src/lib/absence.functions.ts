@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { todayBerlinIso } from "@/lib/format";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 /**
  * Abmeldung einzelner Kurstermine durch die Eltern über den geheimen Link (push_token der Buchung) –
@@ -76,8 +77,7 @@ const INVITES_PER_RUN = 12;
 export const sendAbsenceInvites = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: staff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!staff) throw new Error("Forbidden");
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { newPushToken } = await import("@/lib/push.server");
     const { queueTemplateEmail } = await import("@/lib/email-send.server");

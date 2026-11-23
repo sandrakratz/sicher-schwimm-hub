@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 export const ASSIGNMENT_AREAS = {
   payments: "Zahlungen (offene und überfällige Beiträge)",
@@ -11,13 +13,8 @@ export type AssignmentArea = keyof typeof ASSIGNMENT_AREAS;
 
 const SITE = "https://sicher-schwimmen.com";
 
-async function assertStaff(context: { supabase: any; userId: string }) {
-  const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!isStaff) throw new Error("Forbidden");
-}
-
-const fullName = (p: { first_name: string | null; last_name: string | null } | null | undefined) =>
-  [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim();
+const nameOf = (p: { first_name: string | null; last_name: string | null } | null | undefined) =>
+  fullName(p?.first_name, p?.last_name);
 
 /** Vorstand/Verwaltung, der angemeldete Nutzer und die Standard-Zuständigkeiten. */
 export const getAssignmentContext = createServerFn({ method: "POST" })
@@ -34,10 +31,10 @@ export const getAssignmentContext = createServerFn({ method: "POST" })
       ? await supabaseAdmin.from("profiles").select("id,first_name,last_name").in("id", ids)
       : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }> };
     const staff = (profs ?? [])
-      .map((p) => fullName(p))
+      .map((p) => nameOf(p))
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b, "de"));
-    const me = fullName((profs ?? []).find((p) => p.id === context.userId)) || null;
+    const me = nameOf((profs ?? []).find((p) => p.id === context.userId)) || null;
     const { data: ruleRows } = await supabaseAdmin.from("assignment_rules").select("area,assignee");
     const rules: Partial<Record<AssignmentArea, string>> = {};
     for (const r of ruleRows ?? []) rules[r.area as AssignmentArea] = r.assignee;
@@ -90,7 +87,7 @@ export const assignItem = createServerFn({ method: "POST" })
       .select("first_name,last_name")
       .eq("id", context.userId)
       .maybeSingle();
-    const actor = fullName(me) || "Vorstand";
+    const actor = nameOf(me) || "Vorstand";
     const assignee = data.assignee || null;
 
     const label =
@@ -146,7 +143,7 @@ export const assignItem = createServerFn({ method: "POST" })
           .from("profiles")
           .select("first_name,last_name,email")
           .in("id", ids);
-        const target = (staff ?? []).find((p) => fullName(p) === assignee);
+        const target = (staff ?? []).find((p) => nameOf(p) === assignee);
         if (target?.email) {
           const { queueTemplateEmail } = await import("@/lib/email-send.server");
           const r = await queueTemplateEmail({

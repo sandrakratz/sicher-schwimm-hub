@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { fullName } from "@/lib/format";
 
 export type TrainerAttendanceRow = {
   session_id: string;
@@ -36,7 +37,7 @@ async function displayNames(ids: string[]): Promise<Map<string, string>> {
       last_name: string | null;
       email: string | null;
     }) => {
-      map.set(p.id, [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || p.email || "—");
+      map.set(p.id, fullName(p.first_name, p.last_name) || p.email || "—");
     },
   );
   return map;

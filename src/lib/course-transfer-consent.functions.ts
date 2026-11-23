@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 const tokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{48}$/) });
 
@@ -99,8 +100,7 @@ export const listTransferConsents = createServerFn({ method: "POST" })
     z.object({ participantIds: z.array(z.string().uuid()).max(500) }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     type Row = {
       participant_id: string;

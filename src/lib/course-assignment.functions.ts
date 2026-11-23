@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { BILLING } from "@/lib/billing-config";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso, fullName } from "@/lib/format";
 import { escapeLike } from "@/lib/like";
+import { assertStaff } from "@/lib/auth-guards.server";
 
-const SITE_NAME = "Sicher Schwimmen e.V.";
 const SITE_BASE_URL = "https://sicher-schwimmen.com";
 const DUPLICATE_CHILD_MESSAGE =
   "Dieses Kind ist in diesem Kurs bereits eingetragen. Es wurde nichts geändert und keine E-Mail versendet.";
@@ -17,9 +17,7 @@ export const suggestMatchForRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { email: string; requestId?: string | null }) => input)
   .handler(async ({ data, context }) => {
-    const { userId } = context;
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const email = (data.email || "").trim().toLowerCase();
@@ -61,8 +59,7 @@ export const suggestMatchForRequest = createServerFn({ method: "POST" })
           isMember: linkedActive ? true : (found.isMember ?? (mem ? false : null)),
           parentUserId: (prof as any)?.id ?? null,
           parentLabel: prof
-            ? [(prof as any).first_name, (prof as any).last_name].filter(Boolean).join(" ") ||
-              (prof as any).email
+            ? fullName((prof as any).first_name, (prof as any).last_name) || (prof as any).email
             : null,
         };
       }
@@ -83,8 +80,7 @@ export const suggestMatchForRequest = createServerFn({ method: "POST" })
     const isMember = found.isMember;
     const parentUserId = profRes.data?.id ?? null;
     const parentLabel = profRes.data
-      ? [profRes.data.first_name, profRes.data.last_name].filter(Boolean).join(" ") ||
-        profRes.data.email
+      ? fullName(profRes.data.first_name, profRes.data.last_name) || profRes.data.email
       : null;
 
     return { isMember, parentUserId, parentLabel };
@@ -99,8 +95,7 @@ export const unassignRequestFromCourse = createServerFn({ method: "POST" })
   .inputValidator((input: { requestId: string; newStatus?: "waiting_list" | "new" }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -164,8 +159,7 @@ export const assignRequestToCourse = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -458,8 +452,7 @@ export const moveParticipantToWaitlist = createServerFn({ method: "POST" })
   .inputValidator((input: { participantId: string; note?: string }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: isStaff } = await supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 

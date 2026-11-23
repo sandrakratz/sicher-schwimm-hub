@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 /**
  * Versendet Zahlungserinnerungen an alle bestätigten, unbezahlten Teilnehmer,
@@ -15,8 +16,7 @@ export const sendPaymentReminders = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: userId });
-    if (!isStaff) throw new Error("Forbidden");
+    await assertStaff(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { paymentState } = await import("@/lib/payment-status");

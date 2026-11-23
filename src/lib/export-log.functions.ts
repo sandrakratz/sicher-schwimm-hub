@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAudit } from "@/lib/audit.server";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 // Exporte, die im Browser entstehen (CSV/Excel aus bereits geladenen Daten), hinterlassen sonst keine Spur.
 // Diese Funktion schreibt den Export ins Verwaltungsprotokoll; Aktion und Bereich stehen hier fest,
@@ -24,10 +25,7 @@ export const logExport = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: isStaff } = await context.supabase.rpc("is_staff", {
-      _user_id: context.userId,
-    });
-    if (!isStaff) throw new Response("Forbidden", { status: 403 });
+    await assertStaff(context);
     const k = KINDS[data.kind];
     await logAudit(null, context.userId, {
       action: k.action,

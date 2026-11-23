@@ -1,4 +1,5 @@
 import { escapeLike } from "@/lib/like";
+import { assertStaff } from "@/lib/auth-guards.server";
 
 type EmailLogRow = {
   id: string;
@@ -20,12 +21,6 @@ type ReplyEntry = {
   body_text: string | null;
   error_message: string | null;
 };
-
-async function assertStaff(supabase: any, userId: string) {
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-  const { data: isBoard } = await supabase.rpc("has_role", { _user_id: userId, _role: "board" });
-  if (!isAdmin && !isBoard) throw new Error("Forbidden");
-}
 
 function mergeByMessageId(rows: EmailLogRow[]): ReplyEntry[] {
   const groups = new Map<string, EmailLogRow[]>();
@@ -82,7 +77,7 @@ async function loadReplies(
 }
 
 export async function getMessageConversationData(supabase: any, userId: string, messageId: string) {
-  await assertStaff(supabase, userId);
+  await assertStaff({ supabase, userId });
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: message, error } = await supabaseAdmin
     .from("messages")
@@ -99,7 +94,7 @@ export async function getCourseRequestConversationData(
   userId: string,
   requestId: string,
 ) {
-  await assertStaff(supabase, userId);
+  await assertStaff({ supabase, userId });
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: request, error } = await supabaseAdmin
     .from("course_requests")
@@ -114,7 +109,7 @@ export async function getCourseRequestConversationData(
 }
 
 export async function getWaitlistConversationData(supabase: any, userId: string, entryId: string) {
-  await assertStaff(supabase, userId);
+  await assertStaff({ supabase, userId });
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: entry, error } = await supabaseAdmin
     .from("waitlist_entries")

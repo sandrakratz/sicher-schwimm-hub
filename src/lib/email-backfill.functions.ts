@@ -3,6 +3,8 @@ import { render } from "@react-email/components";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { TEMPLATES } from "@/lib/email-templates/registry";
+import { assertAdmin } from "@/lib/auth-guards.server";
+import { fullName } from "@/lib/format";
 
 const BATCH = 200;
 const WINDOW_MS = 10 * 60 * 1000; // ±10 minutes
@@ -47,9 +49,7 @@ function findClosestByTime<T extends { created_at?: string | null }>(
 export const backfillEmailBodies = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden");
+    await assertAdmin(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -109,8 +109,7 @@ export const backfillEmailBodies = createServerFn({ method: "POST" })
           const match = findClosestByTime(apps || [], ts) as any;
           if (match)
             data = {
-              full_name:
-                [match.first_name, match.last_name].filter(Boolean).join(" ").trim() || undefined,
+              full_name: fullName(match.first_name, match.last_name) || undefined,
               email: match.email,
               membership_type: match.membership_type,
               phone: match.phone,

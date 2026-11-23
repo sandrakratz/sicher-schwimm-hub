@@ -2,6 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertStaff } from "@/lib/auth-guards.server";
 import {
   ADULT_COURSE_SLUG,
   INTEREST_STATUS_KEYS,
@@ -25,11 +26,6 @@ export type AdultInterest = {
   admin_notes: string | null;
   created_at: string;
 };
-
-async function assertStaff(context: { supabase: any; userId: string }) {
-  const { data: isStaff } = await context.supabase.rpc("is_staff", { _user_id: context.userId });
-  if (!isStaff) throw new Error("Forbidden");
-}
 
 /**
  * Öffentliche, unverbindliche Interessenbekundung (ohne Login).
@@ -97,7 +93,7 @@ export const submitAdultInterest = createServerFn({ method: "POST" })
 export const listAdultInterests = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await (supabaseAdmin as any)
       .from("adult_course_interests")
@@ -122,7 +118,7 @@ export const updateAdultInterest = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const patch: Record<string, unknown> = {};
     if (data.status) patch.status = data.status;
     if (data.adminNotes !== undefined) patch.admin_notes = data.adminNotes || null;
@@ -149,7 +145,7 @@ export const deleteAdultInterest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any)
       .from("adult_course_interests")
