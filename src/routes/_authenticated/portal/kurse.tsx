@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
@@ -32,6 +32,8 @@ type Row = {
   achievement: string | null;
   exam_criteria: unknown;
   belt_blocks: number | null;
+  /** Geheimer Link-Schlüssel der Buchung für die Abmeldung einzelner Termine (wie in der Mail). */
+  push_token: string | null;
   courses: {
     id: string;
     name: string;
@@ -97,7 +99,7 @@ function Page() {
       const { data } = await supabase
         .from("course_participants")
         .select(
-          "id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,belt_blocks,courses!course_participants_course_id_fkey(id,name,starts_on,ends_on,schedule,location,duration,target_group)",
+          "id,participant_name,date_of_birth,status,is_member,member_confirmed,price_amount,paid,goal_reached,badge,achievement,exam_criteria,belt_blocks,push_token,courses!course_participants_course_id_fkey(id,name,starts_on,ends_on,schedule,location,duration,target_group)",
         )
         .or(`parent_user_id.eq.${u.user.id},user_id.eq.${u.user.id}`)
         .order("created_at", { ascending: false });
@@ -109,7 +111,7 @@ function Page() {
   return (
     <div className="max-w-5xl space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary-deep">Meine Kurse</h1>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">Kurse der Familie</h1>
         <p className="text-muted-foreground mt-1">
           Übersicht über alle Kurse, in denen Sie bzw. Ihre Kinder eingebucht sind.
         </p>
@@ -252,6 +254,15 @@ function Page() {
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
+                            {r.status === "confirmed" &&
+                              r.push_token &&
+                              !(c?.ends_on && c.ends_on < today) && (
+                                <Button asChild size="sm" variant="accent">
+                                  <Link to="/abmelden" search={{ token: r.push_token }}>
+                                    Termin abmelden
+                                  </Link>
+                                </Button>
+                              )}
                             {r.status === "confirmed" && (
                               <Button
                                 size="sm"

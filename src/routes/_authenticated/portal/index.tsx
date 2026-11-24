@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
+import { FamilyTodo } from "@/components/portal/FamilyTodo";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, FileText, Waves, Newspaper, User as UserIcon } from "lucide-react";
@@ -109,11 +110,13 @@ function Dashboard() {
 
       <OpenAvailabilityNotice />
 
+      <FamilyTodo />
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           {
             icon: Waves,
-            label: "Kurse meiner Kinder",
+            label: "Kurse der Familie",
             value: coursesCount === null ? "…" : String(coursesCount),
             to: "/portal/kurse" as const,
           },

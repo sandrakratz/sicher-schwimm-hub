@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { ContactForm } from "@/components/portal/ContactForm";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,14 +39,26 @@ function Postfach() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-3xl font-bold text-primary-deep mb-2">Postfach</h1>
+      <h1 className="font-display text-3xl font-bold text-primary-deep mb-2">Nachrichten</h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Persönliche Nachrichten vom Vorstand. Antworten können Sie über{" "}
-        <Link to="/portal/kontakt" className="underline">
-          Verein kontaktieren
-        </Link>
-        .
+        Persönliche Nachrichten vom Vorstand – und hier schreiben Sie dem Verein.
       </p>
+      <Card className="border-0 shadow-soft mb-8">
+        <CardContent className="p-0">
+          <details open={items !== null && items.length === 0} className="group">
+            <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-5 font-semibold text-primary-deep">
+              Neue Nachricht an den Verein
+              <span className="text-sm font-normal text-muted-foreground group-open:hidden">
+                aufklappen
+              </span>
+            </summary>
+            <div className="px-5 pb-5">
+              <ContactForm />
+            </div>
+          </details>
+        </CardContent>
+      </Card>
+      <h2 className="font-display text-xl font-bold text-primary-deep mb-3">Vom Vorstand</h2>
       {items === null ? (
         <p className="text-muted-foreground">Lade …</p>
       ) : items.length === 0 ? (
