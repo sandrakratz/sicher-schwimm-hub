@@ -20,13 +20,22 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+/** Startbereich nach dem Login: Vorstand → Verwaltung (Eingang), Trainer:in → „Heute“, sonst Portal. */
+async function homeFor(userId: string): Promise<"/admin" | "/trainer" | "/portal"> {
+  const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+  const roles = (data ?? []).map((r) => r.role as string);
+  if (roles.includes("admin") || roles.includes("board")) return "/admin";
+  if (roles.includes("trainer")) return "/trainer";
+  return "/portal";
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/portal" });
+      if (data.session) void homeFor(data.session.user.id).then((to) => navigate({ to }));
     });
     if (
       typeof window !== "undefined" &&
@@ -96,7 +105,8 @@ function AuthPage() {
 
     setLoading(false);
     toast.success("Willkommen zurück!");
-    navigate({ to: "/portal" });
+    const { data: u } = await supabase.auth.getUser();
+    navigate({ to: u.user ? await homeFor(u.user.id) : "/portal" });
   }
 
   async function onReset() {

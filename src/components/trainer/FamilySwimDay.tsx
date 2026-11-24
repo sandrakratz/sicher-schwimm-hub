@@ -162,7 +162,7 @@ export function FamilySwimUpcoming({
     <CollapsibleCard
       storageKey="trainer-mitgliederschwimmen-spaeter"
       title="Weitere Termine Mitgliederschwimmen"
-      subtitle="Kommende Termine mit Zusagen – am Termintag erscheinen sie unter dem Wochentag"
+      subtitle="Kommende Termine mit Zusagen – kurz vorher erscheinen sie oben als eigener Knopf"
       meta={<Badge variant="outline">{events.length}</Badge>}
       defaultOpen={false}
     >

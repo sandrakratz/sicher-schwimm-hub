@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -120,6 +121,51 @@ function Page() {
   const { defaults, ready } = useContactDefaults();
   const today = todayBerlinIso();
 
+  // Antrag in Schritten. Alle Felder bleiben im Formular (nur ausgeblendet), damit Prüfung und
+  // Speichern unverändert über das ganze Formular laufen.
+  const steps =
+    tier === "family"
+      ? [
+          { id: "angaben", label: "Angaben" },
+          { id: "familie", label: "Familie" },
+          { id: "sepa", label: "Lastschrift" },
+          { id: "abschluss", label: "Abschluss" },
+        ]
+      : [
+          { id: "angaben", label: "Angaben" },
+          { id: "sepa", label: "Lastschrift" },
+          { id: "abschluss", label: "Abschluss" },
+        ];
+  const [stepIdx, setStepIdx] = useState(0);
+  const idx = Math.min(stepIdx, steps.length - 1);
+  const current = steps[idx].id;
+  const formRef = useRef<HTMLFormElement>(null);
+  const toTop = () => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  /** Pflichtfelder des aktuellen Schritts prüfen (Browser-Hinweis am ersten fehlenden Feld). */
+  function stepValid(): boolean {
+    const box = formRef.current?.querySelector(`[data-step="${current}"]`);
+    const fields = box
+      ? (Array.from(box.querySelectorAll("input,select,textarea")) as HTMLInputElement[])
+      : [];
+    const bad = fields.find((f) => !f.checkValidity());
+    if (bad) bad.reportValidity();
+    return !bad;
+  }
+
+  /** Zum Schritt mit dem (ersten) fehlerhaften Feld springen und den Hinweis dort zeigen. */
+  function jumpToInvalid(names?: string[]) {
+    const form = formRef.current;
+    if (!form) return;
+    const el = (
+      names?.length ? form.querySelector(`[name="${names[0]}"]`) : form.querySelector(":invalid")
+    ) as HTMLInputElement | null;
+    const step = el?.closest("[data-step]")?.getAttribute("data-step");
+    const i = steps.findIndex((s) => s.id === step);
+    if (i >= 0) setStepIdx(i);
+    setTimeout(() => el?.reportValidity?.(), 50);
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -132,6 +178,7 @@ function Page() {
     if (!v.ok) {
       ft.invalid(v.fields, v.code);
       toast.error(v.message);
+      jumpToInvalid(v.fields);
       return;
     }
     ft.attempt();
@@ -234,134 +281,202 @@ function Page() {
                 aktiv.
               </p>
               {/* key: nach dem Laden bekannter Kontaktdaten neu aufbauen, damit sie vorbelegt sind */}
+              <ol className="mb-6 flex flex-wrap gap-2" aria-label="Schritte">
+                {steps.map((s, i) => (
+                  <li
+                    key={s.id}
+                    aria-current={i === idx ? "step" : undefined}
+                    className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                      i === idx
+                        ? "bg-primary-deep text-white"
+                        : i < idx
+                          ? "bg-secondary text-primary-deep"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {i + 1}. {s.label}
+                  </li>
+                ))}
+              </ol>
               <form
+                ref={formRef}
                 key={ready ? "prefilled" : "loading"}
                 onSubmit={onSubmit}
                 {...ft.formProps}
                 className="space-y-6"
               >
-                <div>
-                  <Label>Mitgliedschaftsart</Label>
-                  <Select value={tier} onValueChange={(t) => setTier(t as MembershipTier)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIERS.map((t) => (
-                        <SelectItem key={t.type} value={t.type}>
-                          {t.name} – {t.price}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <TextField
-                    id="first_name"
-                    name="first_name"
-                    label="Vorname *"
-                    required
-                    maxLength={100}
-                    defaultValue={defaults.firstName}
-                  />
-                  <TextField
-                    id="last_name"
-                    name="last_name"
-                    label="Nachname *"
-                    required
-                    maxLength={100}
-                    defaultValue={defaults.lastName}
-                  />
-                  <TextField
-                    id="date_of_birth"
-                    type="date"
-                    name="date_of_birth"
-                    label="Geburtsdatum *"
-                    required
-                    defaultValue={defaults.dateOfBirth}
-                    onChange={(e) => setDob(e.target.value)}
-                  />
+                <div data-step="angaben" hidden={current !== "angaben"} className="space-y-6">
                   <div>
-                    <Label htmlFor="start_date">Mitglied ab *</Label>
-                    <Input
-                      id="start_date"
-                      type="date"
-                      name="start_date"
-                      required
-                      min={today}
-                      max={maxMembershipStart(today)}
-                      defaultValue={today}
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Frühestens heute, höchstens 6 Monate im Voraus. Der Beitrag gilt ab diesem
-                      Datum (Eintritt nach dem 1. Juli: halber Jahresbeitrag). Kurse, die ab diesem
-                      Datum beginnen, erhalten den Mitgliedspreis, sofern die Mitgliedschaft
-                      zustande kommt. Nach unserer Bestätigung ist sie verbindlich; Austritt ist nur
-                      mit sechs Wochen Frist zum Jahresende möglich.
-                    </p>
+                    <Label>Mitgliedschaftsart</Label>
+                    <Select value={tier} onValueChange={(t) => setTier(t as MembershipTier)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIERS.map((t) => (
+                          <SelectItem key={t.type} value={t.type}>
+                            {t.name} – {t.price}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <TextField
-                    id="email"
-                    type="email"
-                    name="email"
-                    label="E-Mail *"
-                    required
-                    maxLength={255}
-                    defaultValue={defaults.email}
-                  />
-                  <TextField
-                    id="phone"
-                    type="tel"
-                    name="phone"
-                    label="Telefon *"
-                    required
-                    minLength={5}
-                    maxLength={40}
-                    defaultValue={defaults.phone}
-                  />
-                  <TextField
-                    id="address_street"
-                    name="address_street"
-                    label="Straße & Nr. *"
-                    required
-                    maxLength={200}
-                    defaultValue={defaults.street}
-                  />
-                  <TextField
-                    id="address_zip"
-                    name="address_zip"
-                    label="PLZ *"
-                    required
-                    maxLength={20}
-                    defaultValue={defaults.zip}
-                  />
-                  <TextField
-                    id="address_city"
-                    name="address_city"
-                    label="Ort *"
-                    required
-                    maxLength={100}
-                    defaultValue={defaults.city}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <TextField
+                      id="first_name"
+                      name="first_name"
+                      label="Vorname *"
+                      required
+                      maxLength={100}
+                      defaultValue={defaults.firstName}
+                    />
+                    <TextField
+                      id="last_name"
+                      name="last_name"
+                      label="Nachname *"
+                      required
+                      maxLength={100}
+                      defaultValue={defaults.lastName}
+                    />
+                    <TextField
+                      id="date_of_birth"
+                      type="date"
+                      name="date_of_birth"
+                      label="Geburtsdatum *"
+                      required
+                      defaultValue={defaults.dateOfBirth}
+                      onChange={(e) => setDob(e.target.value)}
+                    />
+                    <div>
+                      <Label htmlFor="start_date">Mitglied ab *</Label>
+                      <Input
+                        id="start_date"
+                        type="date"
+                        name="start_date"
+                        required
+                        min={today}
+                        max={maxMembershipStart(today)}
+                        defaultValue={today}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Frühestens heute, höchstens 6 Monate im Voraus. Der Beitrag gilt ab diesem
+                        Datum (Eintritt nach dem 1. Juli: halber Jahresbeitrag). Kurse, die ab
+                        diesem Datum beginnen, erhalten den Mitgliedspreis, sofern die
+                        Mitgliedschaft zustande kommt. Nach unserer Bestätigung ist sie verbindlich;
+                        Austritt ist nur mit sechs Wochen Frist zum Jahresende möglich.
+                      </p>
+                    </div>
+                    <TextField
+                      id="email"
+                      type="email"
+                      name="email"
+                      label="E-Mail *"
+                      required
+                      maxLength={255}
+                      defaultValue={defaults.email}
+                    />
+                    <TextField
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      label="Telefon *"
+                      required
+                      minLength={5}
+                      maxLength={40}
+                      defaultValue={defaults.phone}
+                    />
+                    <TextField
+                      id="address_street"
+                      name="address_street"
+                      label="Straße & Nr. *"
+                      required
+                      maxLength={200}
+                      defaultValue={defaults.street}
+                    />
+                    <TextField
+                      id="address_zip"
+                      name="address_zip"
+                      label="PLZ *"
+                      required
+                      maxLength={20}
+                      defaultValue={defaults.zip}
+                    />
+                    <TextField
+                      id="address_city"
+                      name="address_city"
+                      label="Ort *"
+                      required
+                      maxLength={100}
+                      defaultValue={defaults.city}
+                    />
+                  </div>
+
+                  <GuardianSection showMinor={showMinor} />
+                </div>
+                {tier === "family" && (
+                  <div data-step="familie" hidden={current !== "familie"}>
+                    <MembershipFamilySection family={family} />
+                  </div>
+                )}
+                <div data-step="sepa" hidden={current !== "sepa"}>
+                  <SepaMandateSection
+                    showMinor={showMinor}
+                    minorHint={showMinor || tier === "family"}
                   />
                 </div>
+                <div data-step="abschluss" hidden={current !== "abschluss"} className="space-y-6">
+                  <MembershipConsents />
+                  <AccountPasswordSection />
+                  <HoneypotField />
+                </div>
 
-                <GuardianSection showMinor={showMinor} />
-                {tier === "family" && <MembershipFamilySection family={family} />}
-                <SepaMandateSection
-                  showMinor={showMinor}
-                  minorHint={showMinor || tier === "family"}
-                />
-                <MembershipConsents />
-                <AccountPasswordSection />
-                <HoneypotField />
-
-                <SubmitButton
-                  loading={loading}
-                  loadingText="Antrag wird gesendet…"
-                  className="w-full"
-                >
-                  Mitgliedsantrag absenden
-                </SubmitButton>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                  {idx > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      onClick={() => {
+                        setStepIdx(idx - 1);
+                        toTop();
+                      }}
+                    >
+                      Zurück
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  {idx < steps.length - 1 ? (
+                    <Button
+                      type="button"
+                      variant="accent"
+                      size="lg"
+                      onClick={() => {
+                        if (!stepValid()) return;
+                        setStepIdx(idx + 1);
+                        toTop();
+                      }}
+                    >
+                      Weiter
+                    </Button>
+                  ) : (
+                    <SubmitButton
+                      loading={loading}
+                      loadingText="Antrag wird gesendet…"
+                      onClick={(e) => {
+                        // Fehlt etwas in einem früheren Schritt, dorthin springen statt still nichts zu tun
+                        const bad = formRef.current?.querySelector(":invalid");
+                        const step = bad?.closest("[data-step]")?.getAttribute("data-step");
+                        if (bad && step && step !== current) {
+                          e.preventDefault();
+                          jumpToInvalid();
+                        }
+                      }}
+                    >
+                      Mitgliedsantrag absenden
+                    </SubmitButton>
+                  )}
+                </div>
               </form>
             </CardContent>
           </Card>

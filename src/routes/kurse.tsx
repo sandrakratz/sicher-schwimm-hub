@@ -319,54 +319,58 @@ function KursePage() {
                 </Card>
               );
             })}
-
-            <Card className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
-              <CardContent className="p-6 flex flex-col flex-1">
-                <h3 className="font-display text-xl font-bold text-primary-deep mb-2">
-                  Kein passender Platz dabei?
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4 flex-1">
-                  Tragen Sie Ihr Kind unverbindlich auf die Warteliste ein. Sobald ein Platz frei
-                  wird, erhalten Sie automatisch ein Angebot per E-Mail – Vereinsmitglieder werden
-                  bevorzugt berücksichtigt.
-                </p>
-                <Button asChild variant="accent" className="w-full">
-                  <Link to="/warteliste" search={{ programm: undefined }}>
-                    Auf die Warteliste setzen
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-soft border-0 hover:shadow-card transition-shadow flex flex-col">
-              <CardContent className="p-6 flex flex-col flex-1">
-                <BaderegelnCard variant="compact" />
-              </CardContent>
-            </Card>
           </div>
         )}
 
-        <div className="mt-12 max-w-2xl mx-auto rounded-2xl border bg-card p-6 shadow-soft">
-          <h2 className="font-display text-xl font-bold text-primary-deep mb-2">
-            Zahlung &amp; Bankverbindung
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>
-          <BankDetails />
-        </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-10">
-          Mit der Anmeldung gelten unsere{" "}
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          Kein passender Platz dabei?{" "}
           <Link
-            to="/kursbedingungen"
+            to="/warteliste"
+            search={{ programm: undefined }}
             className="text-primary underline font-semibold hover:text-primary-deep"
           >
-            Kursteilnahmebedingungen
+            Unverbindlich auf die Warteliste setzen
           </Link>{" "}
-          (Zahlung, Rücktritt, Aufsicht, Haftung).
+          – bei einem freien Platz erhalten Sie automatisch ein Angebot per E-Mail.
         </p>
-        <div className="flex justify-center mt-6">
-          <CancellationButton />
-        </div>
+
+        <section aria-labelledby="gut-zu-wissen" className="mt-14 max-w-4xl mx-auto">
+          <h2
+            id="gut-zu-wissen"
+            className="font-display text-2xl font-bold text-primary-deep mb-6 text-center"
+          >
+            Gut zu wissen
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="shadow-soft border-0">
+              <CardContent className="p-6">
+                <BaderegelnCard variant="compact" />
+              </CardContent>
+            </Card>
+            <Card className="shadow-soft border-0">
+              <CardContent className="p-6">
+                <h3 className="font-display text-xl font-bold text-primary-deep mb-2">
+                  Zahlung &amp; Bankverbindung
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">{BILLING.dueNote}</p>
+                <BankDetails />
+              </CardContent>
+            </Card>
+          </div>
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            Mit der Anmeldung gelten unsere{" "}
+            <Link
+              to="/kursbedingungen"
+              className="text-primary underline font-semibold hover:text-primary-deep"
+            >
+              Kursteilnahmebedingungen
+            </Link>{" "}
+            (Zahlung, Rücktritt, Aufsicht, Haftung).
+          </p>
+          <div className="flex justify-center mt-4">
+            <CancellationButton />
+          </div>
+        </section>
         <AiImageNotice className="mt-8 text-center" />
       </section>
     </PublicLayout>
