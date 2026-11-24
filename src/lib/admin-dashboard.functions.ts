@@ -157,7 +157,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         key: "overdue",
         label: "Zahlungen überfällig",
         count: overdue.count ?? 0,
-        to: "/admin/kurse",
+        to: "/admin/zahlungen",
         tone: "urgent",
         hint: "Zahlungsfrist ist abgelaufen",
       },

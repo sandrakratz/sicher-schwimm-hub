@@ -1,3 +1,4 @@
+import { MEMBERSHIP_TYPE_LABEL } from "@/lib/labels";
 import { createFileRoute } from "@tanstack/react-router";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,9 @@ import {
 import { formatDateBerlin, formatEuro } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/mitgliedschaften")({
+  // ?antrag=<id> öffnet einen Antrag direkt (Sprung aus dem Eingang)
+  validateSearch: (search: Record<string, unknown>): { antrag?: string } =>
+    typeof search["antrag"] === "string" && search["antrag"] ? { antrag: search["antrag"] } : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -41,12 +45,7 @@ export const Route = createFileRoute("/_authenticated/admin/mitgliedschaften")({
   component: Page,
 });
 
-const TYPE_LABEL: Record<string, string> = {
-  children_youth: "Kinder & Jugend",
-  adult: "Erwachsene",
-  family: "Familie",
-  supporting: "Förderung",
-};
+const TYPE_LABEL = MEMBERSHIP_TYPE_LABEL;
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Wartet auf Freigabe",
@@ -390,6 +389,7 @@ function Page() {
   const [editingFamily, setEditingFamily] = useState(false);
   const setStatusFn = useServerFn(setMembershipStatus);
   const deleteFn = useServerFn(deleteMembershipFn);
+  const { antrag } = Route.useSearch();
 
   async function load() {
     const { data } = await supabase
@@ -397,8 +397,9 @@ function Page() {
       .select("*")
       .order("created_at", { ascending: false });
     setRows(data || []);
-    if (selected) {
-      const fresh = (data || []).find((r) => r.id === selected.id);
+    const openId = selected?.id ?? antrag;
+    if (openId) {
+      const fresh = (data || []).find((r) => r.id === openId);
       if (fresh) setSelected(fresh);
     }
   }

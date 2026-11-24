@@ -1,3 +1,4 @@
+import { MEMBERSHIP_TYPE_LABEL } from "@/lib/labels";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, Mail, Phone } from "lucide-react";
@@ -43,12 +44,7 @@ export type MemberCardData = {
   children: Person[];
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  children_youth: "Kinder & Jugend",
-  adult: "Erwachsene",
-  family: "Familie",
-  supporting: "Förderung",
-};
+const TYPE_LABEL = MEMBERSHIP_TYPE_LABEL;
 
 /** Kompakte Mitglieds-Karte für kleine Displays. */
 export function MemberCard({ m }: { m: MemberCardData }) {
