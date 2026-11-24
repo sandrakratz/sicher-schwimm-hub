@@ -110,9 +110,10 @@ function Home() {
               Sicherheitsstandards.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
+              {/* Ein Einstieg für Eltern: der Kursfinder führt zum passenden Kurs – frei → buchen, voll → Warteliste */}
               <Button asChild variant="accent" size="xl">
-                <Link to="/warteliste" search={{ programm: undefined }}>
-                  {LABELS.waitlistCta} <ArrowRight className="ml-1 h-4 w-4" />
+                <Link to="/kursfinder">
+                  Passenden Kurs finden <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild variant="hero" size="xl">
