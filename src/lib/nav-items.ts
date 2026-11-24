@@ -149,6 +149,8 @@ export const adminSections: {
       { to: "/admin/erwachsenenkurs", label: "Erwachsenenkurs" },
       { to: "/admin/familienschwimmen", label: "Mitgliederschwimmen" },
     ],
+    // Einzelner Kurszeitraum mit Teilnehmern (/admin/kurs/<id>)
+    also: ["/admin/kurs"],
   },
   {
     label: "Familien",

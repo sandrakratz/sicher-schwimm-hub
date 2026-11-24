@@ -1,10 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
 import { CourseSessionsMailDialog } from "@/components/admin/CourseSessionsMailDialog";
 import { CourseDialog } from "@/components/admin/kurse/CourseDialog";
 import { HeaderActions } from "@/components/admin/kurse/HeaderActions";
-import { ParticipantsDialog } from "@/components/admin/kurse/ParticipantsDialog";
 import { ProgramCards } from "@/components/admin/kurse/ProgramCards";
 import { ProgramDetailDialog } from "@/components/admin/kurse/ProgramDetailDialog";
 import { ProgramDialog } from "@/components/admin/kurse/ProgramDialog";
@@ -14,7 +13,6 @@ import type { Course } from "@/components/admin/kurse/shared";
 import { useCourseData } from "@/components/admin/kurse/useCourseData";
 import { useCourseEditor } from "@/components/admin/kurse/useCourseEditor";
 import { useCourseExports } from "@/components/admin/kurse/useCourseExports";
-import { useParticipants } from "@/components/admin/kurse/useParticipants";
 import { useProgramEditor } from "@/components/admin/kurse/useProgramEditor";
 import { useSessions } from "@/components/admin/kurse/useSessions";
 
@@ -39,7 +37,10 @@ function Page() {
   const programEditor = useProgramEditor(programs, load);
   const courseEditor = useCourseEditor(load, programs);
   const sessions = useSessions(load);
-  const participants = useParticipants(programs, load);
+  // Teilnehmer eines Kurszeitraums haben eine eigene Seite (statt Dialog im Kursangebot-Dialog)
+  const navigate = useNavigate();
+  const openParticipants = (c: Course) =>
+    void navigate({ to: "/admin/kurs/$courseId", params: { courseId: c.id } });
   const [broadcastCourse, setBroadcastCourse] = useState<Course | null>(null);
   const [sessionsMailCourse, setSessionsMailCourse] = useState<Course | null>(null);
 
@@ -48,7 +49,7 @@ function Page() {
     counts,
     waitingFor: data.waitingFor,
     exports,
-    onParticipants: participants.openFor,
+    onParticipants: openParticipants,
     onSessions: sessions.openSessions,
     onEdit: courseEditor.startEdit,
     onBroadcast: setBroadcastCourse,
@@ -95,12 +96,6 @@ function Page() {
         onSave={programEditor.save}
       />
       <CourseDialog {...courseEditor.dialogProps} />
-      <ParticipantsDialog
-        list={participants}
-        counts={counts}
-        programs={programs}
-        courses={data.rows}
-      />
       <SessionsDialog {...sessions.dialogProps} />
       <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
       <CourseSessionsMailDialog
