@@ -99,6 +99,8 @@ import { Route as ApiPublicNotifyAdminRouteImport } from './routes/api/public/no
 import { Route as ApiPublicPayQrRouteImport } from './routes/api/public/pay-qr'
 import { Route as ApiPublicSubmitCancellationRouteImport } from './routes/api/public/submit-cancellation'
 import { Route as ApiPublicTrainerIcsRouteImport } from './routes/api/public/trainer-ics'
+import { Route as AuthenticatedAdminKursCourseIdRouteImport } from './routes/_authenticated/admin/kurs.$courseId'
+import { Route as AuthenticatedAdminKursangebotProgramIdRouteImport } from './routes/_authenticated/admin/kursangebot.$programId'
 import { Route as AuthenticatedTrainerAbzeichenCourseIdRouteImport } from './routes/_authenticated/trainer/abzeichen.$courseId'
 import { Route as ApiPublicHooksBadgePrepReminderRouteImport } from './routes/api/public/hooks/badge-prep-reminder'
 import { Route as ApiPublicHooksCourseStartReminderRouteImport } from './routes/api/public/hooks/course-start-reminder'
@@ -604,6 +606,18 @@ const ApiPublicTrainerIcsRoute = ApiPublicTrainerIcsRouteImport.update({
   path: '/api/public/trainer-ics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminKursCourseIdRoute =
+  AuthenticatedAdminKursCourseIdRouteImport.update({
+    id: '/kurs/$courseId',
+    path: '/kurs/$courseId',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminKursangebotProgramIdRoute =
+  AuthenticatedAdminKursangebotProgramIdRouteImport.update({
+    id: '/kursangebot/$programId',
+    path: '/kursangebot/$programId',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedTrainerAbzeichenCourseIdRoute =
   AuthenticatedTrainerAbzeichenCourseIdRouteImport.update({
     id: '/trainer/abzeichen/$courseId',
@@ -761,6 +775,8 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
+  '/admin/kurs/$courseId': typeof AuthenticatedAdminKursCourseIdRoute
+  '/admin/kursangebot/$programId': typeof AuthenticatedAdminKursangebotProgramIdRoute
   '/trainer/abzeichen/$courseId': typeof AuthenticatedTrainerAbzeichenCourseIdRoute
   '/api/public/hooks/badge-prep-reminder': typeof ApiPublicHooksBadgePrepReminderRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
@@ -862,6 +878,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
+  '/admin/kurs/$courseId': typeof AuthenticatedAdminKursCourseIdRoute
+  '/admin/kursangebot/$programId': typeof AuthenticatedAdminKursangebotProgramIdRoute
   '/trainer/abzeichen/$courseId': typeof AuthenticatedTrainerAbzeichenCourseIdRoute
   '/api/public/hooks/badge-prep-reminder': typeof ApiPublicHooksBadgePrepReminderRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
@@ -966,6 +984,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
+  '/_authenticated/admin/kurs/$courseId': typeof AuthenticatedAdminKursCourseIdRoute
+  '/_authenticated/admin/kursangebot/$programId': typeof AuthenticatedAdminKursangebotProgramIdRoute
   '/_authenticated/trainer/abzeichen/$courseId': typeof AuthenticatedTrainerAbzeichenCourseIdRoute
   '/api/public/hooks/badge-prep-reminder': typeof ApiPublicHooksBadgePrepReminderRoute
   '/api/public/hooks/course-start-reminder': typeof ApiPublicHooksCourseStartReminderRoute
@@ -1070,6 +1090,8 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/portal/'
     | '/trainer/'
+    | '/admin/kurs/$courseId'
+    | '/admin/kursangebot/$programId'
     | '/trainer/abzeichen/$courseId'
     | '/api/public/hooks/badge-prep-reminder'
     | '/api/public/hooks/course-start-reminder'
@@ -1171,6 +1193,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/portal'
     | '/trainer'
+    | '/admin/kurs/$courseId'
+    | '/admin/kursangebot/$programId'
     | '/trainer/abzeichen/$courseId'
     | '/api/public/hooks/badge-prep-reminder'
     | '/api/public/hooks/course-start-reminder'
@@ -1274,6 +1298,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/portal/'
     | '/_authenticated/trainer/'
+    | '/_authenticated/admin/kurs/$courseId'
+    | '/_authenticated/admin/kursangebot/$programId'
     | '/_authenticated/trainer/abzeichen/$courseId'
     | '/api/public/hooks/badge-prep-reminder'
     | '/api/public/hooks/course-start-reminder'
@@ -1972,6 +1998,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTrainerIcsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/kurs/$courseId': {
+      id: '/_authenticated/admin/kurs/$courseId'
+      path: '/kurs/$courseId'
+      fullPath: '/admin/kurs/$courseId'
+      preLoaderRoute: typeof AuthenticatedAdminKursCourseIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/kursangebot/$programId': {
+      id: '/_authenticated/admin/kursangebot/$programId'
+      path: '/kursangebot/$programId'
+      fullPath: '/admin/kursangebot/$programId'
+      preLoaderRoute: typeof AuthenticatedAdminKursangebotProgramIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/trainer/abzeichen/$courseId': {
       id: '/_authenticated/trainer/abzeichen/$courseId'
       path: '/trainer/abzeichen/$courseId'
@@ -2086,6 +2126,8 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminZahlungenRoute: typeof AuthenticatedAdminZahlungenRoute
   AuthenticatedAdminZustaendigkeitenRoute: typeof AuthenticatedAdminZustaendigkeitenRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminKursCourseIdRoute: typeof AuthenticatedAdminKursCourseIdRoute
+  AuthenticatedAdminKursangebotProgramIdRoute: typeof AuthenticatedAdminKursangebotProgramIdRoute
 }
 
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
@@ -2131,6 +2173,9 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminZustaendigkeitenRoute:
       AuthenticatedAdminZustaendigkeitenRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+    AuthenticatedAdminKursCourseIdRoute: AuthenticatedAdminKursCourseIdRoute,
+    AuthenticatedAdminKursangebotProgramIdRoute:
+      AuthenticatedAdminKursangebotProgramIdRoute,
   }
 
 const AuthenticatedAdminRouteRouteWithChildren =

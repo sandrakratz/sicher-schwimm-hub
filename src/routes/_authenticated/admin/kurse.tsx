@@ -1,22 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog";
-import { CourseSessionsMailDialog } from "@/components/admin/CourseSessionsMailDialog";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CourseDialog } from "@/components/admin/kurse/CourseDialog";
 import { HeaderActions } from "@/components/admin/kurse/HeaderActions";
-import { ParticipantsDialog } from "@/components/admin/kurse/ParticipantsDialog";
 import { ProgramCards } from "@/components/admin/kurse/ProgramCards";
-import { ProgramDetailDialog } from "@/components/admin/kurse/ProgramDetailDialog";
 import { ProgramDialog } from "@/components/admin/kurse/ProgramDialog";
-import { SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
-import type { TermContext } from "@/components/admin/kurse/TermCard";
-import type { Course } from "@/components/admin/kurse/shared";
 import { useCourseData } from "@/components/admin/kurse/useCourseData";
 import { useCourseEditor } from "@/components/admin/kurse/useCourseEditor";
 import { useCourseExports } from "@/components/admin/kurse/useCourseExports";
-import { useParticipants } from "@/components/admin/kurse/useParticipants";
 import { useProgramEditor } from "@/components/admin/kurse/useProgramEditor";
-import { useSessions } from "@/components/admin/kurse/useSessions";
 
 export const Route = createFileRoute("/_authenticated/admin/kurse")({
   beforeLoad: async () => {
@@ -32,31 +22,17 @@ export const Route = createFileRoute("/_authenticated/admin/kurse")({
   component: Page,
 });
 
+/**
+ * Kursverwaltung: Übersicht der Kursangebote. Ein Klick öffnet die Seite des Angebots
+ * (Kurszeiträume, Kursangaben), von dort führt „Teilnehmer“ zur Seite des Zeitraums.
+ */
 function Page() {
   const data = useCourseData();
   const { programs, counts, load } = data;
   const exports = useCourseExports();
   const programEditor = useProgramEditor(programs, load);
   const courseEditor = useCourseEditor(load, programs);
-  const sessions = useSessions(load);
-  const participants = useParticipants(programs, load);
-  const [broadcastCourse, setBroadcastCourse] = useState<Course | null>(null);
-  const [sessionsMailCourse, setSessionsMailCourse] = useState<Course | null>(null);
-
-  const termContext: TermContext = {
-    programs,
-    counts,
-    waitingFor: data.waitingFor,
-    exports,
-    onParticipants: participants.openFor,
-    onSessions: sessions.openSessions,
-    onEdit: courseEditor.startEdit,
-    onBroadcast: setBroadcastCourse,
-    onSessionsMail: setSessionsMailCourse,
-    onArchive: data.setArchived,
-    onRemove: data.removeCourse,
-    onReload: load,
-  };
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-7xl space-y-6">
@@ -76,17 +52,15 @@ function Page() {
         counts={counts}
         termsOf={data.termsOf}
         waitingFor={data.waitingFor}
-        onOpen={programEditor.openDetail}
+        onOpen={(p) =>
+          void navigate({
+            to: "/admin/kursangebot/$programId",
+            params: { programId: p ? p.id : "ohne" },
+          })
+        }
         onNewTerm={courseEditor.startNewTerm}
       />
 
-      <ProgramDetailDialog
-        editor={programEditor}
-        programs={programs}
-        termsOf={data.termsOf}
-        onNewTerm={courseEditor.startNewTerm}
-        ctx={termContext}
-      />
       <ProgramDialog
         open={programEditor.dialogOpen}
         onOpenChange={programEditor.setDialogOpen}
@@ -95,18 +69,6 @@ function Page() {
         onSave={programEditor.save}
       />
       <CourseDialog {...courseEditor.dialogProps} />
-      <ParticipantsDialog
-        list={participants}
-        counts={counts}
-        programs={programs}
-        courses={data.rows}
-      />
-      <SessionsDialog {...sessions.dialogProps} />
-      <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
-      <CourseSessionsMailDialog
-        course={sessionsMailCourse}
-        onClose={() => setSessionsMailCourse(null)}
-      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Check, Pencil, Repeat, Undo2, UserX, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -134,7 +135,14 @@ export function FamilyBookings({
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {c?.name ?? "Kurs"}
+                  <Link
+                    to="/admin/kurs/$courseId"
+                    params={{ courseId: p.course_id }}
+                    className="text-primary underline underline-offset-2"
+                    title="Kurs mit allen Teilnehmern öffnen"
+                  >
+                    {c?.name ?? "Kurs"}
+                  </Link>
                   {c?.starts_on &&
                     ` · ${formatDateBerlin(c.starts_on)}${c.ends_on && c.ends_on !== c.starts_on ? ` – ${formatDateBerlin(c.ends_on)}` : ""}`}
                   {p.price_amount != null && ` · ${formatEuro(p.price_amount)}`}

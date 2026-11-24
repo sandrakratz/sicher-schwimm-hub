@@ -3,17 +3,13 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { slugify, type ProgramRow } from "@/components/admin/kurse/shared";
 
-/** „unassigned“ = Detailansicht der Zeiträume ohne Kursangebot. */
-export type DetailId = string | "unassigned" | null;
-
 /**
  * Kursangebot anlegen/bearbeiten. Derselbe Bearbeitungsstand dient dem Dialog „Neues Kursangebot“
- * und dem Reiter „Kursangaben“ der Detailansicht.
+ * und dem Reiter „Kursangaben“ auf der Seite des Kursangebots.
  */
 export function useProgramEditor(programs: ProgramRow[], onSaved: () => Promise<void>) {
   const [editing, setEditing] = useState<Partial<ProgramRow>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [detailId, setDetailId] = useState<DetailId>(null);
 
   function startNew() {
     setEditing({
@@ -27,9 +23,9 @@ export function useProgramEditor(programs: ProgramRow[], onSaved: () => Promise<
     setDialogOpen(true);
   }
 
-  function openDetail(p: ProgramRow | null) {
+  /** Angaben eines bestehenden Angebots zum Bearbeiten laden (Seite des Kursangebots). */
+  function edit(p: ProgramRow | null) {
     setEditing(p ?? {});
-    setDetailId(p ? p.id : "unassigned");
   }
 
   async function save() {
@@ -72,13 +68,18 @@ export function useProgramEditor(programs: ProgramRow[], onSaved: () => Promise<
     await onSaved();
   }
 
-  async function remove(p: ProgramRow) {
+  /** Löscht das Angebot nach Rückfrage; true, wenn gelöscht. */
+  async function remove(p: ProgramRow): Promise<boolean> {
     if (!confirm(`Kursangebot "${p.name}" löschen? Zugeordnete Kurszeiträume bleiben erhalten.`))
-      return;
+      return false;
     const { error } = await supabase.from("course_programs").delete().eq("id", p.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
     toast.success("Gelöscht");
     await onSaved();
+    return true;
   }
 
   return {
@@ -86,10 +87,8 @@ export function useProgramEditor(programs: ProgramRow[], onSaved: () => Promise<
     setEditing,
     dialogOpen,
     setDialogOpen,
-    detailId,
-    setDetailId,
     startNew,
-    openDetail,
+    edit,
     save,
     remove,
   };
