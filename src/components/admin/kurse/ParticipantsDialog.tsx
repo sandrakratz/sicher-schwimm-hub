@@ -26,31 +26,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
-import { errorText } from "@/lib/format";
-import { combineReason } from "@/lib/decline-reasons";
-import { moveParticipantToWaitlist } from "@/lib/course-assignment.functions";
 import { syncMemberPrices } from "@/lib/membership.functions";
-import {
-  cancelCourseParticipant,
-  removeCourseParticipant,
-} from "@/lib/participants-admin.functions";
-import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
 import { AddParticipantForm } from "@/components/admin/kurse/AddParticipantForm";
-import { EditParticipantDialog } from "@/components/admin/kurse/EditParticipantDialog";
-import {
-  CancelParticipantDialog,
-  RemoveParticipantDialog,
-} from "@/components/admin/kurse/ParticipantDialogs";
 import { ParticipantRow } from "@/components/admin/kurse/ParticipantRow";
 import { RequestDialog } from "@/components/admin/kurse/RequestDialog";
 import { useCourseMailings } from "@/components/admin/kurse/useCourseMailings";
+import {
+  ParticipantActionDialogs,
+  useParticipantActions,
+} from "@/components/admin/kurse/useParticipantActions";
 import {
   courseLabel,
   type Course,
   type CourseCounts,
   type CourseRequest,
-  type Participant,
   type ProgramRow,
 } from "@/components/admin/kurse/shared";
 import {
@@ -58,8 +47,7 @@ import {
   paymentOf,
   type ParticipantList,
 } from "@/components/admin/kurse/useParticipants";
-
-type RemoveState = Parameters<typeof RemoveParticipantDialog>[0]["state"];
+import type { Participant } from "@/components/admin/kurse/shared";
 
 const PAY_RANK: Record<string, number> = { immediate: 0, overdue: 1, expected: 2, paid: 3 };
 
@@ -77,24 +65,14 @@ export function ParticipantsDialog({
   courses: Course[];
 }) {
   const { course, participants, pendingMoveOut, refresh } = list;
-  const removeParticipantFn = useServerFn(removeCourseParticipant);
-  const moveToWaitlistFn = useServerFn(moveParticipantToWaitlist);
-  const cancelParticipantFn = useServerFn(cancelCourseParticipant);
   const syncMemberPricesFn = useServerFn(syncMemberPrices);
   const { reminding, handleSendReminders } = useCourseMailings();
+  const a = useParticipantActions(refresh);
 
   // Abgesagte Buchungen (Status „cancelled“) sind standardmäßig ausgeblendet
   const [showCancelled, setShowCancelled] = useState(false);
   const [payFilter, setPayFilter] = useState("all");
   const [paySort, setPaySort] = useState("name");
-  const [editPart, setEditPart] = useState<Participant | null>(null);
-  const [transferPart, setTransferPart] = useState<Participant | null>(null);
-  const [cancelFor, setCancelFor] = useState<Participant | null>(null);
-  const [cancelCategory, setCancelCategory] = useState("");
-  const [cancelDetail, setCancelDetail] = useState("");
-  const [cancelBusy, setCancelBusy] = useState(false);
-  const [removeState, setRemoveState] = useState<RemoveState>(null);
-  const [removing, setRemoving] = useState(false);
   const [reqOpen, setReqOpen] = useState(false);
   const [reqLoading, setReqLoading] = useState(false);
   const [reqRow, setReqRow] = useState<CourseRequest | null>(null);
@@ -141,81 +119,6 @@ export function ParticipantsDialog({
     setReqRow(data as CourseRequest);
   }
 
-  async function updateStatus(p: Participant, status: Participant["status"]) {
-    if (status === "waiting") {
-      // Zugeteiltes Kind zurück auf die Warteliste: Platz freigeben und
-      // Wartelisteneintrag (wieder-)herstellen, damit niemand verloren geht.
-      try {
-        await moveToWaitlistFn({ data: { participantId: p.id } });
-        toast.success("Zurück auf die Warteliste gesetzt");
-      } catch (e) {
-        return toast.error(errorText(e, "Verschieben auf die Warteliste fehlgeschlagen"));
-      }
-      return refresh();
-    }
-    if (status === "cancelled") {
-      // Absage durch die Familie: Grund per Auswahl erfassen (Dialog), Zeitpunkt und Grund werden
-      // gespeichert, damit sie in der Anfrageliste (Reiter „Absagen“) und im Sperrvorschlag mitzählt.
-      setCancelCategory("");
-      setCancelDetail("");
-      setCancelFor(p);
-      return;
-    }
-    const { error } = await supabase.from("course_participants").update({ status }).eq("id", p.id);
-    if (error) return toast.error(error.message);
-    await refresh();
-  }
-
-  async function confirmCancel() {
-    if (!cancelFor) return;
-    setCancelBusy(true);
-    try {
-      await cancelParticipantFn({
-        data: {
-          participantId: cancelFor.id,
-          reason: combineReason(cancelCategory, cancelDetail) ?? "",
-        },
-      });
-      toast.success("Absage erfasst – der Platz ist frei und zählt in der Anfrageliste mit");
-      setCancelFor(null);
-      await refresh();
-    } catch (e) {
-      toast.error(errorText(e, "Absage konnte nicht erfasst werden"));
-    } finally {
-      setCancelBusy(false);
-    }
-  }
-
-  async function confirmRemove() {
-    if (!removeState) return;
-    setRemoving(true);
-    try {
-      const res = (await removeParticipantFn({
-        data: {
-          participantId: removeState.participant.id,
-          reason: removeState.reason,
-          blocklist: removeState.blocklist,
-          notify: removeState.participant.participant_email ? removeState.notify : "none",
-          note: removeState.note,
-        },
-      })) as { emailed?: boolean } | null;
-      toast.success(
-        [
-          removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
-          res?.emailed ? "E-Mail an die Eltern versendet" : null,
-        ]
-          .filter(Boolean)
-          .join(" · "),
-      );
-      setRemoveState(null);
-      await refresh();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Entfernen fehlgeschlagen");
-    } finally {
-      setRemoving(false);
-    }
-  }
-
   async function syncPrices() {
     if (!course) return;
     try {
@@ -237,75 +140,6 @@ export function ParticipantsDialog({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Abgleich fehlgeschlagen");
     }
-  }
-
-  async function savePart() {
-    if (!editPart) return;
-    if (!editPart.participant_name?.trim()) return toast.error("Name erforderlich");
-    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
-    const memberConfirmedChanged = editPart.member_confirmed && !editPart.member_confirmed_at;
-    const { error } = await supabase
-      .from("course_participants")
-      .update({
-        participant_name: editPart.participant_name.trim(),
-        participant_email: editPart.participant_email?.trim() || null,
-        participant_phone: editPart.participant_phone?.trim() || null,
-        date_of_birth: editPart.date_of_birth || null,
-        status: editPart.status,
-        notes: editPart.notes?.trim() || null,
-        internal_notes: editPart.internal_notes?.trim() || null,
-        paid: editPart.paid,
-        paid_at: editPart.paid ? editPart.paid_at || new Date().toISOString() : null,
-        // „bezahlt von“ / „Mitgliedschaft bestätigt von“ bleiben erhalten, solange sich der Wert nicht ändert
-        paid_by: editPart.paid ? (editPart.paid_by ?? userId) : null,
-        payment_note: editPart.payment_note?.trim() || null,
-        is_member: editPart.is_member,
-        member_confirmed: editPart.member_confirmed,
-        member_confirmed_at: editPart.member_confirmed
-          ? editPart.member_confirmed_at ||
-            (memberConfirmedChanged ? new Date().toISOString() : null)
-          : null,
-        member_confirmed_by: editPart.member_confirmed
-          ? (editPart.member_confirmed_by ?? userId)
-          : null,
-        price_amount: editPart.price_amount,
-        parent_user_id: editPart.parent_user_id || null,
-        payer_street: editPart.payer_street?.trim() || null,
-        payer_zip: editPart.payer_zip?.trim() || null,
-        payer_city: editPart.payer_city?.trim() || null,
-      })
-      .eq("id", editPart.id);
-    if (error) return toast.error(error.message);
-    if (editPart.paid) schedulePaymentMail(editPart.id);
-    else cancelPaymentMail(editPart.id);
-    toast.success("Gespeichert");
-    setEditPart(null);
-    await refresh();
-  }
-
-  async function togglePaid(p: Participant, paid: boolean) {
-    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
-    const { error } = await supabase
-      .from("course_participants")
-      .update({
-        paid,
-        paid_at: paid ? new Date().toISOString() : null,
-        paid_by: paid ? userId : null,
-      })
-      .eq("id", p.id);
-    if (error) return toast.error(error.message);
-    if (paid) schedulePaymentMail(p.id);
-    else cancelPaymentMail(p.id);
-    toast.success(
-      paid
-        ? "Als bezahlt markiert – Eltern erhalten gleich eine Bestätigung"
-        : "Zahlung zurückgesetzt",
-      paid
-        ? { action: { label: "Rückgängig", onClick: () => void togglePaid(p, false) } }
-        : undefined,
-    );
-    // Nur die Teilnehmerliste: Zahlungen ändern die Kennzahlen der Kursliste erst beim nächsten Laden
-    await refresh(false);
   }
 
   /** Rechnungsanschrift liegt am Teilnehmer, nicht an der Anfrage. */
@@ -442,19 +276,11 @@ export function ParticipantsDialog({
                     parentName={p.request_id ? list.requestParent[p.request_id] || null : null}
                     health={p.request_id ? list.requestHealth[p.request_id] : null}
                     onOpenRequest={openRequest}
-                    onStatus={(s) => updateStatus(p, s)}
-                    onTogglePaid={(paid) => togglePaid(p, paid)}
-                    onEdit={() => setEditPart(p)}
-                    onTransfer={() => setTransferPart(p)}
-                    onRemove={() =>
-                      setRemoveState({
-                        participant: p,
-                        reason: p.paid ? "" : "Nichtzahlung",
-                        blocklist: !p.paid,
-                        notify: p.paid ? "agreed" : "unpaid",
-                        note: "",
-                      })
-                    }
+                    onStatus={(s) => a.updateStatus(p, s)}
+                    onTogglePaid={(paid) => a.togglePaid(p, paid)}
+                    onEdit={() => a.setEditPart(p)}
+                    onTransfer={() => a.setTransferPart(p)}
+                    onRemove={() => a.startRemove(p)}
                   />
                 ))}
               </TableBody>
@@ -486,9 +312,10 @@ export function ParticipantsDialog({
         address={requestAddress}
       />
 
-      <TransferParticipantDialog
-        participant={transferPart}
-        courses={courses
+      <ParticipantActionDialogs
+        a={a}
+        editCourse={course}
+        transferCourses={courses
           .filter((c) => !c.archived_at)
           .map((c) => ({
             id: c.id,
@@ -500,39 +327,8 @@ export function ParticipantsDialog({
                 ? c.max_participants - (counts[c.id]?.confirmed ?? 0)
                 : null,
           }))}
-        onClose={() => setTransferPart(null)}
-        onDone={async () => {
-          setTransferPart(null);
-          await refresh();
-        }}
-      />
-
-      <EditParticipantDialog
-        editPart={editPart}
-        setEditPart={setEditPart}
-        course={course}
-        canManage
         requestHealth={list.requestHealth}
         requestParent={list.requestParent}
-        onSave={savePart}
-      />
-
-      <CancelParticipantDialog
-        participant={cancelFor}
-        busy={cancelBusy}
-        category={cancelCategory}
-        detail={cancelDetail}
-        onCategory={setCancelCategory}
-        onDetail={setCancelDetail}
-        onClose={() => setCancelFor(null)}
-        onConfirm={confirmCancel}
-      />
-
-      <RemoveParticipantDialog
-        state={removeState}
-        setState={setRemoveState}
-        removing={removing}
-        onConfirm={confirmRemove}
       />
     </>
   );

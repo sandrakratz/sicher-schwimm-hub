@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowRightLeft, Award, Lock, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,6 +123,20 @@ export function ParticipantRow({
           </button>
         ) : (
           <span title="Manuell angelegt (keine Kursanfrage)">{p.participant_name || "—"}</span>
+        )}
+        {(p.participant_email || p.participant_name) && (
+          <Link
+            to="/admin/familie"
+            search={
+              p.participant_email
+                ? { email: p.participant_email }
+                : { name: p.participant_name ?? "" }
+            }
+            className="mt-0.5 block text-xs font-normal text-muted-foreground underline underline-offset-2 hover:text-primary"
+            title="Familienakte: alle Kinder, Anfragen, Buchungen, Zahlungen und der Verlauf"
+          >
+            Familienakte
+          </Link>
         )}
         {consent && (
           <div className="mt-1">
