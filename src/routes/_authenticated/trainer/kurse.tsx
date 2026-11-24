@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,7 +67,8 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const load = useServerFn(listMyTrainerCourses);
   const [swimEvents, setSwimEvents] = useState<TrainerFamilySwimEvent[]>([]);
-  const [pickedDay, setPickedDay] = useState<number | null>(null);
+  // Gewählter Kurs (ID) oder Mitgliederschwimmen („swim:<ID>“); ohne Wahl: der nächste Kurs
+  const [pickedKey, setPickedKey] = useState<string | null>(null);
   const loadSwim = useServerFn(listFamilySwimForTrainers);
   // Nach dem Speichern der Anwesenheit die Liste lokal nachziehen (ohne Neuladen).
   const applyAttendance: AttendanceSaved = (requestId, presentKeys) =>
@@ -204,30 +204,62 @@ function Page() {
   const swimSoon = swimWithSeats.filter((e) => e.event_date <= soonIso);
   const swimLater = swimWithSeats.filter((e) => e.event_date > soonIso);
 
-  // Ebene 1: Wochentage. Erst ein Tipp auf den Tag zeigt die Kurse und das Mitgliederschwimmen dieses Tages.
-  const days = [1, 2, 3, 4, 5, 6, 7, NO_DAY]
-    .map((wd) => ({
-      wd,
-      courses: activeCourses.filter((c) =>
-        wd === NO_DAY ? c.weekdays.length === 0 : c.weekdays.includes(wd),
-      ),
-      swim: swimSoon.filter((e) => wd !== NO_DAY && isoWeekday(e.event_date) === wd),
-    }))
-    .filter((d) => d.courses.length > 0 || d.swim.length > 0);
+  // Eine Ebene: oben den Kurs (oder das Mitgliederschwimmen) wählen, darunter steht alles dazu.
+  // Laufende Kurse mit heutigem Wochentag zuerst, weitere Kurse über die Auswahl „Weitere Kurse“.
   const todayWd = isoWeekday(today);
-  const selectedDay = (
-    days.find((d) => d.wd === pickedDay) ??
-    days.find((d) => d.wd === todayWd) ??
-    days[0]
-  )?.wd;
-  const day = days.find((d) => d.wd === selectedDay);
+  const dayOf = (c: TrainerCourse) =>
+    c.weekdays.length === 0 ? NO_DAY : (c.weekdays.find((w) => w >= todayWd) ?? c.weekdays[0]);
+  const chips: Array<
+    | { key: string; kind: "course"; course: TrainerCourse; label: string; today: boolean }
+    | { key: string; kind: "swim"; event: TrainerFamilySwimEvent; label: string; today: boolean }
+  > = [
+    ...swimSoon.map((e) => ({
+      key: `swim:${e.id}`,
+      kind: "swim" as const,
+      event: e,
+      label: `Mitgliederschwimmen · ${formatDateBerlin(e.event_date)}`,
+      today: e.event_date === today,
+    })),
+    ...activeCourses.map((c) => ({
+      key: c.id,
+      kind: "course" as const,
+      course: c,
+      label: `${c.name}${c.weekdays.length ? ` · ${c.weekdays.map((w) => WEEKDAYS[w - 1].slice(0, 2)).join("/")}` : ""}`,
+      today: c.weekdays.includes(todayWd),
+    })),
+  ].sort(
+    (a, b) =>
+      Number(b.today) - Number(a.today) ||
+      (a.kind === "course" && b.kind === "course"
+        ? ((dayOf(a.course) - todayWd + 7) % 7) - ((dayOf(b.course) - todayWd + 7) % 7)
+        : 0),
+  );
+  const more: Array<{ label: string; list: TrainerCourse[] }> = [
+    { label: `Beginnen in mehr als ${UPCOMING_DAYS} Tagen`, list: laterCourses },
+    { label: "Zum Aushelfen (nicht eingeteilt)", list: supportCourses },
+    { label: "Erledigt", list: doneCourses },
+  ].filter((g) => g.list.length > 0);
+  const allCourses = [...activeCourses, ...laterCourses, ...supportCourses, ...doneCourses];
+  const selectedKey =
+    (pickedKey &&
+    (chips.some((c) => c.key === pickedKey) || allCourses.some((c) => c.id === pickedKey))
+      ? pickedKey
+      : null) ??
+    chips[0]?.key ??
+    null;
+  const selectedChip = chips.find((c) => c.key === selectedKey) ?? null;
+  const selectedCourse =
+    selectedChip?.kind === "course"
+      ? selectedChip.course
+      : (allCourses.find((c) => c.id === selectedKey) ?? null);
+  const selectedSwim = selectedChip?.kind === "swim" ? selectedChip.event : null;
 
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Meine Kurse</h1>
+        <h1 className="text-2xl font-bold">Kurse &amp; Anwesenheit</h1>
         <p className="text-sm text-muted-foreground">
-          Teilnehmerinformationen zu den Kursen, in denen du eingeteilt bist.
+          Kurs wählen – darunter Anwesenheit, Zeitnahme, Ergebnisse und deine eigene Anwesenheit.
         </p>
       </div>
 
@@ -237,7 +269,7 @@ function Page() {
         </Card>
       )}
 
-      {!loading && courses.length === 0 && (
+      {!loading && courses.length === 0 && swimWithSeats.length === 0 && (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
             Du bist aktuell keinem Kurs zugeteilt.
@@ -257,142 +289,119 @@ function Page() {
         }}
       />
 
-      {days.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {days.map((d) => (
-            <button
-              key={d.wd}
-              type="button"
-              onClick={() => setPickedDay(d.wd)}
-              aria-pressed={d.wd === selectedDay}
-              className={`min-h-14 rounded-lg border p-3 text-left transition-colors ${
-                d.wd === selectedDay ? "border-primary bg-primary/10" : "hover:bg-muted"
-              }`}
-            >
-              <div className="font-semibold">
-                {d.wd === NO_DAY ? "Ohne festen Tag" : WEEKDAYS[d.wd - 1]}
-                {d.wd === todayWd && <span className="ml-1 text-xs text-primary">heute</span>}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {d.courses.length} {d.courses.length === 1 ? "Kurs" : "Kurse"}
-                {d.swim.length > 0 && " · Mitgliederschwimmen"}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {day && (
-        <div className="space-y-4">
-          {day.swim.map((e) => (
-            <FamilySwimDay
-              key={e.id}
-              event={e}
-              open={e.event_date === today}
-              onSaved={applyAttendance}
-            />
-          ))}
-          {day.courses.map((c, i) => renderCourse(c, i === 0 && day.swim.length === 0))}
-        </div>
-      )}
-
-      {laterCourses.length > 0 && (
-        <CollapsibleCard
-          storageKey="trainer-kurse-spaeter"
-          title="Demnächst startende Kurse"
-          subtitle={`Beginnen erst in mehr als ${UPCOMING_DAYS} Tagen – erscheinen dann automatisch unter dem Wochentag`}
-          meta={<Badge variant="outline">{laterCourses.length}</Badge>}
-        >
-          <div className="space-y-4 px-4 pb-4 sm:px-6">
-            {laterCourses.map((c) => renderCourse(c, false))}
+      {(chips.length > 0 || more.length > 0) && (
+        <div className="space-y-2">
+          <div role="group" aria-label="Kurs wählen" className="flex gap-2 overflow-x-auto pb-1">
+            {chips.map((c) => {
+              const on = c.key === selectedKey;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setPickedKey(c.key)}
+                  className={`min-h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
+                    on
+                      ? "border-primary-deep bg-primary-deep text-white"
+                      : "border-border bg-card hover:border-primary"
+                  }`}
+                >
+                  {c.label}
+                  {c.today && (
+                    <span className={`ml-1 text-xs ${on ? "text-accent" : "text-primary"}`}>
+                      heute
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        </CollapsibleCard>
+          {more.length > 0 && (
+            <label className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Weitere Kurse:</span>
+              <select
+                className="h-11 rounded-md border bg-background px-3 text-sm"
+                value={chips.some((c) => c.key === selectedKey) ? "" : (selectedKey ?? "")}
+                onChange={(e) => e.target.value && setPickedKey(e.target.value)}
+              >
+                <option value="">Bitte wählen …</option>
+                {more.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.list.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                        {c.starts_on ? ` · ab ${formatDateBerlin(c.starts_on)}` : ""}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       )}
+
+      {selectedSwim && (
+        <FamilySwimDay key={selectedSwim.id} event={selectedSwim} open onSaved={applyAttendance} />
+      )}
+      {selectedCourse && renderCourse(selectedCourse)}
 
       {swimLater.length > 0 && <FamilySwimUpcoming events={swimLater} onSaved={applyAttendance} />}
-
-      {supportCourses.length > 0 && (
-        <CollapsibleCard
-          storageKey="trainer-kurse-unterstuetzung"
-          title="Weitere laufende Kurse"
-          subtitle="Hier bist du nicht eingeteilt – zum Aushelfen kannst du trotzdem Anwesenheit melden und Fortschritte eintragen"
-          meta={<Badge variant="outline">{supportCourses.length}</Badge>}
-        >
-          <div className="space-y-4 px-4 pb-4 sm:px-6">
-            {supportCourses.map((c) => renderCourse(c, false))}
-          </div>
-        </CollapsibleCard>
-      )}
-
-      {doneCourses.length > 0 && (
-        <CollapsibleCard
-          storageKey="trainer-kurse-erledigt"
-          title="Erledigte Kurse"
-          subtitle="Abgelaufene Kurse und Kurse ohne Teilnehmende"
-          meta={<Badge variant="outline">{doneCourses.length}</Badge>}
-        >
-          <div className="space-y-4 px-4 pb-4 sm:px-6">
-            {doneCourses.map((c) => renderCourse(c, false))}
-          </div>
-        </CollapsibleCard>
-      )}
     </div>
   );
 
-  function renderCourse(c: TrainerCourse, open: boolean) {
+  function renderCourse(c: TrainerCourse) {
     const beltNo = buildBeltNumbers(c.participants);
     return (
-      <CollapsibleCard
-        key={c.id}
-        defaultOpen={open}
-        storageKey={`trainer-kurs-${c.id}`}
-        title={c.name}
-        subtitle={[
-          c.location,
-          c.schedule,
-          c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        meta={<Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>}
-        contentClassName="px-0"
-      >
-        <div className="px-4 pb-2 sm:px-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => downloadProtocol(c.id)}
-            disabled={exporting === c.id}
-          >
-            {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
-          </Button>
-          <Button variant="outline" size="sm" className="ml-2" asChild>
-            <Link to="/trainer/abzeichen/$courseId" params={{ courseId: c.id }}>
-              Abzeichen vorbereiten
-            </Link>
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="ml-2"
-            onClick={() => setBroadcast({ id: c.id, name: c.name })}
-          >
-            📢 Eilnachricht an alle Eltern
-          </Button>
-        </div>
+      <Card key={c.id} className="border-0 shadow-soft">
+        <CardContent className="space-y-4 p-4 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl font-bold text-primary-deep">{c.name}</h2>
+              <p className="text-sm text-muted-foreground">
+                {[
+                  c.location,
+                  c.schedule,
+                  c.starts_on ? `ab ${formatDateBerlin(c.starts_on)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            </div>
+            <Badge variant="secondary">{c.participants.length} Teilnehmende</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadProtocol(c.id)}
+              disabled={exporting === c.id}
+            >
+              {exporting === c.id ? "Erstellt…" : "Prüfungsprotokoll (PDF)"}
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/trainer/abzeichen/$courseId" params={{ courseId: c.id }}>
+                Abzeichen vorbereiten
+              </Link>
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setBroadcast({ id: c.id, name: c.name })}
+            >
+              Eilnachricht an alle Eltern
+            </Button>
+          </div>
 
-        {/* Anwesenheit an einer Stelle: Kinder und eigener Nachweis als Reiter */}
-        <div className="space-y-2 px-4 pb-4 sm:px-6">
-          <h3 className="text-sm font-semibold">Anwesenheit &amp; Zeitnahme</h3>
           <Tabs defaultValue="kinder">
             <TabsList>
-              <TabsTrigger value="kinder">Teilnehmende</TabsTrigger>
+              <TabsTrigger value="kinder">Anwesenheit</TabsTrigger>
               <TabsTrigger value="zeitnahme">Zeitnahme</TabsTrigger>
               <TabsTrigger value="trainer">Meine Anwesenheit</TabsTrigger>
             </TabsList>
             <TabsContent value="kinder" className="mt-3">
               <p className="mb-2 text-xs text-muted-foreground">
-                Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern und den
+                Tipp: Auf den Namen tippen, um Geburtsdatum, Kontakt der Eltern, Ergebnisse und den
                 Prüfungsnachweis zu öffnen.
               </p>
               <AttendanceBoard
@@ -435,7 +444,7 @@ function Page() {
                           })
                         }
                       >
-                        ↔ Kind umbuchen
+                        Kind umbuchen
                       </Button>
                       <ParticipantDetails
                         p={p}
@@ -482,21 +491,22 @@ function Page() {
               <TrainerAttendancePanel courseId={c.id} />
             </TabsContent>
           </Tabs>
-        </div>
 
-        {c.participants.some((p) => p.status === "cancelled") && (
-          <div className="border-t pt-2">
-            <h3 className="px-4 py-2 text-sm font-semibold text-muted-foreground">
-              Stornierte Anmeldungen
-            </h3>
-            {c.participants
-              .filter((p) => p.status === "cancelled")
-              .map((p) => (
-                <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
-              ))}
-          </div>
-        )}
-      </CollapsibleCard>
+          {c.participants.some((p) => p.status === "cancelled") && (
+            <details className="border-t pt-2">
+              <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-muted-foreground">
+                Stornierte Anmeldungen (
+                {c.participants.filter((p) => p.status === "cancelled").length})
+              </summary>
+              {c.participants
+                .filter((p) => p.status === "cancelled")
+                .map((p) => (
+                  <ParticipantCard key={p.id} p={p} no={beltNo.get(p.id) ?? null} />
+                ))}
+            </details>
+          )}
+        </CardContent>
+      </Card>
     );
   }
 }
