@@ -20,8 +20,10 @@ import { assertHasAnyRole } from "@/lib/role-guard";
 import { getAdminTasks, type AdminTask } from "@/lib/admin-dashboard.functions";
 import { getMyAssignments, type MyAssignments } from "@/lib/my-assignments.functions";
 import {
+  CourseRequestsPanel,
   FamilySwimPanel,
   GapsPanel,
+  MembershipsPanel,
   MessagesPanel,
   PaymentsPanel,
   WaitlistPanel,
@@ -314,6 +316,10 @@ function panelFor(id: string, onChanged: () => void) {
       );
     case "family-swim":
       return <FamilySwimPanel onChanged={onChanged} />;
+    case "memberships":
+      return <MembershipsPanel onChanged={onChanged} />;
+    case "requests":
+      return <CourseRequestsPanel onChanged={onChanged} />;
     default:
       return null;
   }

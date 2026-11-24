@@ -14,3 +14,11 @@ export const LABELS = {
 
 /** Hinweis zu KI-generierten Abbildungen (zentral gepflegt). */
 export const AI_IMAGE_NOTICE = "Abbildungen auf dieser Website sind teilweise KI-generiert";
+
+/** Mitgliedschaftsarten, wie sie in der Verwaltung und im Trainerbereich heißen. */
+export const MEMBERSHIP_TYPE_LABEL: Record<string, string> = {
+  children_youth: "Kinder & Jugend",
+  adult: "Erwachsene",
+  family: "Familie",
+  supporting: "Förderung",
+};
