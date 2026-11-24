@@ -20,6 +20,7 @@ import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as KursAnfragenRouteImport } from './routes/kurs-anfragen'
 import { Route as KursbedingungenRouteImport } from './routes/kursbedingungen'
 import { Route as KurseRouteImport } from './routes/kurse'
+import { Route as KursfinderRouteImport } from './routes/kursfinder'
 import { Route as MitgliedschaftRouteImport } from './routes/mitgliedschaft'
 import { Route as MitgliedsordnungRouteImport } from './routes/mitgliedsordnung'
 import { Route as MitteilungenRouteImport } from './routes/mitteilungen'
@@ -162,6 +163,11 @@ const KursbedingungenRoute = KursbedingungenRouteImport.update({
 const KurseRoute = KurseRouteImport.update({
   id: '/kurse',
   path: '/kurse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KursfinderRoute = KursfinderRouteImport.update({
+  id: '/kursfinder',
+  path: '/kursfinder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MitgliedschaftRoute = MitgliedschaftRouteImport.update({
@@ -676,6 +682,7 @@ export interface FileRoutesByFullPath {
   '/kurs-anfragen': typeof KursAnfragenRoute
   '/kursbedingungen': typeof KursbedingungenRoute
   '/kurse': typeof KurseRoute
+  '/kursfinder': typeof KursfinderRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
   '/mitteilungen': typeof MitteilungenRoute
@@ -777,6 +784,7 @@ export interface FileRoutesByTo {
   '/kurs-anfragen': typeof KursAnfragenRoute
   '/kursbedingungen': typeof KursbedingungenRoute
   '/kurse': typeof KurseRoute
+  '/kursfinder': typeof KursfinderRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
   '/mitteilungen': typeof MitteilungenRoute
@@ -879,6 +887,7 @@ export interface FileRoutesById {
   '/kurs-anfragen': typeof KursAnfragenRoute
   '/kursbedingungen': typeof KursbedingungenRoute
   '/kurse': typeof KurseRoute
+  '/kursfinder': typeof KursfinderRoute
   '/mitgliedschaft': typeof MitgliedschaftRoute
   '/mitgliedsordnung': typeof MitgliedsordnungRoute
   '/mitteilungen': typeof MitteilungenRoute
@@ -982,6 +991,7 @@ export interface FileRouteTypes {
     | '/kurs-anfragen'
     | '/kursbedingungen'
     | '/kurse'
+    | '/kursfinder'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
     | '/mitteilungen'
@@ -1083,6 +1093,7 @@ export interface FileRouteTypes {
     | '/kurs-anfragen'
     | '/kursbedingungen'
     | '/kurse'
+    | '/kursfinder'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
     | '/mitteilungen'
@@ -1184,6 +1195,7 @@ export interface FileRouteTypes {
     | '/kurs-anfragen'
     | '/kursbedingungen'
     | '/kurse'
+    | '/kursfinder'
     | '/mitgliedschaft'
     | '/mitgliedsordnung'
     | '/mitteilungen'
@@ -1287,6 +1299,7 @@ export interface RootRouteChildren {
   KursAnfragenRoute: typeof KursAnfragenRoute
   KursbedingungenRoute: typeof KursbedingungenRoute
   KurseRoute: typeof KurseRoute
+  KursfinderRoute: typeof KursfinderRoute
   MitgliedschaftRoute: typeof MitgliedschaftRoute
   MitgliedsordnungRoute: typeof MitgliedsordnungRoute
   MitteilungenRoute: typeof MitteilungenRoute
@@ -1404,6 +1417,13 @@ declare module '@tanstack/react-router' {
       path: '/kurse'
       fullPath: '/kurse'
       preLoaderRoute: typeof KurseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kursfinder': {
+      id: '/kursfinder'
+      path: '/kursfinder'
+      fullPath: '/kursfinder'
+      preLoaderRoute: typeof KursfinderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mitgliedschaft': {
@@ -2178,6 +2198,7 @@ const rootRouteChildren: RootRouteChildren = {
   KursAnfragenRoute: KursAnfragenRoute,
   KursbedingungenRoute: KursbedingungenRoute,
   KurseRoute: KurseRoute,
+  KursfinderRoute: KursfinderRoute,
   MitgliedschaftRoute: MitgliedschaftRoute,
   MitgliedsordnungRoute: MitgliedsordnungRoute,
   MitteilungenRoute: MitteilungenRoute,

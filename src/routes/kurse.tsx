@@ -86,6 +86,11 @@ function KursePage() {
             Vom ersten Plantschen bis zum Goldabzeichen – wir haben den richtigen Kurs für jedes
             Alter und jedes Niveau.
           </p>
+          <div className="mt-6">
+            <Button asChild variant="accent" size="xl">
+              <Link to="/kursfinder">Welcher Kurs passt zu meinem Kind?</Link>
+            </Button>
+          </div>
           <p className="text-white/85 mt-4">
             <Link
               to="/ratgeber/seepferdchen-anforderungen"
