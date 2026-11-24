@@ -13,7 +13,7 @@ import logo from "@/assets/sicher-schwimmen-rund.webp";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { portalNav, visibleAdminNav, visibleTrainerNav, type Role } from "@/lib/nav-items";
+import { isUnder, portalNav, visibleAdminNav, visibleTrainerNav, type Role } from "@/lib/nav-items";
 import { TrainerMobileNav } from "@/components/trainer/TrainerMobileNav";
 import { SkipLink } from "@/components/SkipLink";
 import { clearOfflineData } from "@/lib/offline-store";
@@ -150,7 +150,7 @@ function AuthLayout() {
               Verwaltung
             </div>
             {adminItems.map((n) => {
-              const groupActive = n.group?.some((p) => pathname.startsWith(p));
+              const groupActive = n.group?.some((p) => isUnder(pathname, p));
               return (
                 <Link
                   key={n.to}

@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
-import { sendPaymentReminders } from "@/lib/payment-reminders.functions";
-import { CalendarClock, Check, Euro, Mail } from "lucide-react";
+import { Euro } from "lucide-react";
 import { MemberCheckPanel } from "@/components/admin/MemberCheckPanel";
-import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
-import { cancelPaymentMail, schedulePaymentMail } from "@/lib/payment-notify-client";
-import { paymentState, paymentTerms } from "@/lib/payment-status";
-import {
-  AssignControl,
-  effectiveAssignee,
-  useAssignmentContext,
-} from "@/components/admin/AssignControl";
+import { formatEuro } from "@/lib/format";
+import { effectiveAssignee, useAssignmentContext } from "@/components/admin/AssignControl";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  PaymentCard,
+  dueOf,
+  useOpenPayments,
+  type PaymentRow,
+} from "@/components/admin/payments/OpenPayments";
 
 export const Route = createFileRoute("/_authenticated/admin/zahlungen")({
   ssr: false,
@@ -47,35 +41,6 @@ export const Route = createFileRoute("/_authenticated/admin/zahlungen")({
   }),
 });
 
-type Row = {
-  id: string;
-  participant_name: string | null;
-  participant_email: string | null;
-  participant_phone: string | null;
-  price_amount: number | null;
-  payment_note: string | null;
-  payment_method: string | null;
-  payment_due_date: string | null;
-  assigned_to: string | null;
-  created_at: string;
-  courses: {
-    name: string;
-    starts_on: string | null;
-    ends_on: string | null;
-    payment_due_days: number | null;
-    location: string | null;
-  } | null;
-};
-
-function dueOf(r: Row): Date {
-  if (r.payment_due_date) return new Date(`${r.payment_due_date}T23:59:59`);
-  return paymentTerms({
-    bookedAt: r.created_at,
-    startsOn: r.courses?.starts_on,
-    paymentDueDays: r.courses?.payment_due_days,
-  }).dueDate;
-}
-
 type SortKey = "due" | "last" | "first";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -92,13 +57,8 @@ function nameParts(name: string | null): [string, string] {
 }
 
 function Page() {
-  const remindFn = useServerFn(sendPaymentReminders);
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState<string | null>(null);
-  // Zeilen, bei denen gerade ein neues Fristdatum (YYYY-MM-DD) eingegeben wird
-  const [extend, setExtend] = useState<Record<string, string>>({});
+  const pay = useOpenPayments();
+  const { rows, loading } = pay;
   const [sortBy, setSortBy] = useState<SortKey>("due");
   const ctx = useAssignmentContext();
   const [who, setWho] = useState("");
@@ -107,25 +67,8 @@ function Page() {
     if (zustaendig === "ich" && ctx.data?.me) setWho(ctx.data.me);
   }, [zustaendig, ctx.data?.me]);
 
-  async function load() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("course_participants")
-      .select(
-        "id,participant_name,participant_email,participant_phone,assigned_to,price_amount,payment_note,payment_method,payment_due_date,created_at,courses!course_participants_course_id_fkey(name,starts_on,ends_on,payment_due_days,location)",
-      )
-      .eq("status", "confirmed")
-      .eq("paid", false);
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    setRows((data ?? []) as unknown as Row[]);
-  }
-  useEffect(() => {
-    load();
-  }, []);
-
   const sorted = useMemo(() => {
-    const byDue = (a: Row, b: Row) => dueOf(a).getTime() - dueOf(b).getTime();
+    const byDue = (a: PaymentRow, b: PaymentRow) => dueOf(a).getTime() - dueOf(b).getTime();
     const cmp = (x: string, y: string) => x.localeCompare(y, "de", { sensitivity: "base" });
     const copy = [...rows];
     if (sortBy === "due") return copy.sort(byDue);
@@ -137,118 +80,13 @@ function Page() {
       return cmp(na[key], nb[key]) || cmp(na[other], nb[other]) || byDue(a, b);
     });
   }, [rows, sortBy]);
-  const visible = (r: Row) => {
+  const visible = (r: PaymentRow) => {
     if (who === "") return true;
     const e = effectiveAssignee(r.assigned_to, "payments", ctx.data?.rules);
     return who === "__none" ? !e : e === who;
   };
   const shownRows = sorted.filter(visible);
   const total = shownRows.reduce((s, r) => s + (Number(r.price_amount) || 0), 0);
-
-  async function undoPaid(r: Row) {
-    cancelPaymentMail(r.id);
-    const { error } = await supabase
-      .from("course_participants")
-      .update({
-        paid: false,
-        paid_at: null,
-        paid_by: null,
-        payment_note: r.payment_note,
-      })
-      .eq("id", r.id);
-    if (error) return toast.error(error.message);
-    toast.info(`Zahlung von ${r.participant_name ?? "Teilnehmer"} wieder auf „offen“ gesetzt`);
-    await load();
-  }
-
-  async function saveNote(r: Row) {
-    const note = notes[r.id]?.trim();
-    if (!note) return;
-    const merged = r.payment_note ? `${r.payment_note}\n${note}` : note;
-    setBusy(r.id);
-    const { error } = await supabase
-      .from("course_participants")
-      .update({ payment_note: merged })
-      .eq("id", r.id);
-    setBusy(null);
-    if (error) return toast.error(error.message);
-    setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, payment_note: merged } : x)));
-    setNotes((n) => ({ ...n, [r.id]: "" }));
-    toast.success("Notiz gespeichert");
-  }
-
-  async function remind(r: Row) {
-    if (!r.participant_email?.trim()) return toast.error("Keine E-Mail-Adresse hinterlegt.");
-    if (!window.confirm(`Zahlungserinnerung an ${r.participant_email} senden?`)) return;
-    setBusy(r.id);
-    try {
-      const res: any = await remindFn({ data: { participantId: r.id } });
-      if (res?.sentCount) {
-        toast.success(`Erinnerung an ${r.participant_name ?? "Teilnehmer"} versendet`);
-        await load();
-      } else {
-        toast.info(res?.skipped?.[0]?.reason ?? "Es wurde keine Erinnerung versendet.");
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Versand fehlgeschlagen");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function extendDue(r: Row) {
-    const newDate = extend[r.id];
-    if (!newDate) return;
-    const oldLabel = formatDateBerlin(dueOf(r));
-    const newLabel = formatDateBerlin(`${newDate}T12:00:00`);
-    const reason = notes[r.id]?.trim();
-    const entry = `Zahlungsfrist verlängert: ${oldLabel} → ${newLabel}${reason ? ` (${reason})` : ""}`;
-    const merged = r.payment_note ? `${r.payment_note}\n${entry}` : entry;
-    setBusy(r.id);
-    const { error } = await supabase
-      .from("course_participants")
-      .update({ payment_due_date: newDate, payment_note: merged })
-      .eq("id", r.id);
-    setBusy(null);
-    if (error) return toast.error(error.message);
-    setRows((rs) =>
-      rs.map((x) =>
-        x.id === r.id ? { ...x, payment_due_date: newDate, payment_note: merged } : x,
-      ),
-    );
-    setExtend((e) => {
-      const { [r.id]: _, ...rest } = e;
-      return rest;
-    });
-    setNotes((n) => ({ ...n, [r.id]: "" }));
-    toast.success(`Frist für ${r.participant_name ?? "Teilnehmer"} bis ${newLabel} verlängert`);
-  }
-
-  async function markPaid(r: Row) {
-    setBusy(r.id);
-    const userId = (await supabase.auth.getUser()).data.user?.id ?? null;
-    const note = notes[r.id]?.trim();
-    const { error } = await supabase
-      .from("course_participants")
-      .update({
-        paid: true,
-        paid_at: new Date().toISOString(),
-        paid_by: userId,
-        ...(note ? { payment_note: r.payment_note ? `${r.payment_note}\n${note}` : note } : {}),
-      })
-      .eq("id", r.id);
-    setBusy(null);
-    if (error) return toast.error(error.message);
-    setRows((rs) => rs.filter((x) => x.id !== r.id));
-    schedulePaymentMail(r.id, (sent) => {
-      if (sent) toast.info(`Zahlungsbestätigung an ${r.participant_name ?? "die Eltern"} gesendet`);
-    });
-    // Fehlklick abfangen: kurz Zeit zum Rückgängigmachen
-    toast.success(`${r.participant_name ?? "Teilnehmer"} als bezahlt markiert`, {
-      duration: 10000,
-      action: { label: "Rückgängig", onClick: () => void undoPaid(r) },
-    });
-  }
 
   return (
     <div className="space-y-4">
@@ -258,7 +96,7 @@ function Page() {
           Mitgliedschaften prüfen und offene Zahlungen nachverfolgen.
         </p>
       </header>
-      <MemberCheckPanel onChanged={() => void load()} />
+      <MemberCheckPanel onChanged={() => void pay.load()} />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -312,126 +150,7 @@ function Page() {
           </CardContent>
         </Card>
       ) : (
-        shownRows.map((r) => {
-          const st = paymentState({
-            paid: false,
-            bookedAt: r.created_at,
-            startsOn: r.courses?.starts_on,
-            paymentDueDays: r.courses?.payment_due_days,
-            method: r.payment_method,
-            dueDate: r.payment_due_date,
-          });
-          return (
-            <Card key={r.id}>
-              <CardContent className="py-4 flex flex-col md:flex-row md:items-center gap-3">
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold">{r.participant_name ?? "–"}</span>
-                    <Badge variant="outline" className={st.className}>
-                      {st.label}
-                    </Badge>
-                    <span className="text-sm">fällig {formatDateBerlin(dueOf(r))}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {r.courses?.name ?? "Kurs"}
-                    {r.courses?.starts_on &&
-                      ` · ${formatDateBerlin(r.courses.starts_on)}${r.courses.ends_on ? ` – ${formatDateBerlin(r.courses.ends_on)}` : ""}`}
-                    {r.courses?.location && ` · ${r.courses.location}`}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {r.participant_email}
-                    {r.participant_phone && ` · ${r.participant_phone}`}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{st.detail}</div>
-                  {r.payment_note && (
-                    <div className="text-xs whitespace-pre-line">Notiz: {r.payment_note}</div>
-                  )}
-                </div>
-                <AssignControl
-                  kind="payment"
-                  id={r.id}
-                  area="payments"
-                  current={r.assigned_to}
-                  label={`Offene Zahlung – ${r.participant_name ?? "Teilnehmer"}`}
-                  onDone={(a) =>
-                    setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, assigned_to: a } : x)))
-                  }
-                />
-                <div className="font-semibold whitespace-nowrap">
-                  {r.price_amount != null ? formatEuro(r.price_amount) : "–"}
-                </div>
-                <div className="flex flex-col gap-2 md:w-96">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      placeholder="Notiz (z. B. Überweisung, Absprache)"
-                      value={notes[r.id] ?? ""}
-                      onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
-                    />
-                    <Button onClick={() => markPaid(r)} disabled={busy === r.id}>
-                      <Check className="h-4 w-4 mr-1" /> Bezahlt
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => saveNote(r)}
-                      disabled={busy === r.id || !notes[r.id]?.trim()}
-                    >
-                      Notiz speichern
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => remind(r)}
-                      disabled={busy === r.id}
-                    >
-                      <Mail className="h-4 w-4 mr-1" /> Erinnerung senden
-                    </Button>
-                    {extend[r.id] === undefined ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setExtend((e) => ({ ...e, [r.id]: todayBerlinIso() }))}
-                      >
-                        <CalendarClock className="h-4 w-4 mr-1" /> Frist verlängern
-                      </Button>
-                    ) : (
-                      <>
-                        <Input
-                          type="date"
-                          className="h-8 w-40"
-                          value={extend[r.id]}
-                          min={todayBerlinIso()}
-                          onChange={(e) => setExtend((x) => ({ ...x, [r.id]: e.target.value }))}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => extendDue(r)}
-                          disabled={busy === r.id || !extend[r.id]}
-                        >
-                          Frist setzen
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            setExtend((e) => {
-                              const { [r.id]: _, ...rest } = e;
-                              return rest;
-                            })
-                          }
-                        >
-                          Abbrechen
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
+        shownRows.map((r) => <PaymentCard key={r.id} r={r} pay={pay} />)
       )}
     </div>
   );

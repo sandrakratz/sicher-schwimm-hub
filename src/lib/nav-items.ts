@@ -8,17 +8,10 @@ import {
   BookOpen,
   ClipboardCheck,
   Shield,
-  ShieldBan,
   Users,
-  ListChecks,
   CalendarCheck,
-  Hourglass,
-  MailOpen,
   Send,
-  Activity,
-  ScrollText,
   Euro,
-  BarChart3,
   Waves,
   Inbox,
 } from "lucide-react";
@@ -132,34 +125,42 @@ export function visibleTrainerNav(roles: Role[]): AppNavItem[] {
 
 /**
  * Gebündelte Verwaltungsbereiche: ein Menüpunkt, oben Reiter.
- * Gegliedert nach Arbeitsablauf: Heute → Anmeldungen → Kurse → Trainer → Geld → Mitglieder → Kommunikation.
+ * Aufbau nach Prototyp A: Eingang (alles, was zu tun ist) → Kurse → Familien → Trainer → Geld → Versand → Verein.
+ * `also` = weitere Seiten, die zum Bereich gehören, aber keinen eigenen Reiter haben.
  */
-export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label: string }[] }[] = [
-  {
-    label: "Anmeldungen",
-    tabs: [
-      { to: "/admin/warteliste", label: "Anfrageliste" },
-      { to: "/admin/suche", label: "Gesamtsuche" },
-      { to: "/admin/erwachsenenkurs", label: "Erwachsenenkurs" },
-      { to: "/admin/sperrliste", label: "Sperrliste" },
-      { to: "/admin/archiv", label: "Frühere Kursanfragen" },
-      { to: "/admin/widerrufe", label: "Widerrufe" },
-    ],
-  },
+export const adminSections: {
+  label: string;
+  tabs: { to: AppNavItem["to"]; label: string }[];
+  also?: string[];
+}[] = [
   {
     label: "Kurse",
     tabs: [
       { to: "/admin/kurse", label: "Kurse & Teilnehmer" },
       { to: "/admin/folgekurse", label: "Folgekurse" },
-      { to: "/admin/kalender", label: "Kurse & Termine" },
       { to: "/admin/kursplanung", label: "Kursplanung" },
+      { to: "/admin/erwachsenenkurs", label: "Erwachsenenkurs" },
+      { to: "/admin/familienschwimmen", label: "Mitgliederschwimmen" },
     ],
   },
   {
-    label: "Trainer & Einsatz",
+    label: "Familien",
+    tabs: [
+      { to: "/admin/suche", label: "Suche" },
+      { to: "/admin/warteliste", label: "Anfrageliste" },
+      { to: "/admin/mitgliedschaften", label: "Mitgliedschaften" },
+      { to: "/admin/sperrliste", label: "Sperrliste" },
+      { to: "/admin/widerrufe", label: "Widerrufe" },
+      { to: "/admin/archiv", label: "Frühere Kursanfragen" },
+    ],
+    also: ["/admin/familie"],
+  },
+  {
+    label: "Trainer",
     tabs: [
       { to: "/admin/dienstplan", label: "Dienstplan" },
-      { to: "/admin/qualifikationen", label: "Trainer-Qualifikationen" },
+      { to: "/admin/kalender", label: "Einteilung" },
+      { to: "/admin/qualifikationen", label: "Qualifikationen" },
     ],
   },
   {
@@ -170,60 +171,68 @@ export const adminSections: { label: string; tabs: { to: AppNavItem["to"]; label
     ],
   },
   {
-    label: "Mitglieder",
+    label: "Versand",
     tabs: [
-      { to: "/admin/benutzer", label: "Benutzer" },
-      { to: "/admin/mitgliedschaften", label: "Mitgliedschaften" },
-      { to: "/admin/familienschwimmen", label: "Mitgliederschwimmen" },
-      { to: "/admin/zustaendigkeiten", label: "Zuständigkeiten" },
-    ],
-  },
-  {
-    label: "Kommunikation & E-Mails",
-    tabs: [
-      { to: "/admin/nachrichten", label: "Posteingang" },
       { to: "/admin/mitgliedernachricht", label: "Mitglieder anschreiben" },
       { to: "/admin/emails", label: "Gesendete E-Mails" },
       { to: "/admin/versandstatus", label: "Versandstatus" },
     ],
   },
   {
-    label: "Inhalte & Verein",
+    label: "Verein",
     tabs: [
       { to: "/admin/news", label: "News" },
       { to: "/admin/events", label: "Events" },
       { to: "/admin/dokumente", label: "Dokumente" },
+      { to: "/admin/benutzer", label: "Benutzer" },
+      { to: "/admin/zustaendigkeiten", label: "Zuständigkeiten" },
+      { to: "/admin/statistik", label: "Statistik" },
+      { to: "/admin/audit", label: "Audit-Log" },
     ],
   },
 ];
 
-export function findAdminSection(pathname: string) {
-  return adminSections.find((s) => s.tabs.some((t) => pathname.startsWith(t.to)));
+/** Liegt `pathname` auf der Seite `base` oder darunter? (Nicht bloß gleicher Anfang: /admin/familie ≠ /admin/familienschwimmen) */
+export function isUnder(pathname: string, base: string) {
+  return pathname === base || pathname.startsWith(base + "/");
 }
 
-/** Nur mit passender Rolle sichtbar */
-const sectionNav = (index: number, icon: AppNavItem["icon"], allow: Role[]) => {
-  const section = adminSections[index]!;
+export function findAdminSection(pathname: string) {
+  return adminSections.find((s) =>
+    [...s.tabs.map((t) => t.to as string), ...(s.also ?? [])].some((p) => isUnder(pathname, p)),
+  );
+}
+
+const STAFF: Role[] = ["admin", "board"];
+
+/** Ein Menüpunkt je Bereich; führt auf den ersten Reiter. */
+const sectionNav = (label: string, icon: AppNavItem["icon"]) => {
+  const section = adminSections.find((s) => s.label === label)!;
   return {
     to: section.tabs[0]!.to,
     icon,
     label: section.label,
-    allow,
-    group: section.tabs.map((t) => t.to),
+    allow: STAFF,
+    group: [...section.tabs.map((t) => t.to as string), ...(section.also ?? [])],
   };
 };
 
 export const adminNav: (AppNavItem & { group?: string[] })[] = [
-  { to: "/admin", icon: Shield, label: "Heute", exact: true, allow: ["admin", "board"] },
-  sectionNav(0, Hourglass, ["admin", "board"]),
-  sectionNav(1, BookOpen, ["admin", "board"]),
-  sectionNav(2, ClipboardCheck, ["admin", "board"]),
-  sectionNav(3, Euro, ["admin", "board"]),
-  sectionNav(4, Users, ["admin", "board"]),
-  sectionNav(5, MailOpen, ["admin", "board"]),
-  sectionNav(6, Newspaper, ["admin", "board"]),
-  { to: "/admin/statistik", icon: BarChart3, label: "Statistik", allow: ["admin", "board"] },
-  { to: "/admin/audit", icon: ScrollText, label: "Audit-Log", allow: ["admin", "board"] },
+  // Der Posteingang hat keinen eigenen Menüpunkt mehr: Nachrichten sind Aufgaben im Eingang.
+  {
+    to: "/admin",
+    icon: Inbox,
+    label: "Eingang",
+    exact: true,
+    allow: STAFF,
+    group: ["/admin/nachrichten"],
+  },
+  sectionNav("Kurse", BookOpen),
+  sectionNav("Familien", Users),
+  sectionNav("Trainer", ClipboardCheck),
+  sectionNav("Geld", Euro),
+  sectionNav("Versand", Send),
+  sectionNav("Verein", Newspaper),
 ];
 
 export function visibleAdminNav(roles: Role[]) {

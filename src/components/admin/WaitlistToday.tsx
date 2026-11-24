@@ -45,7 +45,10 @@ export function WaitlistToday({
   onWaitingKind,
   onGuide,
   counts,
+  embedded = false,
 }: {
+  /** Im Eingang eingebettet: ohne Leitfaden und ohne „Zurück zur Übersicht“ */
+  embedded?: boolean;
   data: WaitlistData | undefined;
   m: WaitlistMutations;
   courseName: (id: unknown) => string;
@@ -124,10 +127,12 @@ export function WaitlistToday({
             </option>
           ))}
         </NativeSelect>
-        <Button size="sm" variant="outline" className="h-8" onClick={onGuide}>
-          Leitfaden
-        </Button>
-        {only && (
+        {!embedded && (
+          <Button size="sm" variant="outline" className="h-8" onClick={onGuide}>
+            Leitfaden
+          </Button>
+        )}
+        {only && !embedded && (
           <Button size="sm" variant="ghost" className="h-8" onClick={() => onOnly(null)}>
             ← Zurück zur Übersicht
           </Button>
