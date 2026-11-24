@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { PayoutIbanCard } from "@/components/trainer/PayoutIbanCard";
 import { useServerFn } from "@tanstack/react-start";
 import { updateOwnFamilyContacts } from "@/lib/family-contacts.functions";
 import { formatDateBerlin, fullName } from "@/lib/format";
@@ -186,8 +185,16 @@ function Profile() {
           </form>
         </CardContent>
       </Card>
+      {/* Bankverbindung, Nachweise und Auszahlungen liegen gesammelt im Trainerbereich unter „Ich“. */}
       {isTrainer && (
-        <PayoutIbanCard defaultHolder={fullName(p.first_name, p.last_name) || undefined} />
+        <p className="mt-6 text-sm text-muted-foreground">
+          Bankverbindung für die Übungsleiterpauschale, Nachweise und Auszahlungen findest du im
+          Trainerbereich unter{" "}
+          <Link to="/trainer/ich" className="font-semibold text-primary underline">
+            Ich
+          </Link>
+          .
+        </p>
       )}
       {family.length > 0 && (
         <Card className="border-0 shadow-soft mt-6">

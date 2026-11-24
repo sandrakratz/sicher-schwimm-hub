@@ -3,12 +3,15 @@ import { trainerNav } from "@/lib/nav-items";
 import { useReplacementCount } from "@/lib/use-replacement-count";
 
 const SHORT_LABEL: Record<string, string> = {
-  "/trainer": "Start",
+  "/trainer": "Heute",
   "/trainer/verfuegbarkeit": "Zeiten",
   "/trainer/kurse": "Kurse",
   "/trainer/abnahme": "Abnahme",
-  "/trainer/mitglieder": "Mitglieder",
+  "/trainer/ich": "Ich",
 };
+
+// Unten ist Platz für fünf Punkte; „Vereinsmitglieder“ ist über „Ich“ erreichbar.
+const MOBILE_ITEMS = trainerNav.filter((n) => n.to in SHORT_LABEL);
 
 /**
  * Feste untere Navigationsleiste im Trainerbereich – nur auf kleinen Displays.
@@ -26,7 +29,7 @@ export function TrainerMobileNav() {
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden"
       >
         <ul className="grid grid-cols-5">
-          {trainerNav.map((n) => (
+          {MOBILE_ITEMS.map((n) => (
             <li key={n.to}>
               <Link
                 to={n.to}

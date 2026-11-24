@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { TrainerPushToggle } from "@/components/trainer/TrainerPushToggle";
 
 const LIMITS = [2, 3, 4, 5, 6, 8, 10, 12];
 
@@ -49,10 +48,9 @@ export function TrainerSettings({ me }: { me: string }) {
       storageKey="trainer-settings"
       defaultOpen={false}
       title="Meine Wünsche"
-      subtitle="Mitteilungen, Erinnerungen und Einsätze pro Monat"
+      subtitle="Erinnerungen und Einsätze pro Monat (Handy-Mitteilungen: unter „Ich“)"
     >
       <div className="space-y-4">
-        <TrainerPushToggle />
         <div className="flex flex-wrap items-center gap-3">
           <label htmlFor="max-per-month" className="text-sm font-medium">
             Höchstens so viele Einsätze im Monat
