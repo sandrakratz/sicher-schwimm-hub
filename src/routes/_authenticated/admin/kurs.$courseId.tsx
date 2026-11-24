@@ -63,12 +63,20 @@ function CoursePage() {
   return (
     <div className="max-w-7xl space-y-6">
       <div className="space-y-3">
-        <Link
-          to="/admin/kurse"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Kursverwaltung
-        </Link>
+        <nav aria-label="Brotkrumen" className="flex flex-wrap items-center gap-1 text-sm">
+          <Link to="/admin/kurse" className="font-semibold text-primary hover:underline">
+            <ArrowLeft className="mr-1 inline h-4 w-4" aria-hidden="true" />
+            Kursverwaltung
+          </Link>
+          <span className="text-muted-foreground">/</span>
+          <Link
+            to="/admin/kursangebot/$programId"
+            params={{ programId: course.program_id ?? "ohne" }}
+            className="font-semibold text-primary hover:underline"
+          >
+            {programs.find((p) => p.id === course.program_id)?.name ?? "Ohne Kursangebot"}
+          </Link>
+        </nav>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold text-primary-deep">{course.name}</h1>

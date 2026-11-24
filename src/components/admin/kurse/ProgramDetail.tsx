@@ -1,12 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { programFields } from "@/components/admin/kurse/ProgramFields";
 import { TermList, type TermContext } from "@/components/admin/kurse/TermCard";
@@ -14,7 +7,15 @@ import type { Course, ProgramRow } from "@/components/admin/kurse/shared";
 import type { ProgramEditor } from "@/components/admin/kurse/useProgramEditor";
 
 /** Reiter „Kursangaben“: Angaben des Angebots, die für alle Zeiträume gelten. */
-function ProgramDetailsForm({ editor, program }: { editor: ProgramEditor; program: ProgramRow }) {
+function ProgramDetailsForm({
+  editor,
+  program,
+  onDeleted,
+}: {
+  editor: ProgramEditor;
+  program: ProgramRow;
+  onDeleted: () => void;
+}) {
   const { editing, setEditing } = editor;
   const f = programFields(editing, setEditing);
   return (
@@ -66,9 +67,8 @@ function ProgramDetailsForm({ editor, program }: { editor: ProgramEditor; progra
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              void editor.remove(program);
-              editor.setDetailId(null);
+            onClick={async () => {
+              if (await editor.remove(program)) onDeleted();
             }}
           >
             <Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen
@@ -80,75 +80,63 @@ function ProgramDetailsForm({ editor, program }: { editor: ProgramEditor; progra
   );
 }
 
-/** Detailansicht eines Kursangebots (oder der Zeiträume ohne Angebot). */
-export function ProgramDetailDialog({
+/**
+ * Inhalt der Seite eines Kursangebots: Reiter „Kurszeiträume“ (jeder Zeitraum mit seinen Aktionen,
+ * Teilnehmer auf eigener Seite) und „Kursangaben“. `program` = null: Zeiträume ohne Kursangebot.
+ */
+export function ProgramDetail({
   editor,
-  programs,
-  termsOf,
+  program,
+  terms,
   onNewTerm,
   ctx,
+  onDeleted,
 }: {
   editor: ProgramEditor;
-  programs: ProgramRow[];
-  termsOf: (programId: string | null) => Course[];
+  program: ProgramRow | null;
+  terms: Course[];
   onNewTerm: (p: ProgramRow | null) => void;
   ctx: TermContext;
+  onDeleted: () => void;
 }) {
-  const { detailId, setDetailId } = editor;
-  const unassigned = detailId === "unassigned";
-  const program = detailId ? (programs.find((p) => p.id === detailId) ?? null) : null;
-  const terms = <TermList terms={termsOf(unassigned ? null : detailId)} ctx={ctx} />;
+  const list = <TermList terms={terms} ctx={ctx} />;
+
+  if (!program)
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="font-semibold text-sm">Kurszeiträume</div>
+          <Button size="sm" onClick={() => onNewTerm(null)}>
+            <Plus className="h-4 w-4" /> Neuer Zeitraum
+          </Button>
+        </div>
+        {list}
+      </div>
+    );
 
   return (
-    <Dialog open={detailId !== null} onOpenChange={(o) => !o && setDetailId(null)}>
-      <DialogContent className="w-[95vw] max-w-[1100px] sm:max-w-[1100px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {unassigned ? "Zeiträume ohne Kursangebot" : program?.name || "Kurs"}
-          </DialogTitle>
-        </DialogHeader>
+    <Tabs defaultValue="zeitraeume">
+      <TabsList>
+        <TabsTrigger value="zeitraeume">Kurszeiträume</TabsTrigger>
+        <TabsTrigger value="angaben">Kursangaben</TabsTrigger>
+      </TabsList>
 
-        {!unassigned && program ? (
-          <Tabs defaultValue="zeitraeume">
-            <TabsList>
-              <TabsTrigger value="zeitraeume">Kurszeiträume</TabsTrigger>
-              <TabsTrigger value="angaben">Kursangaben</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="zeitraeume" className="mt-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">
-                  Termine, Plätze und Buchbarkeit je Zeitraum.
-                </p>
-                <Button size="sm" onClick={() => onNewTerm(program)}>
-                  <Plus className="h-4 w-4" /> Neuer Zeitraum
-                </Button>
-              </div>
-              {terms}
-            </TabsContent>
-
-            <TabsContent value="angaben" className="mt-4">
-              <ProgramDetailsForm editor={editor} program={program} />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold text-sm">Kurszeiträume</div>
-              <Button size="sm" onClick={() => onNewTerm(unassigned ? null : program)}>
-                <Plus className="h-4 w-4" /> Neuer Zeitraum
-              </Button>
-            </div>
-            {terms}
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setDetailId(null)}>
-            Schließen
+      <TabsContent value="zeitraeume" className="mt-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            Termine, Plätze und Buchbarkeit je Zeitraum. „Teilnehmer“ öffnet die Seite des
+            Zeitraums.
+          </p>
+          <Button size="sm" onClick={() => onNewTerm(program)}>
+            <Plus className="h-4 w-4" /> Neuer Zeitraum
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+        {list}
+      </TabsContent>
+
+      <TabsContent value="angaben" className="mt-4">
+        <ProgramDetailsForm editor={editor} program={program} onDeleted={onDeleted} />
+      </TabsContent>
+    </Tabs>
   );
 }
