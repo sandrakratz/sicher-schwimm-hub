@@ -56,11 +56,14 @@ export function CourseTermCard({
   program,
   bookLabel,
   onBook,
+  showWaitlist = true,
 }: {
   term: CourseTerm;
   program: Pick<CourseProgram, "slug" | "waitlist_open">;
   bookLabel: string;
   onBook: () => void;
+  /** false, wenn die Seite die Warteliste bereits an zentraler Stelle anbietet (alle Termine voll). */
+  showWaitlist?: boolean;
 }) {
   return (
     <div className="rounded-xl border bg-card p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -125,7 +128,7 @@ export function CourseTermCard({
           <Button variant="accent" size="lg" onClick={onBook}>
             {bookLabel} <ChevronRight className="h-4 w-4" />
           </Button>
-        ) : program.waitlist_open ? (
+        ) : program.waitlist_open && showWaitlist ? (
           <Button asChild variant="outline">
             <Link to="/warteliste" search={{ programm: program.slug }}>
               {LABELS.waitlistCta}

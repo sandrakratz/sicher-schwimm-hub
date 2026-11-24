@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import {
-  ArrowDown,
   Baby,
   CalendarDays,
   CheckCircle2,
@@ -32,6 +31,7 @@ import { useExperiment } from "@/lib/analytics/useExperiment";
 import { BILLING } from "@/lib/billing-config";
 import { programAvailability } from "@/lib/course-status";
 import { formatDuration, formatPrice } from "@/lib/format";
+import { LABELS } from "@/lib/labels";
 import { parseRequirementLines } from "@/lib/upcoming-programs";
 import { isAdultProgram } from "@/lib/adult-course";
 import type { CourseProgram, CourseTerm } from "@/lib/courses-public.functions";
@@ -137,13 +137,11 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
     program.terms.reduce((s, t) => s + (t.is_full ? 0 : (t.free_slots ?? 0)), 0);
   const hasFree = openTerms > 0;
   const facts = programFacts(program);
-  const scrollToTerms = () =>
-    document.getElementById("termine")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const waitlistLink = (variant: "outline" | "accent" = "outline", full = false) =>
+  const waitlistLink = () =>
     program.waitlist_open ? (
-      <Button asChild variant={variant} className={full ? "w-full" : ""}>
+      <Button asChild variant="accent">
         <Link to="/warteliste" search={{ programm: program.slug }}>
-          Auf die Warteliste <ChevronRight className="h-4 w-4" />
+          {LABELS.waitlistCta} <ChevronRight className="h-4 w-4" />
         </Link>
       </Button>
     ) : (
@@ -187,8 +185,7 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
                   {availableText(freeTotal)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Buchen Sie jetzt einen passenden Termin – oder setzen Sie Ihr Kind auf die
-                  Warteliste.
+                  Wählen Sie unten einen passenden Termin und buchen Sie verbindlich.
                 </p>
               </div>
             </div>
@@ -242,6 +239,7 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
                     term={t}
                     program={program}
                     bookLabel={bookLabel}
+                    showWaitlist={hasFree}
                     onBook={() => {
                       track("cta_click", { cta: "kurs_verbindlich_buchen" });
                       setBookingTerm(t);
@@ -250,18 +248,19 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
                 ))
               )}
 
-              {/* Auffangnetz Warteliste */}
-              <div className="rounded-xl bg-secondary p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                <HelpCircle className="h-8 w-8 text-primary shrink-0" />
-                <div className="flex-1">
-                  <p className="font-semibold text-primary-deep">Kein passender Termin dabei?</p>
-                  <p className="text-sm text-muted-foreground">
-                    Sie möchten lieber einen anderen Zeitraum oder es sind gerade alle Plätze
-                    belegt? Wir melden uns, sobald ein Platz frei wird.
-                  </p>
+              {/* Einzige Warteliste-Aktion der Seite: nur wenn kein Termin buchbar ist */}
+              {!hasFree && (
+                <div className="rounded-xl bg-secondary p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <HelpCircle className="h-8 w-8 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-primary-deep">Kein passender Termin dabei?</p>
+                    <p className="text-sm text-muted-foreground">
+                      Unverbindliche Anfrage: Wir melden uns, sobald ein Platz frei wird.
+                    </p>
+                  </div>
+                  <div className="shrink-0">{waitlistLink()}</div>
                 </div>
-                <div className="shrink-0">{waitlistLink("outline")}</div>
-              </div>
+              )}
 
               <p className="text-xs text-muted-foreground">
                 Mit der Buchung gelten unsere{" "}
@@ -383,33 +382,6 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
                   </div>
                 ))}
               </dl>
-              {hasFree ? (
-                <div className="rounded-xl bg-success/10 border border-success/30 p-4 space-y-3 text-center">
-                  <p className="font-semibold text-success flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" />
-                    {availableText(freeTotal)}
-                  </p>
-                  <Button variant="accent" className="w-full" onClick={scrollToTerms}>
-                    Zu den freien Terminen <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  {program.waitlist_open && (
-                    <Link
-                      to="/warteliste"
-                      search={{ programm: program.slug }}
-                      className="block text-xs text-primary underline"
-                    >
-                      Oder unverbindlich auf die Warteliste
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {waitlistLink("accent", true)}
-                  <p className="text-[11px] text-center text-muted-foreground">
-                    Unverbindliche Anfrage – wir melden uns persönlich bei Ihnen.
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
 

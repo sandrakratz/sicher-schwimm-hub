@@ -140,10 +140,22 @@ function Profile() {
   if (!p) return <div>Lädt...</div>;
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Mein Profil</h1>
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">Mein Profil</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Änderungen an Namen oder Geburtsdaten bitte über eine Nachricht an den Verein melden:{" "}
+          <Link to="/portal/postfach" className="font-semibold text-primary underline">
+            Nachrichten
+          </Link>
+          .
+        </p>
+      </div>
       <Card className="border-0 shadow-soft">
         <CardContent className="p-6">
+          <h2 className="font-display text-xl font-semibold text-primary-deep mb-4">
+            Kontaktdaten
+          </h2>
           <form onSubmit={save} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
@@ -155,8 +167,8 @@ function Profile() {
                 <Input id="last_name" name="last_name" defaultValue={p.last_name || ""} />
               </div>
               <div className="sm:col-span-2">
-                <Label>E-Mail</Label>
-                <Input value={p.email} disabled />
+                <Label htmlFor="profile_email">E-Mail</Label>
+                <Input id="profile_email" value={p.email} disabled />
               </div>
               <div>
                 <Label htmlFor="phone">Telefon</Label>
@@ -187,7 +199,7 @@ function Profile() {
       </Card>
       {/* Bankverbindung, Nachweise und Auszahlungen liegen gesammelt im Trainerbereich unter „Ich“. */}
       {isTrainer && (
-        <p className="mt-6 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Bankverbindung für die Übungsleiterpauschale, Nachweise und Auszahlungen findest du im
           Trainerbereich unter{" "}
           <Link to="/trainer/ich" className="font-semibold text-primary underline">
@@ -197,11 +209,9 @@ function Profile() {
         </p>
       )}
       {family.length > 0 && (
-        <Card className="border-0 shadow-soft mt-6">
+        <Card className="border-0 shadow-soft">
           <CardContent className="p-6">
-            <h2 className="font-display text-xl font-semibold text-primary-deep mb-3">
-              Familienmitglieder
-            </h2>
+            <h2 className="font-display text-xl font-semibold text-primary-deep mb-3">Familie</h2>
             <ul className="divide-y">
               {family.map((f, i) => (
                 <li key={i} className="py-3 text-sm">
@@ -217,8 +227,11 @@ function Profile() {
                   {f.slot ? (
                     <div className="grid sm:grid-cols-2 gap-3 mt-2">
                       <div>
-                        <Label className="text-xs">E-Mail</Label>
+                        <Label htmlFor={`family_email_${i}`} className="text-xs">
+                          E-Mail
+                        </Label>
                         <Input
+                          id={`family_email_${i}`}
                           type="email"
                           value={f.email ?? ""}
                           onChange={(e) => updateFamily(i, { email: e.target.value })}
@@ -226,8 +239,11 @@ function Profile() {
                         />
                       </div>
                       <div>
-                        <Label className="text-xs">Telefon</Label>
+                        <Label htmlFor={`family_phone_${i}`} className="text-xs">
+                          Telefon
+                        </Label>
                         <Input
+                          id={`family_phone_${i}`}
                           type="tel"
                           value={f.phone ?? ""}
                           onChange={(e) => updateFamily(i, { phone: e.target.value })}
@@ -252,7 +268,11 @@ function Profile() {
             )}
             <p className="text-xs text-muted-foreground mt-3">
               Telefon und E-Mail können Sie hier selbst ergänzen. Änderungen an Namen oder
-              Geburtsdaten bitte an info@sicher-schwimmen.com melden.
+              Geburtsdaten bitte über{" "}
+              <Link to="/portal/postfach" className="font-semibold text-primary underline">
+                Nachrichten
+              </Link>{" "}
+              melden.
             </p>
           </CardContent>
         </Card>

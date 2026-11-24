@@ -149,25 +149,8 @@ function Page() {
         </p>
       </div>
 
-      <Card className="border-accent/50">
-        <CardContent className="p-5 space-y-2 text-sm">
-          <h2 className="font-semibold text-primary-deep">Teilnahmebedingungen</h2>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Das Angebot ist ausschließlich für Vereinsmitglieder.</li>
-            <li>
-              Kinder- und Jugendmitglieder dürfen nur teilnehmen, wenn sie mindestens das
-              Bronzeabzeichen besitzen.
-            </li>
-            <li>
-              Außerdem muss eine volljährige Aufsichtsperson außerhalb des Wassers (auf der Tribüne
-              der Sportschule) die Aufsicht übernehmen.
-            </li>
-          </ul>
-        </CardContent>
-      </Card>
-
       {!data?.eligible && (
-        <Card>
+        <Card className="border-accent/50" role="status">
           <CardContent className="p-5 text-sm">{data?.reason}</CardContent>
         </Card>
       )}
@@ -350,6 +333,25 @@ function Page() {
           </Card>
         </section>
       )}
+
+      <details className="group rounded-lg border border-accent/50 bg-card text-sm">
+        <summary className="cursor-pointer select-none p-4 font-semibold text-primary-deep">
+          Teilnahmebedingungen
+        </summary>
+        <div className="px-5 pb-5">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Das Angebot ist ausschließlich für Vereinsmitglieder.</li>
+            <li>
+              Kinder- und Jugendmitglieder dürfen nur teilnehmen, wenn sie mindestens das
+              Bronzeabzeichen besitzen.
+            </li>
+            <li>
+              Außerdem muss eine volljährige Aufsichtsperson außerhalb des Wassers (auf der Tribüne
+              der Sportschule) die Aufsicht übernehmen.
+            </li>
+          </ul>
+        </div>
+      </details>
     </div>
   );
 }
