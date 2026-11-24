@@ -70,6 +70,7 @@ import { Route as AuthenticatedAdminStatistikRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminSucheRouteImport } from './routes/_authenticated/admin/suche'
 import { Route as AuthenticatedAdminUebungsleitergelderRouteImport } from './routes/_authenticated/admin/uebungsleitergelder'
 import { Route as AuthenticatedAdminVerfuegbarkeitRouteImport } from './routes/_authenticated/admin/verfuegbarkeit'
+import { Route as AuthenticatedAdminVersandRouteImport } from './routes/_authenticated/admin/versand'
 import { Route as AuthenticatedAdminVersandstatusRouteImport } from './routes/_authenticated/admin/versandstatus'
 import { Route as AuthenticatedAdminWartelisteRouteImport } from './routes/_authenticated/admin/warteliste'
 import { Route as AuthenticatedAdminWiderrufeRouteImport } from './routes/_authenticated/admin/widerrufe'
@@ -86,6 +87,7 @@ import { Route as AuthenticatedPortalPostfachRouteImport } from './routes/_authe
 import { Route as AuthenticatedPortalProfilRouteImport } from './routes/_authenticated/portal/profil'
 import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authenticated/trainer/index'
 import { Route as AuthenticatedTrainerAbnahmeRouteImport } from './routes/_authenticated/trainer/abnahme'
+import { Route as AuthenticatedTrainerIchRouteImport } from './routes/_authenticated/trainer/ich'
 import { Route as AuthenticatedTrainerKurseRouteImport } from './routes/_authenticated/trainer/kurse'
 import { Route as AuthenticatedTrainerMitgliederRouteImport } from './routes/_authenticated/trainer/mitglieder'
 import { Route as AuthenticatedTrainerOfflineRouteImport } from './routes/_authenticated/trainer/offline'
@@ -435,6 +437,12 @@ const AuthenticatedAdminVerfuegbarkeitRoute =
     path: '/verfuegbarkeit',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminVersandRoute =
+  AuthenticatedAdminVersandRouteImport.update({
+    id: '/versand',
+    path: '/versand',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminVersandstatusRoute =
   AuthenticatedAdminVersandstatusRouteImport.update({
     id: '/versandstatus',
@@ -530,6 +538,11 @@ const AuthenticatedTrainerAbnahmeRoute =
     path: '/trainer/abnahme',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTrainerIchRoute = AuthenticatedTrainerIchRouteImport.update({
+  id: '/trainer/ich',
+  path: '/trainer/ich',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTrainerKurseRoute =
   AuthenticatedTrainerKurseRouteImport.update({
     id: '/trainer/kurse',
@@ -712,6 +725,7 @@ export interface FileRoutesByFullPath {
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
+  '/admin/versand': typeof AuthenticatedAdminVersandRoute
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
@@ -726,6 +740,7 @@ export interface FileRoutesByFullPath {
   '/portal/postfach': typeof AuthenticatedPortalPostfachRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/trainer/abnahme': typeof AuthenticatedTrainerAbnahmeRoute
+  '/trainer/ich': typeof AuthenticatedTrainerIchRoute
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
@@ -810,6 +825,7 @@ export interface FileRoutesByTo {
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
+  '/admin/versand': typeof AuthenticatedAdminVersandRoute
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
@@ -824,6 +840,7 @@ export interface FileRoutesByTo {
   '/portal/postfach': typeof AuthenticatedPortalPostfachRoute
   '/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/trainer/abnahme': typeof AuthenticatedTrainerAbnahmeRoute
+  '/trainer/ich': typeof AuthenticatedTrainerIchRoute
   '/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
@@ -911,6 +928,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/_authenticated/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/_authenticated/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
+  '/_authenticated/admin/versand': typeof AuthenticatedAdminVersandRoute
   '/_authenticated/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/_authenticated/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/_authenticated/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
@@ -925,6 +943,7 @@ export interface FileRoutesById {
   '/_authenticated/portal/postfach': typeof AuthenticatedPortalPostfachRoute
   '/_authenticated/portal/profil': typeof AuthenticatedPortalProfilRoute
   '/_authenticated/trainer/abnahme': typeof AuthenticatedTrainerAbnahmeRoute
+  '/_authenticated/trainer/ich': typeof AuthenticatedTrainerIchRoute
   '/_authenticated/trainer/kurse': typeof AuthenticatedTrainerKurseRoute
   '/_authenticated/trainer/mitglieder': typeof AuthenticatedTrainerMitgliederRoute
   '/_authenticated/trainer/offline': typeof AuthenticatedTrainerOfflineRoute
@@ -1012,6 +1031,7 @@ export interface FileRouteTypes {
     | '/admin/suche'
     | '/admin/uebungsleitergelder'
     | '/admin/verfuegbarkeit'
+    | '/admin/versand'
     | '/admin/versandstatus'
     | '/admin/warteliste'
     | '/admin/widerrufe'
@@ -1026,6 +1046,7 @@ export interface FileRouteTypes {
     | '/portal/postfach'
     | '/portal/profil'
     | '/trainer/abnahme'
+    | '/trainer/ich'
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/offline'
@@ -1110,6 +1131,7 @@ export interface FileRouteTypes {
     | '/admin/suche'
     | '/admin/uebungsleitergelder'
     | '/admin/verfuegbarkeit'
+    | '/admin/versand'
     | '/admin/versandstatus'
     | '/admin/warteliste'
     | '/admin/widerrufe'
@@ -1124,6 +1146,7 @@ export interface FileRouteTypes {
     | '/portal/postfach'
     | '/portal/profil'
     | '/trainer/abnahme'
+    | '/trainer/ich'
     | '/trainer/kurse'
     | '/trainer/mitglieder'
     | '/trainer/offline'
@@ -1210,6 +1233,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/suche'
     | '/_authenticated/admin/uebungsleitergelder'
     | '/_authenticated/admin/verfuegbarkeit'
+    | '/_authenticated/admin/versand'
     | '/_authenticated/admin/versandstatus'
     | '/_authenticated/admin/warteliste'
     | '/_authenticated/admin/widerrufe'
@@ -1224,6 +1248,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal/postfach'
     | '/_authenticated/portal/profil'
     | '/_authenticated/trainer/abnahme'
+    | '/_authenticated/trainer/ich'
     | '/_authenticated/trainer/kurse'
     | '/_authenticated/trainer/mitglieder'
     | '/_authenticated/trainer/offline'
@@ -1731,6 +1756,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminVerfuegbarkeitRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/versand': {
+      id: '/_authenticated/admin/versand'
+      path: '/versand'
+      fullPath: '/admin/versand'
+      preLoaderRoute: typeof AuthenticatedAdminVersandRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/versandstatus': {
       id: '/_authenticated/admin/versandstatus'
       path: '/versandstatus'
@@ -1841,6 +1873,13 @@ declare module '@tanstack/react-router' {
       path: '/trainer/abnahme'
       fullPath: '/trainer/abnahme'
       preLoaderRoute: typeof AuthenticatedTrainerAbnahmeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trainer/ich': {
+      id: '/_authenticated/trainer/ich'
+      path: '/trainer/ich'
+      fullPath: '/trainer/ich'
+      preLoaderRoute: typeof AuthenticatedTrainerIchRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/trainer/kurse': {
@@ -2020,6 +2059,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSucheRoute: typeof AuthenticatedAdminSucheRoute
   AuthenticatedAdminUebungsleitergelderRoute: typeof AuthenticatedAdminUebungsleitergelderRoute
   AuthenticatedAdminVerfuegbarkeitRoute: typeof AuthenticatedAdminVerfuegbarkeitRoute
+  AuthenticatedAdminVersandRoute: typeof AuthenticatedAdminVersandRoute
   AuthenticatedAdminVersandstatusRoute: typeof AuthenticatedAdminVersandstatusRoute
   AuthenticatedAdminWartelisteRoute: typeof AuthenticatedAdminWartelisteRoute
   AuthenticatedAdminWiderrufeRoute: typeof AuthenticatedAdminWiderrufeRoute
@@ -2063,6 +2103,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminUebungsleitergelderRoute,
     AuthenticatedAdminVerfuegbarkeitRoute:
       AuthenticatedAdminVerfuegbarkeitRoute,
+    AuthenticatedAdminVersandRoute: AuthenticatedAdminVersandRoute,
     AuthenticatedAdminVersandstatusRoute: AuthenticatedAdminVersandstatusRoute,
     AuthenticatedAdminWartelisteRoute: AuthenticatedAdminWartelisteRoute,
     AuthenticatedAdminWiderrufeRoute: AuthenticatedAdminWiderrufeRoute,
@@ -2088,6 +2129,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortalPostfachRoute: typeof AuthenticatedPortalPostfachRoute
   AuthenticatedPortalProfilRoute: typeof AuthenticatedPortalProfilRoute
   AuthenticatedTrainerAbnahmeRoute: typeof AuthenticatedTrainerAbnahmeRoute
+  AuthenticatedTrainerIchRoute: typeof AuthenticatedTrainerIchRoute
   AuthenticatedTrainerKurseRoute: typeof AuthenticatedTrainerKurseRoute
   AuthenticatedTrainerMitgliederRoute: typeof AuthenticatedTrainerMitgliederRoute
   AuthenticatedTrainerOfflineRoute: typeof AuthenticatedTrainerOfflineRoute
@@ -2109,6 +2151,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortalPostfachRoute: AuthenticatedPortalPostfachRoute,
   AuthenticatedPortalProfilRoute: AuthenticatedPortalProfilRoute,
   AuthenticatedTrainerAbnahmeRoute: AuthenticatedTrainerAbnahmeRoute,
+  AuthenticatedTrainerIchRoute: AuthenticatedTrainerIchRoute,
   AuthenticatedTrainerKurseRoute: AuthenticatedTrainerKurseRoute,
   AuthenticatedTrainerMitgliederRoute: AuthenticatedTrainerMitgliederRoute,
   AuthenticatedTrainerOfflineRoute: AuthenticatedTrainerOfflineRoute,

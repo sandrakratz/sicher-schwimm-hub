@@ -34,6 +34,7 @@ export type AppNavItem = {
     | "/trainer/kurse"
     | "/trainer/abnahme"
     | "/trainer/mitglieder"
+    | "/trainer/ich"
     | "/admin"
     | "/admin/kalender"
     | "/admin/dienstplan"
@@ -60,6 +61,7 @@ export type AppNavItem = {
     | "/admin/events"
     | "/admin/nachrichten"
     | "/admin/mitgliedernachricht"
+    | "/admin/versand"
     | "/admin/emails"
     | "/admin/versandstatus"
     | "/admin/widerrufe"
@@ -89,20 +91,20 @@ export const trainerNav: AppNavItem[] = [
   {
     to: "/trainer",
     icon: LayoutDashboard,
-    label: "Trainerbereich",
+    label: "Heute",
     exact: true,
     allow: ["admin", "board", "trainer"],
   },
   {
     to: "/trainer/verfuegbarkeit",
     icon: CalendarCheck,
-    label: "Meine Verfügbarkeit",
+    label: "Einsätze & Zeiten",
     allow: ["admin", "board", "trainer"],
   },
   {
     to: "/trainer/kurse",
     icon: BookOpen,
-    label: "Meine Kurse",
+    label: "Kurse & Anwesenheit",
     allow: ["admin", "board", "trainer"],
   },
   {
@@ -115,6 +117,12 @@ export const trainerNav: AppNavItem[] = [
     to: "/trainer/mitglieder",
     icon: Users,
     label: "Vereinsmitglieder",
+    allow: ["admin", "board", "trainer"],
+  },
+  {
+    to: "/trainer/ich",
+    icon: User,
+    label: "Ich",
     allow: ["admin", "board", "trainer"],
   },
 ];
@@ -173,10 +181,12 @@ export const adminSections: {
   {
     label: "Versand",
     tabs: [
-      { to: "/admin/mitgliedernachricht", label: "Mitglieder anschreiben" },
+      { to: "/admin/versand", label: "Rundmail senden" },
       { to: "/admin/emails", label: "Gesendete E-Mails" },
       { to: "/admin/versandstatus", label: "Versandstatus" },
     ],
+    // „Mitglieder anschreiben“ ist jetzt eine Art im Versand; die alte Adresse bleibt erreichbar.
+    also: ["/admin/mitgliedernachricht"],
   },
   {
     label: "Verein",

@@ -513,11 +513,11 @@ export function AvailabilityBoard() {
   return (
     <div className="max-w-4xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-2">
-        Meine Verfügbarkeit
+        Einsätze &amp; Zeiten
       </h1>
       <p className="text-sm text-muted-foreground mb-6">
-        Hier siehst du deine Einsätze und sagst dem Vorstand, wann und wofür du zur Verfügung
-        stehst.
+        Alle deine Einsätze mit Bestätigen, Absagen und Ersatzanfragen. Darunter sagst du dem
+        Vorstand, wann und wofür du zur Verfügung stehst.
       </p>
 
       <div className="mb-6 space-y-2">
