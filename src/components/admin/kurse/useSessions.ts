@@ -88,19 +88,6 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
     await openSessions(course);
   }
 
-  async function toggleAssignment(sessionId: string, trainerId: string, next: boolean) {
-    const table = supabase.from("course_session_assignments");
-    const { error } = next
-      ? await table.insert({ session_id: sessionId, trainer_id: trainerId })
-      : await table.delete().eq("session_id", sessionId).eq("trainer_id", trainerId);
-    if (error) return toast.error(error.message);
-    setAssignments((a) =>
-      next
-        ? [...a, { session_id: sessionId, trainer_id: trainerId }]
-        : a.filter((x) => !(x.session_id === sessionId && x.trainer_id === trainerId)),
-    );
-  }
-
   async function importSessions() {
     if (!course) return;
     const parsed = parseSessionList(bulkText);
@@ -222,7 +209,6 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
     onRemove: removeSession,
     onDateChange: updateSessionDate,
     onTimeChange: updateSessionTime,
-    onToggleAssignment: toggleAssignment,
   };
 
   return { openSessions, dialogProps };

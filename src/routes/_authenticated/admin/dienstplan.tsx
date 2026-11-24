@@ -17,8 +17,26 @@ import { CoursePlan } from "@/components/admin/dienstplan/CoursePlan";
 import { AutoPlan } from "@/components/admin/dienstplan/AutoPlan";
 import { AttendanceConfirm } from "@/components/admin/dienstplan/AttendanceConfirm";
 import { PlanLog } from "@/components/admin/dienstplan/PlanLog";
+import { CalendarAssign } from "@/components/admin/dienstplan/CalendarAssign";
+
+const TABS = [
+  "luecken",
+  "woche",
+  "kurse",
+  "einteilen",
+  "anwesenheit",
+  "vorschlag",
+  "verein",
+  "protokoll",
+] as const;
+type Tab = (typeof TABS)[number];
 
 export const Route = createFileRoute("/_authenticated/admin/dienstplan")({
+  // ?tab=einteilen&kurs=<id> öffnet die Einteilung eines Kurses (z. B. aus der Kursseite)
+  validateSearch: (search: Record<string, unknown>): { tab?: Tab; kurs?: string } => ({
+    ...(TABS.includes(search["tab"] as Tab) ? { tab: search["tab"] as Tab } : {}),
+    ...(typeof search["kurs"] === "string" && search["kurs"] ? { kurs: search["kurs"] } : {}),
+  }),
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -39,7 +57,8 @@ function Page() {
   const [data, setData] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState("luecken");
+  const search = Route.useSearch();
+  const [tab, setTab] = useState<string>(search.tab ?? "luecken");
   const [pickId, setPickId] = useState<string | null>(null);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [logKey, setLogKey] = useState(0);
@@ -94,8 +113,8 @@ function Page() {
             <UsersRound className="h-6 w-6" /> Dienstplan
           </h1>
           <p className="text-sm text-muted-foreground">
-            Wo fehlt jemand, wer kann einspringen, wer ist wann eingeteilt? Einzelne Kurse
-            bearbeitest du unter „Kurse & Termine“.
+            Alles zur Einteilung an einem Ort: Wo fehlt jemand, wer kann einspringen, wer ist wann
+            eingeteilt – und unter „Kurs einteilen“ alle Termine eines Kurses auf einmal.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
@@ -107,13 +126,22 @@ function Page() {
       {!data && !error && <div className="text-sm text-muted-foreground">Wird geladen…</div>}
 
       {data && (
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs
+          value={tab}
+          onValueChange={(next) => {
+            // Nach dem Einteilen eines ganzen Kurses Lücken und Wochenplan neu laden
+            if (tab === "einteilen") void refresh();
+            setTab(next);
+          }}
+        >
           <TabsList className="h-auto flex-wrap">
             <TabsTrigger value="luecken">Lücken{openGaps > 0 ? ` (${openGaps})` : ""}</TabsTrigger>
             <TabsTrigger value="woche">Wochenplan{openAtt > 0 ? ` (${openAtt})` : ""}</TabsTrigger>
             <TabsTrigger value="kurse">Nach Kursen{openAtt > 0 ? ` (${openAtt})` : ""}</TabsTrigger>
+            <TabsTrigger value="einteilen">Kurs einteilen</TabsTrigger>
             <TabsTrigger value="anwesenheit">Anwesenheit</TabsTrigger>
             <TabsTrigger value="vorschlag">Vorschlag</TabsTrigger>
+            <TabsTrigger value="verein">Vereinstermine &amp; Helfer</TabsTrigger>
             {isAdmin && <TabsTrigger value="protokoll">Protokoll</TabsTrigger>}
           </TabsList>
 
@@ -126,8 +154,14 @@ function Page() {
           <TabsContent value="kurse" className="mt-4">
             <CoursePlan data={data} onPick={setPickId} onChanged={() => void refresh()} />
           </TabsContent>
+          <TabsContent value="einteilen" className="mt-4">
+            <CalendarAssign view="kurse" initialCourseId={search.kurs} />
+          </TabsContent>
           <TabsContent value="anwesenheit" className="mt-4">
             <AttendanceConfirm />
+          </TabsContent>
+          <TabsContent value="verein" className="mt-4">
+            <CalendarAssign view="verein" />
           </TabsContent>
           <TabsContent value="vorschlag" className="mt-4">
             <AutoPlan data={data} onChanged={() => void refresh()} />

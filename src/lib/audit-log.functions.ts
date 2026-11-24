@@ -280,7 +280,7 @@ export const listAuditLog = createServerFn({ method: "POST" })
         case "course_sessions": {
           const s = sessionMap.get(r.entity_id ?? "");
           target = s ? (courseName.get(s.course_id) ?? "") : "";
-          link = { to: "/admin/kalender" };
+          link = { to: "/admin/dienstplan" };
           break;
         }
         case "memberships": {
