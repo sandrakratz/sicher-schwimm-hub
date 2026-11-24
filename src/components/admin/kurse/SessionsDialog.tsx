@@ -26,7 +26,7 @@ export type SessionRow = {
   assigned_trainer_id?: string | null;
 };
 
-/** Termine eines Kurses: anlegen, importieren, Trainer einteilen, Anwesenheit. */
+/** Termine eines Kurses: anlegen, importieren, Anwesenheit; Einteilung nur anzeigen (eingeteilt wird im Dienstplan). */
 export function SessionsDialog({
   open,
   onOpenChange,
@@ -43,7 +43,6 @@ export function SessionsDialog({
   onRemove,
   onDateChange,
   onTimeChange,
-  onToggleAssignment,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -60,7 +59,6 @@ export function SessionsDialog({
   onRemove: (id: string) => void;
   onDateChange: (id: string, date: string) => void;
   onTimeChange: (id: string, field: "start_time" | "end_time", value: string) => void;
-  onToggleAssignment: (sessionId: string, trainerId: string, on: boolean) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,11 +95,19 @@ export function SessionsDialog({
             {bulkBusy ? "Übernehme…" : "Termine übernehmen"}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Bis zu 30 Termine mit Datum und Uhrzeit. Datum und Uhrzeit erscheinen unter „Kurse &
-          Termine“, das Datum zusätzlich als Spaltenüberschrift der Excel-Kursliste. Trainer melden
-          ihre Verfügbarkeit unter „Verfügbarkeit“.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            Bis zu 30 Termine mit Datum und Uhrzeit. Das Datum erscheint zusätzlich als
+            Spaltenüberschrift der Excel-Kursliste. Grün/rot = Rückmeldung der Trainer:innen.
+          </p>
+          {course && (
+            <Button asChild size="sm">
+              <a href={`/admin/dienstplan?tab=einteilen&kurs=${course.id}`}>
+                Im Dienstplan einteilen
+              </a>
+            </Button>
+          )}
+        </div>
         <div className="space-y-3">
           {sessions.length === 0 && (
             <div className="text-sm text-muted-foreground">Noch keine Termine.</div>
@@ -176,52 +182,12 @@ export function SessionsDialog({
                     <span className="text-muted-foreground">Noch keine Rückmeldungen</span>
                   )}
                 </div>
-                <div className="space-y-1 pl-10">
-                  <Label className="text-xs text-muted-foreground">
-                    Eingeteilt (Mehrfachauswahl)
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {trainers.length === 0 && (
-                      <span className="text-xs text-muted-foreground">Keine Trainer gefunden</span>
-                    )}
-                    {trainers
-                      .slice()
-                      .sort((a, b) => {
-                        const rank = (id: string) =>
-                          yes.some((y) => y.trainer_id === id)
-                            ? 0
-                            : no.some((n) => n.trainer_id === id)
-                              ? 2
-                              : 1;
-                        return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "de");
-                      })
-                      .map((t) => {
-                        const on = assignedIds.includes(t.id);
-                        return (
-                          <Button
-                            key={t.id}
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onToggleAssignment(s.id, t.id, !on)}
-                            className={
-                              on
-                                ? "border-transparent bg-primary text-primary-foreground hover:bg-primary/90"
-                                : ""
-                            }
-                          >
-                            {t.name}
-                            <span className="ml-1 text-[10px] opacity-80">
-                              {yes.some((y) => y.trainer_id === t.id)
-                                ? "kann"
-                                : no.some((n) => n.trainer_id === t.id)
-                                  ? "kann nicht"
-                                  : ""}
-                            </span>
-                          </Button>
-                        );
-                      })}
-                  </div>
+                {/* Einteilen nur im Dienstplan (mit Protokoll und Mail an die Trainer:innen); hier nur Anzeige */}
+                <div className="space-y-1 pl-10 text-xs">
+                  <span className="text-muted-foreground">Eingeteilt: </span>
+                  {assignedIds.length > 0 && (
+                    <span className="font-medium">{assignedIds.map(nameOf).join(", ")}</span>
+                  )}
                   {assignedIds.length === 0 && (
                     <span className="text-xs text-orange-600">Noch niemand eingeteilt</span>
                   )}

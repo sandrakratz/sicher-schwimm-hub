@@ -168,7 +168,6 @@ export const adminSections: {
     label: "Trainer",
     tabs: [
       { to: "/admin/dienstplan", label: "Dienstplan" },
-      { to: "/admin/kalender", label: "Einteilung" },
       { to: "/admin/qualifikationen", label: "Qualifikationen" },
     ],
   },

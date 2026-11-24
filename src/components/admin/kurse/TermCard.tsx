@@ -194,7 +194,7 @@ export function TermCard({ c, ctx }: { c: Course; ctx: TermContext }) {
         </div>
         <div>
           <div className="text-muted-foreground mb-1">Dienstplan</div>
-          <a href={`/admin/kalender?kurs=${c.id}`}>
+          <a href={`/admin/dienstplan?tab=einteilen&kurs=${c.id}`}>
             <Badge variant={rosterVariant}>{rosterLabel}</Badge>
           </a>
         </div>
@@ -212,7 +212,7 @@ export function TermCard({ c, ctx }: { c: Course; ctx: TermContext }) {
           asChild
           title="Trainerteam für alle Termine dieses Kurses einteilen"
         >
-          <a href={`/admin/kalender?kurs=${c.id}`}>
+          <a href={`/admin/dienstplan?tab=einteilen&kurs=${c.id}`}>
             <Users className="h-4 w-4" /> Trainer einteilen
           </a>
         </Button>

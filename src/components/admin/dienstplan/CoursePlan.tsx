@@ -227,7 +227,7 @@ export function CoursePlan({
                   <Badge variant="secondary">✓ komplett besetzt</Badge>
                 )}
                 <a
-                  href={`/admin/kalender?kurs=${first.courseId}`}
+                  href={`/admin/dienstplan?tab=einteilen&kurs=${first.courseId}`}
                   className="ml-auto text-xs text-primary underline-offset-2 hover:underline"
                 >
                   Kurs bearbeiten

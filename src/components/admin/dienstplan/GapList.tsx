@@ -166,7 +166,7 @@ export function GapList({
                     </Badge>
                   )}
                   <a
-                    href={`/admin/kalender?kurs=${s.courseId}`}
+                    href={`/admin/dienstplan?tab=einteilen&kurs=${s.courseId}`}
                     className="text-xs text-primary underline-offset-2 hover:underline"
                     title="Alle Termine dieses Kurses einteilen"
                   >
