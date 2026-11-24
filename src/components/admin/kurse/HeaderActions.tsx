@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, FileSpreadsheet, Mail, Plus, Smartphone } from "lucide-react";
+import { CalendarDays, FileSpreadsheet, Mail, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/select";
 import { OfferDeadlinesDialog } from "@/components/admin/OfferDeadlinesDialog";
 import type { useCourseExports } from "@/components/admin/kurse/useCourseExports";
-import { useCourseMailings } from "@/components/admin/kurse/useCourseMailings";
 
-/** Knopfleiste oben rechts: Trainer-Nachweis, Info-Mails, Angebotsfristen, Kursplanung, neuer Kurs. */
+/** Knopfleiste oben rechts: Trainer-Nachweis, Rundmails (Versand), Angebotsfristen, Kursplanung, neuer Kurs. */
 export function HeaderActions({
   exports: x,
   onNewProgram,
@@ -21,8 +20,6 @@ export function HeaderActions({
   exports: ReturnType<typeof useCourseExports>;
   onNewProgram: () => void;
 }) {
-  const { inviting, inviteAbsence, handleSendAbsenceInvites, handleSendPushInvites } =
-    useCourseMailings();
   const [deadlinesOpen, setDeadlinesOpen] = useState(false);
   const thisYear = new Date().getFullYear();
   return (
@@ -45,23 +42,11 @@ export function HeaderActions({
           {x.proofBusy ? "Erstelle…" : `Trainer-Nachweis ${x.proofYear}`}
         </Button>
       </div>
-      <Button
-        variant="outline"
-        disabled={inviting}
-        onClick={handleSendPushInvites}
-        title="Einmalige Info-Mail mit Link zum Aktivieren der Handy-Mitteilungen"
-      >
-        <Smartphone className="h-4 w-4" />{" "}
-        {inviting ? "Sende…" : "Info-Mail zu Mitteilungen an alle gebuchten Familien senden"}
-      </Button>
-      <Button
-        variant="outline"
-        disabled={inviteAbsence}
-        onClick={handleSendAbsenceInvites}
-        title="Einmalige Info-Mail mit Abmelde-Link an Familien mit laufenden Kursen"
-      >
-        <Mail className="h-4 w-4" />{" "}
-        {inviteAbsence ? "Sende…" : "Abmelde-Link an Familien laufender Kurse senden"}
+      {/* Info-Mails an alle Familien liegen jetzt gesammelt im Versand. */}
+      <Button variant="outline" asChild>
+        <Link to="/admin/versand">
+          <Mail className="h-4 w-4" /> Rundmails
+        </Link>
       </Button>
       <Button variant="outline" onClick={() => setDeadlinesOpen(true)}>
         <CalendarDays className="h-4 w-4" /> Angebotsfristen

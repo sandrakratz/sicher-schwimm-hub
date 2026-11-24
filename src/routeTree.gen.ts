@@ -70,6 +70,7 @@ import { Route as AuthenticatedAdminStatistikRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminSucheRouteImport } from './routes/_authenticated/admin/suche'
 import { Route as AuthenticatedAdminUebungsleitergelderRouteImport } from './routes/_authenticated/admin/uebungsleitergelder'
 import { Route as AuthenticatedAdminVerfuegbarkeitRouteImport } from './routes/_authenticated/admin/verfuegbarkeit'
+import { Route as AuthenticatedAdminVersandRouteImport } from './routes/_authenticated/admin/versand'
 import { Route as AuthenticatedAdminVersandstatusRouteImport } from './routes/_authenticated/admin/versandstatus'
 import { Route as AuthenticatedAdminWartelisteRouteImport } from './routes/_authenticated/admin/warteliste'
 import { Route as AuthenticatedAdminWiderrufeRouteImport } from './routes/_authenticated/admin/widerrufe'
@@ -435,6 +436,12 @@ const AuthenticatedAdminVerfuegbarkeitRoute =
     path: '/verfuegbarkeit',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminVersandRoute =
+  AuthenticatedAdminVersandRouteImport.update({
+    id: '/versand',
+    path: '/versand',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminVersandstatusRoute =
   AuthenticatedAdminVersandstatusRouteImport.update({
     id: '/versandstatus',
@@ -712,6 +719,7 @@ export interface FileRoutesByFullPath {
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
+  '/admin/versand': typeof AuthenticatedAdminVersandRoute
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
@@ -810,6 +818,7 @@ export interface FileRoutesByTo {
   '/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
+  '/admin/versand': typeof AuthenticatedAdminVersandRoute
   '/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
@@ -911,6 +920,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/suche': typeof AuthenticatedAdminSucheRoute
   '/_authenticated/admin/uebungsleitergelder': typeof AuthenticatedAdminUebungsleitergelderRoute
   '/_authenticated/admin/verfuegbarkeit': typeof AuthenticatedAdminVerfuegbarkeitRoute
+  '/_authenticated/admin/versand': typeof AuthenticatedAdminVersandRoute
   '/_authenticated/admin/versandstatus': typeof AuthenticatedAdminVersandstatusRoute
   '/_authenticated/admin/warteliste': typeof AuthenticatedAdminWartelisteRoute
   '/_authenticated/admin/widerrufe': typeof AuthenticatedAdminWiderrufeRoute
@@ -1012,6 +1022,7 @@ export interface FileRouteTypes {
     | '/admin/suche'
     | '/admin/uebungsleitergelder'
     | '/admin/verfuegbarkeit'
+    | '/admin/versand'
     | '/admin/versandstatus'
     | '/admin/warteliste'
     | '/admin/widerrufe'
@@ -1110,6 +1121,7 @@ export interface FileRouteTypes {
     | '/admin/suche'
     | '/admin/uebungsleitergelder'
     | '/admin/verfuegbarkeit'
+    | '/admin/versand'
     | '/admin/versandstatus'
     | '/admin/warteliste'
     | '/admin/widerrufe'
@@ -1210,6 +1222,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/suche'
     | '/_authenticated/admin/uebungsleitergelder'
     | '/_authenticated/admin/verfuegbarkeit'
+    | '/_authenticated/admin/versand'
     | '/_authenticated/admin/versandstatus'
     | '/_authenticated/admin/warteliste'
     | '/_authenticated/admin/widerrufe'
@@ -1731,6 +1744,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminVerfuegbarkeitRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/versand': {
+      id: '/_authenticated/admin/versand'
+      path: '/versand'
+      fullPath: '/admin/versand'
+      preLoaderRoute: typeof AuthenticatedAdminVersandRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/versandstatus': {
       id: '/_authenticated/admin/versandstatus'
       path: '/versandstatus'
@@ -2020,6 +2040,7 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminSucheRoute: typeof AuthenticatedAdminSucheRoute
   AuthenticatedAdminUebungsleitergelderRoute: typeof AuthenticatedAdminUebungsleitergelderRoute
   AuthenticatedAdminVerfuegbarkeitRoute: typeof AuthenticatedAdminVerfuegbarkeitRoute
+  AuthenticatedAdminVersandRoute: typeof AuthenticatedAdminVersandRoute
   AuthenticatedAdminVersandstatusRoute: typeof AuthenticatedAdminVersandstatusRoute
   AuthenticatedAdminWartelisteRoute: typeof AuthenticatedAdminWartelisteRoute
   AuthenticatedAdminWiderrufeRoute: typeof AuthenticatedAdminWiderrufeRoute
@@ -2063,6 +2084,7 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
       AuthenticatedAdminUebungsleitergelderRoute,
     AuthenticatedAdminVerfuegbarkeitRoute:
       AuthenticatedAdminVerfuegbarkeitRoute,
+    AuthenticatedAdminVersandRoute: AuthenticatedAdminVersandRoute,
     AuthenticatedAdminVersandstatusRoute: AuthenticatedAdminVersandstatusRoute,
     AuthenticatedAdminWartelisteRoute: AuthenticatedAdminWartelisteRoute,
     AuthenticatedAdminWiderrufeRoute: AuthenticatedAdminWiderrufeRoute,

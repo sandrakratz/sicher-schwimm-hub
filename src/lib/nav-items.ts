@@ -60,6 +60,7 @@ export type AppNavItem = {
     | "/admin/events"
     | "/admin/nachrichten"
     | "/admin/mitgliedernachricht"
+    | "/admin/versand"
     | "/admin/emails"
     | "/admin/versandstatus"
     | "/admin/widerrufe"
@@ -173,10 +174,12 @@ export const adminSections: {
   {
     label: "Versand",
     tabs: [
-      { to: "/admin/mitgliedernachricht", label: "Mitglieder anschreiben" },
+      { to: "/admin/versand", label: "Rundmail senden" },
       { to: "/admin/emails", label: "Gesendete E-Mails" },
       { to: "/admin/versandstatus", label: "Versandstatus" },
     ],
+    // „Mitglieder anschreiben“ ist jetzt eine Art im Versand; die alte Adresse bleibt erreichbar.
+    also: ["/admin/mitgliedernachricht"],
   },
   {
     label: "Verein",
