@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { CalendarClock, Check, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -194,7 +195,22 @@ export function PaymentCard({ r, pay }: { r: PaymentRow; pay: OpenPayments }) {
       <CardContent className="py-4 flex flex-col md:flex-row md:items-center gap-3">
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold">{r.participant_name ?? "–"}</span>
+            {r.participant_email || r.participant_name ? (
+              <Link
+                to="/admin/familie"
+                search={
+                  r.participant_email
+                    ? { email: r.participant_email }
+                    : { name: r.participant_name ?? "" }
+                }
+                className="font-semibold text-primary underline underline-offset-2"
+                title="Familienakte öffnen"
+              >
+                {r.participant_name ?? "–"}
+              </Link>
+            ) : (
+              <span className="font-semibold">–</span>
+            )}
             <Badge variant="outline" className={st.className}>
               {st.label}
             </Badge>

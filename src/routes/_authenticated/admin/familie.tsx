@@ -8,15 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FamilyTimeline } from "@/components/admin/FamilyTimeline";
 import { getFamilyOverview } from "@/lib/family.functions";
 import { resolveBlockSuggestion } from "@/lib/waitlist.functions";
-import { formatDateBerlin, formatEuro } from "@/lib/format";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { formatDateBerlin } from "@/lib/format";
+import { FamilyWaitlist } from "@/components/admin/familie/FamilyWaitlist";
+import { FamilyBookings } from "@/components/admin/familie/FamilyBookings";
 
 export const Route = createFileRoute("/_authenticated/admin/familie")({
   validateSearch: (search: Record<string, unknown>): { email?: string; name?: string } => ({
@@ -41,19 +35,6 @@ export const Route = createFileRoute("/_authenticated/admin/familie")({
   component: FamilyPage,
 });
 
-const ENTRY_STATUS: Record<string, string> = {
-  waiting: "Wartend",
-  offered: "Platz angeboten",
-  accepted: "Zugesagt",
-  declined: "Abgesagt",
-  expired: "Frist abgelaufen",
-  removed: "Entfernt",
-};
-const BOOKING_STATUS: Record<string, string> = {
-  confirmed: "Gebucht",
-  waiting: "Warteliste",
-  cancelled: "Abgesagt / storniert",
-};
 function FamilyPage() {
   const { email, name } = Route.useSearch();
   const qc = useQueryClient();
@@ -120,7 +101,9 @@ function FamilyPage() {
     <div className="max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-accent text-sm font-semibold uppercase tracking-wider">Familie</div>
+          <div className="text-accent text-sm font-semibold uppercase tracking-wider">
+            Familienakte
+          </div>
           <h1 className="font-display text-3xl font-bold text-primary-deep">
             {data.parentName ?? data.children[0]?.name ?? email ?? name}
           </h1>
@@ -208,102 +191,26 @@ function FamilyPage() {
             ))}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Anfrageliste</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {data.entries.length === 0 && (
-              <p className="text-muted-foreground">Keine Einträge auf der Anfrageliste.</p>
-            )}
-            {data.entries.map((e) => (
-              <div
-                key={e.id}
-                className="flex flex-wrap justify-between gap-2 border-b pb-1 last:border-0"
-              >
-                <span>
-                  <span className="font-medium">{e.child_name}</span>
-                  <span className="text-muted-foreground"> · {e.program ?? "ohne Zuordnung"}</span>
-                </span>
-                <span className="flex gap-1">
-                  <Badge variant="secondary">{ENTRY_STATUS[e.status] ?? e.status}</Badge>
-                  {e.decline_count > 0 && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-900">
-                      {e.decline_count}× abgesagt
-                    </Badge>
-                  )}
-                  <Link
-                    to="/admin/warteliste"
-                    search={{ suche: e.child_name }}
-                    className="ml-1 text-xs text-primary underline"
-                    title="In der Anfrageliste öffnen: Platz anbieten, Absage erfassen, Notiz, Zuständigkeit"
-                  >
-                    Bearbeiten
-                  </Link>
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Anfrageliste</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FamilyWaitlist entryIds={data.entries.map((e) => e.id)} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Buchungen</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {data.bookings.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Buchungen.</p>
-          ) : (
-            <Table className="w-full min-w-[640px] text-sm">
-              <TableHeader>
-                <TableRow className="border-b text-left text-muted-foreground">
-                  <TableHead className="py-2 pr-3 h-auto pl-0">Kind</TableHead>
-                  <TableHead className="py-2 pr-3 h-auto pl-0">Kurs</TableHead>
-                  <TableHead className="py-2 pr-3 h-auto pl-0">Status</TableHead>
-                  <TableHead className="py-2 pr-3 h-auto pl-0">Zahlung</TableHead>
-                  <TableHead className="py-2 pr-3 h-auto pl-0">Gebucht am</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.bookings.map((b) => (
-                  <TableRow key={b.id} className="border-b align-top">
-                    <TableCell className="py-2 pr-3 font-medium pl-0">
-                      {b.child_name ?? "–"}
-                    </TableCell>
-                    <TableCell className="py-2 pr-3 pl-0">
-                      {b.course}
-                      {b.starts_on && (
-                        <div className="text-xs text-muted-foreground">
-                          {formatDateBerlin(b.starts_on)}
-                          {b.ends_on && b.ends_on !== b.starts_on
-                            ? ` – ${formatDateBerlin(b.ends_on)}`
-                            : ""}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-2 pr-3 pl-0">
-                      <Badge variant="secondary">{BOOKING_STATUS[b.status] ?? b.status}</Badge>
-                    </TableCell>
-                    <TableCell className="py-2 pr-3 pl-0">
-                      {b.paid
-                        ? `bezahlt${b.paid_at ? ` am ${formatDateBerlin(b.paid_at)}` : ""}`
-                        : b.status === "cancelled"
-                          ? "–"
-                          : `offen${b.due ? ` (fällig ${formatDateBerlin(b.due)})` : ""}`}
-                      {b.price != null && (
-                        <span className="text-muted-foreground"> · {formatEuro(b.price)}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="py-2 pr-3 pl-0">
-                      {formatDateBerlin(b.created_at)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+        <CardContent>
+          <FamilyBookings
+            bookingIds={data.bookings.map((b) => b.id)}
+            onChanged={() => void qc.invalidateQueries({ queryKey: ["admin-family"] })}
+          />
         </CardContent>
       </Card>
 
