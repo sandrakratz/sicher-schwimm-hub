@@ -76,7 +76,7 @@ function Kursfinder() {
             Passenden Kurs finden
           </h1>
           <p className="text-white/85 text-lg">
-            Drei kurze Fragen – dann zeigen wir Ihnen den passenden Kurs und freie Termine.
+            Zwei kurze Fragen – dann zeigen wir Ihnen den passenden Kurs und freie Termine.
           </p>
         </div>
       </section>

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, CalendarCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { getMyPayoutDetails } from "@/lib/trainer-payout.functions";
 import { WeekShifts } from "@/components/trainer/WeekShifts";
@@ -67,14 +67,6 @@ function TrainerHome() {
       )}
 
       <WeekShifts rows={upcoming} me={me} today={today} loading={loading} />
-
-      <Link
-        to="/trainer/verfuegbarkeit"
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-primary px-4 text-sm font-semibold text-primary sm:w-auto"
-      >
-        <CalendarCheck className="h-4 w-4" aria-hidden="true" /> Alle {upcoming.length} kommenden
-        Einsätze &amp; Verfügbarkeit
-      </Link>
     </div>
   );
 }

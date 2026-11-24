@@ -48,6 +48,19 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthLayout,
 });
 
+type Area = "admin" | "trainer" | "portal";
+const AREA_LABEL: Record<Area, string> = {
+  admin: "Verwaltung",
+  trainer: "Trainerbereich",
+  portal: "Mitgliederportal",
+};
+const AREA_SHORT: Record<Area, string> = {
+  admin: "Verwaltung",
+  trainer: "Trainer",
+  portal: "Portal",
+};
+const AREA_HOME = { admin: "/admin", trainer: "/trainer", portal: "/portal" } as const;
+
 function AuthLayout() {
   const navigate = useNavigate();
   const [roles, setRoles] = useState<Role[]>([]);
@@ -91,6 +104,17 @@ function AuthLayout() {
   const adminItems = visibleAdminNav(roles);
   const trainerItems = visibleTrainerNav(roles);
   const replacementCount = useReplacementCount(trainerItems.length > 0);
+  // Welche Bereiche darf die Person sehen, und in welchem ist sie gerade?
+  const areas: Area[] = [
+    ...(adminItems.length > 0 ? (["admin"] as const) : []),
+    ...(trainerItems.length > 0 ? (["trainer"] as const) : []),
+    "portal",
+  ];
+  const area: Area = pathname.startsWith("/admin")
+    ? "admin"
+    : pathname.startsWith("/trainer")
+      ? "trainer"
+      : "portal";
 
   const navContent = (
     <>
@@ -101,71 +125,89 @@ function AuthLayout() {
           className="h-20 w-auto object-contain"
           height={80}
         />
-        <div className="text-xs font-semibold opacity-90">Mitgliederportal</div>
+        <div className="text-xs font-semibold opacity-90">{AREA_LABEL[area]}</div>
       </Link>
-      <nav className="p-3 flex-1 space-y-1 overflow-y-auto">
-        {portalNav.map((n) => (
-          <Link
-            key={n.to}
-            to={n.to}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
-            activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-            activeOptions={{ exact: n.exact }}
-          >
-            <n.icon className="h-4 w-4" />
-            {n.label}
-          </Link>
-        ))}
-        {trainerItems.length > 0 && (
-          <>
-            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">
-              Trainer:innen
-            </div>
-            {trainerItems.map((n) => (
+      {areas.length > 1 && (
+        <div
+          role="group"
+          aria-label="Bereich wechseln"
+          className="mx-3 mt-3 grid gap-1 rounded-lg bg-sidebar-accent p-1"
+          style={{ gridTemplateColumns: `repeat(${areas.length}, minmax(0, 1fr))` }}
+        >
+          {areas.map((a) => (
+            <Link
+              key={a}
+              to={AREA_HOME[a]}
+              aria-current={a === area ? "page" : undefined}
+              className={`rounded-md px-2 py-1.5 text-center text-xs font-bold transition ${
+                a === area
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "opacity-80 hover:opacity-100"
+              }`}
+            >
+              {AREA_SHORT[a]}
+              {a === "trainer" && replacementCount > 0 && a !== area && (
+                <span className="ml-1 rounded-full bg-amber-400 px-1.5 text-[10px] text-amber-950">
+                  {replacementCount}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+      {/* Nur das Menü des aktuellen Bereichs – die anderen Bereiche über den Umschalter oben */}
+      <nav aria-label={AREA_LABEL[area]} className="p-3 flex-1 space-y-1 overflow-y-auto">
+        {area === "portal" &&
+          portalNav.map((n) => (
+            <Link
+              key={n.to}
+              to={n.to}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
+              activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
+              activeOptions={{ exact: n.exact }}
+            >
+              <n.icon className="h-4 w-4" />
+              {n.label}
+            </Link>
+          ))}
+        {area === "trainer" &&
+          trainerItems.map((n) => (
+            <Link
+              key={n.to}
+              to={n.to}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
+              activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
+              activeOptions={{ exact: n.exact }}
+            >
+              <n.icon className="h-4 w-4" />
+              {n.label}
+              {n.to === "/trainer/verfuegbarkeit" && replacementCount > 0 && (
+                <span
+                  className="ml-auto rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-amber-950"
+                  title="Ersatz gesucht"
+                >
+                  {replacementCount}
+                  <span className="sr-only"> Termine suchen Ersatz</span>
+                </span>
+              )}
+            </Link>
+          ))}
+        {area === "admin" &&
+          adminItems.map((n) => {
+            const groupActive = n.group?.some((p) => isUnder(pathname, p));
+            return (
               <Link
                 key={n.to}
                 to={n.to}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition ${groupActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : ""}`}
                 activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
                 activeOptions={{ exact: n.exact }}
               >
                 <n.icon className="h-4 w-4" />
                 {n.label}
-                {n.to === "/trainer/verfuegbarkeit" && replacementCount > 0 && (
-                  <span
-                    className="ml-auto rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-bold text-amber-950"
-                    title="Ersatz gesucht"
-                  >
-                    {replacementCount}
-                    <span className="sr-only"> Termine suchen Ersatz</span>
-                  </span>
-                )}
               </Link>
-            ))}
-          </>
-        )}
-        {adminItems.length > 0 && (
-          <>
-            <div className="px-3 pt-5 pb-1 text-[11px] uppercase tracking-wider opacity-60 font-bold">
-              Verwaltung
-            </div>
-            {adminItems.map((n) => {
-              const groupActive = n.group?.some((p) => isUnder(pathname, p));
-              return (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold hover:bg-sidebar-accent transition ${groupActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : ""}`}
-                  activeProps={{ className: "bg-sidebar-primary text-sidebar-primary-foreground" }}
-                  activeOptions={{ exact: n.exact }}
-                >
-                  <n.icon className="h-4 w-4" />
-                  {n.label}
-                </Link>
-              );
-            })}
-          </>
-        )}
+            );
+          })}
       </nav>
       <div className="p-3 border-t border-sidebar-border">
         <div className="px-3 py-2 text-xs opacity-70 truncate">{name}</div>
