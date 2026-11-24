@@ -4,7 +4,6 @@ import {
   Calendar,
   FileText,
   Newspaper,
-  Mail,
   BookOpen,
   ClipboardCheck,
   Shield,
@@ -73,15 +72,15 @@ export type AppNavItem = {
 
 /** Sichtbar für alle angemeldeten Nutzer */
 export const portalNav: AppNavItem[] = [
-  { to: "/portal", icon: LayoutDashboard, label: "Übersicht", exact: true },
-  { to: "/portal/profil", icon: User, label: "Mein Profil" },
-  { to: "/portal/kurse", icon: BookOpen, label: "Meine Kurse" },
+  // „Start“ zeigt oben, was zu tun ist; „Nachrichten“ = Postfach und Kontaktformular in einem.
+  { to: "/portal", icon: LayoutDashboard, label: "Start", exact: true },
+  { to: "/portal/kurse", icon: BookOpen, label: "Kurse der Familie" },
   { to: "/portal/familienschwimmen", icon: Waves, label: "Mitgliederschwimmen" },
-  { to: "/portal/postfach", icon: Inbox, label: "Postfach" },
+  { to: "/portal/postfach", icon: Inbox, label: "Nachrichten" },
   { to: "/portal/news", icon: Newspaper, label: "Vereinsnews" },
   { to: "/portal/events", icon: Calendar, label: "Termine" },
   { to: "/portal/dokumente", icon: FileText, label: "Dokumente" },
-  { to: "/portal/kontakt", icon: Mail, label: "Verein kontaktieren" },
+  { to: "/portal/profil", icon: User, label: "Mein Profil" },
 ];
 
 /** Eigener Bereich für Trainer:innen */
