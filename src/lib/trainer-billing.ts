@@ -53,3 +53,45 @@ export function amountOf(hours: number, rate: number): number {
 
 /** Weiterhin hier erreichbar für bestehende Importe (z. B. trainer-certificate.ts). */
 export { formatEuro } from "@/lib/format";
+
+export type CapCheck = {
+  /** Summe im Jahr nach dieser Auszahlung, inkl. Freibetrag, der bei anderen Auftraggebern genutzt wurde */
+  after: number;
+  /** Rest bis zur Grenze vor dieser Auszahlung (nie negativ) */
+  remaining: number;
+  over: boolean;
+};
+
+/**
+ * Harte Grenze: Jahresfreibetrag minus bereits gezahlter Beträge (auch zur Freigabe angelegte) minus
+ * dem, was die Trainer:in laut Jahreserklärung schon bei anderen Auftraggebern nutzt.
+ */
+export function capCheck(paidYear: number, otherAllowance: number, amount: number): CapCheck {
+  const used = Math.round((paidYear + otherAllowance) * 100) / 100;
+  const after = Math.round((used + amount) * 100) / 100;
+  return {
+    after,
+    remaining: Math.max(0, Math.round((ANNUAL_ALLOWANCE - used) * 100) / 100),
+    over: after > ANNUAL_ALLOWANCE,
+  };
+}
+
+export type Signer = { name: string; role: string };
+
+/**
+ * Unterschriften der Jahresbescheinigung (Vorstand 25.11.2026): die Kassenwartin, die abrechnet, und ein
+ * Vorstandsmitglied, das kontrolliert – das erste der Liste, das nicht selbst die Trainer:in ist. Ist die
+ * Kassenwartin selbst die Trainer:in, unterschreiben die beiden Vorstandsmitglieder. Niemand bescheinigt
+ * sich selbst etwas.
+ */
+export function certificateSigners(
+  trainerName: string,
+  board: Signer[],
+  treasurer: Signer,
+): Signer[] {
+  const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
+  const self = norm(trainerName);
+  const others = board.filter((b) => norm(b.name) !== self);
+  if (norm(treasurer.name) === self) return others.slice(0, 2);
+  return [treasurer, ...others.slice(0, 1)];
+}

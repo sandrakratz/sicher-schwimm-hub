@@ -14,6 +14,7 @@ import { formatDateBerlin, fullName } from "@/lib/format";
 import { PayoutIbanCard } from "@/components/trainer/PayoutIbanCard";
 import { Qualifications } from "@/components/trainer/Qualifications";
 import { MyPayouts } from "@/components/trainer/MyPayouts";
+import { DeclarationCard } from "@/components/trainer/DeclarationCard";
 import { DeviceCard } from "@/components/trainer/DeviceCard";
 import { InstallHint } from "@/components/trainer/InstallHint";
 import { timeLabel, useMySessions, weekdayLabel } from "@/components/trainer/useMySessions";
@@ -134,6 +135,7 @@ function Ich() {
       </Dialog>
 
       {profileLoaded && isTrainer && <PayoutIbanCard defaultHolder={holder} />}
+      {profileLoaded && isTrainer && <DeclarationCard />}
       {me && <MyPayouts />}
       {me && <Qualifications me={me} />}
 
