@@ -67,6 +67,7 @@ type InboxEntry = {
 
 const TASK_ICON: Record<string, typeof Euro> = {
   "member-check": ShieldCheck,
+  "payouts-pending": Euro,
   overdue: Euro,
   offers: Hourglass,
   "waitlist-review": Hourglass,
@@ -129,6 +130,10 @@ const TASK_TEXT: Record<string, { todo: string; action: string }> = {
   "wl-min": {
     todo: "Kurse, die noch starten und die Mindestteilnehmerzahl noch nicht erreicht haben.",
     action: "Anfrageliste öffnen",
+  },
+  "payouts-pending": {
+    todo: "Abrechnungen für Übungsleiter:innen, die auf deine Kontrolle warten. Freigeben kann nur, wer sie nicht angelegt hat und sie nicht selbst bekommt. Danach in MeinVerein buchen.",
+    action: "Zu den Auszahlungen",
   },
   memberships: {
     todo: "Neue Mitgliedsanträge prüfen: genehmigen, Rückfrage stellen oder ablehnen.",

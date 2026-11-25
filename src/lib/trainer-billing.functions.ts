@@ -1,9 +1,20 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- neue Spalten/Tabellen (Freigabe, Jahreserklärung) fehlen noch in den generierten Typen */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { fetchAll, fetchIn } from "@/lib/fetch-all";
-import { amountOf, pickRate, resolveHours, type Rate } from "@/lib/trainer-billing";
-import { assertStaff } from "@/lib/auth-guards.server";
+import {
+  amountOf,
+  ANNUAL_ALLOWANCE,
+  capCheck,
+  certificateSigners,
+  pickRate,
+  resolveHours,
+  type Rate,
+  type Signer,
+} from "@/lib/trainer-billing";
+import { assertStaff, assertTrainer } from "@/lib/auth-guards.server";
+import { CERT_BOARD, CERT_TREASURER } from "@/lib/billing-config";
 import { fullName, todayBerlinIso } from "@/lib/format";
 
 export type BillingRow = {
@@ -34,13 +45,26 @@ export type BillingOverview = {
   trainers: { id: string; name: string }[];
   programs: { id: string; name: string; billedHours: number | null }[];
   courses: { id: string; name: string }[];
-  /** Im laufenden Jahr bereits ausgezahlt je Trainer:in (Freibetrag zählt nach Auszahlungsdatum) */
+  /** Im laufenden Jahr bereits ausgezahlt bzw. zur Freigabe angelegt je Trainer:in (nach Auszahlungsdatum) */
   paidInYear: Record<string, number>;
+  /** Jahreserklärung der Trainer:innen für das laufende Jahr (fehlt = nicht abgegeben) */
+  declarations: Record<string, Declaration>;
   year: number;
 };
 
+export type Declaration = {
+  year: number;
+  sideJob: boolean;
+  otherAllowance: number;
+  otherNote: string | null;
+  confirmedAt: string;
+};
+
+export type PayoutStatus = "pending" | "approved";
+
 export type MyPayout = {
   id: string;
+  status: PayoutStatus;
   paidOn: string;
   total: number;
   note: string | null;
@@ -58,6 +82,57 @@ function nameOf(p?: { first_name: string | null; last_name: string | null; email
 }
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Datum ungültig");
+
+const mapDeclaration = (d: any): Declaration => ({
+  year: Number(d.year),
+  sideJob: !!d.side_job,
+  otherAllowance: Number(d.other_allowance ?? 0),
+  otherNote: (d.other_note as string | null) ?? null,
+  confirmedAt: d.confirmed_at as string,
+});
+
+/**
+ * Harte Grenze (Satzung: Vergütung nur im Rahmen der Pauschale): Liegt die Auszahlung über dem Rest des
+ * Jahresfreibetrags oder fehlt die Jahreserklärung, geht es nur mit Begründung (wird gespeichert).
+ */
+async function capGuard(
+  trainerId: string,
+  paidOn: string,
+  amount: number,
+  overrideReason: string | undefined,
+): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const year = paidOn.slice(0, 4);
+  const [{ data: payouts }, { data: decl }] = await Promise.all([
+    supabaseAdmin
+      .from("trainer_payouts")
+      .select("total_amount")
+      .eq("trainer_id", trainerId)
+      .gte("paid_on", `${year}-01-01`)
+      .lte("paid_on", `${year}-12-31`),
+    (supabaseAdmin as any)
+      .from("trainer_declarations")
+      .select("other_allowance")
+      .eq("trainer_id", trainerId)
+      .eq("year", Number(year))
+      .maybeSingle(),
+  ]);
+  const paid = (payouts ?? []).reduce((s, p) => s + Number(p.total_amount), 0);
+  const c = capCheck(paid, Number(decl?.other_allowance ?? 0), amount);
+  const problems = [
+    ...(decl ? [] : [`Die Jahreserklärung ${year} der Trainer:in fehlt.`]),
+    ...(c.over
+      ? [
+          `Damit wären es ${c.after.toFixed(2).replace(".", ",")} € im Jahr ${year} – über der Grenze von ${ANNUAL_ALLOWANCE} € (Rest: ${c.remaining.toFixed(2).replace(".", ",")} €).`,
+        ]
+      : []),
+  ];
+  if (problems.length === 0) return null;
+  const reason = (overrideReason ?? "").trim();
+  if (reason.length < 10)
+    throw new Error(`${problems.join(" ")} Bitte eine Begründung angeben (mindestens 10 Zeichen).`);
+  return `${problems.join(" ")} Begründung: ${reason}`;
+}
 
 /** Bestätigte Einsätze (mit Satz, Stunden, Betrag, Auszahlungsstatus) für Vorstand/Buchhaltung. */
 export const getBillingOverview = createServerFn({ method: "GET" })
@@ -194,6 +269,17 @@ export const getBillingOverview = createServerFn({ method: "GET" })
     for (const p of payouts)
       paidInYear[p.trainer_id] = (paidInYear[p.trainer_id] ?? 0) + Number(p.total_amount);
 
+    const declRows = await fetchAll<any>((f, t) =>
+      (supabaseAdmin as any)
+        .from("trainer_declarations")
+        .select("trainer_id,year,side_job,other_allowance,other_note,confirmed_at")
+        .eq("year", year)
+        .order("id")
+        .range(f, t),
+    );
+    const declarations: Record<string, Declaration> = {};
+    for (const d of declRows) declarations[d.trainer_id] = mapDeclaration(d);
+
     // Alle Trainer:innen mit Rolle für die Satz-Erfassung
     const { data: roleRows } = await supabaseAdmin
       .from("user_roles")
@@ -224,6 +310,7 @@ export const getBillingOverview = createServerFn({ method: "GET" })
       })),
       courses: (allCourses ?? []).map((c) => ({ id: c.id as string, name: c.name as string })),
       paidInYear,
+      declarations,
       year,
     };
   });
@@ -338,6 +425,7 @@ export const createTrainerPayout = createServerFn({ method: "POST" })
         sessionIds: z.array(z.string().uuid()).min(1).max(500),
         paidOn: isoDate,
         note: z.string().trim().max(300).optional(),
+        overrideReason: z.string().trim().max(500).optional(),
       })
       .parse(input),
   )
@@ -440,6 +528,7 @@ export const createTrainerPayout = createServerFn({ method: "POST" })
         );
 
       const total = Math.round(items.reduce((sum, i) => sum + i.amount, 0) * 100) / 100;
+      const override = await capGuard(data.trainerId, data.paidOn, total, data.overrideReason);
       const { data: payout, error } = await supabaseAdmin
         .from("trainer_payouts")
         .insert({
@@ -448,7 +537,10 @@ export const createTrainerPayout = createServerFn({ method: "POST" })
           total_amount: total,
           note: data.note || null,
           created_by: context.userId,
-        })
+          // Vier Augen: angelegt von der Buchhaltung, freigegeben von einer zweiten Person
+          status: "pending",
+          cap_override_reason: override,
+        } as never)
         .select("id")
         .single();
       if (error || !payout) throw new Error("Auszahlung konnte nicht gespeichert werden.");
@@ -466,7 +558,14 @@ export const createTrainerPayout = createServerFn({ method: "POST" })
         action: "trainer.payout.confirmed",
         entity: "trainer_payouts",
         entity_id: payout.id,
-        metadata: { trainer_id: data.trainerId, total, count: items.length, paid_on: data.paidOn },
+        metadata: {
+          trainer_id: data.trainerId,
+          total,
+          count: items.length,
+          paid_on: data.paidOn,
+          status: "pending",
+          cap_override: override,
+        },
       });
       return { payoutId: payout.id, total, count: items.length };
     },
@@ -504,15 +603,16 @@ export const getMyPayouts = createServerFn({ method: "GET" })
     z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
   )
   .handler(async ({ context, data }): Promise<{ payouts: MyPayout[] }> => {
-    const { data: payouts, error } = await context.supabase
+    // status fehlt noch in den generierten Typen
+    const { data: payouts, error } = await (context.supabase as any)
       .from("trainer_payouts")
-      .select("id,paid_on,total_amount,note")
+      .select("id,paid_on,total_amount,note,status")
       .eq("trainer_id", context.userId)
       .gte("paid_on", `${data.year}-01-01`)
       .lte("paid_on", `${data.year}-12-31`)
       .order("paid_on", { ascending: false });
     if (error) throw new Error("Auszahlungen konnten nicht geladen werden.");
-    const ids = (payouts ?? []).map((p) => p.id as string);
+    const ids = (payouts ?? []).map((p: any) => p.id as string);
     const items = await fetchIn<any>(ids, (chunk, f, t) =>
       context.supabase
         .from("trainer_payout_items")
@@ -523,8 +623,9 @@ export const getMyPayouts = createServerFn({ method: "GET" })
         .range(f, t),
     );
     return {
-      payouts: (payouts ?? []).map((p) => ({
+      payouts: (payouts ?? []).map((p: any) => ({
         id: p.id as string,
+        status: ((p as any).status ?? "approved") as PayoutStatus,
         paidOn: p.paid_on as string,
         total: Number(p.total_amount),
         note: (p.note as string | null) ?? null,
@@ -543,6 +644,12 @@ export const getMyPayouts = createServerFn({ method: "GET" })
 
 export type PayoutListEntry = {
   id: string;
+  status: PayoutStatus;
+  createdBy: string | null;
+  createdByName: string | null;
+  approvedByName: string | null;
+  approvedAt: string | null;
+  overrideReason: string | null;
   trainerId: string;
   trainerName: string;
   paidOn: string;
@@ -557,6 +664,10 @@ export type Certificate = {
   year: number;
   total: number;
   payouts: MyPayout[];
+  /** Wer unterschreibt (nie die Person selbst) */
+  signers: Signer[];
+  /** Noch nicht freigegebene Auszahlungen des Jahres (nicht auf der Bescheinigung) */
+  pendingCount: number;
 };
 
 /**
@@ -572,6 +683,7 @@ export const createManualPayout = createServerFn({ method: "POST" })
         paidOn: isoDate,
         amount: z.number().gt(0).max(100000),
         note: z.string().trim().max(300).optional(),
+        overrideReason: z.string().trim().max(500).optional(),
       })
       .parse(input),
   )
@@ -579,6 +691,7 @@ export const createManualPayout = createServerFn({ method: "POST" })
     await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const amount = Math.round(data.amount * 100) / 100;
+    const override = await capGuard(data.trainerId, data.paidOn, amount, data.overrideReason);
     const { data: payout, error } = await supabaseAdmin
       .from("trainer_payouts")
       .insert({
@@ -587,7 +700,9 @@ export const createManualPayout = createServerFn({ method: "POST" })
         total_amount: amount,
         note: data.note || "Nachträglich erfasst",
         created_by: context.userId,
-      })
+        status: "pending",
+        cap_override_reason: override,
+      } as never)
       .select("id")
       .single();
     if (error || !payout) throw new Error("Auszahlung konnte nicht gespeichert werden.");
@@ -596,7 +711,12 @@ export const createManualPayout = createServerFn({ method: "POST" })
       action: "trainer.payout.manual",
       entity: "trainer_payouts",
       entity_id: payout.id,
-      metadata: { trainer_id: data.trainerId, amount, paid_on: data.paidOn },
+      metadata: {
+        trainer_id: data.trainerId,
+        amount,
+        paid_on: data.paidOn,
+        cap_override: override,
+      },
     });
     return { payoutId: payout.id };
   });
@@ -618,7 +738,9 @@ export const listTrainerPayouts = createServerFn({ method: "GET" })
     const payouts = await fetchAll<any>((f, t) => {
       let q = supabaseAdmin
         .from("trainer_payouts")
-        .select("id,trainer_id,paid_on,total_amount,note")
+        .select(
+          "id,trainer_id,paid_on,total_amount,note,status,created_by,approved_by,approved_at,cap_override_reason",
+        )
         .gte("paid_on", `${data.year}-01-01`)
         .lte("paid_on", `${data.year}-12-31`);
       if (data.trainerId) q = q.eq("trainer_id", data.trainerId);
@@ -638,11 +760,24 @@ export const listTrainerPayouts = createServerFn({ method: "GET" })
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("id,first_name,last_name,email")
-      .in("id", Array.from(new Set(payouts.map((p) => p.trainer_id as string))));
+      .in(
+        "id",
+        Array.from(
+          new Set(
+            payouts.flatMap((p) => [p.trainer_id, p.created_by, p.approved_by]).filter(Boolean),
+          ),
+        ) as string[],
+      );
     const names = new Map((profiles ?? []).map((p) => [p.id as string, nameOf(p)]));
     return {
       payouts: payouts.map((p) => ({
         id: p.id,
+        status: (p.status ?? "approved") as PayoutStatus,
+        createdBy: p.created_by ?? null,
+        createdByName: p.created_by ? (names.get(p.created_by) ?? null) : null,
+        approvedByName: p.approved_by ? (names.get(p.approved_by) ?? null) : null,
+        approvedAt: p.approved_at ?? null,
+        overrideReason: p.cap_override_reason ?? null,
         trainerId: p.trainer_id,
         trainerName: names.get(p.trainer_id) ?? "Unbekannt",
         paidOn: p.paid_on,
@@ -671,16 +806,22 @@ export const getPayoutCertificate = createServerFn({ method: "GET" })
     const trainerId = data.trainerId ?? context.userId;
     if (trainerId !== context.userId) await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: payouts, error } = await supabaseAdmin
+    const { data: payouts, error } = await (supabaseAdmin as any)
       .from("trainer_payouts")
-      .select("id,paid_on,total_amount,note")
+      .select("id,paid_on,total_amount,note,status")
       .eq("trainer_id", trainerId)
       .gte("paid_on", `${data.year}-01-01`)
       .lte("paid_on", `${data.year}-12-31`)
       .order("paid_on");
     if (error) throw new Error("Auszahlungen konnten nicht geladen werden.");
+    // Bescheinigt wird nur, was eine zweite Person freigegeben hat
+    const allPayouts = payouts ?? [];
+    const approved = allPayouts.filter(
+      (p: any) => ((p as any).status ?? "approved") === "approved",
+    );
+    const pendingCount = allPayouts.length - approved.length;
     const items = await fetchIn<any>(
-      (payouts ?? []).map((p) => p.id as string),
+      approved.map((p: any) => p.id as string),
       (chunk, f, t) =>
         supabaseAdmin
           .from("trainer_payout_items")
@@ -695,8 +836,9 @@ export const getPayoutCertificate = createServerFn({ method: "GET" })
       .select("first_name,last_name,email")
       .eq("id", trainerId)
       .maybeSingle();
-    const mapped: MyPayout[] = (payouts ?? []).map((p) => ({
+    const mapped: MyPayout[] = approved.map((p: any) => ({
       id: p.id as string,
+      status: "approved" as const,
       paidOn: p.paid_on as string,
       total: Number(p.total_amount),
       note: (p.note as string | null) ?? null,
@@ -719,10 +861,162 @@ export const getPayoutCertificate = createServerFn({ method: "GET" })
         metadata: { year: data.year },
       });
     }
+    const trainerName = nameOf(profile ?? undefined);
     return {
-      trainerName: nameOf(profile ?? undefined),
+      trainerName,
       year: data.year,
       total: Math.round(mapped.reduce((s, p) => s + p.total, 0) * 100) / 100,
       payouts: mapped,
+      signers: certificateSigners(trainerName, CERT_BOARD, CERT_TREASURER),
+      pendingCount,
     };
+  });
+
+/**
+ * Auszahlung freigeben (zweite Person). Wer sie angelegt hat oder sie selbst bekommt, darf nicht
+ * freigeben – so prüfen immer zwei Personen, und niemand gibt sich selbst Geld frei.
+ */
+export const approveTrainerPayout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p } = await (supabaseAdmin as any)
+      .from("trainer_payouts")
+      .select("id,trainer_id,created_by,status,total_amount,paid_on")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!p) throw new Error("Auszahlung nicht gefunden.");
+    if (p.status === "approved") throw new Error("Diese Auszahlung ist bereits freigegeben.");
+    if (p.trainer_id === context.userId)
+      throw new Error("Eine eigene Auszahlung kann nur jemand anderes freigeben.");
+    if (p.created_by === context.userId)
+      throw new Error("Wer die Auszahlung angelegt hat, kann sie nicht selbst freigeben.");
+    const { error } = await (supabaseAdmin as any)
+      .from("trainer_payouts")
+      .update({
+        status: "approved",
+        approved_by: context.userId,
+        approved_at: new Date().toISOString(),
+      })
+      .eq("id", data.id)
+      .eq("status", "pending");
+    if (error) throw new Error("Freigabe konnte nicht gespeichert werden.");
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "trainer.payout.approved",
+      entity: "trainer_payouts",
+      entity_id: data.id,
+      metadata: { trainer_id: p.trainer_id, total: Number(p.total_amount), paid_on: p.paid_on },
+    });
+    return { ok: true as const };
+  });
+
+/** Beleg einer Auszahlung (Einsatzliste, wer angelegt und wer freigegeben hat) für die Kassenprüfung. */
+export const getPayoutReceipt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: p } = await (supabaseAdmin as any)
+      .from("trainer_payouts")
+      .select(
+        "id,trainer_id,paid_on,total_amount,note,status,created_by,created_at,approved_by,approved_at,cap_override_reason",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!p) throw new Error("Auszahlung nicht gefunden.");
+    const { data: items } = await supabaseAdmin
+      .from("trainer_payout_items")
+      .select("session_date,course_name,hours_billed,hourly_rate,amount")
+      .eq("payout_id", data.id)
+      .order("session_date");
+    const ids = [p.trainer_id, p.created_by, p.approved_by].filter(Boolean) as string[];
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id,first_name,last_name,email")
+      .in("id", ids);
+    const names = new Map((profiles ?? []).map((x) => [x.id as string, nameOf(x)]));
+    return {
+      id: p.id as string,
+      trainerName: names.get(p.trainer_id) ?? "Unbekannt",
+      paidOn: p.paid_on as string,
+      total: Number(p.total_amount),
+      note: (p.note as string | null) ?? null,
+      status: (p.status ?? "approved") as PayoutStatus,
+      createdByName: p.created_by ? (names.get(p.created_by) ?? null) : null,
+      createdAt: (p.created_at as string | null) ?? null,
+      approvedByName: p.approved_by ? (names.get(p.approved_by) ?? null) : null,
+      approvedAt: (p.approved_at as string | null) ?? null,
+      overrideReason: (p.cap_override_reason as string | null) ?? null,
+      items: (items ?? []).map((i) => ({
+        sessionDate: i.session_date as string,
+        courseName: i.course_name as string,
+        hours: Number(i.hours_billed),
+        rate: Number(i.hourly_rate),
+        amount: Number(i.amount),
+      })),
+    };
+  });
+export type PayoutReceipt = Awaited<ReturnType<typeof getPayoutReceipt>>;
+
+/** Eigene Jahreserklärung lesen (Trainer:in). */
+export const getMyDeclaration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
+  )
+  .handler(async ({ context, data }): Promise<Declaration | null> => {
+    await assertTrainer(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: d } = await (supabaseAdmin as any)
+      .from("trainer_declarations")
+      .select("year,side_job,other_allowance,other_note,confirmed_at")
+      .eq("trainer_id", context.userId)
+      .eq("year", data.year)
+      .maybeSingle();
+    return d ? mapDeclaration(d) : null;
+  });
+
+/** Jahreserklärung abgeben bzw. ändern (mit Zeitstempel; jede Änderung im Verwaltungsprotokoll). */
+export const saveMyDeclaration = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        year: z.number().int().min(2020).max(2100),
+        sideJob: z.boolean(),
+        otherAllowance: z.number().min(0).max(100000),
+        otherNote: z.string().trim().max(300).optional(),
+        confirm: z.literal(true),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }): Promise<Declaration> => {
+    await assertTrainer(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const row = {
+      trainer_id: context.userId,
+      year: data.year,
+      side_job: data.sideJob,
+      other_allowance: Math.round(data.otherAllowance * 100) / 100,
+      other_note: data.otherNote || null,
+      confirmed_at: new Date().toISOString(),
+    };
+    const { data: saved, error } = await (supabaseAdmin as any)
+      .from("trainer_declarations")
+      .upsert(row, { onConflict: "trainer_id,year" })
+      .select("year,side_job,other_allowance,other_note,confirmed_at")
+      .single();
+    if (error || !saved) throw new Error("Erklärung konnte nicht gespeichert werden.");
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "trainer.declaration.saved",
+      entity: "trainer_declarations",
+      entity_id: context.userId,
+      metadata: { year: data.year, side_job: data.sideJob, other_allowance: row.other_allowance },
+    });
+    return mapDeclaration(saved);
   });

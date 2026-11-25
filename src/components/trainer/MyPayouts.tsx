@@ -77,7 +77,14 @@ export function MyPayouts() {
           {payouts.map((p) => (
             <details key={p.id} className="rounded-md border bg-card">
               <summary className="flex cursor-pointer items-center justify-between gap-3 p-3 text-sm">
-                <span>Überwiesen am {formatDateBerlin(p.paidOn)}</span>
+                <span>
+                  Auszahlung am {formatDateBerlin(p.paidOn)}
+                  {p.status === "pending" && (
+                    <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-900">
+                      wird noch geprüft
+                    </Badge>
+                  )}
+                </span>
                 <span className="font-semibold">{formatEuro(p.total)}</span>
               </summary>
               <div className="divide-y border-t">

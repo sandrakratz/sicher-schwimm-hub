@@ -23,7 +23,14 @@ import { formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { formatIban } from "@/lib/iban";
 import { listPayoutDetails, type PayoutListRow } from "@/lib/trainer-payout.functions";
 
+const TABS = ["abrechnung", "ergebnis", "saetze", "auszahlungen", "konten"] as const;
+
 export const Route = createFileRoute("/_authenticated/admin/uebungsleitergelder")({
+  // ?tab=auszahlungen öffnet direkt die Freigaben (Link aus dem Eingang)
+  validateSearch: (s: Record<string, unknown>): { tab?: (typeof TABS)[number] } =>
+    TABS.includes(s["tab"] as (typeof TABS)[number])
+      ? { tab: s["tab"] as (typeof TABS)[number] }
+      : {},
   ssr: false,
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
@@ -57,7 +64,7 @@ function Page() {
       <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">
         Übungsleitergelder
       </h1>
-      <Tabs defaultValue="abrechnung">
+      <Tabs defaultValue={Route.useSearch().tab ?? "abrechnung"}>
         <TabsList>
           <TabsTrigger value="abrechnung">Abrechnung</TabsTrigger>
           <TabsTrigger value="ergebnis">Kursergebnis</TabsTrigger>

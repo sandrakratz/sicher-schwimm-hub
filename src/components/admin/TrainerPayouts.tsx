@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Printer, Trash2 } from "lucide-react";
+import { CheckCircle2, FileText, Printer, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
-import { openCertificate } from "@/lib/trainer-certificate";
+import { openCertificate, openReceipt } from "@/lib/trainer-certificate";
 import {
+  approveTrainerPayout,
   createManualPayout,
   deleteTrainerPayout,
+  getPayoutReceipt,
   getBillingOverview,
   getPayoutCertificate,
   listTrainerPayouts,
@@ -24,7 +28,10 @@ import {
 } from "@/lib/trainer-billing.functions";
 import { NativeSelect } from "@/components/ui/native-select";
 
-/** Auszahlungen eines Jahres: nachtragen (bereits Überwiesenes), löschen, Jahresbescheinigung drucken. */
+/**
+ * Auszahlungen eines Jahres: freigeben (zweite Person), Beleg drucken, nachtragen, löschen,
+ * Jahresbescheinigung drucken.
+ */
 export function TrainerPayouts() {
   const thisYear = Number(todayBerlinIso().slice(0, 4));
   const [year, setYear] = useState(thisYear);
@@ -36,6 +43,11 @@ export function TrainerPayouts() {
   const [manualDate, setManualDate] = useState(todayBerlinIso());
   const [manualAmount, setManualAmount] = useState("");
   const [manualNote, setManualNote] = useState("");
+  const [manualReason, setManualReason] = useState("");
+  const [me, setMe] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMe(data.user?.id ?? null));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,11 +89,13 @@ export function TrainerPayouts() {
           paidOn: manualDate,
           amount,
           note: manualNote || undefined,
+          overrideReason: manualReason.trim() || undefined,
         },
       });
-      toast.success("Auszahlung nachgetragen.");
+      toast.success("Auszahlung nachgetragen – wartet auf Freigabe.");
       setManualAmount("");
       setManualNote("");
+      setManualReason("");
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Speichern fehlgeschlagen.");
@@ -98,6 +112,27 @@ export function TrainerPayouts() {
     }
   }
 
+  async function approve(id: string) {
+    try {
+      await approveTrainerPayout({ data: { id } });
+      toast.success("Freigegeben");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Freigabe fehlgeschlagen.");
+    }
+  }
+
+  async function printReceipt(id: string) {
+    try {
+      const r = await getPayoutReceipt({ data: { id } });
+      if (!openReceipt(r)) toast.error("Bitte Pop-ups für diese Seite erlauben.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Beleg konnte nicht erstellt werden.");
+    }
+  }
+
+  const pending = payouts.filter((p) => p.status === "pending");
+
   async function printCertificate() {
     if (!trainerId) {
       toast.error("Bitte zuerst eine Trainer:in auswählen.");
@@ -105,6 +140,13 @@ export function TrainerPayouts() {
     }
     try {
       const cert = await getPayoutCertificate({ data: { year, trainerId } });
+      if (
+        cert.pendingCount > 0 &&
+        !window.confirm(
+          `${cert.pendingCount} Auszahlung(en) sind noch nicht freigegeben und stehen nicht auf der Bescheinigung. Trotzdem drucken?`,
+        )
+      )
+        return;
       if (!openCertificate(cert)) toast.error("Bitte Pop-ups für diese Seite erlauben.");
     } catch (err) {
       toast.error(
@@ -120,9 +162,9 @@ export function TrainerPayouts() {
           <div className="font-medium">Bereits überwiesenes nachtragen</div>
           <p className="text-sm text-muted-foreground">
             Für Beträge, die schon vor dem Portal ausgezahlt wurden (z. B. die ersten Monate 2026).
-            Sie zählen für den Freibetrag-Stand und die Jahresbescheinigung mit. Wer die Termine
-            einzeln nachweisen möchte, wählt stattdessen unter „Abrechnung“ die bestätigten Termine
-            und trägt das damalige Überweisungsdatum ein.
+            Sie zählen für den Freibetrag-Stand mit und stehen nach der Freigabe auf der
+            Jahresbescheinigung. Wer die Termine einzeln nachweisen möchte, wählt stattdessen unter
+            „Abrechnung“ die bestätigten Termine und trägt das damalige Überweisungsdatum ein.
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <label className="text-xs text-muted-foreground">
@@ -169,6 +211,14 @@ export function TrainerPayouts() {
                 placeholder="z. B. Januar–März 2026"
               />
             </label>
+            <label className="text-xs text-muted-foreground">
+              Begründung (nur bei Grenze/fehlender Erklärung)
+              <Input
+                className="mt-1 w-64"
+                value={manualReason}
+                onChange={(e) => setManualReason(e.target.value)}
+              />
+            </label>
             <Button onClick={addManual}>Nachtragen</Button>
           </div>
         </CardContent>
@@ -211,6 +261,13 @@ export function TrainerPayouts() {
         </Button>
       </div>
 
+      {pending.length > 0 && (
+        <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          {pending.length} Auszahlung(en) warten auf Freigabe. Freigeben kann nur, wer sie nicht
+          angelegt hat und sie nicht selbst bekommt.
+        </p>
+      )}
+
       <Card className="border-0 shadow-soft">
         <CardContent className="p-0">
           {loading ? (
@@ -223,11 +280,12 @@ export function TrainerPayouts() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Überwiesen am</TableHead>
+                  <TableHead>Auszahlung am</TableHead>
                   <TableHead>Trainer:in</TableHead>
                   <TableHead>Inhalt</TableHead>
                   <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead className="w-12" />
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -239,16 +297,65 @@ export function TrainerPayouts() {
                       {p.itemCount > 0 ? `${p.itemCount} Termine` : (p.note ?? "Nachgetragen")}
                     </TableCell>
                     <TableCell className="text-right">{formatEuro(p.total)}</TableCell>
+                    <TableCell className="text-sm">
+                      {p.status === "approved" ? (
+                        <span className="flex items-center gap-1 text-success">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {p.approvedByName
+                            ? `frei: ${p.approvedByName}${p.approvedAt ? `, ${formatDateBerlin(p.approvedAt)}` : ""}`
+                            : "freigegeben"}
+                        </span>
+                      ) : (
+                        <div className="space-y-1">
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                            zur Freigabe
+                          </Badge>
+                          {p.createdByName && (
+                            <div className="text-xs text-muted-foreground">
+                              angelegt: {p.createdByName}
+                            </div>
+                          )}
+                          {p.createdBy !== me && p.trainerId !== me ? (
+                            <Button size="sm" onClick={() => void approve(p.id)}>
+                              Freigeben
+                            </Button>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">
+                              {p.trainerId === me
+                                ? "eigene Auszahlung – gibt jemand anderes frei"
+                                : "von dir angelegt – gibt jemand anderes frei"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {p.overrideReason && (
+                        <div className="mt-1 text-xs text-amber-700" title={p.overrideReason}>
+                          ⚠ mit Begründung
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        aria-label="Auszahlung löschen"
-                        onClick={() => remove(p.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label="Beleg drucken"
+                          title="Beleg drucken"
+                          onClick={() => void printReceipt(p.id)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label="Auszahlung löschen"
+                          onClick={() => remove(p.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -258,6 +365,7 @@ export function TrainerPayouts() {
                     {trainerId ? "" : " (alle)"}
                   </TableCell>
                   <TableCell className="text-right font-semibold">{formatEuro(total)}</TableCell>
+                  <TableCell />
                   <TableCell />
                 </TableRow>
               </TableBody>

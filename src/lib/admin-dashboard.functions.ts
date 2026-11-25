@@ -52,6 +52,13 @@ export const getAdminTasks = createServerFn({ method: "POST" })
           .range(f, t),
     );
 
+    // Übungsleiter-Auszahlungen, die eine zweite Person freigeben muss
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Spalte status fehlt in den generierten Typen
+    const { count: payoutsPending } = await (supabaseAdmin as any)
+      .from("trainer_payouts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+
     const [overdue, memberships, messages, requests, memberChecks, adultNew, familyNew] =
       await Promise.all([
         supabaseAdmin
@@ -119,6 +126,15 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         to: "/admin/zahlungen",
         tone: "urgent",
         hint: "Zahlungsfrist ist abgelaufen",
+      },
+      {
+        key: "payouts-pending",
+        label: "Übungsleiter-Auszahlungen freigeben",
+        count: payoutsPending ?? 0,
+        to: "/admin/uebungsleitergelder",
+        search: { tab: "auszahlungen" },
+        tone: "attention",
+        hint: "von der Buchhaltung angelegt, Kontrolle durch eine zweite Person",
       },
       {
         key: "memberships",

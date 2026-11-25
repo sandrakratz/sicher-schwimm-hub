@@ -59,6 +59,8 @@ export function TrainerBilling() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [paidOn, setPaidOn] = useState(today);
+  // Pflicht, wenn die Grenze überschritten wird oder die Jahreserklärung fehlt (Server prüft ebenso)
+  const [overrideReason, setOverrideReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [openPayouts, setOpenPayouts] = useState<Set<string>>(new Set());
 
@@ -142,7 +144,13 @@ export function TrainerBilling() {
   const selectedSum = selectedRows.reduce((s, r) => s + (r.amount ?? 0), 0);
   const selectedTrainerId = selectedTrainers.size === 1 ? [...selectedTrainers][0] : null;
   const alreadyPaidYear = selectedTrainerId ? (data?.paidInYear[selectedTrainerId] ?? 0) : 0;
-  const afterPayout = alreadyPaidYear + selectedSum;
+  const selectedDecl = selectedTrainerId ? data?.declarations[selectedTrainerId] : undefined;
+  // Bei anderen Auftraggebern genutzter Freibetrag zählt mit
+  const afterPayout = alreadyPaidYear + (selectedDecl?.otherAllowance ?? 0) + selectedSum;
+  // Grenze und Erklärung gelten für das Jahr des Auszahlungsdatums; die Übersicht kennt das laufende Jahr
+  const sameYear = paidOn.slice(0, 4) === String(data?.year ?? "");
+  const needsReason =
+    !!selectedTrainerId && sameYear && (!selectedDecl || afterPayout > ANNUAL_ALLOWANCE);
 
   function toggle(r: BillingRow) {
     if (blocker(r) || r.paid) return;
@@ -170,9 +178,13 @@ export function TrainerBilling() {
           trainerId: selectedTrainerId,
           sessionIds: selectedRows.map((r) => r.sessionId),
           paidOn,
+          overrideReason: overrideReason.trim() || undefined,
         },
       });
-      toast.success(`Auszahlung von ${formatEuro(res.total)} (${res.count} Termine) bestätigt.`);
+      setOverrideReason("");
+      toast.success(
+        `Abrechnung über ${formatEuro(res.total)} (${res.count} Termine) angelegt – wartet auf Freigabe.`,
+      );
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Auszahlung fehlgeschlagen.");
@@ -308,7 +320,8 @@ export function TrainerBilling() {
       {totals.size > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[...totals.entries()].map(([id, t]) => {
-            const paidYear = data?.paidInYear[id] ?? 0;
+            const decl = data?.declarations[id];
+            const paidYear = (data?.paidInYear[id] ?? 0) + (decl?.otherAllowance ?? 0);
             const warn = paidYear + t.open >= ANNUAL_ALLOWANCE * WARN_FRACTION;
             const over = paidYear + t.open > ANNUAL_ALLOWANCE;
             return (
@@ -325,7 +338,19 @@ export function TrainerBilling() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {data?.year}: bereits {formatEuro(paidYear)} von {formatEuro(ANNUAL_ALLOWANCE)}{" "}
-                    ausgezahlt
+                    genutzt
+                    {decl?.otherAllowance
+                      ? ` (davon ${formatEuro(decl.otherAllowance)} bei anderen Auftraggebern)`
+                      : ""}
+                  </div>
+                  <div
+                    className={`text-xs ${decl ? (decl.sideJob ? "text-muted-foreground" : "font-medium text-destructive") : "font-medium text-amber-600"}`}
+                  >
+                    {decl
+                      ? decl.sideJob
+                        ? `Erklärung ${data?.year} abgegeben`
+                        : `Erklärung ${data?.year}: NICHT nebenberuflich – Freibetrag gilt nicht`
+                      : `Erklärung ${data?.year} fehlt (unter „Ich“ im Trainerbereich)`}
                   </div>
                   {warn && (
                     <div
@@ -353,10 +378,15 @@ export function TrainerBilling() {
                   <span className="font-semibold">{selectedRows.length} Termine</span> ·{" "}
                   <span className="font-semibold">{formatEuro(selectedSum)}</span> für{" "}
                   {selectedRows[0].trainerName}
+                  {!selectedDecl && sameYear ? (
+                    <span className="ml-2 font-medium text-amber-600">
+                      Jahreserklärung fehlt – nur mit Begründung möglich.
+                    </span>
+                  ) : null}
                   {afterPayout > ANNUAL_ALLOWANCE ? (
                     <span className="ml-2 font-medium text-destructive">
-                      Achtung: damit {formatEuro(afterPayout)} im Jahr – über dem Freibetrag von{" "}
-                      {formatEuro(ANNUAL_ALLOWANCE)}.
+                      Achtung: damit {formatEuro(afterPayout)} im Jahr – über der Grenze von{" "}
+                      {formatEuro(ANNUAL_ALLOWANCE)}. Nur mit Begründung möglich.
                     </span>
                   ) : afterPayout >= ANNUAL_ALLOWANCE * WARN_FRACTION ? (
                     <span className="ml-2 font-medium text-amber-600">
@@ -372,8 +402,21 @@ export function TrainerBilling() {
               )}
             </div>
             <div className="flex items-end gap-2">
+              {needsReason && (
+                <label className="text-xs text-muted-foreground">
+                  Begründung (Pflicht)
+                  <Input
+                    className="mt-1 w-72"
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    placeholder={
+                      selectedDecl ? "Warum über der Grenze?" : "Warum ohne Jahreserklärung?"
+                    }
+                  />
+                </label>
+              )}
               <label className="text-xs text-muted-foreground">
-                Überwiesen am
+                Auszahlungsdatum
                 <Input
                   type="date"
                   className="mt-1 w-40"
@@ -381,8 +424,16 @@ export function TrainerBilling() {
                   onChange={(e) => setPaidOn(e.target.value)}
                 />
               </label>
-              <Button onClick={confirmPayout} disabled={!selectedTrainerId || busy || !paidOn}>
-                Auszahlung bestätigen
+              <Button
+                onClick={confirmPayout}
+                disabled={
+                  !selectedTrainerId ||
+                  busy ||
+                  !paidOn ||
+                  (needsReason && overrideReason.trim().length < 10)
+                }
+              >
+                Zur Freigabe anlegen
               </Button>
             </div>
           </CardContent>

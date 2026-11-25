@@ -1,6 +1,13 @@
 // @ts-expect-error bun:test liefert hier keine Typdeklarationen; Ausführung: bun test
 import { describe, expect, test } from "bun:test";
-import { amountOf, pickRate, resolveHours, type Rate } from "./trainer-billing";
+import {
+  amountOf,
+  capCheck,
+  certificateSigners,
+  pickRate,
+  resolveHours,
+  type Rate,
+} from "./trainer-billing";
 
 describe("Abgerechnete Stunden", () => {
   test("Stunden des Kurses gehen vor dem Standard der Kursart", () => {
@@ -47,5 +54,45 @@ describe("Satz je Kursart und Gültigkeit", () => {
 describe("Betrag", () => {
   test("auf Cent gerundet", () => {
     expect(amountOf(2, 12.345)).toBe(24.69);
+  });
+});
+
+describe("Harte Grenze 3.300 €", () => {
+  test("genau bis zur Grenze erlaubt, darüber nicht", () => {
+    expect(capCheck(3000, 0, 300)).toEqual({ after: 3300, remaining: 300, over: false });
+    expect(capCheck(3000, 0, 300.01).over).toBe(true);
+  });
+
+  test("bei anderen Auftraggebern genutzter Freibetrag zählt mit", () => {
+    const c = capCheck(1000, 2000, 400);
+    expect(c.remaining).toBe(300);
+    expect(c.over).toBe(true);
+  });
+
+  test("Rest wird nie negativ", () => {
+    expect(capCheck(3500, 0, 0).remaining).toBe(0);
+  });
+});
+
+describe("Unterschriften der Jahresbescheinigung", () => {
+  const board = [
+    { name: "Vorsitz Eins", role: "1. Vorsitzende:r" },
+    { name: "Vorsitz Zwei", role: "2. Vorsitzende:r" },
+  ];
+  const treasurer = { name: "Kasse Drei", role: "Kassenwart:in" };
+
+  const names = (t: string) => certificateSigners(t, board, treasurer).map((s) => s.name);
+
+  test("andere Trainer:innen: Kasse und erstes Vorstandsmitglied", () => {
+    expect(names("Trainer Vier")).toEqual(["Kasse Drei", "Vorsitz Eins"]);
+  });
+
+  test("eigene Bescheinigung eines Vorstands: Kasse und das andere Vorstandsmitglied", () => {
+    expect(names("Vorsitz Eins")).toEqual(["Kasse Drei", "Vorsitz Zwei"]);
+    expect(names(" vorsitz  zwei ")).toEqual(["Kasse Drei", "Vorsitz Eins"]);
+  });
+
+  test("eigene Bescheinigung der Kasse: beide Vorstandsmitglieder", () => {
+    expect(names("Kasse Drei")).toEqual(["Vorsitz Eins", "Vorsitz Zwei"]);
   });
 });

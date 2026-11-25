@@ -29,6 +29,9 @@ export const ORG = {
   phoneIntl: "+49-178-1142945",
   areaShort: "Hennef, Rhein-Sieg-Kreis",
   vatNote: "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.",
+  /** Bescheid des Finanzamts über die satzungsmäßigen Voraussetzungen (§ 60a AO) – für Bescheinigungen */
+  taxOffice: "Finanzamt Siegburg",
+  taxNoticeDate: "2026-06-24",
 };
 
 /** Offizielle Social-Media-Kanäle – zentrale Quelle für Footer, Kontakt und JSON-LD. */
@@ -106,3 +109,10 @@ export function firstYearFee(
   const half = startIso > `${startIso.slice(0, 4)}-07-01`;
   return { annual, firstYear: half ? annual / 2 : annual, half };
 }
+
+/** Unterschriften auf der Übungsleiter-Jahresbescheinigung (siehe certificateSigners). */
+export const CERT_BOARD = [
+  { name: "Michael Kratz", role: "1. Vorsitzender" },
+  { name: "Sandra Kratz", role: "2. Vorsitzende" },
+];
+export const CERT_TREASURER = { name: "Manuela Scholz-Ornowski", role: "Kassenwartin" };
