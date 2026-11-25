@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   activeOn,
   ageGroupLabels,
+  ageGroupOf,
   census,
   ageOn,
   badgeStats,
@@ -172,6 +173,17 @@ describe("Auslastung und Nachfrage", () => {
 describe("Bestandsmeldung", () => {
   test("Altersgruppen-Bezeichnungen aus Obergrenzen", () => {
     expect(ageGroupLabels([6, 14, 18])).toEqual(["bis 6", "7–14", "15–18", "19 und älter"]);
+  });
+
+  test("Altersgruppe zu einem Alter (Obergrenze einschließlich)", () => {
+    expect([0, 6, 7, 18, 19, 80].map((a) => ageGroupOf(a, [18, 6, 14]))).toEqual([
+      "bis 6",
+      "bis 6",
+      "7–14",
+      "15–18",
+      "19 und älter",
+      "19 und älter",
+    ]);
   });
 
   test("zählt alle Personen nach Altersgruppe und Geschlecht, fehlende Angaben getrennt", () => {

@@ -213,10 +213,16 @@ export function ageGroupLabels(bounds: number[]): string[] {
   return out;
 }
 
+/** Bezeichnung der Altersgruppe für ein Alter, passend zu `ageGroupLabels(bounds)`. */
+export function ageGroupOf(age: number, bounds: number[]): string {
+  const b = [...new Set(bounds)].filter((n) => Number.isInteger(n) && n >= 0).sort((x, y) => x - y);
+  const i = b.findIndex((up) => age <= up);
+  return ageGroupLabels(b)[i < 0 ? b.length : i]!;
+}
+
 /** Zählt Personen am Stichtag nach Altersgruppe × Geschlecht; fehlende Angaben werden gelistet. */
 export function census(persons: MemberPerson[], day: string, bounds = DEFAULT_AGE_BOUNDS): Census {
-  const b = [...new Set(bounds)].filter((n) => Number.isInteger(n) && n >= 0).sort((x, y) => x - y);
-  const labels = ageGroupLabels(b);
+  const labels = ageGroupLabels(bounds);
   const empty = (gruppe: string): CensusRow => ({ gruppe, w: 0, m: 0, d: 0, ohne: 0, gesamt: 0 });
   const rows = labels.map(empty);
   const total = empty("Gesamt");
@@ -228,8 +234,7 @@ export function census(persons: MemberPerson[], day: string, bounds = DEFAULT_AG
       ohneGeburtsdatum.push(p);
       continue;
     }
-    let i = b.findIndex((up) => age <= up);
-    if (i < 0) i = b.length;
+    const i = labels.indexOf(ageGroupOf(age, bounds));
     const g =
       p.geschlecht === "w" || p.geschlecht === "m" || p.geschlecht === "d" ? p.geschlecht : "ohne";
     if (g === "ohne") ohneGeschlecht.push(p);

@@ -8,6 +8,7 @@ import { assertStaff } from "@/lib/auth-guards.server";
 import {
   activeOn,
   ageGroupLabels,
+  ageGroupOf,
   ageOn,
   badgeStats,
   census,
@@ -38,6 +39,12 @@ const STATUS_LABEL: Record<string, string> = {
 const GENDER_LABEL: Record<string, string> = { w: "weiblich", m: "männlich", d: "divers" };
 const de = (iso: string | null | undefined) =>
   iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}` : "";
+
+/** Altersgruppe der Bestandsmeldung (Standard-Gruppen) am Stichtag, leer ohne Geburtsdatum. */
+function ageGroupFor(dob: string | null, day: string) {
+  const age = ageOn(dob, day);
+  return age == null ? "" : ageGroupOf(age, DEFAULT_AGE_BOUNDS);
+}
 
 async function audit(userId: string, action: string, metadata: Record<string, unknown>) {
   const { logAudit } = await import("@/lib/audit.server");
@@ -306,17 +313,52 @@ export const exportMemberRoster = createServerFn({ method: "POST" })
         (a, b) =>
           a.nachname.localeCompare(b.nachname, "de") || a.vorname.localeCompare(b.vorname, "de"),
       );
-    const { workbookBase64 } = await import("@/lib/xlsx.server");
+    const { workbookBase64, FIRST_DATA_ROW } = await import("@/lib/xlsx.server");
+    // Blatt „Abfrage“ zählt per Formel im Blatt „Mitglieder“ (Spalten D Alter, F Geschlecht,
+    // G Rolle, H Mitgliedsart) – Auswahl in Excel ohne Filter- oder Formelkenntnisse.
+    const last = Math.max(FIRST_DATA_ROW, FIRST_DATA_ROW + persons.length - 1);
+    const col = (c: string) => `Mitglieder!$${c}$${FIRST_DATA_ROW}:$${c}$${last}`;
+    const sel = (n: number) => `$B$${FIRST_DATA_ROW + n}`; // Wert der n-ten Auswahlzeile
+    const pick = (c: string, s: string) =>
+      `(((${s}="alle")+(${col(c)}=${s})+(${s}="ohne Angabe")*(${col(c)}=""))>0)`;
+    const age = `ISNUMBER(${col("D")})*(${col("D")}>=${sel(1)})*(${col("D")}<=${sel(2)})`;
+    const count = (gender: string) => ({
+      formula: `SUMPRODUCT(${age}*${pick("H", sel(3))}*${pick("G", sel(4))}*(${gender}))`,
+    });
     const base64 = await workbookBase64([
+      {
+        name: "Abfrage",
+        title: `Abfrage Mitglieder am ${de(data.day)}`,
+        note: "Gelbe Felder ändern (Pfeil = Auswahlliste), Excel zählt sofort neu. Personen ohne Geburtsdatum zählen nicht mit. Namen dazu: Blatt „Mitglieder“, Filter-Pfeile in der Kopfzeile.",
+        header: ["Auswahl", "Wert"],
+        rows: [
+          [
+            "Geschlecht",
+            { input: "alle", options: ["alle", ...Object.values(GENDER_LABEL), "ohne Angabe"] },
+          ],
+          ["Alter von (Jahre)", { input: 0 }],
+          ["Alter bis einschließlich", { input: 120 }],
+          ["Mitgliedsart", { input: "alle", options: ["alle", ...Object.values(TYPE_LABEL)] }],
+          ["Rolle", { input: "alle", options: ["alle", "Hauptmitglied", "Partner:in", "Kind"] }],
+          [],
+          ["Anzahl Personen", count(pick("F", sel(0)))],
+          [],
+          ["Nach Geschlecht (Alter, Mitgliedsart und Rolle wie oben):"],
+          ...Object.values(GENDER_LABEL).map((g) => [g, count(`${col("F")}="${g}"`)]),
+          ["ohne Angabe", count(`${col("F")}=""`)],
+        ],
+      },
       {
         name: "Mitglieder",
         title: `Mitglieder am ${de(data.day)}`,
-        note: `${memberships.length} Mitgliedschaften, ${persons.length} Personen (inkl. Familienmitglieder). Enthält personenbezogene Daten – nur für den Vorstand.`,
+        note: `${memberships.length} Mitgliedschaften, ${persons.length} Personen (inkl. Familienmitglieder). Auswahl über die Filter-Pfeile in der Kopfzeile. Enthält personenbezogene Daten – nur für den Vorstand.`,
+        filter: true,
         header: [
           "Nachname",
           "Vorname",
           "Geburtsdatum",
           "Alter",
+          "Altersgruppe",
           "Geschlecht",
           "Rolle",
           "Mitgliedsart",
@@ -331,6 +373,7 @@ export const exportMemberRoster = createServerFn({ method: "POST" })
           p.vorname,
           de(p.geburtsdatum),
           ageOn(p.geburtsdatum, data.day) ?? "",
+          ageGroupFor(p.geburtsdatum, data.day),
           GENDER_LABEL[p.geschlecht ?? ""] ?? "",
           p.rolle,
           TYPE_LABEL[p.membershipType] ?? p.membershipType,
