@@ -1,4 +1,9 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { listWaitlist } from "@/lib/waitlist.functions";
+import { buildTodo } from "@/components/admin/warteliste/logic";
+import { WAITLIST_QUERY_KEY } from "@/components/admin/warteliste/useWaitlistMutations";
+import { useAssignmentContext } from "@/components/admin/AssignControl";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { MemberCheckPanel } from "@/components/admin/MemberCheckPanel";
 import { Button } from "@/components/ui/button";
@@ -62,6 +67,13 @@ const TASK_ICON: Record<string, typeof Euro> = {
   overdue: Euro,
   offers: Hourglass,
   "waitlist-review": Hourglass,
+  "wl-fit": Hourglass,
+  "wl-free": Hourglass,
+  "wl-unmet": Hourglass,
+  "wl-noprogram": Hourglass,
+  "wl-new": Hourglass,
+  "wl-followup": Hourglass,
+  "wl-min": Users,
   memberships: Users,
   requests: ListChecks,
   "adult-interest": UserRound,
@@ -81,10 +93,38 @@ const TASK_TEXT: Record<string, { todo: string; action: string }> = {
   },
   offers: {
     todo: "Platzangebote, deren Frist in den nächsten 48 Stunden endet. Familie erinnern oder Absage erfassen.",
-    action: "Angebote in der Anfrageliste",
+    action: "Angebote ansehen",
   },
   "waitlist-review": {
-    todo: "Offene Rückfragen, Sperrvorschläge und fällige Wiedervorlagen in der Anfrageliste.",
+    todo: "Fällige Wiedervorlagen und Familien mit 3 oder mehr Absagen/Stornos (Sperrliste ja oder nein).",
+    action: "Anfrageliste öffnen",
+  },
+  "wl-fit": {
+    todo: "Ein Platz ist frei, aber bei den Wartenden passt nichts automatisch (meist ist das Schwimmniveau unbekannt oder zu niedrig). Bitte von Hand entscheiden.",
+    action: "Anfrageliste öffnen",
+  },
+  "wl-free": {
+    todo: "Kurse mit freien Plätzen, für die Familien passend warten. Plätze anbieten.",
+    action: "Anfrageliste öffnen",
+  },
+  "wl-unmet": {
+    todo: "Wartende, deren Schwimmniveau nicht zum gewünschten Angebot passt. Prüfen, ob ein anderes Angebot passt.",
+    action: "Wartende ansehen",
+  },
+  "wl-noprogram": {
+    todo: "Diese Einträge sind keinem Kursangebot zugeordnet (z. B. alte Anfragen). Sie bekommen nie automatisch ein Angebot. In der Liste direkt am Eintrag unter „Kurswunsch fehlt“ das passende Kursangebot wählen – danach läuft die Vergabe wie gewohnt.",
+    action: "Einträge ohne Zuordnung öffnen",
+  },
+  "wl-new": {
+    todo: "Was Eltern in den letzten 7 Tagen getan haben: Anmeldungen, Buchungen, Nachrichten, Anträge. Zum Überblick; Einträge ohne Zuständigkeit hier zuweisen.",
+    action: "Anfrageliste öffnen",
+  },
+  "wl-followup": {
+    todo: "Die Familien haben „Warteliste behalten?“ erhalten. Ohne Antwort wird der Eintrag nach Fristende automatisch gestrichen. Nur zur Info.",
+    action: "Rückfragen ansehen",
+  },
+  "wl-min": {
+    todo: "Kurse, die noch starten und die Mindestteilnehmerzahl noch nicht erreicht haben.",
     action: "Anfrageliste öffnen",
   },
   memberships: {
@@ -127,6 +167,116 @@ const TONE_LABEL: Record<InboxEntry["tone"], string> = {
   mine: "Mir zugewiesen",
 };
 
+const shortName = (name: string) => name.replace(/^Schwimmabzeichen /, "");
+
+/** Aufgaben aus der Anfrageliste – dieselben Regeln wie dort (buildTodo). */
+function waitlistTasks(
+  data: Parameters<typeof buildTodo>[0],
+  error: unknown,
+  rules: Parameters<typeof buildTodo>[2],
+): AdminTask[] {
+  const to = "/admin/warteliste";
+  if (error)
+    return [
+      {
+        key: "wl-error",
+        label: "Anfrageliste konnte nicht geladen werden",
+        count: 1,
+        to,
+        tone: "urgent",
+        hint: error instanceof Error ? error.message : undefined,
+      },
+    ];
+  if (!data) return [];
+  const t = buildTodo(data, "", rules);
+  const due = t.dueFollowUps.length;
+  const sug = t.suggestions.length;
+  return [
+    {
+      key: "offers",
+      label: "Wartelisten-Angebote laufen bald ab",
+      count: t.expiringOffers.length,
+      to,
+      search: { ansicht: "offered" },
+      tone: "urgent",
+      hint: "in den nächsten 48 Stunden",
+    },
+    {
+      key: "wl-fit",
+      label: "Freier Platz: Passt das? Von Hand prüfen",
+      count: t.fitChecks.length,
+      to,
+      tone: "urgent",
+      hint: "nichts passt automatisch",
+    },
+    {
+      key: "wl-free",
+      label: "Freie Plätze mit wartenden Familien",
+      count: t.freeCourses.length,
+      to,
+      tone: "attention",
+      hint: t.freeCourses
+        .slice(0, 3)
+        .map((x) => `${shortName(x.course.name)}: ${x.course.free} frei`)
+        .join(" · "),
+    },
+    {
+      key: "waitlist-review",
+      label: "Anfrageliste: Wiedervorlagen und Sperrvorschläge",
+      count: due + sug,
+      to,
+      tone: "attention",
+      hint: `${due} Wiedervorlage(n), ${sug} Sperrvorschlag/-vorschläge`,
+    },
+    {
+      key: "wl-unmet",
+      label: "Wartende: Voraussetzung nicht erfüllt",
+      count: t.waitUnmet.length,
+      to,
+      search: { ansicht: "waiting", grund: "unmet" },
+      tone: "attention",
+      hint: "Schwimmniveau passt nicht",
+    },
+    {
+      key: "wl-noprogram",
+      label: "Wartende ohne Kursangebot",
+      count: t.waitNoProgram.length,
+      to,
+      search: { ansicht: "waiting", programm: "none" },
+      tone: "attention",
+      hint: "bitte von Hand einem Kurs zuordnen",
+    },
+    {
+      key: "wl-new",
+      label: "Neu: Aktionen der Eltern",
+      count: t.newEntries.length + t.newDirect.length + t.newOther.length,
+      to,
+      tone: "info",
+      hint: `letzte 7 Tage · ${t.newUnassigned.length} ohne Zuständigkeit`,
+    },
+    {
+      key: "wl-min",
+      label: "Kurse unter der Mindestzahl",
+      count: t.minCourses.length,
+      to,
+      tone: "info",
+      hint: t.minCourses
+        .slice(0, 2)
+        .map((c) => `${shortName(c.name)} ${c.confirmed}/${c.min_participants}`)
+        .join(" · "),
+    },
+    {
+      key: "wl-followup",
+      label: "Rückfrage „Warteliste behalten?“ läuft",
+      count: t.followups.length,
+      to,
+      search: { ansicht: "followup" },
+      tone: "info",
+      hint: "Antwort der Familien steht aus",
+    },
+  ];
+}
+
 function useInbox() {
   const [tasks, setTasks] = useState<AdminTask[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,9 +296,12 @@ function useInbox() {
       .catch(() => setMine(null));
   }, []);
   useEffect(load, [load]);
+  // Anfrageliste: gleiche Abfrage wie dort, damit Zahlen und Listen übereinstimmen
+  const wl = useQuery({ queryKey: WAITLIST_QUERY_KEY, queryFn: () => listWaitlist() });
+  const ctx = useAssignmentContext();
 
   const entries = useMemo<InboxEntry[] | null>(() => {
-    if (tasks === null) return null;
+    if (tasks === null || wl.isLoading) return null;
     const own: InboxEntry[] = mine?.me
       ? [
           {
@@ -189,7 +342,7 @@ function useInbox() {
           }))
       : [];
     const order: AdminTask["tone"][] = ["urgent", "attention", "info"];
-    const open: InboxEntry[] = tasks
+    const open: InboxEntry[] = [...tasks, ...waitlistTasks(wl.data, wl.error, ctx.data?.rules)]
       .filter((t) => t.count > 0)
       .sort((a, b) => order.indexOf(a.tone) - order.indexOf(b.tone))
       .map((t) => ({
@@ -206,7 +359,7 @@ function useInbox() {
         action: TASK_TEXT[t.key]?.action ?? "Öffnen",
       }));
     return [...own, ...open];
-  }, [tasks, mine]);
+  }, [tasks, mine, wl.data, wl.error, wl.isLoading, ctx.data?.rules]);
 
   return { entries, error, reload: load };
 }
@@ -313,6 +466,28 @@ function panelFor(id: string, onChanged: () => void) {
           ]}
           onChanged={onChanged}
         />
+      );
+    case "wl-fit":
+      return (
+        <WaitlistPanel
+          sections={[{ only: "fit", label: "Von Hand prüfen" }]}
+          onChanged={onChanged}
+        />
+      );
+    case "wl-free":
+      return (
+        <WaitlistPanel sections={[{ only: "free", label: "Freie Plätze" }]} onChanged={onChanged} />
+      );
+    case "wl-new":
+      return (
+        <WaitlistPanel
+          sections={[{ only: "new", label: "Neue Anmeldungen" }]}
+          onChanged={onChanged}
+        />
+      );
+    case "wl-min":
+      return (
+        <WaitlistPanel sections={[{ only: "min", label: "Mindestzahl" }]} onChanged={onChanged} />
       );
     case "family-swim":
       return <FamilySwimPanel onChanged={onChanged} />;

@@ -87,7 +87,7 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
           <DialogTitle>Echten Testversand starten</DialogTitle>
           <DialogDescription>
             An jede Adresse wird je eine echte E-Mail pro Vorlage geschickt (Betreff mit „[TEST]“).
-            Alle Sendungen erscheinen anschließend unter „Versandstatus“ und „Gesendete E-Mails“.
+            Alle Sendungen erscheinen anschließend unter „Gesendete E-Mails“.
           </DialogDescription>
         </DialogHeader>
 

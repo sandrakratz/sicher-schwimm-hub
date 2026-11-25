@@ -183,10 +183,9 @@ export const adminSections: {
     tabs: [
       { to: "/admin/versand", label: "Rundmail senden" },
       { to: "/admin/emails", label: "Gesendete E-Mails" },
-      { to: "/admin/versandstatus", label: "Versandstatus" },
     ],
-    // „Mitglieder anschreiben“ ist jetzt eine Art im Versand; die alte Adresse bleibt erreichbar.
-    also: ["/admin/mitgliedernachricht"],
+    // „Mitglieder anschreiben“ ist jetzt eine Art im Versand; die alten Adressen bleiben erreichbar.
+    also: ["/admin/mitgliedernachricht", "/admin/versandstatus"],
   },
   {
     label: "Verein",

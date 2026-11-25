@@ -39,10 +39,6 @@ const joinSchema = z.object({
   childName: z.string().trim().min(2).max(120),
   childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   swimmingLevel: z.string().trim().min(1).max(200),
-  preferredDays: z
-    .array(z.enum(["Samstag", "Sonntag"]))
-    .max(2)
-    .optional(),
   isMember: z.boolean(),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
   gdprConsent: z.literal(true),
@@ -137,12 +133,7 @@ export const joinWaitlist = createServerFn({ method: "POST" })
           parent_phone: data.parentPhone || null,
           is_member: memberDecision.isMember,
           member_claimed: memberDecision.check === "pending",
-          notes: [
-            `Schwimmlevel: ${data.swimmingLevel}`,
-            // Beide Tage angekreuzt = egal; dann keine Einschränkung
-            data.preferredDays?.length === 1 ? `Wunschtag: ${data.preferredDays[0]}` : null,
-            data.notes || null,
-          ]
+          notes: [`Schwimmlevel: ${data.swimmingLevel}`, data.notes || null]
             .filter(Boolean)
             .join("\n"),
           gdpr_consent: true,
@@ -403,7 +394,7 @@ export const listWaitlist = createServerFn({ method: "GET" })
       await Promise.all([
         supabaseAdmin
           .from("course_programs")
-          .select("id,name,slug,min_age_years,min_swim_level,weekday")
+          .select("id,name,slug,min_age_years,max_age_years,min_swim_level")
           .order("sort_order"),
         supabaseAdmin
           .from("courses")

@@ -84,7 +84,7 @@ export function NewsNoticeDialog({
         }
         if (r.delivered === 0) {
           toast.warning(
-            `Es konnte nichts mehr gesendet werden. ${r.remaining} Adressen sind offen (siehe Versandstatus).`,
+            `Es konnte nichts mehr gesendet werden. ${r.remaining} Adressen sind offen (siehe Gesendete E-Mails, Filter „Nur Probleme“).`,
           );
           break;
         }

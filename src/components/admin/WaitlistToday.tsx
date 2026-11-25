@@ -12,7 +12,6 @@ import {
   programOf,
   type TodayOnly,
   type TodayView,
-  type WaitingKind,
   type WaitlistData,
   type WaitlistEntry,
 } from "@/components/admin/warteliste/logic";
@@ -26,12 +25,11 @@ import {
   Section,
   SuggestionActions,
 } from "@/components/admin/warteliste/ui";
-import { TodayOverview } from "@/components/admin/warteliste/TodayOverview";
 import { ParentActivity } from "@/components/admin/warteliste/ParentActivity";
 
 type ListOnly = Exclude<TodayOnly, "new">;
 
-/** Reiter „Übersicht“ der Anfrageliste: Kacheln mit dem, was heute zu tun ist, und deren Listen. */
+/** Listen der Anfrageliste-Aufgaben (freie Plätze, Prüfen, Fristen …) für den Eingang der Verwaltung. */
 export function WaitlistToday({
   data,
   m,
@@ -39,37 +37,21 @@ export function WaitlistToday({
   onGoto,
   onOpenDetail,
   onDeclineOffer,
-  initialMine,
   only,
-  onOnly,
-  onWaitingKind,
-  onGuide,
-  counts,
-  embedded = false,
 }: {
-  /** Im Eingang eingebettet: ohne Leitfaden und ohne „Zurück zur Übersicht“ */
-  embedded?: boolean;
   data: WaitlistData | undefined;
   m: WaitlistMutations;
   courseName: (id: unknown) => string;
-  /** Zählungen der Detailreiter für die Kacheln */
-  counts: { offered: number; followup: number; declined: number; done: number };
-  /** Geöffneter Einzelbereich; null = Kachelübersicht */
-  only: TodayOnly | null;
-  onOnly: (o: TodayOnly | null) => void;
-  /** Öffnet „Wartend“ gefiltert nach Grund des Wartens */
-  onWaitingKind: (k: WaitingKind) => void;
-  onGuide: () => void;
+  /** Welche Liste gezeigt wird */
+  only: TodayOnly;
   onGoto: (v: TodayView) => void;
   onOpenDetail: (e: WaitlistEntry) => void;
   onDeclineOffer: (e: WaitlistEntry) => void;
-  /** Mit ?zustaendig=ich geöffnet: Filter „Zuständig“ auf die angemeldete Person */
-  initialMine?: boolean;
 }) {
   const ctx = useAssignmentContext();
   // null = noch nichts gewählt: dann „Alle“ bzw. bei ?zustaendig=ich die angemeldete Person
   const [picked, setPicked] = useState<string | null>(null);
-  const assignee = picked ?? (initialMine ? (ctx.data?.me ?? "") : "");
+  const assignee = picked ?? "";
   const [openCourse, setOpenCourse] = useState<string | null>(null);
   const t = buildTodo(data, assignee, ctx.data?.rules);
   const courses = data?.courses ?? [];
@@ -127,33 +109,13 @@ export function WaitlistToday({
             </option>
           ))}
         </NativeSelect>
-        {!embedded && (
-          <Button size="sm" variant="outline" className="h-8" onClick={onGuide}>
-            Leitfaden
-          </Button>
-        )}
-        {only && !embedded && (
-          <Button size="sm" variant="ghost" className="h-8" onClick={() => onOnly(null)}>
-            ← Zurück zur Übersicht
-          </Button>
-        )}
       </div>
-
-      {!only && (
-        <TodayOverview
-          t={t}
-          counts={counts}
-          onOnly={onOnly}
-          onGoto={onGoto}
-          onWaitingKind={onWaitingKind}
-        />
-      )}
 
       {only === "new" && (
         <ParentActivity t={t} entryTarget={entryTarget} onOpenDetail={onOpenDetail} />
       )}
 
-      {only && only !== "new" && listOf[only].length === 0 && <EmptyOnly />}
+      {only !== "new" && listOf[only].length === 0 && <EmptyOnly />}
 
       {show("min") && (
         <Section title="Mindestzahl nicht erreicht" count={t.minCourses.length}>

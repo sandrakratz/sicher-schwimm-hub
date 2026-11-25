@@ -139,7 +139,7 @@ export function MessagesPanel({
 }
 
 /**
- * Ausschnitte der Anfrageliste: dieselben Listen und Knöpfe wie im Reiter „Übersicht“ dort
+ * Ausschnitte der Anfrageliste: dieselben Listen und Knöpfe wie im Anfrageliste
  * (ablaufende Angebote, Wiedervorlagen, Sperrvorschläge), samt Detail- und Absage-Dialog.
  */
 export function WaitlistPanel({
@@ -188,15 +188,10 @@ export function WaitlistPanel({
         </div>
       )}
       <WaitlistToday
-        embedded
         data={data}
         m={m}
         courseName={courseName}
         only={only}
-        onOnly={(o) => o && setOnly(o)}
-        counts={{ offered: 0, followup: 0, declined: 0, done: 0 }}
-        onGuide={() => {}}
-        onWaitingKind={toList}
         onGoto={toList}
         onOpenDetail={setDetail}
         onDeclineOffer={setDeclineFor}
