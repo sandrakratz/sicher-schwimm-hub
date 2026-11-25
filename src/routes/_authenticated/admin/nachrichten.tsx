@@ -160,7 +160,7 @@ function Page() {
                   </p>
                   <Button asChild size="sm" variant="outline" className="mt-3">
                     <Link to="/admin/warteliste">
-                      Zur Anfrageliste („Heute“ zeigt, was zu prüfen ist)
+                      Zur Anfrageliste (die „Übersicht“ dort zeigt, was zu prüfen ist)
                     </Link>
                   </Button>
                 </>

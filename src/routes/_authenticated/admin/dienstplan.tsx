@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadPlanningData } from "@/lib/dienstplan.functions";
 import { getMyAdminRoles } from "@/lib/role-guard";
-import { gapOf, indexPlan, openAttendanceCount, type PlanData } from "@/lib/dienstplan";
+import { addDays, gapOf, indexPlan, openAttendanceCount, type PlanData } from "@/lib/dienstplan";
 import { todayBerlinIso } from "@/lib/format";
 import { GapList } from "@/components/admin/dienstplan/GapList";
 import { ReplacementDialog } from "@/components/admin/dienstplan/ReplacementDialog";
@@ -94,7 +94,10 @@ function Page() {
     if (!data) return 0;
     const ix = indexPlan(data);
     const today = todayBerlinIso();
-    return data.sessions.filter((s) => s.date >= today && gapOf(ix, s) > 0).length;
+    // Gleicher Zeitraum wie die Lückenliste beim Öffnen (6 Wochen), sonst widersprechen sich Zahl und Liste
+    const limit = addDays(today, 42);
+    return data.sessions.filter((s) => s.date >= today && s.date <= limit && gapOf(ix, s) > 0)
+      .length;
   }, [data]);
 
   /** Vergangene Einsätze mit offener Anwesenheit (Bestätigung fehlt oder kein Eintrag). */
@@ -109,7 +112,7 @@ function Page() {
     <div className="max-w-6xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold">
+          <h1 className="flex items-center gap-2 font-display text-3xl font-bold text-primary-deep">
             <UsersRound className="h-6 w-6" /> Dienstplan
           </h1>
           <p className="text-sm text-muted-foreground">

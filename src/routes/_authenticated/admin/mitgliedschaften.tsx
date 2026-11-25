@@ -390,6 +390,11 @@ function Page() {
   const setStatusFn = useServerFn(setMembershipStatus);
   const deleteFn = useServerFn(deleteMembershipFn);
   const { antrag } = Route.useSearch();
+  const [q, setQ] = useState("");
+  // Standard: alle (offene Anträge stehen ohnehin oben); Knöpfe filtern nach Status
+  const [statusFilter, setStatusFilter] = useState<
+    "pending" | "active" | "suspended" | "terminated" | "all"
+  >("all");
 
   async function load() {
     const { data } = await supabase
@@ -457,9 +462,43 @@ function Page() {
   const fm: FamilyMembers = selected?.family_members ?? null;
   const hasFamily = !!(fm && (fm.partner?.name || (fm.children?.length || 0) > 0));
 
+  // Offene Anträge zuerst; Suche nach Name/E-Mail und Filter nach Status
+  const needle = q.trim().toLowerCase();
+  const shown = rows
+    .filter((r) => statusFilter === "all" || r.status === statusFilter)
+    .filter(
+      (r) =>
+        !needle ||
+        `${r.first_name ?? ""} ${r.last_name ?? ""} ${r.email ?? ""}`
+          .toLowerCase()
+          .includes(needle),
+    )
+    .sort((a, b) => Number(b.status === "pending") - Number(a.status === "pending"));
+  const countOf = (s: string) => rows.filter((r) => s === "all" || r.status === s).length;
+
   return (
     <div className="max-w-6xl">
       <h1 className="font-display text-3xl font-bold text-primary-deep mb-6">Mitgliedschaften</h1>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Input
+          aria-label="Mitgliedschaften durchsuchen"
+          placeholder="Name oder E-Mail suchen …"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="w-64"
+        />
+        {(["pending", "active", "suspended", "terminated", "all"] as const).map((s) => (
+          <Button
+            key={s}
+            size="sm"
+            variant={statusFilter === s ? "default" : "outline"}
+            aria-pressed={statusFilter === s}
+            onClick={() => setStatusFilter(s)}
+          >
+            {s === "all" ? "Alle" : STATUS_LABEL[s]} ({countOf(s)})
+          </Button>
+        ))}
+      </div>
       <CollapsibleCard
         title="Mitgliedschaften"
         storageKey="admin-mitgliedschaften"
@@ -477,14 +516,14 @@ function Page() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 && (
+            {shown.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                  Keine Anträge.
+                  {rows.length === 0 ? "Keine Anträge." : "Nichts gefunden für diese Auswahl."}
                 </TableCell>
               </TableRow>
             )}
-            {rows.map((r) => (
+            {shown.map((r) => (
               <TableRow
                 key={r.id}
                 className="cursor-pointer"

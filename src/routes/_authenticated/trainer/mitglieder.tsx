@@ -92,7 +92,9 @@ function Page() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Vereinsmitglieder</h1>
+          <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">
+            Vereinsmitglieder
+          </h1>
           <p className="text-sm text-muted-foreground">
             Aktive Mitgliedschaften inkl. Familienmitgliedern (nur Ansicht, keine Bankdaten).
           </p>
@@ -115,8 +117,8 @@ function Page() {
 
       <CollapsibleCard
         title="Mitgliederliste"
-        subtitle="Klicken zum Ein- und Ausklappen"
-        storageKey="trainer-mitglieder"
+        storageKey="trainer-mitglieder-offen"
+        defaultOpen
         contentClassName="px-0"
       >
         <div className="md:hidden">

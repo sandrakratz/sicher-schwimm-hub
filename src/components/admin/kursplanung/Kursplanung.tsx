@@ -60,7 +60,7 @@ export function Kursplanung() {
     <div className="max-w-6xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold">
+          <h1 className="flex items-center gap-2 font-display text-3xl font-bold text-primary-deep">
             <CalendarPlus className="h-6 w-6" /> Kursplanung
           </h1>
           <p className="text-sm text-muted-foreground">
