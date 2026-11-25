@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Eye } from "lucide-react";
+import { Eye, RefreshCw } from "lucide-react";
 import { formatDateTimeBerlin } from "@/lib/format";
 import { useServerFn } from "@tanstack/react-start";
 import { backfillEmailBodies } from "@/lib/email-backfill.functions";
@@ -38,7 +38,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+const STATUS_FILTERS = [
+  "all",
+  "problems",
+  "sent",
+  "failed",
+  "bounced",
+  "suppressed",
+  "pending",
+] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
 export const Route = createFileRoute("/_authenticated/admin/emails")({
+  // ?status=problems öffnet direkt die Probleme (früher Seite „Versandstatus“)
+  validateSearch: (search: Record<string, unknown>): { status?: StatusFilter } =>
+    STATUS_FILTERS.includes(search["status"] as StatusFilter)
+      ? { status: search["status"] as StatusFilter }
+      : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -81,6 +97,18 @@ function statusVariant(s: string): "default" | "destructive" | "secondary" | "ou
   return "outline";
 }
 
+const ADMIN_EMAIL = "info@sicher-schwimmen.com";
+const PROBLEM = new Set(["failed", "dlq", "bounced", "complained", "suppressed"]);
+
+/** Passt der Status zum gewählten Filter? */
+function statusMatches(s: string, f: StatusFilter): boolean {
+  if (f === "all") return true;
+  if (f === "problems") return PROBLEM.has(s);
+  if (f === "failed") return s === "failed" || s === "dlq";
+  if (f === "bounced") return s === "bounced" || s === "complained";
+  return s === f;
+}
+
 type RangeKey = "24h" | "7d" | "30d" | "all";
 
 function rangeStart(r: RangeKey): Date | null {
@@ -99,7 +127,9 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<RangeKey>("7d");
   const [templateFilter, setTemplateFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const { status: initialStatus } = Route.useSearch();
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus ?? "all");
+  const [recipientType, setRecipientType] = useState<"all" | "admin" | "external">("all");
   const [recipient, setRecipient] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<LogRow | null>(null);
@@ -214,30 +244,31 @@ function Page() {
     const rq = recipient.trim().toLowerCase();
     return deduped.filter((r) => {
       if (templateFilter !== "all" && r.template_name !== templateFilter) return false;
-      if (statusFilter !== "all") {
-        if (statusFilter === "failed" && !(r.status === "failed" || r.status === "dlq"))
-          return false;
-        if (statusFilter !== "failed" && r.status !== statusFilter) return false;
-      }
+      if (!statusMatches(r.status, statusFilter)) return false;
+      const isAdmin = (r.recipient_email || "").toLowerCase() === ADMIN_EMAIL;
+      if (recipientType === "admin" && !isAdmin) return false;
+      if (recipientType === "external" && isAdmin) return false;
       if (rq && !(r.recipient_email || "").toLowerCase().includes(rq)) return false;
       return true;
     });
-  }, [deduped, templateFilter, statusFilter, recipient]);
+  }, [deduped, templateFilter, statusFilter, recipientType, recipient]);
 
   useEffect(() => {
     setPage(0);
-  }, [templateFilter, statusFilter, recipient, range]);
+  }, [templateFilter, statusFilter, recipientType, recipient, range]);
 
   const stats = useMemo(() => {
     let sent = 0,
       failed = 0,
+      bounced = 0,
       suppressed = 0;
     for (const r of filtered) {
       if (r.status === "sent") sent++;
-      else if (r.status === "failed" || r.status === "dlq" || r.status === "bounced") failed++;
+      else if (r.status === "failed" || r.status === "dlq") failed++;
+      else if (r.status === "bounced" || r.status === "complained") bounced++;
       else if (r.status === "suppressed") suppressed++;
     }
-    return { total: filtered.length, sent, failed, suppressed };
+    return { total: filtered.length, sent, failed, bounced, suppressed };
   }, [filtered]);
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -258,15 +289,24 @@ function Page() {
               {k === "24h" ? "24 Std" : k === "7d" ? "7 Tage" : k === "30d" ? "30 Tage" : "Alle"}
             </Button>
           ))}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setReloadKey((k) => k + 1)}
+            disabled={loading}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Aktualisieren
+          </Button>
           <TestSendDialog onDone={() => setReloadKey((k) => k + 1)} />
           {isAdmin && <BackfillButton />}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard label="Gesamt" value={stats.total} />
         <StatCard label="Gesendet" value={stats.sent} tone="success" />
         <StatCard label="Fehlgeschlagen" value={stats.failed} tone="danger" />
+        <StatCard label="Rückläufer / Beschwerden" value={stats.bounced} tone="danger" />
         <StatCard label="Unterdrückt" value={stats.suppressed} tone="muted" />
       </div>
 
@@ -290,16 +330,34 @@ function Page() {
           </div>
           <div className="min-w-40">
             <label className="text-xs font-semibold text-muted-foreground">Status</label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle</SelectItem>
+                <SelectItem value="problems">Nur Probleme</SelectItem>
                 <SelectItem value="sent">Gesendet</SelectItem>
                 <SelectItem value="failed">Fehlgeschlagen</SelectItem>
+                <SelectItem value="bounced">Rückläufer / Beschwerden</SelectItem>
                 <SelectItem value="suppressed">Unterdrückt</SelectItem>
                 <SelectItem value="pending">In Warteschlange</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-44">
+            <label className="text-xs font-semibold text-muted-foreground">Empfänger-Typ</label>
+            <Select
+              value={recipientType}
+              onValueChange={(v) => setRecipientType(v as "all" | "admin" | "external")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Empfänger</SelectItem>
+                <SelectItem value="admin">Vereins-Postfach (intern)</SelectItem>
+                <SelectItem value="external">Eltern / Mitglieder</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -331,7 +389,9 @@ function Page() {
           <p className="text-center text-muted-foreground py-10">Lade …</p>
         ) : paged.length === 0 ? (
           <p className="text-center text-muted-foreground py-10">
-            Keine E-Mails im gewählten Zeitraum.
+            {statusFilter === "problems"
+              ? "Keine Probleme im gewählten Zeitraum – alles zugestellt."
+              : "Keine E-Mails im gewählten Zeitraum."}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -361,6 +421,11 @@ function Page() {
                       <Badge variant={statusVariant(r.status)}>
                         {STATUS_LABEL[r.status] || r.status}
                       </Badge>
+                      {r.error_message && PROBLEM.has(r.status) && (
+                        <div className="mt-1 max-w-56 truncate text-xs text-muted-foreground">
+                          {r.error_message}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="p-3 text-right">
                       <Button size="sm" variant="outline" onClick={() => void openRow(r)}>
