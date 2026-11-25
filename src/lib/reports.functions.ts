@@ -7,8 +7,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertStaff } from "@/lib/auth-guards.server";
 import {
   activeOn,
+  ageGroupLabels,
   ageOn,
   badgeStats,
+  census,
+  DEFAULT_AGE_BOUNDS,
   demandStats,
   personsOf,
   upcomingBirthdays,
@@ -32,6 +35,7 @@ const STATUS_LABEL: Record<string, string> = {
   suspended: "Ruhend",
   terminated: "Beendet",
 };
+const GENDER_LABEL: Record<string, string> = { w: "weiblich", m: "männlich", d: "divers" };
 const de = (iso: string | null | undefined) =>
   iso ? `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}` : "";
 
@@ -47,7 +51,7 @@ async function loadMemberships(): Promise<MembershipRow[]> {
     (supabaseAdmin as any)
       .from("memberships")
       .select(
-        "id,first_name,last_name,date_of_birth,email,member_email,guardian_email,membership_type,status,start_date,valid_until,approved_at,created_at,family_members",
+        "id,first_name,last_name,date_of_birth,gender,email,member_email,guardian_email,membership_type,status,start_date,valid_until,approved_at,created_at,family_members",
       )
       .order("id")
       .range(f, t),
@@ -313,6 +317,7 @@ export const exportMemberRoster = createServerFn({ method: "POST" })
           "Vorname",
           "Geburtsdatum",
           "Alter",
+          "Geschlecht",
           "Rolle",
           "Mitgliedsart",
           "Status",
@@ -326,6 +331,7 @@ export const exportMemberRoster = createServerFn({ method: "POST" })
           p.vorname,
           de(p.geburtsdatum),
           ageOn(p.geburtsdatum, data.day) ?? "",
+          GENDER_LABEL[p.geschlecht ?? ""] ?? "",
           p.rolle,
           TYPE_LABEL[p.membershipType] ?? p.membershipType,
           STATUS_LABEL[p.status] ?? p.status,
@@ -338,6 +344,58 @@ export const exportMemberRoster = createServerFn({ method: "POST" })
     ]);
     await audit(context.userId, "report.members.exported", { day: data.day, rows: persons.length });
     return { filename: `Mitglieder_${data.day}.xlsx`, base64, rows: persons.length };
+  });
+
+/** Bestandsmeldung: alle Mitglieder inkl. Familienmitglieder nach Altersgruppe und Geschlecht. */
+export const exportMembershipCensus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z
+      .object({
+        day: isoDate,
+        bounds: z.array(z.number().int().min(0).max(120)).min(1).max(15).optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }): Promise<FileResult> => {
+    await assertStaff(context);
+    const bounds = data.bounds ?? DEFAULT_AGE_BOUNDS;
+    const persons = (await loadMemberships())
+      .filter((m) => activeOn(m, data.day))
+      .flatMap(personsOf);
+    const c = census(persons, data.day, bounds);
+    const row = (r: (typeof c.rows)[number]) => [r.gruppe, r.w, r.m, r.d, r.ohne, r.gesamt];
+    const missing = [
+      ...c.ohneGeschlecht.map((p) => [`${p.vorname} ${p.nachname}`, p.rolle, "Geschlecht fehlt"]),
+      ...c.ohneGeburtsdatum.map((p) => [
+        `${p.vorname} ${p.nachname}`,
+        p.rolle,
+        "Geburtsdatum fehlt (nicht gezählt)",
+      ]),
+    ];
+    const { workbookBase64 } = await import("@/lib/xlsx.server");
+    const base64 = await workbookBase64([
+      {
+        name: "Bestandsmeldung",
+        title: `Mitgliederbestand am ${de(data.day)}`,
+        note: `Alle Mitglieder einschließlich Partner:in und Kinder aus Familienmitgliedschaften. Alter am Stichtag, Altersgruppen: ${ageGroupLabels(bounds).join(" · ")}.`,
+        header: ["Altersgruppe", "weiblich", "männlich", "divers", "ohne Angabe", "gesamt"],
+        rows: c.rows.map(row),
+        footer: row(c.total),
+      },
+      {
+        name: "Fehlende Angaben",
+        title: "Bitte in der Verwaltung ergänzen",
+        note: "Verwaltung › Familien › Mitgliedschaften › Details. Enthält Namen – nur für den Vorstand.",
+        header: ["Name", "Rolle", "Was fehlt"],
+        rows: missing,
+      },
+    ]);
+    await audit(context.userId, "report.census.exported", {
+      day: data.day,
+      persons: persons.length,
+    });
+    return { filename: `Bestandsmeldung_${data.day}.xlsx`, base64, rows: persons.length };
   });
 
 // ---------- Datenauskunft (Art. 15 DSGVO) ----------

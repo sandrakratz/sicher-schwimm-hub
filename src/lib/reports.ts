@@ -63,6 +63,7 @@ export type MembershipRow = {
   first_name: string | null;
   last_name: string | null;
   date_of_birth: string | null;
+  gender?: string | null;
   email: string | null;
   member_email?: string | null;
   guardian_email?: string | null;
@@ -75,7 +76,12 @@ export type MembershipRow = {
   family_members?: unknown;
 };
 
-type FamilyPerson = { name?: string | null; date_of_birth?: string | null; email?: string | null };
+type FamilyPerson = {
+  name?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  email?: string | null;
+};
 
 export type MemberPerson = {
   membershipId: string;
@@ -83,6 +89,8 @@ export type MemberPerson = {
   vorname: string;
   nachname: string;
   geburtsdatum: string | null;
+  /** w/m/d, null = nicht erfasst */
+  geschlecht: string | null;
   /** Wohin Post/Glückwünsche gehen: eigene E-Mail, sonst die des Hauptmitglieds bzw. der Eltern */
   email: string | null;
   membershipType: string;
@@ -117,6 +125,7 @@ export function personsOf(m: MembershipRow): MemberPerson[] {
       vorname: (m.first_name ?? "").trim(),
       nachname: last,
       geburtsdatum: m.date_of_birth,
+      geschlecht: m.gender ?? null,
       email: mainEmail,
     },
   ];
@@ -132,6 +141,7 @@ export function personsOf(m: MembershipRow): MemberPerson[] {
       vorname: v,
       nachname: n,
       geburtsdatum: fm.partner.date_of_birth ?? null,
+      geschlecht: fm.partner.gender ?? null,
       email: fm.partner.email || mainEmail,
     });
   }
@@ -144,6 +154,7 @@ export function personsOf(m: MembershipRow): MemberPerson[] {
       vorname: v,
       nachname: n,
       geburtsdatum: c.date_of_birth ?? null,
+      geschlecht: c.gender ?? null,
       email: mainEmail,
     });
   }
@@ -167,6 +178,67 @@ export function ageOn(dob: string | null, day: string): number | null {
   const [y, m, d] = dob.slice(0, 10).split("-").map(Number) as [number, number, number];
   const [ty, tm, td] = day.slice(0, 10).split("-").map(Number) as [number, number, number];
   return ty - y - (tm < m || (tm === m && td < d) ? 1 : 0);
+}
+
+// ---------- Bestandsmeldung (Landessportbund) ----------
+
+/** Übliche Altersgruppen der Bestandserhebung: Obergrenzen „bis einschließlich“, danach „älter“. */
+export const DEFAULT_AGE_BOUNDS = [6, 14, 18, 26, 40, 60];
+
+export type CensusRow = {
+  gruppe: string;
+  w: number;
+  m: number;
+  d: number;
+  ohne: number;
+  gesamt: number;
+};
+export type Census = {
+  rows: CensusRow[];
+  total: CensusRow;
+  ohneGeburtsdatum: MemberPerson[];
+  ohneGeschlecht: MemberPerson[];
+};
+
+/** Altersgruppen-Bezeichnungen aus Obergrenzen, z. B. [6, 14] → „bis 6“, „7–14“, „15 und älter“. */
+export function ageGroupLabels(bounds: number[]): string[] {
+  const b = [...new Set(bounds)].filter((n) => Number.isInteger(n) && n >= 0).sort((x, y) => x - y);
+  const out: string[] = [];
+  let from = 0;
+  for (const up of b) {
+    out.push(from === 0 ? `bis ${up}` : from === up ? `${up}` : `${from}–${up}`);
+    from = up + 1;
+  }
+  out.push(`${from} und älter`);
+  return out;
+}
+
+/** Zählt Personen am Stichtag nach Altersgruppe × Geschlecht; fehlende Angaben werden gelistet. */
+export function census(persons: MemberPerson[], day: string, bounds = DEFAULT_AGE_BOUNDS): Census {
+  const b = [...new Set(bounds)].filter((n) => Number.isInteger(n) && n >= 0).sort((x, y) => x - y);
+  const labels = ageGroupLabels(b);
+  const empty = (gruppe: string): CensusRow => ({ gruppe, w: 0, m: 0, d: 0, ohne: 0, gesamt: 0 });
+  const rows = labels.map(empty);
+  const total = empty("Gesamt");
+  const ohneGeburtsdatum: MemberPerson[] = [];
+  const ohneGeschlecht: MemberPerson[] = [];
+  for (const p of persons) {
+    const age = ageOn(p.geburtsdatum, day);
+    if (age == null) {
+      ohneGeburtsdatum.push(p);
+      continue;
+    }
+    let i = b.findIndex((up) => age <= up);
+    if (i < 0) i = b.length;
+    const g =
+      p.geschlecht === "w" || p.geschlecht === "m" || p.geschlecht === "d" ? p.geschlecht : "ohne";
+    if (g === "ohne") ohneGeschlecht.push(p);
+    for (const r of [rows[i]!, total]) {
+      r[g]++;
+      r.gesamt++;
+    }
+  }
+  return { rows, total, ohneGeburtsdatum, ohneGeschlecht };
 }
 
 // ---------- Geburtstage ----------

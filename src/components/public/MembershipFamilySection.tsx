@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TextField } from "./TextField";
+import { GenderField } from "./GenderField";
 import {
   CHILDREN_WITHOUT_PROOF,
   INITIAL_CHILD_ROWS,
@@ -56,6 +57,11 @@ function FamilyMemberFields({
           required={dobRequired}
           value={member.date_of_birth}
           onChange={(e) => onChange({ date_of_birth: e.target.value })}
+        />
+        <GenderField
+          required={!!member.name.trim()}
+          value={member.gender ?? ""}
+          onChange={(v) => onChange({ gender: v })}
         />
         <TextField
           className="md:col-span-2"

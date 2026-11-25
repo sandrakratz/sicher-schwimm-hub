@@ -51,10 +51,20 @@ export const INITIAL_CHILD_ROWS = 4;
 /** Ab mehr Kindern ist eine Haushaltsbescheinigung nötig. */
 export const CHILDREN_WITHOUT_PROOF = 3;
 
+/** Geschlecht für die Bestandsmeldung an den Landessportbund. */
+export const GENDERS = [
+  { value: "w", label: "weiblich" },
+  { value: "m", label: "männlich" },
+  { value: "d", label: "divers" },
+] as const;
+export type Gender = (typeof GENDERS)[number]["value"];
+export const isGender = (v: unknown): v is Gender => v === "w" || v === "m" || v === "d";
+
 export type FamilyMember = {
   name: string;
   last_name: string;
   date_of_birth: string;
+  gender?: Gender | "";
   email?: string;
   phone?: string;
 };
@@ -105,6 +115,7 @@ const schema = z.object({
   first_name: z.string().trim().min(1).max(100),
   last_name: z.string().trim().min(1).max(100),
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  gender: z.enum(["w", "m", "d"]),
   start_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -162,6 +173,7 @@ export function validateMembership(
   fd: FormData,
   tier: MembershipTier,
   children: FamilyMember[],
+  partner?: FamilyMember,
 ): Invalid | ValidMembership {
   const password = text(fd, "account_password");
   const passwordConfirm = text(fd, "account_password_confirm");
@@ -188,6 +200,7 @@ export function validateMembership(
     first_name: fd.get("first_name"),
     last_name: fd.get("last_name"),
     date_of_birth: fd.get("date_of_birth") || undefined,
+    gender: fd.get("gender") || undefined,
     start_date: fd.get("start_date") || undefined,
     email: fd.get("email"),
     phone: fd.get("phone"),
@@ -254,6 +267,17 @@ export function validateMembership(
     };
   }
 
+  if (
+    tier === "family" &&
+    [...(partner ? [partner] : []), ...children].some((c) => c.name.trim() && !isGender(c.gender))
+  )
+    return {
+      ok: false,
+      fields: ["family_gender"],
+      code: "fehlt",
+      message: "Bitte bei Partner/in und jedem Kind das Geschlecht angeben.",
+    };
+
   if (tier === "family" && children.some((c) => c.name.trim() && !c.date_of_birth))
     return {
       ok: false,
@@ -283,6 +307,7 @@ export function familyMembersPayload(
   const entry = (m: FamilyMember) => ({
     name: `${m.name.trim()} ${m.last_name.trim() || fallbackLastName}`.trim(),
     date_of_birth: m.date_of_birth || null,
+    gender: isGender(m.gender) ? m.gender : null,
     email: m.email?.trim() || null,
     phone: m.phone?.trim() || null,
   });

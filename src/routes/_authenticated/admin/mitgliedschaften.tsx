@@ -28,6 +28,8 @@ import {
   deleteMembership as deleteMembershipFn,
 } from "@/lib/membership.functions";
 import { formatDateBerlin, formatEuro } from "@/lib/format";
+import { GENDERS, isGender } from "@/components/public/membership-form";
+import { NativeSelect } from "@/components/ui/native-select";
 
 export const Route = createFileRoute("/_authenticated/admin/mitgliedschaften")({
   // ?antrag=<id> öffnet einen Antrag direkt (Sprung aus dem Eingang)
@@ -57,9 +59,41 @@ const STATUS_LABEL: Record<string, string> = {
 type Member = {
   name: string;
   date_of_birth: string | null;
+  gender?: string | null;
   email?: string | null;
   phone?: string | null;
 };
+
+const genderLabel = (g: unknown) => GENDERS.find((x) => x.value === g)?.label ?? null;
+
+/** Auswahl Geschlecht für die Verwaltung (leer = noch nicht erfasst). */
+function GenderSelect({
+  value,
+  onChange,
+  label = "Geschlecht",
+}: {
+  value: string | null | undefined;
+  onChange: (v: string | null) => void;
+  label?: string;
+}) {
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <NativeSelect
+        className="w-full"
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+      >
+        <option value="">– nicht erfasst –</option>
+        {GENDERS.map((g) => (
+          <option key={g.value} value={g.value}>
+            {g.label}
+          </option>
+        ))}
+      </NativeSelect>
+    </div>
+  );
+}
 
 function majorityBadge(dob?: string | null): string | null {
   if (!dob) return null;
@@ -96,6 +130,7 @@ function FamilyEditor({
   const [partner, setPartner] = useState<Member>({
     name: value?.partner?.name || "",
     date_of_birth: value?.partner?.date_of_birth || "",
+    gender: value?.partner?.gender ?? null,
     email: value?.partner?.email ?? null,
     phone: value?.partner?.phone ?? null,
   });
@@ -104,6 +139,7 @@ function FamilyEditor({
       ? value.children.map((c) => ({
           name: c.name || "",
           date_of_birth: c.date_of_birth || "",
+          gender: c.gender ?? null,
           email: c.email ?? null,
           phone: c.phone ?? null,
         }))
@@ -123,6 +159,7 @@ function FamilyEditor({
         ? {
             name: partner.name.trim(),
             date_of_birth: partner.date_of_birth || null,
+            gender: isGender(partner.gender) ? partner.gender : null,
             ...(partner.email?.trim() ? { email: partner.email.trim() } : {}),
             ...(partner.phone?.trim() ? { phone: partner.phone.trim() } : {}),
           }
@@ -132,6 +169,7 @@ function FamilyEditor({
         .map((c) => ({
           name: c.name.trim(),
           date_of_birth: c.date_of_birth || null,
+          gender: isGender(c.gender) ? c.gender : null,
           ...(c.email?.trim() ? { email: c.email.trim() } : {}),
           ...(c.phone?.trim() ? { phone: c.phone.trim() } : {}),
         })),
@@ -161,6 +199,10 @@ function FamilyEditor({
               onChange={(e) => setPartner((p) => ({ ...p, date_of_birth: e.target.value }))}
             />
           </div>
+          <GenderSelect
+            value={partner.gender}
+            onChange={(g) => setPartner((p) => ({ ...p, gender: g }))}
+          />
           <div>
             <Label className="text-xs">E-Mail</Label>
             <Input
@@ -207,6 +249,7 @@ function FamilyEditor({
                 onChange={(e) => updateChild(i, { date_of_birth: e.target.value })}
               />
             </div>
+            <GenderSelect value={c.gender} onChange={(g) => updateChild(i, { gender: g })} />
             <div>
               <Label className="text-xs">E-Mail</Label>
               <Input
@@ -444,6 +487,21 @@ function Page() {
     }
   }
 
+  /** Geschlecht des Hauptmitglieds (für die Bestandsmeldung) sofort speichern. */
+  async function saveGender(gender: string | null) {
+    if (!selected) return;
+    const { error } = await supabase
+      .from("memberships")
+      .update({ gender } as never)
+      .eq("id", selected.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Geschlecht gespeichert");
+    await load();
+  }
+
   async function saveFamily(family_members: FamilyMembers) {
     if (!selected) return;
     const { error } = await supabase
@@ -637,6 +695,16 @@ function Page() {
                 <h3 className="font-display font-bold text-primary-deep mb-2">Person</h3>
                 <Row label="Name" value={`${selected.first_name} ${selected.last_name}`} />
                 <Row label="Geburtsdatum" value={formatDateBerlin(selected.date_of_birth)} />
+                <div className="grid grid-cols-3 gap-3 py-1.5 border-b border-border/50">
+                  <div className="text-xs font-semibold text-muted-foreground">Geschlecht</div>
+                  <div className="col-span-2 max-w-56">
+                    <GenderSelect
+                      label=""
+                      value={(selected as { gender?: string | null }).gender}
+                      onChange={(g) => void saveGender(g)}
+                    />
+                  </div>
+                </div>
                 {(selected as any).member_email && (
                   <Row label="E-Mail des Mitglieds" value={(selected as any).member_email} />
                 )}
@@ -708,14 +776,14 @@ function Page() {
                     {fm?.partner?.name && (
                       <Row
                         label="Partner/in"
-                        value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${formatDateBerlin(fm.partner.date_of_birth)})` : ""}${fm.partner.email ? ` · ${fm.partner.email}` : ""}${fm.partner.phone ? ` · ${fm.partner.phone}` : ""}`}
+                        value={`${fm.partner.name}${fm.partner.date_of_birth ? ` (geb. ${formatDateBerlin(fm.partner.date_of_birth)})` : ""} · ${genderLabel(fm.partner.gender) ?? "Geschlecht fehlt"}${fm.partner.email ? ` · ${fm.partner.email}` : ""}${fm.partner.phone ? ` · ${fm.partner.phone}` : ""}`}
                       />
                     )}
                     {(fm?.children || []).map((c, i) => (
                       <Row
                         key={i}
                         label={`Kind ${i + 1}`}
-                        value={`${c.name}${c.date_of_birth ? ` (geb. ${formatDateBerlin(c.date_of_birth)})` : ""}${c.email ? ` · ${c.email}` : ""}${c.phone ? ` · ${c.phone}` : ""}`}
+                        value={`${c.name}${c.date_of_birth ? ` (geb. ${formatDateBerlin(c.date_of_birth)})` : ""} · ${genderLabel(c.gender) ?? "Geschlecht fehlt"}${c.email ? ` · ${c.email}` : ""}${c.phone ? ` · ${c.phone}` : ""}`}
                       />
                     ))}
                   </>
