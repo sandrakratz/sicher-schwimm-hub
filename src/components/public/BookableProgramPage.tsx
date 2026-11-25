@@ -218,15 +218,38 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
                 <CalendarDays className="h-9 w-9 text-primary shrink-0" />
                 <div>
                   <h2 className="font-display text-2xl font-bold text-primary-deep">
-                    Buchbare Termine
+                    {hasFree ? "Buchbare Termine" : "Termine"}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Wählen Sie einfach einen passenden Zeitraum aus und buchen Sie verbindlich einen
-                    Platz.
-                  </p>
+                  {hasFree ? (
+                    <p className="text-sm text-muted-foreground">
+                      Wählen Sie einfach einen passenden Zeitraum aus und buchen Sie verbindlich
+                      einen Platz.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {program.terms.length > 0
+                        ? "Alle Termine sind derzeit ausgebucht."
+                        : "Neue Termine sind in Planung."}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">{MEMBER_DISCOUNT_NOTE}</p>
                 </div>
               </div>
+
+              {/* Einzige Warteliste-Aktion der Seite: nur wenn kein Termin buchbar ist –
+                  oben, damit man sie am Handy nicht erst nach allen vollen Terminen findet */}
+              {!hasFree && (
+                <div className="rounded-xl bg-secondary p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <HelpCircle className="h-8 w-8 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-primary-deep">Auf die Warteliste</p>
+                    <p className="text-sm text-muted-foreground">
+                      Unverbindlich: Wird ein Platz frei, bieten wir ihn Ihnen per E-Mail an.
+                    </p>
+                  </div>
+                  <div className="shrink-0">{waitlistLink()}</div>
+                </div>
+              )}
 
               {program.terms.length === 0 ? (
                 <p className="text-muted-foreground">
@@ -246,20 +269,6 @@ export function BookableProgramPage({ program }: { program: CourseProgram }) {
                     }}
                   />
                 ))
-              )}
-
-              {/* Einzige Warteliste-Aktion der Seite: nur wenn kein Termin buchbar ist */}
-              {!hasFree && (
-                <div className="rounded-xl bg-secondary p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-                  <HelpCircle className="h-8 w-8 text-primary shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-primary-deep">Kein passender Termin dabei?</p>
-                    <p className="text-sm text-muted-foreground">
-                      Unverbindliche Anfrage: Wir melden uns, sobald ein Platz frei wird.
-                    </p>
-                  </div>
-                  <div className="shrink-0">{waitlistLink()}</div>
-                </div>
               )}
 
               <p className="text-xs text-muted-foreground">

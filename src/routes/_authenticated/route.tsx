@@ -252,13 +252,14 @@ function AuthLayout() {
               className="p-0 w-72 bg-sidebar text-sidebar-foreground border-sidebar-border flex flex-col"
             >
               <SheetHeader className="sr-only">
-                <SheetTitle>Mitgliederportal Menü</SheetTitle>
+                <SheetTitle>{AREA_LABEL[area]} – Menü</SheetTitle>
               </SheetHeader>
               {navContent}
             </SheetContent>
           </Sheet>
-          <Link to="/portal" className="flex items-center gap-2 font-bold">
-            <Waves className="h-5 w-5" /> Portal
+          {/* Am Handy zeigt die Kopfzeile den aktuellen Bereich, nicht immer „Portal“ */}
+          <Link to={AREA_HOME[area]} className="flex items-center gap-2 font-bold">
+            <Waves className="h-5 w-5" /> {AREA_SHORT[area]}
           </Link>
           <Button
             onClick={logout}

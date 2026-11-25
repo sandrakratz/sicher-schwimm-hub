@@ -102,7 +102,9 @@ function Dashboard() {
     <div className="space-y-8 max-w-6xl">
       <div>
         <div className="text-accent font-semibold text-sm uppercase tracking-wider">Willkommen</div>
-        <h1 className="font-display text-4xl font-bold text-primary-deep">Hallo {name}! 👋</h1>
+        <h1 className="font-display text-3xl font-bold text-primary-deep sm:text-4xl">
+          Hallo {name}! 👋
+        </h1>
         <p className="text-muted-foreground mt-2">
           Schön, dass Sie da sind. Hier finden Sie Ihre wichtigsten Vereinsinfos.
         </p>
@@ -112,7 +114,7 @@ function Dashboard() {
 
       <FamilyTodo />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         {[
           {
             icon: Waves,
@@ -151,12 +153,12 @@ function Dashboard() {
             className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
           >
             <Card className="border-0 shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition cursor-pointer h-full">
-              <CardContent className="p-5">
-                <s.icon className="h-7 w-7 text-accent mb-3" />
+              <CardContent className="p-3 sm:p-5">
+                <s.icon className="mb-2 h-6 w-6 text-accent sm:mb-3 sm:h-7 sm:w-7" />
                 <div className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
                   {s.label}
                 </div>
-                <div className="text-2xl font-bold text-primary-deep">{s.value}</div>
+                <div className="text-xl font-bold text-primary-deep sm:text-2xl">{s.value}</div>
               </CardContent>
             </Card>
           </Link>
