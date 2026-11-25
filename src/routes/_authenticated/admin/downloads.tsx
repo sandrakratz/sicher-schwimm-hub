@@ -18,6 +18,7 @@ import {
   generateTrainerProofXlsx,
 } from "@/lib/course-sessions.functions";
 import { exportExamProtocol } from "@/lib/trainer-courses.functions";
+import { YearBundle } from "@/components/admin/downloads/YearBundle";
 import { exportExternalExamProtocol } from "@/lib/external-exams.functions";
 import { exportFamilySwimAttendance } from "@/lib/familienschwimmen.functions";
 import {
@@ -262,7 +263,7 @@ function Page() {
 
       <Section
         title="Für ein Jahr"
-        text="Nachweise und Auswertungen über alle Kurse eines Kalenderjahres. Statistik und Auslastung enthalten nur Zahlen, keine Namen."
+        text="Nachweise und Auswertungen über alle Kurse eines Kalenderjahres. Statistik und Auslastung enthalten nur Zahlen, keine Namen. Darunter die Kurslisten aller Kurse mit Beginn im Jahr (Kurse über den Jahreswechsel zählen zum Startjahr)."
         controls={yearSelect(year, setYear)}
       >
         <DownloadButton
@@ -285,6 +286,7 @@ function Page() {
           kind="pdf"
           run={() => exportFamilySwimAttendance({ data: { year } })}
         />
+        <YearBundle year={year} courses={courses.data ?? []} />
       </Section>
 
       <Section
