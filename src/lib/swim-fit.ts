@@ -1,5 +1,5 @@
 // „Passt das?“-Prüfung vor einem Platzangebot: Schwimmniveau des Kindes
-// gegen Mindest-Niveau und Kurstag des Programms. Reine Funktionen, serverseitig (automatische
+// gegen das Mindest-Niveau des Programms. Reine Funktionen, serverseitig (automatische
 // Platzvergabe) und im Browser (Verwaltung) gleichermaßen nutzbar.
 
 export const SWIM_LEVELS = [

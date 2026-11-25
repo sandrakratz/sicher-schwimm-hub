@@ -25,26 +25,34 @@ type BookedPart = Pick<
   | "online_booking"
 >;
 
-const joinSchema = z.object({
-  programId: z.string().uuid().optional().nullable(),
-  courseId: z.string().uuid().optional().nullable(),
-  parentName: z
-    .string()
-    .trim()
-    .min(3)
-    .max(120)
-    .refine((v) => v.split(/\s+/).length >= 2, "Vor- und Nachname erforderlich"),
-  parentEmail: z.string().trim().email().max(200),
-  parentPhone: z.string().trim().min(5).max(60),
-  childName: z.string().trim().min(2).max(120),
-  childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  swimmingLevel: z.string().trim().min(1).max(200),
-  isMember: z.boolean(),
-  notes: z.string().trim().max(2000).optional().or(z.literal("")),
-  gdprConsent: z.literal(true),
-  contactPermission: z.literal(true),
-  website: z.string().max(0).optional(),
-});
+const joinSchema = z
+  .object({
+    programId: z.string().uuid().optional().nullable(),
+    courseId: z.string().uuid().optional().nullable(),
+    parentName: z
+      .string()
+      .trim()
+      .min(3)
+      .max(120)
+      .refine((v) => v.split(/\s+/).length >= 2, "Vor- und Nachname erforderlich"),
+    parentEmail: z.string().trim().email().max(200),
+    parentPhone: z.string().trim().min(5).max(60),
+    childName: z.string().trim().min(2).max(120),
+    childDob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    swimmingLevel: z.string().trim().min(1).max(200),
+    isMember: z.boolean(),
+    notes: z.string().trim().max(2000).optional().or(z.literal("")),
+    gdprConsent: z.literal(true),
+    contactPermission: z.literal(true),
+    website: z.string().max(0).optional(),
+  })
+  // Ohne Kursangebot bekäme der Eintrag nie ein automatisches Angebot – das Formular verlangt den
+  // Kurs, hier wird es auch serverseitig erzwungen.
+  // (Honeypot „website“ ausgenommen: Bots bekommen weiterhin still „ok“.)
+  .refine((d) => !!d.website || !!d.programId || !!d.courseId, {
+    message: "Bitte einen Kurs auswählen",
+    path: ["programId"],
+  });
 
 /** Öffentliche Eintragung auf die Warteliste (ohne Login). */
 export const joinWaitlist = createServerFn({ method: "POST" })
