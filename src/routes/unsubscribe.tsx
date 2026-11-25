@@ -67,7 +67,7 @@ function Page() {
         <Card className="border-0 shadow-soft">
           <CardContent className="p-8 text-center space-y-4">
             <h1 className="font-display text-2xl font-bold text-primary-deep">
-              Newsletter abbestellen
+              E-Mails abbestellen
             </h1>
             {state === "loading" && <p className="text-muted-foreground">Bitte warten…</p>}
             {state === "valid" && (

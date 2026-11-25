@@ -1,0 +1,17 @@
+name: Tests
+
+# Führt bei jedem Pull Request und bei Änderungen an main die Tests der reinen Fachlogik aus
+# (Platzvergabe, Alter, Preise, Abrechnung …). Lokal: `bun run test`.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  bun-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun test

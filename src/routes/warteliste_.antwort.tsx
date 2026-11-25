@@ -67,6 +67,8 @@ function OfferResponsePage() {
   const { data, isLoading } = useQuery({
     queryKey: ["waitlist-offer", token],
     enabled: !!token,
+    // Ungültige oder alte Links nicht mehrfach mit wachsender Pause wiederholen (sonst ~15 s „lädt“)
+    retry: 1,
     queryFn: () => getWaitlistOffer({ data: { token } }),
   });
 
@@ -297,8 +299,13 @@ function OfferResponsePage() {
             <Button variant="outline" disabled={loading} onClick={() => submit("decline")}>
               Platz absagen
             </Button>
+            {/* Direkt zurück zur Zusage – auch wenn die Absage über den Knopf (nicht den Mail-Link) geöffnet wurde */}
             <Button variant="accent" asChild>
-              <Link to="/warteliste/antwort" search={{ token, aktion: "zusage" }}>
+              <Link
+                to="/warteliste/antwort"
+                search={{ token, aktion: "zusage" }}
+                onClick={() => setAskDecline(false)}
+              >
                 Doch annehmen
               </Link>
             </Button>
@@ -372,6 +379,18 @@ function OfferResponsePage() {
               Platz absagen
             </Button>
           </div>
+          {/* Gleicher Hinweis wie bei der Online-Buchung: auch hier entsteht eine verbindliche Buchung */}
+          <p className="text-xs text-muted-foreground">
+            Mit der Buchung gelten unsere{" "}
+            <Link to="/kursbedingungen" className="text-primary underline font-semibold">
+              Kursteilnahmebedingungen
+            </Link>
+            . Die Buchung ist verbindlich; ein 14-tägiges{" "}
+            <Link to="/widerruf" className="text-primary underline font-semibold">
+              Widerrufsrecht
+            </Link>{" "}
+            besteht.
+          </p>
         </form>
       )}
     </Frame>

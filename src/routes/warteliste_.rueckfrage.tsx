@@ -120,6 +120,8 @@ function FollowupPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["waitlist-followup", token],
     enabled: !!token,
+    // Ungültige oder alte Links nicht mehrfach mit wachsender Pause wiederholen
+    retry: 1,
     queryFn: () => getWaitlistFollowup({ data: { token } }),
   });
 

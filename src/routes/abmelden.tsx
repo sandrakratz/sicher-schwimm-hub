@@ -76,7 +76,7 @@ function Page() {
   return (
     <PublicLayout>
       <div className="container mx-auto max-w-xl px-4 py-10">
-        <h1 className="text-3xl font-bold text-primary-deep mb-2">Kind abmelden</h1>
+        <h1 className="font-display text-3xl font-bold text-primary-deep mb-2">Kind abmelden</h1>
         {!info && <p className="text-muted-foreground">Wird geladen …</p>}
         {info && !info.found && (
           <Card>
