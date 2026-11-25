@@ -114,7 +114,7 @@ describe("„Passt das?“ (fitProblems)", () => {
     expect(fitProblems(e, data([e]))).toBeNull();
   });
 
-  test("Eintrag ohne Kurswunsch wird NICHT gegen alle Kurse geprüft (Fall Ben Liam)", () => {
+  test("Eintrag ohne Kurswunsch wird NICHT gegen alle Kurse geprüft (z. B. altes Anfrageformular)", () => {
     const baby = entry({ program_id: null, notes: "Schwimmlevel: Keine Wassererfahrung" });
     expect(fitProblems(baby, data([baby]))).toBeNull();
   });
@@ -175,15 +175,15 @@ describe("Eingang: Aufgaben aus der Anfrageliste (buildTodo)", () => {
   });
 
   test("Zuständigkeitsfilter: ausdrückliche Zuweisung vor Standard-Zuständigkeit", () => {
-    const mine = entry({ id: "mine", assigned_to: "Sandra", notes: "" });
+    const mine = entry({ id: "mine", assigned_to: "Person A", notes: "" });
     const rule = entry({ id: "rule", notes: "" });
     const d = data([mine, rule]);
-    expect(buildTodo(d, "Sandra", { waitlist: "Michael" }).fitChecks.map((x) => x.e.id)).toEqual([
-      "mine",
-    ]);
-    expect(buildTodo(d, "Michael", { waitlist: "Michael" }).fitChecks.map((x) => x.e.id)).toEqual([
-      "rule",
-    ]);
+    expect(buildTodo(d, "Person A", { waitlist: "Person B" }).fitChecks.map((x) => x.e.id)).toEqual(
+      ["mine"],
+    );
+    expect(buildTodo(d, "Person B", { waitlist: "Person B" }).fitChecks.map((x) => x.e.id)).toEqual(
+      ["rule"],
+    );
   });
 });
 

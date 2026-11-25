@@ -43,6 +43,7 @@ import { template as familienschwimmen } from "./familienschwimmen";
 import { template as newsNotice } from "./news-notice";
 import { template as memberMessageNotice } from "./member-message-notice";
 import { template as absenceInvite } from "./absence-invite";
+import { template as birthdayGreeting } from "./birthday-greeting";
 
 export interface TemplateEntry {
   component: ComponentType<any>;
@@ -97,4 +98,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   "news-notice": newsNotice,
   "member-message-notice": memberMessageNotice,
   "absence-invite": absenceInvite,
+  "birthday-greeting": birthdayGreeting,
 };

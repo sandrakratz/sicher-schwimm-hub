@@ -11,6 +11,7 @@ import { resolveBlockSuggestion } from "@/lib/waitlist.functions";
 import { formatDateBerlin } from "@/lib/format";
 import { FamilyWaitlist } from "@/components/admin/familie/FamilyWaitlist";
 import { FamilyBookings } from "@/components/admin/familie/FamilyBookings";
+import { SubjectAccessButton } from "@/components/admin/familie/SubjectAccessButton";
 
 export const Route = createFileRoute("/_authenticated/admin/familie")({
   validateSearch: (search: Record<string, unknown>): { email?: string; name?: string } => ({
@@ -143,6 +144,7 @@ function FamilyPage() {
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/sperrliste">Sperrliste</Link>
           </Button>
+          {data.email && <SubjectAccessButton email={data.email} />}
           {data.blockSuggestion && (
             <Button
               size="sm"
