@@ -300,7 +300,7 @@ function Page() {
 
       <Section
         title="Mitglieder zum Stichtag"
-        text="Alle Mitglieder einschließlich Partner:in und Kinder aus dem Antrag – z. B. für die Mitgliederversammlung oder den Abgleich mit WISO MeinVerein."
+        text="Alle Mitglieder einschließlich Partner:in und Kinder aus dem Antrag – z. B. für die Mitgliederversammlung oder den Abgleich mit WISO MeinVerein. Im ersten Blatt „Abfrage“ lassen sich Geschlecht, Alter von–bis, Mitgliedsart und Rolle auswählen – Excel zählt sofort, z. B. für Meldungen an Verbände."
         controls={
           <Field label="Stichtag">
             <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
