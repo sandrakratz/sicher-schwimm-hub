@@ -139,6 +139,12 @@ function Page() {
         <li>
           <strong>One.com A/S</strong> (Dänemark) – Domain und E-Mail-Postfächer des Vereins.
         </li>
+        <li>
+          <strong>WISO MeinVerein</strong> (Buhl Data Service GmbH, Deutschland) –
+          Mitgliederverwaltung, Beitragseinzug und Buchhaltung des Vereins. Dort werden die Angaben
+          aus dem Mitgliedsantrag (u. a. Name, Anschrift, Geburtsdatum, Kontaktdaten,
+          Bankverbindung) sowie die Buchungen geführt.
+        </li>
       </ul>
       <p>
         Supabase, Cloudflare und Resend haben ihren Sitz in den USA. Eine Übermittlung dorthin
@@ -146,6 +152,15 @@ function Page() {
         (Art. 45 DSGVO), soweit der Anbieter dort zertifiziert ist, und im Übrigen auf
         EU-Standardvertragsklauseln (Art. 46 DSGVO). Eine Kopie der Garantien erhalten Sie auf
         Anfrage.
+      </p>
+      <p>
+        <strong>Bestandsmeldung an den Sportverband:</strong> Als Mitglied des Schwimmverbands NRW
+        und damit des Landessportbunds NRW melden wir einmal jährlich die Zahl unserer Mitglieder
+        (einschließlich der Familienmitglieder), aufgeteilt nach Altersgruppen und Geschlecht. Dafür
+        fragen wir im Mitgliedsantrag das Geschlecht ab (weiblich, männlich, divers). Übermittelt
+        werden dabei nur Zahlen, keine Namen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO
+        (berechtigtes Interesse an der Verbandsmitgliedschaft, über die u. a. der
+        Sportversicherungsschutz besteht).
       </p>
       <p>
         Darüber hinaus geben wir Daten nur weiter, soweit dies zur Vertragserfüllung (z. B.

@@ -47,6 +47,7 @@ import { todayBerlinIso } from "@/lib/format";
 import { maxMembershipStart } from "@/lib/member-claim";
 import { submitMembershipSignup } from "@/lib/membership-signup.functions";
 import { useContactDefaults } from "@/hooks/use-contact-defaults";
+import { GenderField } from "@/components/public/GenderField";
 
 export const Route = createFileRoute("/mitgliedschaft")({
   head: () => ({
@@ -174,7 +175,7 @@ function Page() {
       setDone(true);
       return;
     }
-    const v = validateMembership(fd, tier, family.children);
+    const v = validateMembership(fd, tier, family.children, family.partner);
     if (!v.ok) {
       ft.invalid(v.fields, v.code);
       toast.error(v.message);
@@ -347,6 +348,7 @@ function Page() {
                       defaultValue={defaults.dateOfBirth}
                       onChange={(e) => setDob(e.target.value)}
                     />
+                    <GenderField id="gender" name="gender" required />
                     <div>
                       <Label htmlFor="start_date">Mitglied ab *</Label>
                       <Input

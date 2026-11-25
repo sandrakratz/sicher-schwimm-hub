@@ -2,6 +2,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   activeOn,
+  ageGroupLabels,
+  census,
   ageOn,
   badgeStats,
   demandStats,
@@ -164,5 +166,37 @@ describe("Auslastung und Nachfrage", () => {
       absagenAngebote: 1,
       wartendJetzt: 2,
     });
+  });
+});
+
+describe("Bestandsmeldung", () => {
+  test("Altersgruppen-Bezeichnungen aus Obergrenzen", () => {
+    expect(ageGroupLabels([6, 14, 18])).toEqual(["bis 6", "7–14", "15–18", "19 und älter"]);
+  });
+
+  test("zählt alle Personen nach Altersgruppe und Geschlecht, fehlende Angaben getrennt", () => {
+    const fam: MembershipRow = {
+      ...family,
+      gender: "w",
+      family_members: {
+        partner: { name: "Tom Muster", date_of_birth: "1984-01-02", gender: "m" },
+        children: [
+          { name: "Lena", date_of_birth: "2019-12-01", gender: "w" },
+          { name: "Mo", date_of_birth: "2012-05-05", gender: null },
+          { name: "Ohne", date_of_birth: null, gender: "d" },
+        ],
+      },
+    };
+    const c = census(personsOf(fam), "2027-01-01", [6, 14, 18]);
+    // Lena 7 → 7–14, Mo 14 → 7–14 (ohne Geschlecht), Anna 41 und Tom 42 → 19+
+    expect(c.rows.map((r) => [r.gruppe, r.w, r.m, r.d, r.ohne, r.gesamt])).toEqual([
+      ["bis 6", 0, 0, 0, 0, 0],
+      ["7–14", 1, 0, 0, 1, 2],
+      ["15–18", 0, 0, 0, 0, 0],
+      ["19 und älter", 1, 1, 0, 0, 2],
+    ]);
+    expect(c.total.gesamt).toBe(4);
+    expect(c.ohneGeschlecht.map((p) => p.vorname)).toEqual(["Mo"]);
+    expect(c.ohneGeburtsdatum.map((p) => p.vorname)).toEqual(["Ohne"]);
   });
 });

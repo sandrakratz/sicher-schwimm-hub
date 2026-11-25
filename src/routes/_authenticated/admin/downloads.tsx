@@ -19,12 +19,14 @@ import {
 } from "@/lib/course-sessions.functions";
 import { exportExamProtocol } from "@/lib/trainer-courses.functions";
 import { YearBundle } from "@/components/admin/downloads/YearBundle";
+import { DEFAULT_AGE_BOUNDS } from "@/lib/reports";
 import { exportExternalExamProtocol } from "@/lib/external-exams.functions";
 import { exportFamilySwimAttendance } from "@/lib/familienschwimmen.functions";
 import {
   exportBadgeStats,
   exportDemand,
   exportMemberRoster,
+  exportMembershipCensus,
   exportQualifications,
   exportSubjectAccess,
   listExternalExamDays,
@@ -141,6 +143,13 @@ function Page() {
   const [day, setDay] = useState(todayBerlinIso());
   const [examDay, setExamDay] = useState("");
   const [email, setEmail] = useState("");
+  // Bestandserhebung: üblicher Stichtag ist der 1. Januar
+  const [censusDay, setCensusDay] = useState(`${thisYear}-01-01`);
+  const [bounds, setBounds] = useState(DEFAULT_AGE_BOUNDS.join(", "));
+  const boundList = bounds
+    .split(/[,;\s]+/)
+    .map((s) => Number(s))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 120);
 
   const courses = useQuery({
     queryKey: ["downloads-courses"],
@@ -303,6 +312,33 @@ function Page() {
           kind="xlsx"
           disabled={!/^\d{4}-\d{2}-\d{2}$/.test(day)}
           run={() => exportMemberRoster({ data: { day } })}
+        />
+      </Section>
+
+      <Section
+        title="Bestandsmeldung (Landessportbund)"
+        text="Anzahl aller Mitglieder einschließlich Familienmitglieder nach Altersgruppe und Geschlecht, ohne Namen. Ein zweites Blatt listet, bei wem Geschlecht oder Geburtsdatum noch fehlen. Die Altersgruppen sind einstellbar (Obergrenzen „bis einschließlich“), falls der Verband sie ändert."
+        controls={
+          <>
+            <Field label="Stichtag">
+              <Input type="date" value={censusDay} onChange={(e) => setCensusDay(e.target.value)} />
+            </Field>
+            <Field label="Altersgruppen bis (Jahre)">
+              <Input
+                className="w-56"
+                value={bounds}
+                onChange={(e) => setBounds(e.target.value)}
+                placeholder="6, 14, 18, 26, 40, 60"
+              />
+            </Field>
+          </>
+        }
+      >
+        <DownloadButton
+          label="Bestandsmeldung"
+          kind="xlsx"
+          disabled={!/^\d{4}-\d{2}-\d{2}$/.test(censusDay) || boundList.length === 0}
+          run={() => exportMembershipCensus({ data: { day: censusDay, bounds: boundList } })}
         />
       </Section>
 
