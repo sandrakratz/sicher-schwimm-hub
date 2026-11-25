@@ -7,18 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { WaitlistToday } from "@/components/admin/WaitlistToday";
+import { effectiveAssignee, useAssignmentContext } from "@/components/admin/AssignControl";
 import { WaitlistReport } from "@/components/admin/WaitlistReport";
 import { categorizeReason } from "@/lib/decline-reasons";
 import { relatedProgramIds } from "@/lib/waitlist-programs";
 import { listWaitlist } from "@/lib/waitlist.functions";
 import {
   WAITING_KIND_LABEL,
-  buildTodo,
   inView,
   waitingKindOf,
-  type AdminView,
-  type TodayOnly,
+  type TodayView,
   type WaitingKind,
   type WaitlistEntry,
 } from "@/components/admin/warteliste/logic";
@@ -34,8 +32,8 @@ import { EntryRow } from "@/components/admin/warteliste/EntryRow";
 import { OriginalRequestDialog } from "@/components/admin/warteliste/OriginalRequestDialog";
 import { DeclineOfferDialog } from "@/components/admin/warteliste/DeclineOfferDialog";
 
-const TABS: Array<[AdminView, string]> = [
-  ["today", "Übersicht"],
+// Ohne „Übersicht“: was zu tun ist, steht im Eingang der Verwaltung.
+const TABS: Array<[TodayView, string]> = [
   ["waiting", "Wartend"],
   ["offered", "Angebote"],
   ["followup", "Rückfragen"],
@@ -50,10 +48,23 @@ export function WaitlistAdmin({
   initialMine,
   initialProgramIds,
   initialSearch,
-}: { initialProgramIds?: string[]; initialSearch?: string; initialMine?: boolean } = {}) {
-  const [view, setView] = useState<AdminView>(initialProgramIds?.length ? "waiting" : "today");
-  const [todayOnly, setTodayOnly] = useState<TodayOnly | null>(null);
-  const [waitingKind, setWaitingKind] = useState<WaitingKind | null>(null);
+  initialView,
+  initialWaitingKind,
+}: {
+  initialProgramIds?: string[];
+  initialSearch?: string;
+  initialMine?: boolean;
+  initialView?: TodayView;
+  initialWaitingKind?: WaitingKind;
+} = {}) {
+  const [view, setView] = useState<TodayView>(initialView ?? "waiting");
+  const [waitingKind, setWaitingKind] = useState<WaitingKind | null>(initialWaitingKind ?? null);
+  // „Meine Anfragen öffnen“ aus dem Eingang: nur Einträge, für die ich zuständig bin
+  const [mineOnly, setMineOnly] = useState(!!initialMine);
+  const ctx = useAssignmentContext();
+  const me = ctx.data?.me ?? "";
+  const isMine = (e: WaitlistEntry) =>
+    !mineOnly || (!!me && effectiveAssignee(e.assigned_to, "waitlist", ctx.data?.rules) === me);
   const [guideOpen, setGuideOpen] = useState(false);
   const [search, setSearch] = useState(initialSearch ?? "");
   const [programFilter, setProgramFilter] = useState<string[] | null>(
@@ -97,7 +108,7 @@ export function WaitlistAdmin({
   const cancellations = data?.cancellations ?? [];
   const courseName = (id: unknown) => courses.find((c) => c.id === id)?.name ?? "Kurs";
 
-  const countOf = (v: AdminView) => allEntries.filter((e) => inView(e, v)).length;
+  const countOf = (v: TodayView) => allEntries.filter((e) => inView(e, v)).length;
   const tabCounts = {
     waiting: countOf("waiting"),
     offered: countOf("offered"),
@@ -107,7 +118,7 @@ export function WaitlistAdmin({
   };
   const q = search.trim().toLowerCase();
   const shown = q ? "search" : view;
-  const isList = shown !== "today" && shown !== "search" && shown !== "report";
+  const isList = shown !== "search" && shown !== "report";
   const matchesSearch = (...vals: Array<unknown>) =>
     vals.some((v) =>
       String(v ?? "")
@@ -137,11 +148,12 @@ export function WaitlistAdmin({
     ? allEntries.filter((e) =>
         matchesSearch(e.child_name, e.parent_name, e.parent_email, e.parent_phone),
       )
-    : view === "today" || view === "report"
+    : view === "report"
       ? []
       : allEntries.filter(
           (e) =>
             inView(e, view) &&
+            isMine(e) &&
             (!programFilter || programFilter.includes(e.program_id ?? "none")) &&
             (view !== "waiting" || !waitingKind || waitingKindOf(e, data) === waitingKind),
         );
@@ -200,6 +212,9 @@ export function WaitlistAdmin({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setGuideOpen(true)}>
+            Leitfaden
+          </Button>
           <AllocateButton onClick={() => m.allocate.mutate()} pending={m.allocate.isPending} />
         </div>
       </div>
@@ -229,14 +244,11 @@ export function WaitlistAdmin({
             onClick={() => {
               setSearch("");
               setView(key);
-              setTodayOnly(null);
               setWaitingKind(null);
             }}
           >
             {label}
-            {key === "report"
-              ? ""
-              : ` (${key === "today" ? buildTodo(data).count : tabCounts[key]})`}
+            {key === "report" ? "" : ` (${tabCounts[key]})`}
           </Button>
         ))}
       </div>
@@ -256,6 +268,11 @@ export function WaitlistAdmin({
           `Gefiltert auf ${programFilter.length === 1 ? "ein Angebot" : "mehrere Angebote (Mischkurs)"}.`,
           () => setProgramFilter(null),
         )}
+      {mineOnly &&
+        isList &&
+        filterNote(`Gefiltert auf: mir zugewiesen${me ? ` (${me})` : ""}.`, () =>
+          setMineOnly(false),
+        )}
       {waitingKind &&
         shown === "waiting" &&
         filterNote(`Gefiltert auf: ${WAITING_KIND_LABEL[waitingKind]}.`, () =>
@@ -270,29 +287,6 @@ export function WaitlistAdmin({
       )}
 
       {shown === "report" && <WaitlistReport data={data} />}
-
-      {shown === "today" && (
-        <WaitlistToday
-          data={data}
-          m={m}
-          courseName={courseName}
-          only={todayOnly}
-          onOnly={setTodayOnly}
-          counts={tabCounts}
-          onGuide={() => setGuideOpen(true)}
-          onWaitingKind={(k) => {
-            setWaitingKind(k);
-            setView("waiting");
-          }}
-          onGoto={(v) => {
-            setWaitingKind(null);
-            setView(v);
-          }}
-          onOpenDetail={setDetail}
-          onDeclineOffer={setDeclineFor}
-          initialMine={initialMine}
-        />
-      )}
 
       {shown === "followup" && (
         <p className="text-sm text-muted-foreground">
@@ -350,7 +344,7 @@ export function WaitlistAdmin({
         />
       )}
 
-      {grouped.size === 0 && !showCancellations && shown !== "today" && shown !== "report" && (
+      {grouped.size === 0 && !showCancellations && shown !== "report" && (
         <p className="text-muted-foreground">Keine Einträge in diesem Bereich.</p>
       )}
 

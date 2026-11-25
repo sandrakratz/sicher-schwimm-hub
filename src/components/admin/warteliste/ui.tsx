@@ -95,55 +95,6 @@ export function Item({ children }: { children: ReactNode }) {
   return <li className="flex flex-wrap items-center justify-between gap-2 py-2">{children}</li>;
 }
 
-export function TileRow({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <h3 className="mb-2 text-xs font-medium tracking-wide text-muted-foreground">{title}</h3>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{children}</div>
-    </section>
-  );
-}
-
-export type Tone = "normal" | "warn" | "urgent";
-
-/** Kachel der Übersicht: Zahl, Titel, ein erklärender Satz und die Aktion. */
-export function Tile({
-  n,
-  label,
-  hint,
-  action = "Öffnen",
-  onClick,
-  tone = "normal",
-}: {
-  n: number | null;
-  label: string;
-  hint: string;
-  action?: string;
-  onClick: () => void;
-  tone?: Tone;
-}) {
-  const border =
-    tone === "urgent"
-      ? "border-red-300 bg-red-50"
-      : tone === "warn"
-        ? "border-amber-300 bg-amber-50"
-        : "bg-card";
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-h-[112px] flex-col gap-0.5 rounded-lg border p-4 text-left transition hover:shadow-soft ${border} ${
-        n === 0 ? "opacity-60" : ""
-      }`}
-    >
-      {n != null && <span className="text-3xl font-semibold leading-tight">{n}</span>}
-      <span className="text-sm font-semibold text-primary-deep">{label}</span>
-      <span className="text-xs text-muted-foreground">{hint}</span>
-      <span className="mt-auto pt-2 text-xs text-primary">{action} →</span>
-    </button>
-  );
-}
-
 export function EmptyOnly() {
   return (
     <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">

@@ -10,8 +10,8 @@ export type AdminTask = {
   count: number;
   /** Zielseite im Adminbereich */
   to: string;
-  /** Optionaler Reiter der Zielseite (z. B. { tab: "archive" }) */
-  search?: { tab: "archive" };
+  /** Optionale Suchparameter der Zielseite (z. B. { ansicht: "offered" }) */
+  search?: Record<string, string>;
   tone: "urgent" | "attention" | "info";
   hint?: string;
 };
@@ -27,7 +27,6 @@ export const getAdminTasks = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const today = todayBerlinIso();
     const now = new Date();
-    const in48h = new Date(now.getTime() + 48 * 3600 * 1000).toISOString();
     const in14d = new Date(now.getTime() + 14 * 24 * 3600 * 1000).toISOString().slice(0, 10);
 
     // Termine der nächsten 14 Tage (nur nicht archivierte Kurse), dazu deren Zuordnungen – nicht die ganze Tabelle
@@ -53,7 +52,7 @@ export const getAdminTasks = createServerFn({ method: "POST" })
           .range(f, t),
     );
 
-    const [overdue, offers, memberships, messages, requests, memberChecks, adultNew, familyNew] =
+    const [overdue, memberships, messages, requests, memberChecks, adultNew, familyNew] =
       await Promise.all([
         supabaseAdmin
           .from("course_participants")
@@ -62,12 +61,6 @@ export const getAdminTasks = createServerFn({ method: "POST" })
           .eq("paid", false)
           .not("payment_due_date", "is", null)
           .lt("payment_due_date", today),
-        supabaseAdmin
-          .from("waitlist_entries")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "offered")
-          .not("offer_expires_at", "is", null)
-          .lt("offer_expires_at", in48h),
         supabaseAdmin
           .from("memberships")
           .select("id", { count: "exact", head: true })
@@ -94,40 +87,6 @@ export const getAdminTasks = createServerFn({ method: "POST" })
           .select("id", { count: "exact", head: true })
           .eq("status", "requested"),
       ]);
-
-    // „Anfrageliste: zu prüfen“ = offene Rückfragen („Warteliste behalten?“) + Familien, bei denen
-    // der Sperrvorschlag (ab 3 Absagen/Stornierungen gesamt) offen ist. Gleiche Regel wie in listWaitlist.
-    const { loadCancellations, buildDeclineStats } = await import("@/lib/decline-stats.server");
-    const [{ data: entryRows }, { data: activeBlocks }, cancellationRows] = await Promise.all([
-      supabaseAdmin
-        .from("waitlist_entries")
-        .select(
-          "parent_email,child_name,status,decline_count,block_review_dismissed_at,follow_up_on",
-        ),
-      supabaseAdmin
-        .from("booking_blocklist")
-        .select("email_norm,child_name_norm,child_dob")
-        .eq("active", true),
-      loadCancellations(),
-    ]);
-    const rows = entryRows ?? [];
-    const followups = rows.filter((r) => ["declined", "expired"].includes(r.status)).length;
-    const dueFollowUps = rows.filter(
-      (r) =>
-        !!r.follow_up_on && r.follow_up_on <= today && !["removed", "accepted"].includes(r.status),
-    ).length;
-    const statsFor = buildDeclineStats(rows, cancellationRows, activeBlocks ?? []);
-    const suggestedFamilies = new Set<string>();
-    for (const r of rows) {
-      if (Number(r.decline_count ?? 0) > 0 && statsFor(r.parent_email, r.child_name).suggest)
-        suggestedFamilies.add((r.parent_email ?? r.child_name ?? "").trim().toLowerCase());
-    }
-    for (const c of cancellationRows) {
-      if (statsFor(c.participant_email, c.participant_name).suggest)
-        suggestedFamilies.add(
-          (c.participant_email ?? c.participant_name ?? "").trim().toLowerCase(),
-        );
-    }
 
     const teamBySession = new Map<string, Set<string>>();
     assignments.forEach((a) => {
@@ -160,22 +119,6 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         to: "/admin/zahlungen",
         tone: "urgent",
         hint: "Zahlungsfrist ist abgelaufen",
-      },
-      {
-        key: "offers",
-        label: "Wartelisten-Angebote laufen bald ab",
-        count: offers.count ?? 0,
-        to: "/admin/warteliste",
-        tone: "urgent",
-        hint: "in den nächsten 48 Stunden",
-      },
-      {
-        key: "waitlist-review",
-        label: "Anfrageliste: zu prüfen",
-        count: followups + suggestedFamilies.size + dueFollowUps,
-        to: "/admin/warteliste",
-        tone: "attention",
-        hint: `${followups} offene Rückfrage(n), ${suggestedFamilies.size} Sperrvorschlag/-vorschläge, ${dueFollowUps} Wiedervorlage(n)`,
       },
       {
         key: "memberships",

@@ -159,9 +159,7 @@ function Page() {
                     nichts tun.
                   </p>
                   <Button asChild size="sm" variant="outline" className="mt-3">
-                    <Link to="/admin/warteliste">
-                      Zur Anfrageliste (die „Übersicht“ dort zeigt, was zu prüfen ist)
-                    </Link>
+                    <Link to="/admin/warteliste">Zur Anfrageliste</Link>
                   </Button>
                 </>
               ) : (
