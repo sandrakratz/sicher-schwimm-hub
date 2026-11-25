@@ -31,7 +31,8 @@ export const Route = createFileRoute("/_authenticated/admin/warteliste")({
       : {}),
     ...(search["tab"] === "archive" ? { tab: "archive" as const } : {}),
     ...(typeof search["programm"] === "string" &&
-    /^[0-9a-f-]{36}(,[0-9a-f-]{36})*$/i.test(search["programm"])
+    // „none“ = Einträge ohne Kursangebot (Link aus dem Eingang)
+    /^(none|[0-9a-f-]{36}(,[0-9a-f-]{36})*)$/i.test(search["programm"])
       ? { programm: search["programm"] }
       : {}),
   }),

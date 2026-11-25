@@ -292,9 +292,9 @@ export async function allocateWaitlist(courseId?: string | null): Promise<Alloca
         ) &&
         withinMaxAge(c.child_dob ?? null, course.starts_on ?? null, program?.max_age_years ?? null),
     );
-    // „Passt das?“: Schwimmniveau und Wunschtag gegen Mindest-Niveau und Kurstag des Programms.
+    // „Passt das?“: Schwimmniveau gegen das Mindest-Niveau des Programms.
     // Nicht passende oder unklare Fälle werden nie automatisch angeboten; der Vorstand entscheidet
-    // in „Heute“ unter „Passt das?“.
+    // im Eingang unter „Passt das?“.
     candidates = candidates.filter((c: any) => checkFit(c.notes, program).ok);
     // Wer genau diesen Kurs bereits abgelehnt hat bzw. verfallen ließ, bekommt ihn nicht erneut automatisch
     candidates = candidates.filter((c: any) => c.offer_course_id !== course.id);

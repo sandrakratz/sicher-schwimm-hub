@@ -70,6 +70,7 @@ const TASK_ICON: Record<string, typeof Euro> = {
   "wl-fit": Hourglass,
   "wl-free": Hourglass,
   "wl-unmet": Hourglass,
+  "wl-noprogram": Hourglass,
   "wl-new": Hourglass,
   "wl-followup": Hourglass,
   "wl-min": Users,
@@ -99,7 +100,7 @@ const TASK_TEXT: Record<string, { todo: string; action: string }> = {
     action: "Anfrageliste öffnen",
   },
   "wl-fit": {
-    todo: "Ein Platz ist frei, aber bei den Wartenden passt nichts automatisch (z. B. Niveau oder Wunschtag). Bitte von Hand entscheiden.",
+    todo: "Ein Platz ist frei, aber bei den Wartenden passt nichts automatisch (meist ist das Schwimmniveau unbekannt oder zu niedrig). Bitte von Hand entscheiden.",
     action: "Anfrageliste öffnen",
   },
   "wl-free": {
@@ -107,8 +108,12 @@ const TASK_TEXT: Record<string, { todo: string; action: string }> = {
     action: "Anfrageliste öffnen",
   },
   "wl-unmet": {
-    todo: "Wartende, bei denen Niveau oder Wunschtag zu keinem Kurs passt. Prüfen, ob ein anderes Angebot passt.",
+    todo: "Wartende, deren Schwimmniveau nicht zum gewünschten Angebot passt. Prüfen, ob ein anderes Angebot passt.",
     action: "Wartende ansehen",
+  },
+  "wl-noprogram": {
+    todo: "Diese Einträge sind keinem Kursangebot zugeordnet (z. B. alte Anfragen). Sie bekommen nie automatisch ein Angebot. In der Liste direkt am Eintrag unter „Kurswunsch fehlt“ das passende Kursangebot wählen – danach läuft die Vergabe wie gewohnt.",
+    action: "Einträge ohne Zuordnung öffnen",
   },
   "wl-new": {
     todo: "Was Eltern in den letzten 7 Tagen getan haben: Anmeldungen, Buchungen, Nachrichten, Anträge. Zum Überblick; Einträge ohne Zuständigkeit hier zuweisen.",
@@ -230,7 +235,16 @@ function waitlistTasks(
       to,
       search: { ansicht: "waiting", grund: "unmet" },
       tone: "attention",
-      hint: "Niveau oder Wunschtag passt nicht",
+      hint: "Schwimmniveau passt nicht",
+    },
+    {
+      key: "wl-noprogram",
+      label: "Wartende ohne Kursangebot",
+      count: t.waitNoProgram.length,
+      to,
+      search: { ansicht: "waiting", programm: "none" },
+      tone: "attention",
+      hint: "bitte von Hand einem Kurs zuordnen",
     },
     {
       key: "wl-new",

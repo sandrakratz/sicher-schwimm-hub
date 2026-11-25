@@ -157,12 +157,6 @@ export function programFields(editing: Editing, setEditing: Dispatch<SetStateAct
         <span className="text-[11px] text-muted-foreground">{note}</span>
       </label>
     ),
-    fit: () => (
-      <ProgramFitFields
-        minSwimLevel={editing.min_swim_level}
-        weekday={editing.weekday}
-        onChange={(v) => set(v)}
-      />
-    ),
+    fit: () => <ProgramFitFields minSwimLevel={editing.min_swim_level} onChange={(v) => set(v)} />,
   };
 }

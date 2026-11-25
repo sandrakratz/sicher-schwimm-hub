@@ -140,11 +140,13 @@ export function waitingKindOf(e: WaitlistEntry, data: WaitlistData | undefined):
 
 /**
  * „Passt das?“: Gibt es für einen wartenden Eintrag freie Plätze, aber keiner davon besteht die
- * Prüfung (Niveau/Wunschtag)? Dann wird nie automatisch angeboten; die Gründe stehen hier.
+ * Prüfung (Schwimmniveau)? Dann wird nie automatisch angeboten; die Gründe stehen hier.
  * `null` = nichts zu prüfen (kein freier Platz oder mindestens ein Kurs passt).
  */
 export function fitProblems(e: WaitlistEntry, data: WaitlistData | undefined): string[] | null {
-  if (e.status !== "waiting" || !data) return null;
+  // Ohne Kursangebot gibt es keine Vorgabe, gegen die man prüfen könnte – solche Einträge
+  // stehen gesondert („Wartende ohne Kursangebot“) und werden von Hand zugeordnet.
+  if (e.status !== "waiting" || !data || !e.program_id) return null;
   const today = todayBerlinIso();
   const af = e.available_from;
   const candidates = data.courses.filter(
@@ -220,6 +222,7 @@ export function buildTodo(
       const families = waiting
         .filter(
           (e) =>
+            !!e.program_id &&
             courseFitsEntry(e, c, programs) &&
             (!e.available_from || !c.starts_on || c.starts_on >= e.available_from) &&
             checkFit(e.notes, programOf(programs, c.program_id)).ok,
@@ -248,6 +251,7 @@ export function buildTodo(
   const newDirectToday = newDirect.filter((b) => isToday(b.created_at));
   const newUnassigned = newEntries.filter((e) => !(e.assigned_to || rules?.waitlist));
 
+  const waitNoProgram = waiting.filter((e) => !e.program_id);
   const waitByKind: Record<WaitingKind, WaitlistEntry[]> = { now: [], unmet: [], later: [] };
   for (const e of waiting) waitByKind[waitingKindOf(e, data)].push(e);
 
@@ -290,6 +294,7 @@ export function buildTodo(
     waitNow: waitByKind.now,
     waitUnmet: waitByKind.unmet,
     waitLater: waitByKind.later,
+    waitNoProgram,
     dueFollowUps,
     fitChecks,
     count:

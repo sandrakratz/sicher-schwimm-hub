@@ -19,8 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
-import { matchProgram, meetsMinAge, minAgeReachedOn } from "@/lib/waitlist-age";
+import { addDaysIso, formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { matchProgram, meetsMinAge, minAgeReachedOn, withinMaxAge } from "@/lib/waitlist-age";
 import {
   PAYMENT_LABEL,
   STATUS_LABEL,
@@ -126,7 +126,12 @@ export function EntryRow({
   const programs = data?.programs ?? [];
   const minAge = programOf(programs, e.program_id)?.min_age_years ?? null;
   const wish = e.desired_course;
-  const suggestion = !e.program_id ? matchProgram(wish ?? e.notes, programs) : null;
+  // Vorschlag nur aus Angeboten, die vom Alter her passen (nicht zu alt, spätestens in einem Jahr alt genug)
+  const today = todayBerlinIso();
+  const ageFits = (p: (typeof programs)[number]) =>
+    withinMaxAge(e.child_dob, today, p.max_age_years ?? null) &&
+    meetsMinAge(e.child_dob, addDaysIso(today, 365), p.min_age_years ?? null);
+  const suggestion = !e.program_id ? matchProgram(wish ?? e.notes, programs.filter(ageFits)) : null;
   const readyOn = minAgeReachedOn(e.child_dob, minAge);
   // Direktbuchung: der Vorstand darf auch volle Kurse überbuchen (Platzangebote nur für freie Plätze)
   const bookCourses = (data?.courses ?? [])
@@ -253,6 +258,40 @@ export function EntryRow({
           {issues && (
             <div className="mt-1 rounded border border-red-300 bg-red-50 p-1.5 text-xs text-red-900">
               Passt das? {issues.join("; ")}
+            </div>
+          )}
+          {/* Ohne Kurswunsch gibt es nie ein automatisches Angebot – darum hier direkt sichtbar
+              (dasselbe Feld steht auch in der aufgeklappten Zeile). */}
+          {!e.program_id && ["waiting", "offered"].includes(e.status) && (
+            <div className="mt-1 space-y-1 rounded border border-amber-300 bg-amber-50 p-1.5 text-xs text-amber-900">
+              <label className="block font-semibold" htmlFor={`wish-${e.id}`}>
+                Kurswunsch fehlt
+              </label>
+              <NativeSelect
+                id={`wish-${e.id}`}
+                size="xs"
+                className="w-full bg-white"
+                value=""
+                onChange={(ev) =>
+                  ev.target.value && update({ entryId: e.id, programId: ev.target.value })
+                }
+              >
+                <option value="">Kursangebot wählen …</option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </NativeSelect>
+              {suggestion && (
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => update({ entryId: e.id, programId: suggestion.id })}
+                >
+                  Vorschlag übernehmen: {suggestion.name}
+                </button>
+              )}
             </div>
           )}
           {e.payment_status !== "none" && (
