@@ -17,7 +17,7 @@ export const BILLING = {
 };
 
 export const ORG = {
-  name: "Sicher-Schwimmen e. V.",
+  name: "Sicher Schwimmen e.V.",
   street: "Bergstr. 67a",
   zipCity: "53773 Hennef",
   register: "Vereinsregister: Amtsgericht Siegburg, VR 4149",
