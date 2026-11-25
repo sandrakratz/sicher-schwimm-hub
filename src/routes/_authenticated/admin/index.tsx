@@ -4,12 +4,14 @@ import { listWaitlist } from "@/lib/waitlist.functions";
 import { buildTodo } from "@/components/admin/warteliste/logic";
 import { WAITLIST_QUERY_KEY } from "@/components/admin/warteliste/useWaitlistMutations";
 import { useAssignmentContext } from "@/components/admin/AssignControl";
+import { BirthdaysPanel, useBirthdays } from "@/components/admin/eingang/BirthdaysPanel";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { MemberCheckPanel } from "@/components/admin/MemberCheckPanel";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  Cake,
   CalendarCheck,
   CheckCircle2,
   Euro,
@@ -48,7 +50,8 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 /** Ein Eintrag im Eingang: eine offene Aufgabe aus dem Dashboard oder etwas, das mir zugewiesen ist. */
 type InboxEntry = {
   id: string;
-  group: "mine" | "task";
+  /** info = Hinweis ohne Pflicht (zählt nicht zu „offen“) */
+  group: "mine" | "task" | "info";
   label: string;
   count: number;
   hint?: string;
@@ -299,6 +302,7 @@ function useInbox() {
   // Anfrageliste: gleiche Abfrage wie dort, damit Zahlen und Listen übereinstimmen
   const wl = useQuery({ queryKey: WAITLIST_QUERY_KEY, queryFn: () => listWaitlist() });
   const ctx = useAssignmentContext();
+  const bdays = useBirthdays();
 
   const entries = useMemo<InboxEntry[] | null>(() => {
     if (tasks === null || wl.isLoading) return null;
@@ -358,8 +362,28 @@ function useInbox() {
         todo: TASK_TEXT[t.key]?.todo ?? "",
         action: TASK_TEXT[t.key]?.action ?? "Öffnen",
       }));
-    return [...own, ...open];
-  }, [tasks, mine, wl.data, wl.error, wl.isLoading, ctx.data?.rules]);
+    // Geburtstage: Hinweis, kein Pflichtpunkt; dringlicher, sobald heute (oder kürzlich) jemand Geburtstag hat
+    const bd = bdays.data ?? [];
+    const toGreet = bd.filter((b) => b.inTagen <= 0 && !b.sentAt && b.hasEmail).length;
+    const info: InboxEntry[] =
+      bd.length > 0
+        ? [
+            {
+              id: "birthdays",
+              group: "info",
+              label: "Geburtstage",
+              count: bd.length,
+              hint: toGreet > 0 ? `${toGreet} jetzt gratulieren` : "in den nächsten 30 Tagen",
+              to: "",
+              tone: toGreet > 0 ? "attention" : "info",
+              icon: Cake,
+              todo: "Mitglieder einschließlich Partner:in und Kinder mit Geburtstag in den nächsten 30 Tagen. Ab dem Geburtstag (bis 3 Tage danach) kann per Knopf gratuliert werden; bei Kindern geht die Mail an die Eltern. Es wird nichts automatisch versendet.",
+              action: "",
+            },
+          ]
+        : [];
+    return [...own, ...open, ...info];
+  }, [tasks, mine, bdays.data, wl.data, wl.error, wl.isLoading, ctx.data?.rules]);
 
   return { entries, error, reload: load };
 }
@@ -414,7 +438,8 @@ function EntryDetail({ entry, onChanged }: { entry: InboxEntry; onChanged: () =>
         </span>
         <div>
           <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            {TONE_LABEL[entry.tone]} · {entry.count} offen
+            {TONE_LABEL[entry.tone]} · {entry.count}
+            {entry.group === "info" ? "" : " offen"}
           </div>
           <h2 className="font-display text-2xl font-bold text-primary-deep">{entry.label}</h2>
           {entry.hint && <p className="mt-1 text-sm text-muted-foreground">{entry.hint}</p>}
@@ -425,12 +450,14 @@ function EntryDetail({ entry, onChanged }: { entry: InboxEntry; onChanged: () =>
       {/* Die Vorgänge selbst, mit denselben Knöpfen wie auf ihrer eigenen Seite. */}
       {panel}
 
-      <Button asChild size={panel ? "default" : "lg"} variant={panel ? "outline" : "default"}>
-        <Link to={entry.to as never} search={entry.search as never}>
-          {panel ? "Ganze Liste öffnen" : entry.action}
-          <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-      </Button>
+      {entry.to && (
+        <Button asChild size={panel ? "default" : "lg"} variant={panel ? "outline" : "default"}>
+          <Link to={entry.to as never} search={entry.search as never}>
+            {panel ? "Ganze Liste öffnen" : entry.action}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }
@@ -489,6 +516,8 @@ function panelFor(id: string, onChanged: () => void) {
       return (
         <WaitlistPanel sections={[{ only: "min", label: "Mindestzahl" }]} onChanged={onChanged} />
       );
+    case "birthdays":
+      return <BirthdaysPanel onChanged={onChanged} />;
     case "family-swim":
       return <FamilySwimPanel onChanged={onChanged} />;
     case "memberships":

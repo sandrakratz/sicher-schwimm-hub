@@ -65,6 +65,7 @@ export type AppNavItem = {
     | "/admin/versandstatus"
     | "/admin/widerrufe"
     | "/admin/statistik"
+    | "/admin/downloads"
     | "/admin/audit";
   icon: typeof Shield;
   label: string;
@@ -195,6 +196,7 @@ export const adminSections: {
       { to: "/admin/dokumente", label: "Dokumente" },
       { to: "/admin/benutzer", label: "Benutzer" },
       { to: "/admin/zustaendigkeiten", label: "Zuständigkeiten" },
+      { to: "/admin/downloads", label: "Downloads" },
       { to: "/admin/statistik", label: "Statistik" },
       { to: "/admin/audit", label: "Audit-Log" },
     ],
