@@ -428,7 +428,7 @@ export function ChildBookingDialog({
           )}
 
           <CheckRow id="isMember" checked={form.isMember} onChange={(v) => set("isMember", v)}>
-            Wir sind Mitglied im Sicher-Schwimmen e.V. (Mitgliedspreis
+            Wir sind Mitglied im Sicher Schwimmen e.V. (Mitgliedspreis
             {program.price_member != null ? ` ${formatPrice(program.price_member)}` : ""})
           </CheckRow>
           <p className="text-xs text-muted-foreground">{MEMBER_DISCOUNT_NOTE}</p>

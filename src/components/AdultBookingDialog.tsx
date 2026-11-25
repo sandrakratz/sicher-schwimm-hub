@@ -287,7 +287,7 @@ export function AdultBookingDialog({
                 onCheckedChange={(v) => set("isMember", Boolean(v))}
               />
               <Label htmlFor="ab-member" className="text-sm font-normal leading-snug">
-                Ich bin Mitglied im Sicher-Schwimmen e.V.
+                Ich bin Mitglied im Sicher Schwimmen e.V.
                 {memberPrice != null ? ` (Mitgliedspreis ${formatPrice(memberPrice)})` : ""}
               </Label>
             </div>

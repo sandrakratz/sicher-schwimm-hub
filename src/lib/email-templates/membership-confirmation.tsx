@@ -46,7 +46,7 @@ const Email = ({
   <Html lang="de">
     <Head />
     <Preview>
-      Aufnahmebestätigung: Ihre Mitgliedschaft bei Sicher-Schwimmen e. V. beginnt am{" "}
+      Aufnahmebestätigung: Ihre Mitgliedschaft bei Sicher Schwimmen e.V. beginnt am{" "}
       {start_date_label ?? ""}
     </Preview>
     <Body style={{ backgroundColor: "#ffffff", fontFamily: "Arial, sans-serif", color: "#0f172a" }}>
@@ -54,7 +54,7 @@ const Email = ({
         <Heading style={{ color: "#0c4a6e" }}>Aufnahmebestätigung</Heading>
         <Text style={p}>{first_name ? `Guten Tag ${first_name},` : "Guten Tag,"}</Text>
         <Text style={p}>
-          der Vorstand von Sicher-Schwimmen e. V. hat Ihren Antrag geprüft und nimmt
+          der Vorstand von Sicher Schwimmen e.V. hat Ihren Antrag geprüft und nimmt
           {member_name ? ` ${member_name}` : " Sie"} als Mitglied auf. Herzlich willkommen!
         </Text>
 
@@ -147,7 +147,7 @@ const Email = ({
           <br />
           Der Vorstand
           <br />
-          Sicher-Schwimmen e. V., Bergstr. 67a, 53773 Hennef
+          Sicher Schwimmen e.V., Bergstr. 67a, 53773 Hennef
           <br />
           Vereinsregister: Amtsgericht Siegburg, VR 4149
         </Text>
@@ -158,7 +158,7 @@ const Email = ({
 
 export const template = {
   component: Email,
-  subject: "Aufnahmebestätigung – Ihre Mitgliedschaft bei Sicher-Schwimmen e. V.",
+  subject: "Aufnahmebestätigung – Ihre Mitgliedschaft bei Sicher Schwimmen e.V.",
   displayName: "Aufnahmebestätigung Mitgliedschaft",
   previewData: {
     first_name: "Sandy",
