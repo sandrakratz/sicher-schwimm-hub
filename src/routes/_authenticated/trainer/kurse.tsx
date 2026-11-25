@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_authenticated/trainer/kurse")({
   component: Page,
   head: () => ({
     meta: [
-      { title: "Meine Kurse – Trainerbereich | Sicher Schwimmen e.V." },
+      { title: "Kurse & Anwesenheit – Trainerbereich | Sicher Schwimmen e.V." },
       {
         name: "description",
         content: "Teilnehmerinformationen zu den eigenen zugeteilten Kursen.",

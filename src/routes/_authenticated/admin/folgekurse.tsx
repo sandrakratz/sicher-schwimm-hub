@@ -273,6 +273,7 @@ function Page() {
 
   return (
     <div className="max-w-6xl space-y-4">
+      <h1 className="font-display text-3xl font-bold text-primary-deep">Folgekurse</h1>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-3xl text-sm text-muted-foreground">
           Kinder, die bei uns einen Kurs hatten oder gerade haben, aber noch keinen späteren Kurs

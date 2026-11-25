@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/trainer/verfuegbarkeit")({
   },
   head: () => ({
     meta: [
-      { title: "Meine Verfügbarkeit – Trainerbereich | Sicher Schwimmen e.V." },
+      { title: "Einsätze & Zeiten – Trainerbereich | Sicher Schwimmen e.V." },
       {
         name: "description",
         content: "Eigene Verfügbarkeiten für Kurstermine und Helfer-Einsätze eintragen.",

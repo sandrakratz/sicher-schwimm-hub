@@ -164,9 +164,11 @@ function Page() {
     id ? (day?.courses.find((c) => c.id === id)?.name ?? "Kurs") : null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4">
+    <div className="max-w-3xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">Abzeichen abnehmen</h1>
+        <h1 className="font-display text-2xl font-bold text-primary-deep sm:text-3xl">
+          Abzeichen abnehmen
+        </h1>
         <p className="text-sm text-muted-foreground">
           Für Kinder ohne Kursbuchung, z. B. aus anderen Schwimmschulen. Die Abnahme erscheint im
           Prüfungsprotokoll des Kurses dieses Tages oder in einem eigenen Protokoll für den

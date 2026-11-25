@@ -121,6 +121,7 @@ function Page() {
 
   return (
     <div className="space-y-5 max-w-6xl">
+      <h1 className="font-display text-3xl font-bold text-primary-deep">Mitgliederschwimmen</h1>
       <div className="flex flex-wrap gap-2">
         {tabs.map(([k, label]) => (
           <Button
