@@ -8,6 +8,8 @@ import { Search } from "lucide-react";
 import { formatDateBerlin, formatDateTimeBerlin, formatEuro, fullName } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/suche")({
+  validateSearch: (search: Record<string, unknown>): { q?: string } =>
+    typeof search["q"] === "string" && search["q"] ? { q: search["q"] } : {},
   beforeLoad: async () => {
     const { assertHasAnyRole } = await import("@/lib/role-guard");
     const { redirect } = await import("@tanstack/react-router");
@@ -50,7 +52,7 @@ const WL_STATUS: Record<string, string> = {
   accepted: "Angenommen",
   declined: "Abgelehnt",
   expired: "Abgelaufen",
-  removed: "Entfernt",
+  removed: "Abgemeldet",
 };
 const REQ_STATUS: Record<string, string> = {
   new: "Neu",
@@ -69,7 +71,12 @@ function clean(q: string) {
 }
 
 function Page() {
-  const [q, setQ] = useState("");
+  // Begriff aus dem Suchfeld der Seitenleiste übernehmen
+  const { q: fromSidebar } = Route.useSearch();
+  const [q, setQ] = useState(fromSidebar ?? "");
+  useEffect(() => {
+    if (fromSidebar) setQ(fromSidebar);
+  }, [fromSidebar]);
   const [res, setRes] = useState<Results | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,9 +226,9 @@ function Page() {
                     <Link
                       to="/admin/familie"
                       search={{ email: r.participant_email }}
-                      className="text-xs text-primary underline"
+                      className="rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
                     >
-                      Familie, Verlauf
+                      Akte öffnen
                     </Link>
                   )}
                   {r.status !== "cancelled" &&
@@ -313,9 +320,9 @@ function Page() {
                     <Link
                       to="/admin/familie"
                       search={{ email: w.parent_email }}
-                      className="text-xs text-primary underline"
+                      className="rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
                     >
-                      Familie, Verlauf
+                      Akte öffnen
                     </Link>
                   )}
                 </div>
@@ -349,9 +356,9 @@ function Page() {
                     <Link
                       to="/admin/familie"
                       search={{ email: r.parent_email }}
-                      className="text-xs text-primary underline"
+                      className="rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
                     >
-                      Familie, Verlauf
+                      Akte öffnen
                     </Link>
                   )}
                 </div>

@@ -13,8 +13,8 @@ import type { WaitlistEntry } from "./logic";
 
 /**
  * „Abmelden“ eines Wartelisten-Eintrags (Familie meldet sich selbst ab, z. B. bleibt bei einer
- * anderen Schwimmschule). Der Eintrag bleibt als „Entfernt“ erhalten, der Grund landet mit
- * Zeitstempel in der Notiz – über „Zurück auf wartend“ lässt er sich wieder aktivieren.
+ * anderen Schwimmschule). Der Eintrag bleibt als „Abgemeldet“ erhalten, der Grund landet mit
+ * Zeitstempel in der Notiz – über „Wieder auf die Warteliste“ lässt er sich wieder aktivieren.
  * Beim Wechsel des Eintrags mit neuem `key` rendern, dann starten die Felder leer.
  */
 export function UnregisterDialog({
@@ -38,9 +38,9 @@ export function UnregisterDialog({
         <DialogHeader>
           <DialogTitle>Abmelden – {entry?.child_name ?? ""}</DialogTitle>
           <DialogDescription>
-            Der Eintrag bleibt als „Entfernt“ erhalten, der Grund wird mit Datum in der Notiz
+            Der Eintrag bleibt als „Abgemeldet“ erhalten, der Grund wird mit Datum in der Notiz
             festgehalten. Es wird keine E-Mail verschickt. Meldet sich die Familie wieder, holt
-            „Zurück auf wartend“ den Eintrag zurück.
+            „Wieder auf die Warteliste“ den Eintrag zurück.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">

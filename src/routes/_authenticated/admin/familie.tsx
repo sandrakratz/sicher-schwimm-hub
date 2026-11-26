@@ -12,6 +12,9 @@ import { formatDateBerlin } from "@/lib/format";
 import { FamilyWaitlist } from "@/components/admin/familie/FamilyWaitlist";
 import { FamilyBookings } from "@/components/admin/familie/FamilyBookings";
 import { SubjectAccessButton } from "@/components/admin/familie/SubjectAccessButton";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
+import { MoreMenu } from "@/components/admin/MoreMenu";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin/familie")({
   validateSearch: (search: Record<string, unknown>): { email?: string; name?: string } => ({
@@ -45,17 +48,19 @@ function FamilyPage() {
     enabled: !!email || !!name,
   });
 
+  const [blockOpen, setBlockOpen] = useState(false);
   const block = useMutation({
-    mutationFn: () =>
+    mutationFn: (reason: string) =>
       resolveBlockSuggestion({
         data: {
           action: "block",
           email: email ?? null,
           childName: name ?? null,
-          reason: `Vorstandsentscheidung (Absagen/Stornierungen: ${data?.declinesTotal ?? 0})`,
+          reason: `${reason} (Absagen/Stornierungen: ${data?.declinesTotal ?? 0})`,
         },
       }),
     onSuccess: () => {
+      setBlockOpen(false);
       toast.success("Auf die Sperrliste gesetzt");
       qc.invalidateQueries({ queryKey: ["admin-family"] });
     },
@@ -156,25 +161,46 @@ function FamilyPage() {
               Sperrvorschlag ignorieren
             </Button>
           )}
-          {!data.blocked && (
-            <Button
-              size="sm"
-              variant="destructive"
-              disabled={block.isPending}
-              onClick={() => {
-                if (
-                  confirm(
-                    "Diese Familie auf die Sperrliste setzen? Buchung und Anfrageliste sind dann gesperrt.",
-                  )
-                )
-                  block.mutate();
-              }}
-            >
-              Auf Sperrliste setzen
-            </Button>
-          )}
+          <MoreMenu
+            label="Familie"
+            items={
+              data.blocked
+                ? []
+                : [
+                    {
+                      label: "Auf die Sperrliste setzen …",
+                      hint: "Online-Buchung gesperrt, nur noch Anfragen zur Einzelfallprüfung",
+                      destructive: true,
+                      onSelect: () => setBlockOpen(true),
+                    },
+                  ]
+            }
+          />
         </div>
       </div>
+      {blockOpen && (
+        <ConfirmActionDialog
+          title="Familie auf die Sperrliste setzen"
+          consequence={
+            <>
+              Die Familie kann über die Webseite nicht mehr direkt buchen; ihre Angaben landen nur
+              noch als Anfrage zur Einzelfallprüfung. Es geht keine E-Mail an die Familie. Die
+              Sperre lässt sich unter Familien → Sperrliste aufheben und wird nach 2 Jahren
+              automatisch gelöscht.
+            </>
+          }
+          reason={{
+            label: "Grund",
+            placeholder: "z. B. wiederholt nicht erschienen",
+            required: true,
+          }}
+          confirmLabel="Auf die Sperrliste setzen"
+          destructive
+          busy={block.isPending}
+          onClose={() => setBlockOpen(false)}
+          onConfirm={(r) => block.mutate(r)}
+        />
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

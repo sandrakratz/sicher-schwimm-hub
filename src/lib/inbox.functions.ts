@@ -54,7 +54,7 @@ const WAITLIST_STATUS: Record<string, string> = {
   accepted: "Zugesagt",
   declined: "Abgesagt",
   expired: "Frist abgelaufen",
-  removed: "Entfernt",
+  removed: "Abgemeldet",
 };
 
 /**

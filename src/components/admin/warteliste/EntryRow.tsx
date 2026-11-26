@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -7,10 +7,7 @@ import {
   ChevronUp,
   Copy,
   FileText,
-  Send,
   ShieldBan,
-  Trash2,
-  Undo2,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -34,17 +31,12 @@ import {
 import { confirmFit, confirmTooYoung } from "./confirm";
 import { EntryAssign, SuggestionActions } from "./ui";
 import { UnregisterDialog } from "./UnregisterDialog";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import type { WaitlistMutations } from "./useWaitlistMutations";
 
 const CELL = "py-2 pr-3 pl-0";
 const LINK_SMALL = "mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary";
-
-/** Auswahlfeld, das nach der Wahl sofort wieder auf den Platzhalter springt. */
-const pickOnce = (fn: (courseId: string) => void) => (ev: ChangeEvent<HTMLSelectElement>) => {
-  const courseId = ev.target.value;
-  ev.target.value = "";
-  if (courseId) fn(courseId);
-};
 
 function PaymentCell({ entry }: { entry: WaitlistEntry }) {
   const booking = entry.booking;
@@ -174,7 +166,12 @@ export function EntryRow({
     m.bookDirect.mutate({ entryId: e.id, courseId });
   };
 
-  // Abmelden mit Grund: Eintrag bleibt als „Entfernt“ erhalten, Grund mit Zeitstempel in der Notiz.
+  // Kurs für „Platz anbieten“ bzw. „Direkt buchen“: erst wählen, dann per Knopf auslösen
+  const [pick, setPick] = useState("");
+  const pickedOfferable = !!pick && courses.some((c) => c.id === pick);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Abmelden mit Grund: Eintrag bleibt als „Abgemeldet“ erhalten, Grund mit Zeitstempel in der Notiz.
   // Bei offenem Angebot gibt es stattdessen „Absage erfassen“ (gibt den Platz sofort weiter).
   const [unregisterOpen, setUnregisterOpen] = useState(false);
   const canUnregister = ["waiting", "declined", "expired"].includes(e.status);
@@ -380,85 +377,95 @@ export function EntryRow({
           <EntryAssign entry={e} />
         </TableCell>
         <TableCell className={CELL}>
-          <div className="flex flex-wrap items-center gap-2">
-            {e.status === "waiting" && courses.length > 0 && (
-              <NativeSelect size="xs" defaultValue="" onChange={pickOnce(offerTo)}>
-                <option value="">Platz anbieten…</option>
-                {courses.map((c) => (
+          <div className="flex flex-col items-start gap-2">
+            {/* Kurs nur auswählen; ausgelöst wird mit einem Knopf (Bedienregel 4) */}
+            {e.status !== "accepted" && bookCourses.length > 0 && (
+              <NativeSelect
+                size="xs"
+                value={pick}
+                onChange={(ev) => setPick(ev.target.value)}
+                aria-label="Kurs wählen"
+              >
+                <option value="">Kurs wählen …</option>
+                {bookCourses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.fits ? "" : "(anderes Angebot) "}
                     {c.name}
-                    {c.free != null ? ` (${c.free} frei)` : ""}
+                    {c.free != null ? (c.free > 0 ? ` (${c.free} frei)` : " (voll)") : ""}
                     {!meetsMinAge(e.child_dob, c.starts_on, minAge) ? " – zu jung" : ""}
                   </option>
                 ))}
               </NativeSelect>
             )}
-            {e.status !== "accepted" && bookCourses.length > 0 && (
-              <NativeSelect
-                size="xs"
-                defaultValue=""
-                disabled={m.bookDirect.isPending}
-                onChange={pickOnce(bookInto)}
-              >
-                <option value="">Direkt buchen…</option>
-                {bookCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.fits ? "" : "(anderes Angebot) "}
-                    {c.name}
-                    {c.free != null
-                      ? c.free > 0
-                        ? ` (${c.free} frei)`
-                        : " (voll – überbuchen)"
-                      : ""}
-                  </option>
-                ))}
-              </NativeSelect>
-            )}
-            {e.status === "offered" && (
-              <Button
-                size="sm"
-                variant="outline"
-                title="Eltern haben das Angebot telefonisch oder per E-Mail abgelehnt"
-                onClick={onDecline}
-              >
-                Absage erfassen
-              </Button>
-            )}
-            {canUnregister && (
-              <Button
-                size="sm"
-                variant="ghost"
-                title="Abmelden (mit Grund – der Eintrag bleibt nachvollziehbar erhalten)"
-                onClick={() => setUnregisterOpen(true)}
-              >
-                <Send className="h-4 w-4 rotate-180" />
-              </Button>
-            )}
-            {e.status !== "waiting" && e.status !== "accepted" && (
-              <Button
-                size="sm"
-                variant="ghost"
-                title={
-                  e.status === "offered"
-                    ? "Angebot zurückziehen: Platz wird frei, Familie wartet erst wieder ab dem nächsten Kurs (zählt nicht als Absage)"
-                    : "Zurück auf wartend"
-                }
-                onClick={() => update({ entryId: e.id, status: "waiting" })}
-              >
-                <Undo2 className="h-4 w-4" />
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="ghost"
-              title="Eintrag löschen"
-              onClick={() => {
-                if (confirm(`Eintrag für ${e.child_name} wirklich löschen?`)) m.remove.mutate(e.id);
-              }}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {e.status === "waiting" && bookCourses.length > 0 && (
+                <Button
+                  size="sm"
+                  disabled={!pickedOfferable || m.offer.isPending}
+                  title={
+                    !pick
+                      ? "Erst oben einen Kurs wählen"
+                      : !pickedOfferable
+                        ? "Kurs ist voll – anbieten geht nur bei freien Plätzen (unter „Weitere“ direkt buchen)"
+                        : "Die Eltern bekommen ein Platzangebot mit Frist per E-Mail"
+                  }
+                  onClick={() => offerTo(pick)}
+                >
+                  Platz anbieten
+                </Button>
+              )}
+              {e.status === "offered" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  title="Eltern haben das Angebot telefonisch oder per E-Mail abgelehnt"
+                  onClick={onDecline}
+                >
+                  Absage erfassen
+                </Button>
+              )}
+              {["offered", "declined", "expired", "removed"].includes(e.status) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  title={
+                    e.status === "offered"
+                      ? "Angebot zurückziehen: Platz wird frei, die Familie wartet ab dem nächsten Kurs (zählt nicht als Absage)"
+                      : "Familie wartet wieder (frühestens auf den nächsten Kurs)"
+                  }
+                  onClick={() => update({ entryId: e.id, status: "waiting" })}
+                >
+                  Wieder auf die Warteliste
+                </Button>
+              )}
+              {canUnregister && (
+                <Button size="sm" variant="outline" onClick={() => setUnregisterOpen(true)}>
+                  Abmelden …
+                </Button>
+              )}
+              <MoreMenu
+                items={[
+                  ...(e.status !== "accepted" && bookCourses.length > 0
+                    ? [
+                        {
+                          label: "Direkt in den gewählten Kurs buchen",
+                          hint: pick
+                            ? "Verbindlich; die Buchungsbestätigung geht sofort an die Eltern"
+                            : "Erst oben einen Kurs wählen",
+                          disabled: !pick || m.bookDirect.isPending,
+                          onSelect: () => bookInto(pick),
+                        },
+                      ]
+                    : []),
+                  {
+                    label: "Eintrag löschen …",
+                    hint: "Nur für Fehleinträge und Dubletten – die Spur geht verloren",
+                    destructive: true,
+                    onSelect: () => setDeleteOpen(true),
+                  },
+                ]}
+              />
+            </div>
           </div>
         </TableCell>
       </TableRow>
@@ -562,6 +569,23 @@ export function EntryRow({
             </div>
           </TableCell>
         </TableRow>
+      )}
+      {deleteOpen && (
+        <ConfirmActionDialog
+          title={`Eintrag für ${e.child_name ?? "dieses Kind"} löschen`}
+          consequence={
+            <>
+              Der Eintrag verschwindet endgültig aus der Warteliste, samt Notizen und Verlauf. Das
+              ist nur für Fehleinträge und Dubletten gedacht. Soll die Familie nicht mehr warten,
+              nutzen Sie „Abmelden“: Dann bleibt der Vorgang mit Grund nachvollziehbar.
+            </>
+          }
+          confirmLabel="Endgültig löschen"
+          destructive
+          busy={m.remove.isPending}
+          onClose={() => setDeleteOpen(false)}
+          onConfirm={() => m.remove.mutate(e.id, { onSuccess: () => setDeleteOpen(false) })}
+        />
       )}
       {unregisterOpen && (
         <UnregisterDialog

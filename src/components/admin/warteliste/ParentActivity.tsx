@@ -9,7 +9,7 @@ const STATUS_LEGEND: Array<[string, string]> = [
   ["wartend", STATUS_TONE["waiting"]!],
   ["Angebot offen", STATUS_TONE["offered"]!],
   ["gebucht", STATUS_TONE["accepted"]!],
-  ["abgesagt / entfernt", STATUS_TONE["removed"]!],
+  ["abgesagt / abgemeldet", STATUS_TONE["removed"]!],
 ];
 
 const ACTIVITY_LABEL = {
