@@ -270,7 +270,11 @@ function Page() {
         Erfüllung der Pflichten nach § 72a SGB VIII im Rahmen unseres Kinderschutzkonzepts
         verarbeitet. Einteilung, Verfügbarkeit und Anwesenheit löschen wir 2 Jahre nach dem Termin,
         Rückmeldungen zu Helferschichten 6 Monate nach der Veranstaltung; Abrechnungen der
-        Übungsleitergelder bewahren wir als Buchungsbelege 8 Jahre auf.
+        Übungsleitergelder bewahren wir als Buchungsbelege 8 Jahre auf. Vom erweiterten
+        Führungszeugnis speichern wir nur, dass und wann wir Einsicht genommen haben und von wann
+        das Zeugnis ist – nie das Zeugnis selbst. Ein neues Zeugnis ist spätestens alle 2 Jahre
+        vorzulegen. Diesen Nachweis bewahren wir für die Dauer der Tätigkeit und bis 2 Jahre nach
+        dem Ausscheiden auf (Nachweis gegenüber der Versicherung) und löschen ihn dann.
       </p>
 
       <H2>10a. Mitgliederschwimmen (nur für Vereinsmitglieder)</H2>
