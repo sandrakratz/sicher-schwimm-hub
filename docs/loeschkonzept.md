@@ -45,6 +45,7 @@ Im Verwaltungsbereich startet der Eingang ab 10.02.2027 den Probelauf per Knopf 
 | Beendete Mitgliedschaften (samt Volljährigkeits-Bestätigung) | 3 Jahre nach „gültig bis“ | löschen |
 | Sperrliste | 2 Jahre nach Eintrag, außer verlängert (`keep_until`) | löschen |
 | Übungsleiter-Auszahlungen (samt Posten) und Jahreserklärungen | 8 Jahre nach dem Jahr | löschen |
+| Führungszeugnisse: Einsicht-Historie (`trainer_fz_checks`), Eintrag und Prüfvermerk | 2 Jahre nach Ausscheiden (Rolle „Trainer/in“ entfernt, `trainer_departures`) | löschen |
 | Änderungsprotokoll (`audit_logs`) | 24 Monate | löschen |
 
 Bewusst **nicht** gelöscht: bestätigte Umbuchungs-Zustimmungen (enthalten die Gebühr, gehören zum Beleg) und
@@ -92,7 +93,5 @@ Gelöscht wird endgültig. Wer frühere Daten noch braucht, sollte vorher eine S
 
 ## Noch offen (von Hand bzw. später)
 
-- **Führungszeugnisse** (`trainer_qualifications`, Art „Führungszeugnis“): laut Datenschutzbericht bis Ausscheiden,
-  höchstens 3 Monate nach Beendigung – noch kein Job.
 - Trainerkonten und Bankverbindungen (`trainer_payout_details`) nach Ausscheiden und letzter Abrechnung von Hand entfernen.
 - Hochgeladene Dateien (Buckets `documents`, `media`) jährlich prüfen.
