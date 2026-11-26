@@ -5,6 +5,7 @@ import { buildTodo } from "@/components/admin/warteliste/logic";
 import { WAITLIST_QUERY_KEY } from "@/components/admin/warteliste/useWaitlistMutations";
 import { useAssignmentContext } from "@/components/admin/AssignControl";
 import { BirthdaysPanel, useBirthdays } from "@/components/admin/eingang/BirthdaysPanel";
+import { RetentionPanel } from "@/components/admin/eingang/RetentionPanel";
 import { OpenAvailabilityNotice } from "@/components/OpenAvailabilityNotice";
 import { MemberCheckPanel } from "@/components/admin/MemberCheckPanel";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,9 @@ import {
   Hourglass,
   ListChecks,
   MailOpen,
+  ShieldBan,
   ShieldCheck,
+  Trash2,
   UserRound,
   Users,
   Waves,
@@ -84,6 +87,8 @@ const TASK_ICON: Record<string, typeof Euro> = {
   "family-swim": Waves,
   messages: MailOpen,
   unstaffed: CalendarCheck,
+  "blocklist-expiring": ShieldBan,
+  "retention-review": Trash2,
 };
 
 const TASK_TEXT: Record<string, { todo: string; action: string }> = {
@@ -158,6 +163,14 @@ const TASK_TEXT: Record<string, { todo: string; action: string }> = {
   unstaffed: {
     todo: "Kurstermine in den nächsten 14 Tagen, bei denen noch Trainer:innen fehlen. Einteilen oder Ersatz anfragen.",
     action: "Lücken im Dienstplan",
+  },
+  "retention-review": {
+    todo: "Seit Februar 2027 sind die ersten Löschfristen erreicht. Probelauf starten, Zahlen prüfen und den Löschjob einmal einplanen. Danach verschwindet diese Aufgabe.",
+    action: "",
+  },
+  "blocklist-expiring": {
+    todo: "Diese Sperrlisten-Einträge werden in den nächsten 4 Wochen automatisch gelöscht (2 Jahre nach Eintrag). Soll eine Sperre bleiben, in der Sperrliste „Verlängern“ klicken; sonst ist nichts zu tun.",
+    action: "Sperrliste öffnen",
   },
 };
 
@@ -521,6 +534,8 @@ function panelFor(id: string, onChanged: () => void) {
       return (
         <WaitlistPanel sections={[{ only: "min", label: "Mindestzahl" }]} onChanged={onChanged} />
       );
+    case "retention-review":
+      return <RetentionPanel />;
     case "birthdays":
       return <BirthdaysPanel onChanged={onChanged} />;
     case "family-swim":

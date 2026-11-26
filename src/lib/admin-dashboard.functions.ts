@@ -59,6 +59,26 @@ export const getAdminTasks = createServerFn({ method: "POST" })
       .select("id", { count: "exact", head: true })
       .eq("status", "pending");
 
+    // Sperrliste: Einträge, die der Löschjob in den nächsten 4 Wochen entfernt (Löschkonzept 2027)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Spalte keep_until fehlt in den generierten Typen
+    const { data: blockRows } = await (supabaseAdmin as any)
+      .from("booking_blocklist")
+      .select("created_at,keep_until");
+    const { blocklistExpiringSoon, blocklistExpiry } = await import("@/lib/blocklist-retention");
+    const blocklistExpiring = (
+      (blockRows ?? []) as { created_at: string; keep_until: string | null }[]
+    ).filter((b) =>
+      blocklistExpiringSoon(blocklistExpiry(b.created_at, b.keep_until), today),
+    ).length;
+
+    // Löschjob: ab 10.02.2027 an Probelauf und Einplanen erinnern, bis er einmal echt gelaufen ist
+    const { retentionReviewDue } = await import("@/lib/retention-2027");
+    const { count: retentionRuns } = await supabaseAdmin
+      .from("audit_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("action", "retention_cleanup_2027");
+    const retentionDue = retentionReviewDue(today, (retentionRuns ?? 0) > 0);
+
     const [overdue, memberships, messages, requests, memberChecks, adultNew, familyNew] =
       await Promise.all([
         supabaseAdmin
@@ -180,6 +200,22 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         to: "/admin/dienstplan",
         tone: "info",
         hint: "in den nächsten 14 Tagen",
+      },
+      {
+        key: "blocklist-expiring",
+        label: "Sperrliste: Einträge laufen ab",
+        count: blocklistExpiring,
+        to: "/admin/sperrliste",
+        tone: "info",
+        hint: "werden in den nächsten 4 Wochen automatisch gelöscht",
+      },
+      {
+        key: "retention-review",
+        label: "Löschjob: Probelauf prüfen und einplanen",
+        count: retentionDue ? 1 : 0,
+        to: "",
+        tone: "attention",
+        hint: "Löschkonzept 2027 – einmalig",
       },
     ];
 
