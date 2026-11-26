@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -139,30 +140,36 @@ export function EntryRow({
   const issues = fitProblems(e, data);
   const update = m.update.mutate;
 
-  const offerTo = (courseId: string) => {
+  const offerTo = async (courseId: string) => {
     const c = courses.find((x) => x.id === courseId);
     if (!c) return;
-    if (!meetsMinAge(e.child_dob, c.starts_on, minAge) && !confirmTooYoung(e)) return;
+    if (!meetsMinAge(e.child_dob, c.starts_on, minAge) && !(await confirmTooYoung(e))) return;
     const af = e.available_from;
     if (
       af &&
       (!c.starts_on || c.starts_on < af) &&
-      !confirm(`${e.child_name} ist zurückgestellt bis ${formatDateBerlin(af)}. Trotzdem anbieten?`)
+      !(await askConfirm({
+        title: "Kind ist zurückgestellt",
+        consequence: `${e.child_name} ist zurückgestellt bis ${formatDateBerlin(af)}. Wenn du trotzdem anbietest, bekommen die Eltern das Angebot sofort per E-Mail. Du kannst es danach zurückziehen.`,
+        confirmLabel: "Trotzdem anbieten",
+      }))
     )
       return;
-    if (!confirmFit(e, programOf(programs, c.program_id), "anbieten")) return;
+    if (!(await confirmFit(e, programOf(programs, c.program_id), "anbieten"))) return;
     m.offer.mutate({ entryId: e.id, courseId });
   };
 
-  const bookInto = (courseId: string) => {
+  const bookInto = async (courseId: string) => {
     const c = bookCourses.find((x) => x.id === courseId);
     if (
-      !confirm(
-        `${e.child_name} verbindlich in „${c?.name ?? "Kurs"}“ buchen${c?.free === 0 ? " (Kurs ist voll – Überbuchung)" : ""}? Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails.`,
-      )
+      !(await askConfirm({
+        title: "Verbindlich buchen?",
+        consequence: `${e.child_name} wird verbindlich in „${c?.name ?? "Kurs"}“ gebucht${c?.free === 0 ? " (Kurs ist voll – Überbuchung)" : ""}. Die Eltern erhalten sofort die Buchungsbestätigung mit Zahlungsdetails per E-Mail. Du kannst die Buchung danach über die Kursteilnehmer stornieren.`,
+        confirmLabel: "Verbindlich buchen",
+      }))
     )
       return;
-    if (c && !confirmFit(e, programOf(programs, c.program_id), "buchen")) return;
+    if (c && !(await confirmFit(e, programOf(programs, c.program_id), "buchen"))) return;
     m.bookDirect.mutate({ entryId: e.id, courseId });
   };
 
@@ -311,8 +318,15 @@ export function EntryRow({
               <button
                 type="button"
                 className="text-xs text-primary underline"
-                onClick={() => {
-                  if (!confirm(`Absage-Zähler für ${e.child_name} auf 0 zurücksetzen?`)) return;
+                onClick={async () => {
+                  if (
+                    !(await askConfirm({
+                      title: "Absage-Zähler zurücksetzen?",
+                      consequence: `Der Absage-Zähler von ${e.child_name} wird auf 0 gesetzt und eine Notiz wird vermerkt. Es geht keine Mail raus. Die Absagen bleiben in der Gesamtzahl sichtbar.`,
+                      confirmLabel: "Auf 0 setzen",
+                    }))
+                  )
+                    return;
                   update({
                     entryId: e.id,
                     declineCount: 0,
@@ -334,11 +348,14 @@ export function EntryRow({
               <p className="font-semibold text-red-900">Sperrliste prüfen</p>
               <div className="mt-1 flex flex-wrap gap-2">
                 <SuggestionActions
-                  onBlock={() => {
+                  onBlock={async () => {
                     if (
-                      !confirm(
-                        `${e.child_name} / ${e.parent_email} auf die Sperrliste setzen? Buchung und Warteliste sind dann gesperrt.`,
-                      )
+                      !(await askConfirm({
+                        title: "Auf die Sperrliste setzen?",
+                        consequence: `${e.child_name} / ${e.parent_email} wird auf die Sperrliste gesetzt. Buchung und Warteliste sind dann gesperrt. Es geht keine Mail raus. Du kannst den Eintrag unter Sperrliste wieder löschen.`,
+                        confirmLabel: "Auf Sperrliste setzen",
+                        destructive: true,
+                      }))
                     )
                       return;
                     update(

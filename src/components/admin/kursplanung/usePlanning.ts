@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { slugify, type Course } from "@/components/admin/kurse/shared";
@@ -309,7 +310,14 @@ export function usePlanning(cfg: PoolConfig, data: PoolData) {
   /** Ausgewählte Kurszeiträume als geplante Kurse mit Terminen anlegen. */
   async function createTerms() {
     if (!chosen.length) return toast.error("Kein Kurszeitraum ausgewählt.");
-    if (!window.confirm(`${chosen.length} Kurszeiträume mit Terminen anlegen?`)) return;
+    if (
+      !(await askConfirm({
+        title: "Kurszeiträume anlegen?",
+        consequence: `Es werden ${chosen.length} Kurszeiträume mit Terminen angelegt. Es geht keine Mail raus. Du kannst sie danach einzeln unter Kurse löschen oder archivieren.`,
+        confirmLabel: "Kurszeiträume anlegen",
+      }))
+    )
+      return;
     setBusy(true);
     const used = new Set(courses.map((c) => c.slug));
     let made = 0;

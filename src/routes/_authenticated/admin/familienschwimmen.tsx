@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -219,9 +220,12 @@ function Termine({
   }
   async function cancelEvent(e: AdminEvent) {
     if (
-      !confirm(
-        `${weekdayDate(e.event_date)} absagen? Alle angemeldeten Familien bekommen eine E-Mail, der Termin kann nicht wieder geöffnet werden.`,
-      )
+      !(await askConfirm({
+        title: "Termin absagen?",
+        consequence: `Der Termin am ${weekdayDate(e.event_date)} wird abgesagt. Alle angemeldeten Familien bekommen sofort eine E-Mail. Der Termin kann nicht wieder geöffnet werden.`,
+        confirmLabel: "Termin absagen",
+        destructive: true,
+      }))
     )
       return;
     try {
@@ -405,9 +409,9 @@ function Anmeldungen({
       | "reopen"
       | "waive_strike"
       | "restore_strike",
-    ask?: string,
+    ask?: { title: string; consequence: string; confirmLabel: string },
   ) {
-    if (ask && !confirm(ask)) return;
+    if (ask && !(await askConfirm({ ...ask, destructive: true }))) return;
     try {
       const res = await setFamilySwimRequest({ data: { requestId: r.id, action } });
       toast.success(res.message);
@@ -519,14 +523,28 @@ function Anmeldungen({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => act(r, "decline", "Anmeldung ablehnen?")}
+                        onClick={() =>
+                          act(r, "decline", {
+                            title: "Anmeldung ablehnen?",
+                            consequence:
+                              "Die Anmeldung wird abgelehnt. Die Familie bekommt dazu keine E-Mail. War die Anmeldung zugesagt, rückt die Warteliste nach und diese Familie wird benachrichtigt. Du kannst die Anmeldung danach wieder auf die Warteliste setzen.",
+                            confirmLabel: "Anmeldung ablehnen",
+                          })
+                        }
                       >
                         Ablehnen
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => act(r, "cancel", "Anmeldung stornieren?")}
+                        onClick={() =>
+                          act(r, "cancel", {
+                            title: "Anmeldung stornieren?",
+                            consequence:
+                              "Die Anmeldung wird storniert, die Familie bekommt dazu keine E-Mail. War die Anmeldung zugesagt, wird der Platz frei und die Warteliste rückt nach. Das lässt sich nicht rückgängig machen, die Familie müsste sich neu anmelden.",
+                            confirmLabel: "Anmeldung stornieren",
+                          })
+                        }
                       >
                         Stornieren
                       </Button>

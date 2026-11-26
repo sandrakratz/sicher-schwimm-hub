@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,9 +54,11 @@ export function TestSendDialog({ onDone }: { onDone?: () => void }) {
     // Jede Test-Mail zählt zum Tageskontingent des Mail-Anbieters (100/Tag) – vorher bestätigen lassen
     const total = recipients.length * TEST_TEMPLATES.length;
     if (
-      !window.confirm(
-        `Es werden ${total} echte E-Mails verschickt (${recipients.length} Adresse(n) × ${TEST_TEMPLATES.length} Vorlagen). Sie zählen zum Tageskontingent von 100 E-Mails. Fortfahren?`,
-      )
+      !(await askConfirm({
+        title: "Test-Mails senden?",
+        consequence: `Es werden ${total} echte E-Mails verschickt (${recipients.length} Adresse(n) × ${TEST_TEMPLATES.length} Vorlagen). Sie zählen zum Tageskontingent von 100 E-Mails. Gesendete Mails kannst du nicht zurückholen.`,
+        confirmLabel: "Test-Mails senden",
+      }))
     )
       return;
     setBusy(true);

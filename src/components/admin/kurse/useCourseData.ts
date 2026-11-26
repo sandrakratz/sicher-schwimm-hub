@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -191,7 +192,15 @@ export function useCourseData() {
         { duration: 8000 },
       );
     }
-    if (!confirm(`Kurs "${c.name}" ohne Buchungen endgültig löschen?`)) return;
+    if (
+      !(await askConfirm({
+        title: "Kurs löschen?",
+        consequence: `Der Kurs „${c.name}“ hat keine Buchungen und wird endgültig gelöscht. Es geht keine Mail raus. Du kannst ihn nicht wiederherstellen, nur neu anlegen.`,
+        confirmLabel: "Endgültig löschen",
+        destructive: true,
+      }))
+    )
+      return;
     const { error } = await supabase.from("courses").delete().eq("id", c.id);
     if (error)
       return toast.error(
@@ -204,7 +213,15 @@ export function useCourseData() {
   }
 
   async function setArchived(c: Course, archived: boolean) {
-    if (archived && !confirm(`Kurs "${c.name}" archivieren?`)) return;
+    if (
+      archived &&
+      !(await askConfirm({
+        title: "Kurs archivieren?",
+        consequence: `Der Kurs „${c.name}“ verschwindet aus der normalen Liste und ist nicht mehr buchbar. Es geht keine Mail raus. Du kannst ihn jederzeit wiederherstellen.`,
+        confirmLabel: "Archivieren",
+      }))
+    )
+      return;
     const { error } = await supabase
       .from("courses")
       .update({ archived_at: archived ? new Date().toISOString() : null })

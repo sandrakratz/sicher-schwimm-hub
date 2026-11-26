@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -81,7 +82,20 @@ export function CourseBroadcastDialog({
       return toast.error(
         `Bitte ${placeholder[0]} noch ersetzen, bevor die Nachricht gesendet wird.`,
       );
-    if (!window.confirm(`Nachricht jetzt an ${count ?? "alle"} Eltern senden?`)) return;
+    if (
+      !(await askConfirm({
+        title: "Nachricht an die Eltern senden?",
+        consequence: (
+          <>
+            Die Nachricht geht jetzt per E-Mail (und als Handy-Mitteilung, wo erlaubt) an{" "}
+            {count ?? "alle"} Eltern des Kurses. Eine gesendete Nachricht kannst du nicht
+            zurückholen.
+          </>
+        ),
+        confirmLabel: "Jetzt senden",
+      }))
+    )
+      return;
     setBusy(true);
     try {
       const r = await send({ data: { courseId: course.id, subject, message } });

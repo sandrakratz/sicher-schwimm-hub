@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +71,14 @@ export function useProgramEditor(programs: ProgramRow[], onSaved: () => Promise<
 
   /** Löscht das Angebot nach Rückfrage; true, wenn gelöscht. */
   async function remove(p: ProgramRow): Promise<boolean> {
-    if (!confirm(`Kursangebot "${p.name}" löschen? Zugeordnete Kurszeiträume bleiben erhalten.`))
+    if (
+      !(await askConfirm({
+        title: "Kursangebot löschen?",
+        consequence: `Das Kursangebot „${p.name}“ wird endgültig gelöscht. Zugeordnete Kurszeiträume bleiben erhalten. Es geht keine Mail raus. Du kannst das Angebot nur neu anlegen.`,
+        confirmLabel: "Löschen",
+        destructive: true,
+      }))
+    )
       return false;
     const { error } = await supabase.from("course_programs").delete().eq("id", p.id);
     if (error) {

@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useServerFn } from "@tanstack/react-start";
 import { logExport } from "@/lib/export-log.functions";
 import { createFileRoute } from "@tanstack/react-router";
@@ -121,7 +122,14 @@ function Page() {
   }
 
   async function remove(r: AdultInterest) {
-    if (!confirm(`Interessenbekundung von ${r.first_name} ${r.last_name} endgültig löschen?`))
+    if (
+      !(await askConfirm({
+        title: "Interessenbekundung löschen?",
+        consequence: `Die Interessenbekundung von ${r.first_name} ${r.last_name} wird endgültig gelöscht. Es geht keine Mail raus und du kannst sie nicht wiederherstellen.`,
+        confirmLabel: "Endgültig löschen",
+        destructive: true,
+      }))
+    )
       return;
     try {
       await deleteAdultInterest({ data: { id: r.id } });

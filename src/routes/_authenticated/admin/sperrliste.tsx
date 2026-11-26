@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,7 +109,16 @@ function Page() {
   }
 
   async function remove(e: BlocklistEntry) {
-    if (!confirm("Diesen Eintrag endgültig löschen?")) return;
+    if (
+      !(await askConfirm({
+        title: "Sperrlisten-Eintrag löschen?",
+        consequence:
+          "Der Eintrag wird endgültig gelöscht. Die Person kann danach wieder buchen und sich auf die Warteliste setzen lassen. Es geht keine Mail raus.",
+        confirmLabel: "Endgültig löschen",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await deleteBlocklistEntry({ data: { id: e.id } });
       await load();

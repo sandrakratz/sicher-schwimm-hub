@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
@@ -78,9 +79,11 @@ export function MemberMessage({ embedded = false }: { embedded?: boolean }) {
   async function send() {
     if (!canSend) return;
     if (
-      !window.confirm(
-        `Nachricht an ${selected.size} ${selected.size === 1 ? "Person" : "Personen"} senden? Sie landet im Postfach des Kontos, zusätzlich geht eine Hinweis-Mail raus.`,
-      )
+      !(await askConfirm({
+        title: "Nachricht senden?",
+        consequence: `Die Nachricht geht an ${selected.size} ${selected.size === 1 ? "Person" : "Personen"}. Sie landet im Postfach des Kontos, zusätzlich geht eine Hinweis-Mail raus. Du kannst sie nicht zurückholen.`,
+        confirmLabel: "Nachricht senden",
+      }))
     )
       return;
     setBusy(true);

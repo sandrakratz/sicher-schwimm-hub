@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -16,9 +17,12 @@ export function useCourseMailings() {
 
   async function handleSendAbsenceInvites() {
     if (
-      !confirm(
-        "Einmalige Info-Mail mit dem Abmelde-Link jetzt an alle Familien mit bereits laufenden Kursen senden? Jede Adresse bekommt diese Mail nur ein einziges Mal. Es werden jeweils bis zu 12 Familien pro Klick bedient.",
-      )
+      !(await askConfirm({
+        title: "Abmelde-Link per Mail senden?",
+        consequence:
+          "Eine einmalige Info-Mail mit dem Abmelde-Link geht jetzt an alle Familien mit bereits laufenden Kursen. Jede Adresse bekommt diese Mail nur ein einziges Mal, pro Klick werden bis zu 12 Familien bedient. Gesendete Mails kannst du nicht zurückholen.",
+        confirmLabel: "Mail senden",
+      }))
     )
       return;
     setInviteAbsence(true);
@@ -41,9 +45,12 @@ export function useCourseMailings() {
 
   async function handleSendPushInvites() {
     if (
-      !confirm(
-        "Info-Mail zu den Handy-Mitteilungen jetzt an alle Familien mit laufenden Kursen senden? Jede Familie bekommt diese Mail nur ein einziges Mal.",
-      )
+      !(await askConfirm({
+        title: "Info-Mail zu Handy-Mitteilungen senden?",
+        consequence:
+          "Die Info-Mail zu den Handy-Mitteilungen geht jetzt an alle Familien mit laufenden Kursen. Jede Familie bekommt diese Mail nur ein einziges Mal. Gesendete Mails kannst du nicht zurückholen.",
+        confirmLabel: "Mail senden",
+      }))
     )
       return;
     setInviting(true);
@@ -63,9 +70,13 @@ export function useCourseMailings() {
 
   async function handleSendReminders(courseId?: string | null) {
     if (
-      !confirm(
-        "Zahlungserinnerung an alle offenen Fälle (Sofortzahlung erwartet oder überfällig) senden?",
-      )
+      !(await askConfirm({
+        title: "Zahlungserinnerungen senden?",
+        consequence: courseId
+          ? "Alle offenen Fälle dieses Kurses (Sofortzahlung erwartet oder überfällig) bekommen jetzt eine Zahlungserinnerung per E-Mail. Gesendete Mails kannst du nicht zurückholen."
+          : "Alle offenen Fälle aus allen Kursen (Sofortzahlung erwartet oder überfällig) bekommen jetzt eine Zahlungserinnerung per E-Mail. Gesendete Mails kannst du nicht zurückholen.",
+        confirmLabel: "Erinnerungen senden",
+      }))
     )
       return;
     setReminding(true);

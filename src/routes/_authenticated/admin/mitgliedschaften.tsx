@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { MEMBERSHIP_TYPE_LABEL } from "@/lib/labels";
 import { createFileRoute } from "@tanstack/react-router";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
@@ -401,11 +402,13 @@ function PriceMismatches() {
                   variant="outline"
                   disabled={i.normal == null}
                   onClick={async () => {
-                    const ok = confirm(
-                      i.paid
-                        ? "Auf Normalpreis setzen? Die Buchung ist schon bezahlt: Die Differenz muss die Kasse separat anfordern."
-                        : "Auf Normalpreis setzen? Die Zahlungserinnerung nutzt dann den neuen Preis.",
-                    );
+                    const ok = await askConfirm({
+                      title: "Auf Normalpreis setzen?",
+                      consequence: i.paid
+                        ? "Die Buchung wird auf den Normalpreis gesetzt. Sie ist schon bezahlt: Die Differenz muss die Kasse separat anfordern. Es geht keine Mail raus."
+                        : "Die Buchung wird auf den Normalpreis gesetzt. Die Zahlungserinnerung nutzt dann den neuen Preis. Es geht keine Mail raus.",
+                      confirmLabel: "Auf Normalpreis setzen",
+                    });
                     if (!ok) return;
                     try {
                       await chargeFn({ data: { participantId: i.id } });
