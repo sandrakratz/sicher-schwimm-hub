@@ -46,6 +46,7 @@ import {
   fromBerlinInput,
   type ShiftSignup,
 } from "@/lib/event-shifts";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { HelperGroupsPanel } from "@/components/admin/HelperGroupsPanel";
 import { MediaUploadField } from "@/components/admin/MediaUploadField";
 
@@ -437,11 +438,20 @@ function HelperDialog({
   const maxCount = Math.max(1, ...slices.map((s) => s.count));
   const noReply = trainers.filter((t) => !signups.some((s) => s.trainer_id === t.id));
 
-  async function removeSignup(id: string) {
-    const { error } = await supabase.from("event_shift_signups").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Rückmeldung gelöscht");
-    await onChanged();
+  // Rückmeldung einer Trainer:in entfernen – erst nach Rückfrage, denn sie ist danach weg
+  const [removeFor, setRemoveFor] = useState<ShiftSignup | null>(null);
+  const [removing, setRemoving] = useState(false);
+  async function removeSignup(s: ShiftSignup) {
+    setRemoving(true);
+    try {
+      const { error } = await supabase.from("event_shift_signups").delete().eq("id", s.id);
+      if (error) return void toast.error(error.message);
+      toast.success(`Rückmeldung von ${trainerName(s.trainer_id)} entfernt`);
+      setRemoveFor(null);
+      await onChanged();
+    } finally {
+      setRemoving(false);
+    }
   }
 
   async function updateTime(s: ShiftSignup, field: "starts_at" | "ends_at", value: string) {
@@ -544,11 +554,10 @@ function HelperDialog({
                     <Button
                       variant="ghost"
                       size="sm"
-                      aria-label="Anmeldung entfernen"
-                      title="Anmeldung entfernen"
-                      onClick={() => removeSignup(s.id)}
+                      className="text-destructive"
+                      onClick={() => setRemoveFor(s)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" /> Entfernen
                     </Button>
                   </div>
                 ))}
@@ -567,6 +576,23 @@ function HelperDialog({
             Schließen
           </Button>
         </DialogFooter>
+        {removeFor && (
+          <ConfirmActionDialog
+            title={`Rückmeldung von ${trainerName(removeFor.trainer_id)} entfernen`}
+            consequence={
+              <>
+                Die Rückmeldung wird endgültig gelöscht, samt angegebener Zeiten. Die Person
+                erscheint danach unter „Ohne Rückmeldung“ und kann sich im Trainerbereich neu
+                eintragen. Es geht keine E-Mail raus.
+              </>
+            }
+            confirmLabel="Rückmeldung entfernen"
+            destructive
+            busy={removing}
+            onClose={() => setRemoveFor(null)}
+            onConfirm={() => void removeSignup(removeFor)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

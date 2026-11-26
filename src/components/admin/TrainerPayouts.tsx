@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileText, Printer, Trash2 } from "lucide-react";
+import { CheckCircle2, FileText, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,8 +24,11 @@ import {
   getBillingOverview,
   getPayoutCertificate,
   listTrainerPayouts,
+  requestPayoutCancellation,
+  withdrawPayoutCancellation,
   type PayoutListEntry,
 } from "@/lib/trainer-billing.functions";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { NativeSelect } from "@/components/ui/native-select";
 
 /**
@@ -102,10 +105,44 @@ export function TrainerPayouts() {
     }
   }
 
-  async function remove(id: string) {
-    if (!window.confirm("Diese Auszahlung wirklich löschen?")) return;
+  // Entfernen: nicht freigegeben = löschen; freigegeben = Stornierung zu zweit (beantragen, bestätigen)
+  const [action, setAction] = useState<{
+    kind: "delete" | "request" | "confirm";
+    p: PayoutListEntry;
+  } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function runPending(reason: string) {
+    if (!action) return;
+    const { kind, p } = action;
+    setBusy(true);
     try {
-      await deleteTrainerPayout({ data: { id } });
+      if (kind === "request") {
+        await requestPayoutCancellation({ data: { id: p.id, reason } });
+        toast.success("Stornierung beantragt – eine zweite Person muss bestätigen.");
+      } else {
+        await deleteTrainerPayout({ data: { id: p.id } });
+        toast.success(
+          kind === "delete"
+            ? `Auszahlung an ${p.trainerName} gelöscht – die Termine sind wieder offen.`
+            : `Auszahlung an ${p.trainerName} storniert – die Termine sind wieder offen.`,
+        );
+      }
+      setAction(null);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fehlgeschlagen.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function withdrawCancel(p: PayoutListEntry, mine: boolean) {
+    try {
+      await withdrawPayoutCancellation({ data: { id: p.id } });
+      toast.success(
+        mine ? "Antrag zurückgezogen." : "Stornierung abgelehnt – die Auszahlung bleibt.",
+      );
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehlgeschlagen.");
@@ -285,7 +322,7 @@ export function TrainerPayouts() {
                   <TableHead>Inhalt</TableHead>
                   <TableHead className="text-right">Betrag</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-24" />
+                  <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -333,9 +370,16 @@ export function TrainerPayouts() {
                           ⚠ mit Begründung
                         </div>
                       )}
+                      {p.cancelRequest && (
+                        <div className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                          Storno beantragt: {p.cancelRequest.byName ?? "Vorstand"},{" "}
+                          {formatDateBerlin(p.cancelRequest.at)}
+                          {p.cancelRequest.reason ? ` – „${p.cancelRequest.reason}“` : ""}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex">
+                      <div className="flex flex-wrap items-center justify-end gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
@@ -346,15 +390,53 @@ export function TrainerPayouts() {
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          aria-label="Auszahlung löschen"
-                          onClick={() => remove(p.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {p.status === "pending" ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => setAction({ kind: "delete", p })}
+                          >
+                            Löschen …
+                          </Button>
+                        ) : !p.cancelRequest ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setAction({ kind: "request", p })}
+                          >
+                            Stornieren …
+                          </Button>
+                        ) : p.cancelRequest.byId === me ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => void withdrawCancel(p, true)}
+                          >
+                            Antrag zurückziehen
+                          </Button>
+                        ) : p.trainerId === me ? (
+                          <span className="text-xs text-muted-foreground">
+                            eigene Auszahlung – bestätigt jemand anderes
+                          </span>
+                        ) : (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => setAction({ kind: "confirm", p })}
+                            >
+                              Storno bestätigen …
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => void withdrawCancel(p, false)}
+                            >
+                              Ablehnen
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -373,6 +455,63 @@ export function TrainerPayouts() {
           )}
         </CardContent>
       </Card>
+      {action && (
+        <ConfirmActionDialog
+          title={
+            action.kind === "delete"
+              ? `Auszahlung an ${action.p.trainerName} löschen`
+              : action.kind === "request"
+                ? `Stornierung beantragen: ${action.p.trainerName}, ${formatEuro(action.p.total)}`
+                : `Stornierung bestätigen: ${action.p.trainerName}, ${formatEuro(action.p.total)}`
+          }
+          consequence={
+            action.kind === "delete" ? (
+              <>
+                Die Auszahlung ist noch nicht freigegeben. Sie wird gelöscht, die Termine sind
+                danach wieder offen und lassen sich neu abrechnen. Der Vorgang steht im
+                Änderungsprotokoll.
+              </>
+            ) : action.kind === "request" ? (
+              <>
+                Die Auszahlung ist freigegeben und bleibt es vorerst. Eine zweite Person aus dem
+                Vorstand muss die Stornierung bestätigen. Erst dann wird sie entfernt und die
+                Termine sind wieder offen. Eine Überweisung oder Buchung in MeinVerein ändert sich
+                dadurch nicht.
+              </>
+            ) : (
+              <>
+                Beantragt von {action.p.cancelRequest?.byName ?? "Vorstand"}
+                {action.p.cancelRequest?.reason
+                  ? `, Grund: „${action.p.cancelRequest.reason}“`
+                  : ""}
+                . Die Auszahlung wird entfernt, die Termine sind wieder offen. Sie fehlt danach auf
+                Beleg und Jahresbescheinigung. Eine Überweisung oder Buchung in MeinVerein bitte
+                dort selbst korrigieren. Antrag und Bestätigung stehen im Änderungsprotokoll.
+              </>
+            )
+          }
+          reason={
+            action.kind === "request"
+              ? {
+                  label: "Grund",
+                  placeholder: "z. B. Fehlbuchung, falscher Betrag",
+                  required: true,
+                }
+              : undefined
+          }
+          confirmLabel={
+            action.kind === "delete"
+              ? "Löschen"
+              : action.kind === "request"
+                ? "Stornierung beantragen"
+                : "Stornierung bestätigen"
+          }
+          destructive={action.kind !== "request"}
+          busy={busy}
+          onClose={() => setAction(null)}
+          onConfirm={(r) => void runPending(r)}
+        />
+      )}
     </div>
   );
 }

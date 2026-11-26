@@ -20,7 +20,6 @@ import { formatDateBerlin, formatEuro, todayBerlinIso } from "@/lib/format";
 import { ANNUAL_ALLOWANCE, WARN_FRACTION } from "@/lib/trainer-billing";
 import {
   createTrainerPayout,
-  deleteTrainerPayout,
   deleteTrainerRate,
   getBillingOverview,
   saveTrainerRate,
@@ -190,22 +189,6 @@ export function TrainerBilling() {
       toast.error(err instanceof Error ? err.message : "Auszahlung fehlgeschlagen.");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function undoPayout(payoutId: string) {
-    if (
-      !window.confirm(
-        "Diese Auszahlung wirklich rückgängig machen? Die Termine sind danach wieder offen.",
-      )
-    )
-      return;
-    try {
-      await deleteTrainerPayout({ data: { id: payoutId } });
-      toast.success("Auszahlung rückgängig gemacht.");
-      await load();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Fehlgeschlagen.");
     }
   }
 
@@ -522,6 +505,10 @@ export function TrainerBilling() {
                 ({payoutGroups.length} Überweisungen ·{" "}
                 {payoutGroups.reduce((n, g) => n + g.rows.length, 0)} Termine)
               </span>
+              <p className="mt-1 text-xs font-normal text-muted-foreground">
+                Löschen oder stornieren: Reiter „Auszahlungen &amp; Bescheinigung“. Freigegebene
+                Auszahlungen lassen sich nur zu zweit stornieren.
+              </p>
             </div>
             <ul className="divide-y">
               {payoutGroups.map((g) => {
@@ -546,15 +533,6 @@ export function TrainerBilling() {
                           · {g.rows.length} Termine · {formatEuro(g.total)}
                         </span>
                       </button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        aria-label="Auszahlung rückgängig machen"
-                        onClick={() => undoPayout(g.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
                     {isOpen && (
                       <Table>

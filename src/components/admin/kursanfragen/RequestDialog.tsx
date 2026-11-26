@@ -1,6 +1,7 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { ConversationTimeline } from "@/components/admin/ConversationTimeline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -398,6 +399,35 @@ export function RequestDetails({
     void actions.reload();
   }
 
+  // „Ablehnen“ setzt per Datenbank-Trigger automatisch auf die Sperrliste – daher nur über die
+  // Rückfrage mit Grund. Der Grund landet in der Notiz der Anfrage und im Sperrlisten-Eintrag.
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  async function reject(reason: string) {
+    setRejecting(true);
+    try {
+      const line = `[${formatDateTimeBerlin(new Date().toISOString())}] Abgelehnt – Grund: ${reason}`;
+      const notes = [item.admin_notes, line].filter(Boolean).join("\n");
+      const { error } = await supabase
+        .from("course_requests")
+        .update({ status: "rejected", admin_notes: notes })
+        .eq("id", item.id);
+      if (error) return void toast.error(error.message);
+      const { error: blErr } = await supabase
+        .from("booking_blocklist")
+        .update({ reason: `Kursanfrage abgelehnt: ${reason}` })
+        .eq("request_id", item.id);
+      if (blErr)
+        toast.error(`Abgelehnt, aber der Grund fehlt auf der Sperrliste: ${blErr.message}`);
+      else toast.success("Abgelehnt – die Familie steht jetzt auf der Sperrliste");
+      setRejectOpen(false);
+      actions.patch({ status: "rejected", admin_notes: notes });
+      void actions.reload();
+    } finally {
+      setRejecting(false);
+    }
+  }
+
   async function doDelete() {
     if (!confirm("Diese Kursanfrage wirklich endgültig löschen?")) return;
     const { error } = await supabase.from("course_requests").delete().eq("id", item.id);
@@ -503,12 +533,15 @@ export function RequestDetails({
         <AssignBox item={item} courses={courses} actions={actions} />
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Hinweis: „Ablehnen“ setzt den Teilnehmer automatisch auf die Sperrliste – eine Direktbuchung
-        über die Website ist dann nicht mehr möglich, nur noch eine Anfrage zur Einzelfallprüfung.
-      </p>
-
       <DialogFooter className="flex-wrap gap-2">
+        <Button
+          variant="ghost"
+          className="mr-auto text-destructive"
+          title="Nur für Fehleinträge – die Anfrage verschwindet endgültig"
+          onClick={doDelete}
+        >
+          Löschen
+        </Button>
         <Button variant="outline" onClick={() => setStatus("contacted")}>
           Kontaktiert
         </Button>
@@ -518,16 +551,34 @@ export function RequestDetails({
         <Button variant="accent" onClick={() => setStatus("accepted")}>
           Akzeptieren
         </Button>
-        <Button variant="destructive" onClick={() => setStatus("rejected")}>
-          Ablehnen
-        </Button>
-        <Button variant="destructive" onClick={doDelete}>
-          Löschen
-        </Button>
+        {item.status !== "rejected" && (
+          <Button variant="destructive" onClick={() => setRejectOpen(true)}>
+            Ablehnen und sperren …
+          </Button>
+        )}
         <Button variant="ghost" onClick={actions.close}>
           Schließen
         </Button>
       </DialogFooter>
+      {rejectOpen && (
+        <ConfirmActionDialog
+          title={`Anfrage für ${item.child_name || item.parent_name} ablehnen`}
+          consequence={
+            <>
+              Die Anfrage wird abgelehnt und die Familie kommt auf die Sperrliste. Über die Webseite
+              kann sie dann nicht mehr direkt buchen, nur noch eine Anfrage zur Einzelfallprüfung
+              stellen. Es geht keine E-Mail an die Familie. Die Sperre lässt sich unter Familien →
+              Sperrliste aufheben.
+            </>
+          }
+          reason={{ label: "Grund", placeholder: "z. B. Alter passt nicht", required: true }}
+          confirmLabel="Ablehnen und sperren"
+          destructive
+          busy={rejecting}
+          onClose={() => setRejectOpen(false)}
+          onConfirm={(r) => void reject(r)}
+        />
+      )}
     </>
   );
 }

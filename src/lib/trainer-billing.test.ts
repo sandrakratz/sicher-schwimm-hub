@@ -4,6 +4,7 @@ import {
   amountOf,
   capCheck,
   certificateSigners,
+  payoutRemovalBlocker,
   pickRate,
   resolveHours,
   type Rate,
@@ -94,5 +95,33 @@ describe("Unterschriften der Jahresbescheinigung", () => {
 
   test("eigene Bescheinigung der Kasse: beide Vorstandsmitglieder", () => {
     expect(names("Kasse Drei")).toEqual(["Vorsitz Eins", "Vorsitz Zwei"]);
+  });
+});
+
+describe("Auszahlung entfernen (Vier-Augen-Prinzip)", () => {
+  const approved = { status: "approved" as const, trainerId: "t1", cancelRequestedBy: null };
+
+  test("nicht freigegebene Auszahlung darf entfernt werden", () => {
+    expect(payoutRemovalBlocker({ ...approved, status: "pending" }, "a")).toBeNull();
+  });
+
+  test("freigegebene Auszahlung braucht zuerst einen Storno-Antrag", () => {
+    expect(payoutRemovalBlocker(approved, "a")).toContain("beantragen");
+  });
+
+  test("wer beantragt hat, kann nicht selbst bestätigen", () => {
+    expect(payoutRemovalBlocker({ ...approved, cancelRequestedBy: "a" }, "a")).toContain(
+      "andere Person",
+    );
+  });
+
+  test("Empfänger:in kann die eigene Stornierung nicht bestätigen", () => {
+    expect(payoutRemovalBlocker({ ...approved, cancelRequestedBy: "a" }, "t1")).toContain(
+      "eigenen Auszahlung",
+    );
+  });
+
+  test("zweite Person bestätigt", () => {
+    expect(payoutRemovalBlocker({ ...approved, cancelRequestedBy: "a" }, "b")).toBeNull();
   });
 });
