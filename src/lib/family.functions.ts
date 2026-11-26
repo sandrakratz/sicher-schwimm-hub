@@ -65,7 +65,7 @@ export const getFamilyOverview = createServerFn({ method: "POST" })
         supabaseAdmin
           .from("course_participants")
           .select(
-            "id,course_id,request_id,participant_name,participant_email,participant_phone,date_of_birth,status,paid,paid_at,price_amount,created_at,payment_due_date,transferred_at,transfer_reason,transferred_to_course_id,cancelled_at,cancel_reason,block_review_dismissed_at",
+            "id,course_id,request_id,participant_name,participant_email,participant_phone,date_of_birth,status,paid,paid_at,price_amount,created_at,payment_due_date,transferred_at,transfer_reason,transferred_to_course_id,cancelled_at,cancel_reason,removed_at,block_review_dismissed_at",
           )
           .order("id")
           .range(f, t),
@@ -229,6 +229,13 @@ export const getFamilyOverview = createServerFn({ method: "POST" })
             .join(" · "),
         });
       }
+      if (p.status === "cancelled" && p.removed_at && !cancelledAt)
+        events.push({
+          at: p.removed_at,
+          kind: "cancel",
+          title: `Aus dem Kurs genommen: „${course}“`,
+          detail: [p.participant_name, p.cancel_reason].filter(Boolean).join(" · "),
+        });
     }
     for (const b of blockList)
       events.push({

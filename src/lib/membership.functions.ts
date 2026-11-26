@@ -130,7 +130,23 @@ export const deleteMembership = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertStaff(context);
-    const { error } = await context.supabase.from("memberships").delete().eq("id", data.id);
+    // Löschkonzept (Vorstand 26.11.2026): Nur nie genehmigte Anträge lassen sich löschen (Fehleinträge,
+    // Dubletten). Beendete Mitgliedschaften bleiben und werden nach Frist automatisch gelöscht.
+    const { data: row } = await context.supabase
+      .from("memberships")
+      .select("status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!row) throw new Error("Mitgliedschaft nicht gefunden.");
+    if (row.status !== "pending")
+      throw new Error(
+        "Nur nicht genehmigte Anträge lassen sich löschen. Bitte die Mitgliedschaft beenden – sie wird nach Ablauf der Frist automatisch gelöscht.",
+      );
+    const { error } = await context.supabase
+      .from("memberships")
+      .delete()
+      .eq("id", data.id)
+      .eq("status", "pending");
     if (error) throw new Response(error.message, { status: 500 });
     const { logAudit } = await import("@/lib/audit.server");
     await logAudit(context.supabase, context.userId, {

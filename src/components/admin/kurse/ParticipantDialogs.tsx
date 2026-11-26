@@ -93,12 +93,14 @@ export function RemoveParticipantDialog({
     <Dialog open={!!state} onOpenChange={(v) => !v && setState(null)}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Teilnehmer entfernen</DialogTitle>
+          <DialogTitle>Aus dem Kurs nehmen</DialogTitle>
         </DialogHeader>
         {state && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              „{state.participant.participant_name}“ wird aus dem Kurs entfernt.
+              „{state.participant.participant_name}“ wird aus dem Kurs genommen. Die Buchung bleibt
+              mit Grund sichtbar (unter „Abgesagte Buchungen anzeigen“), ebenso Zahlung und
+              Anwesenheit. Der Platz geht an die Warteliste.
               {!state.participant.paid && " Die Zahlung ist bisher nicht eingegangen."}
             </p>
             <div className="space-y-1">
@@ -201,7 +203,7 @@ export function RemoveParticipantDialog({
             Abbrechen
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={removing}>
-            {removing ? "Wird entfernt…" : "Entfernen"}
+            {removing ? "Wird ausgeführt…" : "Aus dem Kurs nehmen"}
           </Button>
         </DialogFooter>
       </DialogContent>

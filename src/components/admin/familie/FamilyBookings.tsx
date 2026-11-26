@@ -127,7 +127,9 @@ export function FamilyBookings({
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold">{p.participant_name ?? "–"}</span>
-                  <Badge variant="secondary">{STATUS[p.status] ?? p.status}</Badge>
+                  <Badge variant="secondary" title={p.cancel_reason ?? undefined}>
+                    {p.removed_at ? "Aus dem Kurs genommen" : (STATUS[p.status] ?? p.status)}
+                  </Badge>
                   {!dead && (
                     <Badge variant="outline" className={pay.className}>
                       {pay.label}
@@ -176,7 +178,8 @@ export function FamilyBookings({
                       <XCircle className="h-4 w-4" aria-hidden="true" /> Absage erfassen
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => a.startRemove(p)}>
-                      <UserX className="h-4 w-4 text-destructive" aria-hidden="true" /> Entfernen
+                      <UserX className="h-4 w-4 text-destructive" aria-hidden="true" /> Aus Kurs
+                      nehmen
                     </Button>
                   </>
                 )}

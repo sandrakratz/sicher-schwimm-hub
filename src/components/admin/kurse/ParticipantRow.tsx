@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRightLeft, Award, Lock, Pencil, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Award, Lock, Pencil, UserX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -193,6 +193,11 @@ export function ParticipantRow({
             ))}
           </SelectContent>
         </Select>
+        {p.removed_at && (
+          <div className="mt-1 text-xs text-muted-foreground" title={p.cancel_reason ?? undefined}>
+            aus dem Kurs genommen
+          </div>
+        )}
       </TableCell>
       <TableCell className="text-xs">
         {p.is_member === true && (
@@ -270,15 +275,17 @@ export function ParticipantRow({
             <ArrowRightLeft className="h-4 w-4" />
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Teilnehmer entfernen"
-          title="Teilnehmer entfernen"
-          onClick={onRemove}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        {p.status !== "cancelled" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Aus dem Kurs nehmen"
+            title="Aus dem Kurs nehmen (Buchung bleibt mit Grund sichtbar)"
+            onClick={onRemove}
+          >
+            <UserX className="h-4 w-4 text-destructive" />
+          </Button>
+        )}
       </TableCell>
     </TableRow>
   );
