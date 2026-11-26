@@ -149,10 +149,10 @@ export function TrainerPayouts() {
     }
   }
 
-  async function approve(id: string) {
+  async function approve(p: PayoutListEntry) {
     try {
-      await approveTrainerPayout({ data: { id } });
-      toast.success("Freigegeben");
+      await approveTrainerPayout({ data: { id: p.id } });
+      toast.success(`Freigegeben: ${p.trainerName}, ${formatEuro(p.total)}`);
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Freigabe fehlgeschlagen.");
@@ -293,9 +293,19 @@ export function TrainerPayouts() {
             ))}
           </NativeSelect>
         </label>
-        <Button variant="outline" onClick={printCertificate}>
+        <Button
+          variant="outline"
+          disabled={!trainerId}
+          title={trainerId ? undefined : "Erst eine Trainer:in auswählen"}
+          onClick={printCertificate}
+        >
           <Printer className="mr-2 h-4 w-4" /> Jahresbescheinigung drucken
         </Button>
+        {!trainerId && (
+          <span className="self-center text-xs text-muted-foreground">
+            Erst eine Trainer:in auswählen.
+          </span>
+        )}
       </div>
 
       {pending.length > 0 && (
@@ -353,7 +363,7 @@ export function TrainerPayouts() {
                             </div>
                           )}
                           {p.createdBy !== me && p.trainerId !== me ? (
-                            <Button size="sm" onClick={() => void approve(p.id)}>
+                            <Button size="sm" onClick={() => void approve(p)}>
                               Freigeben
                             </Button>
                           ) : (

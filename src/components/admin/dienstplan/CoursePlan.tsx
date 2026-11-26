@@ -306,8 +306,13 @@ export function CoursePlan({
                         )}
                       </div>
                       {gap > 0 && (
-                        <Button size="sm" variant="outline" onClick={() => onPick(s.id)}>
-                          Besetzen
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Trainer:in einteilen oder Ersatz anfragen"
+                          onClick={() => onPick(s.id)}
+                        >
+                          Einteilen …
                         </Button>
                       )}
                     </div>

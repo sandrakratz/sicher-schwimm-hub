@@ -172,8 +172,12 @@ export function GapList({
                   >
                     Ganzen Kurs bearbeiten
                   </a>
-                  <Button size="sm" onClick={() => onPick(s.id)}>
-                    Besetzen
+                  <Button
+                    size="sm"
+                    title="Trainer:in einteilen oder Ersatz anfragen"
+                    onClick={() => onPick(s.id)}
+                  >
+                    Einteilen …
                   </Button>
                 </div>
               );

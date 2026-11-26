@@ -200,6 +200,11 @@ export function WithdrawalDialog({
             >
               Absage eintragen ({picked.size})
             </Button>
+            {!busy && (picked.size === 0 || reason.trim().length < 2) && (
+              <span className="text-xs text-muted-foreground">
+                {picked.size === 0 ? "Erst die betroffenen Termine anhaken." : "Grund eintragen."}
+              </span>
+            )}
           </div>
         )}
       </DialogContent>

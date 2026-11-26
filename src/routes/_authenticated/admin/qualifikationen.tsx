@@ -197,8 +197,9 @@ function Page() {
       {error ? (
         <Card className="border-0 shadow-soft">
           <CardContent className="py-8 text-center text-muted-foreground">
-            Die Übersicht konnte nicht geladen werden. Ist die Migration
-            „trainer_qualification_proof“ eingespielt?
+            Die Übersicht konnte nicht geladen werden. Bitte die Seite neu laden; klappt es dann
+            noch nicht, Claude Bescheid geben (technischer Hinweis: Datenbankstand
+            „trainer_qualification_proof“ prüfen).
           </CardContent>
         </Card>
       ) : (
