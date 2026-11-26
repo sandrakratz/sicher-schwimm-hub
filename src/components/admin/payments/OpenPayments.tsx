@@ -58,6 +58,8 @@ export function useOpenPayments() {
   const [rows, setRows] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  // In dieser Sitzung als bezahlt markiert – bleibt sichtbar, damit ein Fehlklick später korrigierbar ist
+  const [recentlyPaid, setRecentlyPaid] = useState<PaymentRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +88,7 @@ export function useOpenPayments() {
       .update({ paid: false, paid_at: null, paid_by: null, payment_note: r.payment_note })
       .eq("id", r.id);
     if (error) return void toast.error(error.message);
+    setRecentlyPaid((l) => l.filter((x) => x.id !== r.id));
     toast.info(`Zahlung von ${r.participant_name ?? "Teilnehmer"} wieder auf „offen“ gesetzt`);
     await load();
   }
@@ -161,6 +164,7 @@ export function useOpenPayments() {
     setBusy(null);
     if (error) return void toast.error(error.message);
     setRows((rs) => rs.filter((x) => x.id !== r.id));
+    setRecentlyPaid((l) => [r, ...l.filter((x) => x.id !== r.id)]);
     schedulePaymentMail(r.id, (sent) => {
       if (sent) toast.info(`Zahlungsbestätigung an ${r.participant_name ?? "die Eltern"} gesendet`);
     });
@@ -171,7 +175,19 @@ export function useOpenPayments() {
     });
   }
 
-  return { rows, loading, busy, load, patch, saveNote, remind, extendDue, markPaid };
+  return {
+    rows,
+    loading,
+    busy,
+    load,
+    patch,
+    saveNote,
+    remind,
+    extendDue,
+    markPaid,
+    recentlyPaid,
+    undoPaid,
+  };
 }
 
 export type OpenPayments = ReturnType<typeof useOpenPayments>;
@@ -300,6 +316,40 @@ export function PaymentCard({ r, pay }: { r: PaymentRow; pay: OpenPayments }) {
             )}
           </div>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** „Gerade als bezahlt markiert“: Fehlklicks lassen sich hier auch nach dem Hinweis noch rückgängig machen. */
+export function RecentlyPaid({ pay }: { pay: OpenPayments }) {
+  if (pay.recentlyPaid.length === 0) return null;
+  return (
+    <Card>
+      <CardContent className="space-y-2 py-4">
+        <div>
+          <h2 className="text-sm font-semibold">Gerade als bezahlt markiert</h2>
+          <p className="text-xs text-muted-foreground">
+            Aus Versehen markiert? Mit „Rückgängig“ steht die Zahlung wieder als offen in der Liste.
+            Die Liste gilt für diese Sitzung und verschwindet beim Neuladen der Seite.
+          </p>
+        </div>
+        <ul className="divide-y">
+          {pay.recentlyPaid.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <div className="min-w-0 text-sm">
+                <span className="font-medium">{r.participant_name ?? "Teilnehmer"}</span>
+                <span className="text-muted-foreground">
+                  {r.courses?.name ? ` · ${r.courses.name}` : ""}
+                  {r.price_amount != null ? ` · ${formatEuro(Number(r.price_amount))}` : ""}
+                </span>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => void pay.undoPaid(r)}>
+                Rückgängig
+              </Button>
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );

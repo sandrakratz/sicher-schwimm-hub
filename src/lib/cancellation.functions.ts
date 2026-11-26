@@ -55,6 +55,8 @@ export const setCancellationStatus = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         status: z.enum(STATUSES),
+        /** Interne Notiz des Vorstands (z. B. beim Abschließen); landet im Verwaltungsprotokoll */
+        note: z.string().trim().max(500).optional(),
       })
       .parse(input),
   )
@@ -81,6 +83,7 @@ export const setCancellationStatus = createServerFn({ method: "POST" })
           from: before?.status ?? null,
           to: data.status,
           reference_number: before?.reference_number ?? null,
+          ...(data.note ? { note: data.note } : {}),
         },
       });
     } catch (e) {

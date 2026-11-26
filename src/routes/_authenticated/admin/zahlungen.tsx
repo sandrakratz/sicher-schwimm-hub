@@ -9,6 +9,7 @@ import { effectiveAssignee, useAssignmentContext } from "@/components/admin/Assi
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   PaymentCard,
+  RecentlyPaid,
   dueOf,
   useOpenPayments,
   type PaymentRow,
@@ -97,6 +98,7 @@ function Page() {
         </p>
       </header>
       <MemberCheckPanel onChanged={() => void pay.load()} />
+      <RecentlyPaid pay={pay} />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -104,7 +106,8 @@ function Page() {
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Alle gebuchten Kursplätze ohne Zahlungseingang. Nach „Bezahlt“ verschwindet der Eintrag
-            hier und erscheint im Kurs ganz normal als bezahlt.
+            hier und erscheint im Kurs ganz normal als bezahlt (unter „Gerade als bezahlt markiert“
+            lässt sich das zurücknehmen).
           </p>
           {!loading && (
             <p className="text-sm font-medium">
