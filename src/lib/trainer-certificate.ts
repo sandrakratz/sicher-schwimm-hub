@@ -1,5 +1,6 @@
 import { ORG } from "@/lib/billing-config";
 import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatIban } from "@/lib/iban";
 import { formatEuro } from "@/lib/trainer-billing";
 import type { Certificate, PayoutReceipt } from "@/lib/trainer-billing.functions";
 
@@ -65,6 +66,22 @@ ${printScript}
 </body></html>`;
 }
 
+/**
+ * Auszahlungskonto: bei der Freigabe festgehalten. Ältere freigegebene Auszahlungen ohne festgehaltenes Konto
+ * zeigen die aktuelle Bankverbindung mit Hinweis, weil sie nicht sicher die damals genutzte ist.
+ */
+function bankLine(r: PayoutReceipt): string {
+  const b = r.bank;
+  if (!b) return `<p><strong>Auszahlungskonto:</strong> keine Bankverbindung hinterlegt</p>`;
+  const hint =
+    r.status === "approved" && !b.fixedAtApproval
+      ? `<br><em>Hinweis: Bei der Freigabe nicht festgehalten. Das ist die aktuelle Bankverbindung${
+          b.updatedAt ? ` (zuletzt geändert am ${esc(formatDateBerlin(b.updatedAt))})` : ""
+        }. Bitte mit dem Kontoauszug abgleichen.</em>`
+      : "";
+  return `<p><strong>Auszahlungskonto:</strong> ${esc(b.holder)} · IBAN ${esc(formatIban(b.iban))}${hint}</p>`;
+}
+
 /** Beleg einer einzelnen Auszahlung für die Buchhaltung und Kassenprüfung. */
 export function receiptHtml(r: PayoutReceipt): string {
   const rows = r.items
@@ -78,6 +95,7 @@ export function receiptHtml(r: PayoutReceipt): string {
 ${header()}
 <h1>Abrechnungsbeleg Übungsleitervergütung</h1>
 <p><strong>${esc(r.trainerName)}</strong> · Auszahlung am ${esc(formatDateBerlin(r.paidOn))}${r.note ? ` · ${esc(r.note)}` : ""}</p>
+${bankLine(r)}
 ${
   r.items.length
     ? `<table><tr><th>Datum</th><th>Kurs</th><th class="r">Stunden</th><th class="r">Satz</th><th class="r">Betrag</th></tr>${rows}</table>`

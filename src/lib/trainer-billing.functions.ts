@@ -982,12 +982,20 @@ export const approveTrainerPayout = createServerFn({ method: "POST" })
       throw new Error("Eine eigene Auszahlung kann nur jemand anderes freigeben.");
     if (p.created_by === context.userId)
       throw new Error("Wer die Auszahlung angelegt hat, kann sie nicht selbst freigeben.");
+    // Auszahlungskonto festhalten, damit der Beleg es auch nach einer späteren Änderung zeigt
+    const { data: bank } = await supabaseAdmin
+      .from("trainer_payout_details")
+      .select("iban,account_holder")
+      .eq("user_id", p.trainer_id)
+      .maybeSingle();
     const { error } = await (supabaseAdmin as any)
       .from("trainer_payouts")
       .update({
         status: "approved",
         approved_by: context.userId,
         approved_at: new Date().toISOString(),
+        payout_iban: bank?.iban ?? null,
+        payout_account_holder: bank?.account_holder ?? null,
       })
       .eq("id", data.id)
       .eq("status", "pending");
@@ -1002,6 +1010,15 @@ export const approveTrainerPayout = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/** Auszahlungskonto auf dem Beleg; `fixedAtApproval` = bei der Freigabe festgehalten. */
+export type ReceiptBank = {
+  iban: string;
+  holder: string;
+  fixedAtApproval: boolean;
+  /** nur bei aktueller Bankverbindung: wann sie zuletzt geändert wurde */
+  updatedAt: string | null;
+} | null;
+
 /** Beleg einer Auszahlung (Einsatzliste, wer angelegt und wer freigegeben hat) für die Kassenprüfung. */
 export const getPayoutReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -1012,7 +1029,7 @@ export const getPayoutReceipt = createServerFn({ method: "POST" })
     const { data: p } = await (supabaseAdmin as any)
       .from("trainer_payouts")
       .select(
-        "id,trainer_id,paid_on,total_amount,note,status,created_by,created_at,approved_by,approved_at,cap_override_reason",
+        "id,trainer_id,paid_on,total_amount,note,status,created_by,created_at,approved_by,approved_at,cap_override_reason,payout_iban,payout_account_holder",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -1028,9 +1045,41 @@ export const getPayoutReceipt = createServerFn({ method: "POST" })
       .select("id,first_name,last_name,email")
       .in("id", ids);
     const names = new Map((profiles ?? []).map((x) => [x.id as string, nameOf(x)]));
+    // Auszahlungskonto: bei der Freigabe festgehalten. Fehlt es (noch nicht freigegeben oder ältere
+    // Auszahlung), die aktuell unter „Ich“ hinterlegte Bankverbindung.
+    let bank: ReceiptBank = null;
+    if (p.payout_iban) {
+      bank = {
+        iban: p.payout_iban as string,
+        holder: (p.payout_account_holder as string | null) ?? "",
+        fixedAtApproval: true,
+        updatedAt: null,
+      };
+    } else {
+      const { data: current } = await supabaseAdmin
+        .from("trainer_payout_details")
+        .select("iban,account_holder,updated_at")
+        .eq("user_id", p.trainer_id)
+        .maybeSingle();
+      if (current)
+        bank = {
+          iban: current.iban as string,
+          holder: current.account_holder as string,
+          fixedAtApproval: false,
+          updatedAt: (current.updated_at as string | null) ?? null,
+        };
+    }
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "trainer.payout.receipt",
+      entity: "trainer_payouts",
+      entity_id: data.id,
+      metadata: { trainer_id: p.trainer_id, with_iban: Boolean(bank) },
+    });
     return {
       id: p.id as string,
       trainerName: names.get(p.trainer_id) ?? "Unbekannt",
+      bank,
       paidOn: p.paid_on as string,
       total: Number(p.total_amount),
       note: (p.note as string | null) ?? null,
