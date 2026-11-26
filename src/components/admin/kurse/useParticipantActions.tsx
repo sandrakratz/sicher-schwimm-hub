@@ -123,7 +123,9 @@ export function useParticipantActions(refresh: (withCourses?: boolean) => Promis
       })) as { emailed?: boolean } | null;
       toast.success(
         [
-          removeState.blocklist ? "Entfernt und auf die Sperrliste gesetzt" : "Entfernt",
+          removeState.blocklist
+            ? "Aus dem Kurs genommen und auf die Sperrliste gesetzt"
+            : "Aus dem Kurs genommen – die Buchung bleibt mit Grund sichtbar",
           res?.emailed ? "E-Mail an die Eltern versendet" : null,
         ]
           .filter(Boolean)
@@ -132,7 +134,7 @@ export function useParticipantActions(refresh: (withCourses?: boolean) => Promis
       setRemoveState(null);
       await refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Entfernen fehlgeschlagen");
+      toast.error(e instanceof Error ? e.message : "Aus dem Kurs nehmen fehlgeschlagen");
     } finally {
       setRemoving(false);
     }

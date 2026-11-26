@@ -45,6 +45,9 @@ export type Participant = {
   payer_street?: string | null;
   payer_zip?: string | null;
   payer_city?: string | null;
+  /** Vom Verein aus dem Kurs genommen (Grund in cancel_reason) */
+  removed_at?: string | null;
+  cancel_reason?: string | null;
 };
 
 export type CourseRequest = {

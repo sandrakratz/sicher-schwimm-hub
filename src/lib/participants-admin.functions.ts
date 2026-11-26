@@ -14,9 +14,10 @@ const removeSchema = z.object({
 });
 
 /**
- * Entfernt einen Kursteilnehmer, legt auf Wunsch (Standard bei
- * Nichtzahlung) einen Sperrlisteneintrag an und informiert die Eltern
- * optional per E-Mail.
+ * Nimmt ein Kind aus dem Kurs (Vorstand 26.11.2026: nicht mehr löschen). Die Buchung bleibt als
+ * „abgesagt“ mit removed_at und Grund stehen – samt Zahlung, Anwesenheit und Prüfung, die eigene
+ * Aufbewahrungsfristen haben. Zählt nicht als Absage der Familie (kein cancelled_at). Legt auf Wunsch
+ * (Standard bei Nichtzahlung) einen Sperrlisteneintrag an und informiert die Eltern optional per E-Mail.
  */
 export const removeCourseParticipant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -28,13 +29,14 @@ export const removeCourseParticipant = createServerFn({ method: "POST" })
     const { data: part } = await supabaseAdmin
       .from("course_participants")
       .select(
-        "id,course_id,request_id,participant_name,participant_email,date_of_birth,paid,courses!course_participants_course_id_fkey(name,starts_on)",
+        "id,course_id,request_id,participant_name,participant_email,date_of_birth,paid,status,internal_notes,courses!course_participants_course_id_fkey(name,starts_on)",
       )
       .eq("id", data.participantId)
       .maybeSingle();
     if (!part) throw new Error("Teilnehmer nicht gefunden");
+    if (part.status === "cancelled") throw new Error("Diese Buchung ist bereits beendet.");
 
-    const reason = (data.reason || "").trim() || "Aus Kurs entfernt";
+    const reason = (data.reason || "").trim() || "Aus dem Kurs genommen";
     const courseName = (part as any).courses?.name ?? null;
 
     if (data.blocklist) {
@@ -58,7 +60,20 @@ export const removeCourseParticipant = createServerFn({ method: "POST" })
       }
     }
 
-    const { error } = await supabaseAdmin.from("course_participants").delete().eq("id", part.id);
+    const { formatDateTimeBerlin } = await import("@/lib/format");
+    const now = new Date().toISOString();
+    const line = `[${formatDateTimeBerlin(now)}] Aus dem Kurs genommen – Grund: ${reason}.`;
+    const { error } = await supabaseAdmin
+      .from("course_participants")
+      .update({
+        status: "cancelled",
+        removed_at: now,
+        removed_by: context.userId,
+        cancel_reason: reason,
+        internal_notes: [part.internal_notes, line].filter(Boolean).join("\n"),
+      } as never)
+      .eq("id", part.id)
+      .neq("status", "cancelled");
     if (error) throw new Error(error.message);
 
     // Zugehörige Kursanfrage nicht länger „angenommen“ mit diesem Kurs führen

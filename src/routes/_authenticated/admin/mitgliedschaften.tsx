@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -470,20 +471,25 @@ function Page() {
     }
   }
 
+  // Löschen nur für nie genehmigte Anträge (Fehleinträge, Dubletten), mit Rückfrage
+  const [deleteFor, setDeleteFor] = useState<{
+    id: string;
+    first_name?: string | null;
+    last_name?: string | null;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   async function deleteMembership(id: string) {
-    if (
-      !confirm(
-        "Diese Mitgliedschaft wirklich endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-      )
-    )
-      return;
+    setDeleting(true);
     try {
       await deleteFn({ data: { id } });
-      toast.success("Mitgliedschaft gelöscht");
+      toast.success("Antrag gelöscht");
+      setDeleteFor(null);
       setSelected(null);
       load();
     } catch (e: any) {
       toast.error(e?.message || "Fehler");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -632,14 +638,6 @@ function Page() {
                       Genehmigen
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => deleteMembership(r.id)}
-                    aria-label="Löschen"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -648,6 +646,25 @@ function Page() {
       </CollapsibleCard>
 
       <PriceMismatches />
+
+      {deleteFor && (
+        <ConfirmActionDialog
+          title={`Antrag von ${[deleteFor.first_name, deleteFor.last_name].filter(Boolean).join(" ") || "unbekannt"} löschen`}
+          consequence={
+            <>
+              Der nie genehmigte Antrag wird endgültig gelöscht, samt aller Angaben. Das ist nur für
+              Fehleinträge und Dubletten gedacht. Soll jemand nicht Mitglied werden, nutzen Sie
+              „Ablehnen / Beenden“: dann bleibt der Vorgang nachvollziehbar und wird nach Frist
+              automatisch gelöscht.
+            </>
+          }
+          confirmLabel="Antrag löschen"
+          destructive
+          busy={deleting}
+          onClose={() => setDeleteFor(null)}
+          onConfirm={() => void deleteMembership(deleteFor.id)}
+        />
+      )}
 
       <Dialog
         open={!!selected}
@@ -847,10 +864,21 @@ function Page() {
                     Ablehnen / Beenden
                   </Button>
                 )}
-                <Button variant="destructive" onClick={() => deleteMembership(selected.id)}>
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Löschen
-                </Button>
+                {selected.status === "pending" ? (
+                  <Button
+                    variant="ghost"
+                    className="text-destructive"
+                    title="Nur für Fehleinträge und Dubletten"
+                    onClick={() => setDeleteFor(selected)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    Antrag löschen …
+                  </Button>
+                ) : (
+                  <span className="self-center text-xs text-muted-foreground">
+                    Beendete Mitgliedschaften werden 3 Jahre nach „gültig bis“ automatisch gelöscht.
+                  </span>
+                )}
                 <Button
                   variant="ghost"
                   onClick={() => {
