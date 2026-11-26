@@ -1028,9 +1028,29 @@ export const getPayoutReceipt = createServerFn({ method: "POST" })
       .select("id,first_name,last_name,email")
       .in("id", ids);
     const names = new Map((profiles ?? []).map((x) => [x.id as string, nameOf(x)]));
+    // Bankverbindung, die die Trainer:in unter „Ich“ hinterlegt hat (aktueller Stand, mit Änderungsdatum).
+    const { data: bank } = await supabaseAdmin
+      .from("trainer_payout_details")
+      .select("iban,account_holder,updated_at")
+      .eq("user_id", p.trainer_id)
+      .maybeSingle();
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "trainer.payout.receipt",
+      entity: "trainer_payouts",
+      entity_id: data.id,
+      metadata: { trainer_id: p.trainer_id, with_iban: Boolean(bank) },
+    });
     return {
       id: p.id as string,
       trainerName: names.get(p.trainer_id) ?? "Unbekannt",
+      bank: bank
+        ? {
+            iban: bank.iban as string,
+            holder: bank.account_holder as string,
+            updatedAt: (bank.updated_at as string | null) ?? null,
+          }
+        : null,
       paidOn: p.paid_on as string,
       total: Number(p.total_amount),
       note: (p.note as string | null) ?? null,
