@@ -193,8 +193,8 @@ function Page() {
         <h1 className="font-display text-3xl font-bold text-primary-deep">Downloads</h1>
         <p className="text-sm text-muted-foreground">
           Alle Listen und Nachweise der Verwaltung an einem Ort: erst wählen, wofür (Kurs, Jahr,
-          Stichtag), dann herunterladen. Jeder Download wird im Audit-Log vermerkt. Dateien mit
-          Namen bitte nur im Vorstand weitergeben.
+          Stichtag), dann herunterladen. Jeder Download wird im Änderungsprotokoll vermerkt. Dateien
+          mit Namen bitte nur im Vorstand weitergeben.
         </p>
       </div>
 

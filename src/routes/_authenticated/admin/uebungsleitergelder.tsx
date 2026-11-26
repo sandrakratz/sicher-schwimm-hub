@@ -152,7 +152,7 @@ function IbanList() {
           <p className="text-sm text-muted-foreground">
             Bankverbindungen der Trainer:innen. Sie pflegen ihre Angaben selbst im Profil; bei einer
             Änderung geht automatisch ein Hinweis an info@sicher-schwimmen.com. Jeder Abruf wird im
-            Audit-Log vermerkt.
+            Änderungsprotokoll vermerkt.
           </p>
         </div>
         <Button onClick={exportCsv} disabled={withIban.length === 0} variant="outline">

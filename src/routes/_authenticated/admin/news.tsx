@@ -1,3 +1,5 @@
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import { createFileRoute } from "@tanstack/react-router";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,12 +146,13 @@ function Page() {
     await load();
   }
 
+  const [deleteFor, setDeleteFor] = useState<News | null>(null);
   async function remove(n: News) {
-    if (!confirm(`Beitrag "${n.title}" löschen?`)) return;
     const { error } = await supabase.from("news").delete().eq("id", n.id);
     if (error) return toast.error(error.message);
     await removeStored(n.image_url);
     toast.success("Gelöscht");
+    setDeleteFor(null);
     await load();
   }
 
@@ -224,15 +227,16 @@ function Page() {
                   <Button variant="ghost" size="sm" onClick={() => startEdit(n)}>
                     Bearbeiten
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Beitrag löschen"
-                    title="Beitrag löschen"
-                    onClick={() => remove(n)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <MoreMenu
+                    items={[
+                      {
+                        label: "Beitrag löschen …",
+                        hint: "Endgültig – zum Verbergen reicht „Entwurf“ im Bearbeiten-Fenster",
+                        destructive: true,
+                        onSelect: () => setDeleteFor(n),
+                      },
+                    ]}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -337,6 +341,22 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {deleteFor && (
+        <ConfirmActionDialog
+          title={`„${deleteFor.title}“ löschen`}
+          consequence={
+            <>
+              Der Beitrag verschwindet endgültig von der Webseite und aus dem Portal, samt Bild.
+              Bereits verschickte Hinweis-Mails bleiben bei den Empfängern. Zum vorübergehenden
+              Verbergen reicht es, den Beitrag im Bearbeiten-Fenster als Entwurf zu speichern.
+            </>
+          }
+          confirmLabel="Endgültig löschen"
+          destructive
+          onClose={() => setDeleteFor(null)}
+          onConfirm={() => void remove(deleteFor)}
+        />
+      )}
     </div>
   );
 }

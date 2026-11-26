@@ -1,3 +1,5 @@
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import { createFileRoute } from "@tanstack/react-router";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +48,6 @@ import {
   fromBerlinInput,
   type ShiftSignup,
 } from "@/lib/event-shifts";
-import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { HelperGroupsPanel } from "@/components/admin/HelperGroupsPanel";
 import { MediaUploadField } from "@/components/admin/MediaUploadField";
 
@@ -183,12 +184,13 @@ function Page() {
     await load();
   }
 
+  const [deleteFor, setDeleteFor] = useState<Ev | null>(null);
   async function remove(e: Ev) {
-    if (!confirm(`Event "${e.title}" löschen?`)) return;
     const { error } = await supabase.from("events").delete().eq("id", e.id);
     if (error) return toast.error(error.message);
     await removeStored(e.image_url);
     toast.success("Gelöscht");
+    setDeleteFor(null);
     await load();
   }
 
@@ -259,15 +261,16 @@ function Page() {
                   <Button variant="ghost" size="sm" onClick={() => startEdit(e)}>
                     Bearbeiten
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Veranstaltung löschen"
-                    title="Veranstaltung löschen"
-                    onClick={() => remove(e)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <MoreMenu
+                    items={[
+                      {
+                        label: "Veranstaltung löschen …",
+                        hint: "Endgültig, samt Helfer-Rückmeldungen",
+                        destructive: true,
+                        onSelect: () => setDeleteFor(e),
+                      },
+                    ]}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -392,6 +395,22 @@ function Page() {
         onClose={() => setHelperEvent(null)}
         onChanged={load}
       />
+      {deleteFor && (
+        <ConfirmActionDialog
+          title={`„${deleteFor.title}“ löschen`}
+          consequence={
+            <>
+              Die Veranstaltung verschwindet endgültig von der Webseite und aus dem Portal, samt
+              Bild, Helferstellen und allen Rückmeldungen der Trainer:innen. Es geht keine E-Mail
+              raus.
+            </>
+          }
+          confirmLabel="Endgültig löschen"
+          destructive
+          onClose={() => setDeleteFor(null)}
+          onConfirm={() => void remove(deleteFor)}
+        />
+      )}
     </div>
   );
 }
