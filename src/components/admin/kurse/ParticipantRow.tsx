@@ -1,21 +1,15 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRightLeft, Award, Lock, Pencil, UserX } from "lucide-react";
+import { Award, Lock, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import { beltLabel } from "@/lib/belt";
 import { combineChildHint } from "@/lib/child-hint";
 import {
   ageAt,
-  ENROLL_STATUS,
+  ENROLL_STATUS_LABEL,
   fmtDate,
   type Course,
   type Participant,
@@ -181,22 +175,15 @@ export function ParticipantRow({
         )}
       </TableCell>
       <TableCell>
-        <Select value={p.status} onValueChange={(v) => onStatus(v as Participant["status"])}>
-          <SelectTrigger className="h-8 w-[130px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ENROLL_STATUS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {p.removed_at && (
-          <div className="mt-1 text-xs text-muted-foreground" title={p.cancel_reason ?? undefined}>
-            aus dem Kurs genommen
-          </div>
+        {/* Status nur anzeigen; ändern über die Knöpfe rechts (Bedienregel 4) */}
+        <Badge
+          variant={p.status === "confirmed" ? "secondary" : "outline"}
+          title={p.cancel_reason ?? undefined}
+        >
+          {p.removed_at ? "Aus dem Kurs genommen" : (ENROLL_STATUS_LABEL[p.status] ?? p.status)}
+        </Badge>
+        {p.status === "cancelled" && p.cancel_reason && (
+          <div className="mt-1 max-w-[160px] text-xs text-muted-foreground">{p.cancel_reason}</div>
         )}
       </TableCell>
       <TableCell className="text-xs">
@@ -256,36 +243,50 @@ export function ParticipantRow({
         {!hint && !p.internal_notes && "—"}
       </TableCell>
       <TableCell className="text-right whitespace-nowrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Teilnehmer bearbeiten"
-          title="Teilnehmer bearbeiten"
-          onClick={onEdit}
-        >
-          <Pencil className="h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Pencil className="h-4 w-4" aria-hidden="true" /> Bearbeiten
         </Button>
-        {p.status !== "cancelled" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            title="Kind umbuchen / Kurs wechseln"
-            onClick={onTransfer}
-          >
-            <ArrowRightLeft className="h-4 w-4" />
-          </Button>
-        )}
-        {p.status !== "cancelled" && (
-          <Button
-            variant="ghost"
-            size="sm"
-            aria-label="Aus dem Kurs nehmen"
-            title="Aus dem Kurs nehmen (Buchung bleibt mit Grund sichtbar)"
-            onClick={onRemove}
-          >
-            <UserX className="h-4 w-4 text-destructive" />
-          </Button>
-        )}
+        <MoreMenu
+          items={
+            p.status === "cancelled"
+              ? []
+              : [
+                  ...(p.status === "waiting"
+                    ? [
+                        {
+                          label: "Als bestätigt eintragen",
+                          hint: "Kind bekommt den Platz in diesem Kurs",
+                          onSelect: () => onStatus("confirmed"),
+                        },
+                      ]
+                    : []),
+                  {
+                    label: "Umbuchen …",
+                    hint: "Anderer Kurs; Gebühr nach § 3, Eltern stimmen per Link zu",
+                    onSelect: onTransfer,
+                  },
+                  {
+                    label: "Absage erfassen …",
+                    hint: "Familie sagt ab – zählt als Absage, Platz wird frei",
+                    onSelect: () => onStatus("cancelled"),
+                  },
+                  ...(p.status === "confirmed"
+                    ? [
+                        {
+                          label: "Wieder auf die Warteliste …",
+                          hint: "Platz wird frei, Kind wartet wieder – zählt nicht als Absage",
+                          onSelect: () => onStatus("waiting"),
+                        },
+                      ]
+                    : []),
+                  {
+                    label: "Aus dem Kurs nehmen …",
+                    hint: "Durch den Verein, z. B. Nichtzahlung – Buchung bleibt mit Grund sichtbar",
+                    onSelect: onRemove,
+                  },
+                ]
+          }
+        />
       </TableCell>
     </TableRow>
   );

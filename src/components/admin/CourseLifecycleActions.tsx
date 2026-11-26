@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cancelCourse, rescheduleCourse } from "@/lib/course-lifecycle.functions";
-import { formatDateBerlin } from "@/lib/format";
+import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
 
 type C = { id: string; name: string; starts_on: string | null; start_tentative?: boolean };
 
@@ -79,13 +79,29 @@ export function CourseLifecycleActions({
     }
   }
 
+  // Verschieben und Absagen gelten nur vor Kursbeginn (alle Termine wandern mit / Kinder zurück
+  // auf die Warteliste). Danach: einzelne Termine unter „Termine“, Eltern per Eilnachricht.
+  const started = !!course.starts_on && course.starts_on <= todayBerlinIso();
+  if (started) return null;
+
   return (
     <>
-      <Button variant="ghost" size="sm" title="Starttermin anpassen" onClick={() => open("move")}>
-        <CalendarClock className="h-4 w-4" />
+      <Button
+        variant="ghost"
+        size="sm"
+        title="Kursbeginn auf ein anderes Datum legen – alle Termine wandern mit"
+        onClick={() => open("move")}
+      >
+        <CalendarClock className="h-4 w-4" aria-hidden="true" /> Verschieben …
       </Button>
-      <Button variant="ghost" size="sm" title="Kurs absagen" onClick={() => open("cancel")}>
-        <Ban className="h-4 w-4 text-destructive" />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-destructive"
+        title="Kurs findet nicht statt – Kinder zurück auf die Warteliste, Eltern auf Wunsch per Mail"
+        onClick={() => open("cancel")}
+      >
+        <Ban className="h-4 w-4" aria-hidden="true" /> Absagen …
       </Button>
       <Dialog open={mode !== null} onOpenChange={(o) => !o && setMode(null)}>
         <DialogContent>

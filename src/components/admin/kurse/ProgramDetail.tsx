@@ -63,18 +63,24 @@ function ProgramDetailsForm({
           "Online buchbar",
           '(aus: Status „Geplant – noch nicht buchbar", keine Buchung)',
         )}
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => {
-              if (await editor.remove(program)) onDeleted();
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" /> Kurs löschen
-          </Button>
-          <Button onClick={editor.save}>Kursangaben speichern</Button>
-        </div>
+        <Button onClick={editor.save}>Kursangaben speichern</Button>
+      </div>
+      {/* Endgültiges abgesetzt vom Speichern (Bedienregel 3) */}
+      <div className="flex flex-wrap items-center gap-3 border-t pt-4 text-sm text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive"
+          onClick={async () => {
+            if (await editor.remove(program)) onDeleted();
+          }}
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" /> Kursangebot löschen …
+        </Button>
+        <span>
+          Entfernt das Angebot von der Webseite; die Kurszeiträume mit ihren Buchungen bleiben. Zum
+          Ausblenden reicht „Auf der Webseite anzeigen“ aus.
+        </span>
       </div>
     </div>
   );

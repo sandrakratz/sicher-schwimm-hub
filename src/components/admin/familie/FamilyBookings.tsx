@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, Pencil, Repeat, Undo2, UserX, XCircle } from "lucide-react";
+import { Check, Pencil, Undo2 } from "lucide-react";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,22 +167,30 @@ export function FamilyBookings({
                   <Pencil className="h-4 w-4" aria-hidden="true" /> Bearbeiten
                 </Button>
                 {active && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={() => a.setTransferPart(p)}>
-                      <Repeat className="h-4 w-4" aria-hidden="true" /> Umbuchen
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void a.updateStatus(p, "cancelled")}
-                    >
-                      <XCircle className="h-4 w-4" aria-hidden="true" /> Absage erfassen
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => a.startRemove(p)}>
-                      <UserX className="h-4 w-4 text-destructive" aria-hidden="true" /> Aus Kurs
-                      nehmen
-                    </Button>
-                  </>
+                  <MoreMenu
+                    items={[
+                      {
+                        label: "Umbuchen …",
+                        hint: "Anderer Kurs; Gebühr nach § 3, Eltern stimmen per Link zu",
+                        onSelect: () => a.setTransferPart(p),
+                      },
+                      {
+                        label: "Absage erfassen …",
+                        hint: "Familie sagt ab – zählt als Absage, Platz wird frei",
+                        onSelect: () => void a.updateStatus(p, "cancelled"),
+                      },
+                      {
+                        label: "Wieder auf die Warteliste …",
+                        hint: "Platz wird frei, Kind wartet wieder – zählt nicht als Absage",
+                        onSelect: () => void a.updateStatus(p, "waiting"),
+                      },
+                      {
+                        label: "Aus dem Kurs nehmen …",
+                        hint: "Durch den Verein, z. B. Nichtzahlung – Buchung bleibt mit Grund sichtbar",
+                        onSelect: () => a.startRemove(p),
+                      },
+                    ]}
+                  />
                 )}
               </div>
             </div>
