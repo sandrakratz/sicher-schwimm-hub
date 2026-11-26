@@ -80,8 +80,10 @@ async function sendFamilyMail(m: MailInput) {
 }
 
 /** Teilnahmen, Strafpunkte, letzte Teilnahme und bereits zugesagte künftige Termine je Konto. */
-async function loadStanding(admin: any, userIds: string[]): Promise<Record<string, Standing>> {
+async function loadStanding(admin: any, ids: (string | null)[]): Promise<Record<string, Standing>> {
   const out: Record<string, Standing> = {};
+  // Anmeldungen ehemaliger Mitglieder haben kein Konto mehr (user_id leer) und zählen nicht mit
+  const userIds = ids.filter((id): id is string => !!id);
   if (userIds.length === 0) return out;
   const { data: rows, error } = await admin
     .from("family_swim_standing")
@@ -142,7 +144,8 @@ async function promoteWaitlist(
       .from("family_swim_requests")
       .select("id,user_id,event_id,seats,requested_at,contact_name,contact_email")
       .eq("event_id", eventId)
-      .eq("status", "waitlist");
+      .eq("status", "waitlist")
+      .not("user_id", "is", null);
     if (!waiting?.length) break;
     const standing = await loadStanding(admin, [
       ...new Set<string>(waiting.map((w: any) => w.user_id)),
@@ -591,7 +594,11 @@ export const getFamilySwimAdmin = createServerFn({ method: "POST" })
     const { data: stRows } = await admin
       .from("family_swim_standing")
       .select("user_id,participations,strikes,last_participation");
-    const allIds = [...new Set<string>([...(stRows ?? []).map((s: any) => s.user_id), ...userIds])];
+    const allIds = [
+      ...new Set<string>(
+        [...(stRows ?? []).map((s: any) => s.user_id), ...userIds].filter(Boolean),
+      ),
+    ];
     const profiles = allIds.length
       ? ((await admin.from("profiles").select("id,first_name,last_name,email").in("id", allIds))
           .data ?? [])
@@ -740,7 +747,8 @@ async function computeProposal(admin: any, eventIds: string[]): Promise<Proposal
     .from("family_swim_requests")
     .select("*")
     .in("event_id", [...evMap.keys()])
-    .in("status", ["requested", "waitlist"]);
+    .in("status", ["requested", "waitlist"])
+    .not("user_id", "is", null);
   const reqMap = new Map<string, any>((reqs ?? []).map((r: any) => [r.id, r]));
   const standing = await loadStanding(admin, [
     ...new Set<string>((reqs ?? []).map((r: any) => r.user_id)),
