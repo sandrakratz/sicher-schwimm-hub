@@ -87,17 +87,42 @@ function Page() {
 
       <H2>4. Zugriff, Löschung und Aufbewahrung</H2>
       <p>
-        Der Verein wendet den Grundsatz der Datenminimierung an. Es gelten folgende Löschfristen:
+        Der Verein wendet den Grundsatz der Datenminimierung an. Daten, die nicht mehr gebraucht
+        werden, löschen wir automatisch. Jahresfristen zählen ab dem Ende des Kalenderjahres, in dem
+        der Anlass liegt. Es gelten folgende Löschfristen:
       </p>
       <ul className="list-disc pl-5">
         <li>
-          <strong>Buchungs- und Zahlungsbelege (einschließlich Beitragsabrechnung):</strong> 10
-          Jahre (§ 147 AO, § 257 HGB).
+          <strong>Kursanfragen, Warteliste, Interessenbekundungen und Kontaktformular:</strong> 6
+          Monate nach Abschluss (z. B. Absage, Abmeldung, Buchung oder Erledigung).
         </li>
         <li>
-          <strong>Übrige Mitglieds- und Kursdaten:</strong> bis zu 3 Jahre nach Austritt bzw. Ablauf
-          des Kursjahres (regelmäßige zivilrechtliche Verjährungsfrist), soweit keine längere
-          gesetzliche Aufbewahrungspflicht besteht.
+          <strong>Kursbuchungen ohne Zahlung</strong> (z. B. vor der Zahlung abgesagt): 6 Monate
+          nach der Absage; nicht bezahlte Forderungen 3 Jahre nach Ablauf des Kursjahres.
+        </li>
+        <li>
+          <strong>Anwesenheit im Kurs:</strong> 2 Jahre nach dem Termin (Nachweis gegenüber der
+          Versicherung).
+        </li>
+        <li>
+          <strong>Übrige Kursdaten</strong> (Kontaktdaten, Hinweise, Lernstand am Schwimmgurt): 3
+          Jahre nach Ablauf des Kursjahres (regelmäßige zivilrechtliche Verjährungsfrist).
+        </li>
+        <li>
+          <strong>Buchungs- und Zahlungsbelege</strong> (einschließlich Beitrags- und
+          Übungsleiterabrechnung): 8 Jahre (§ 147 AO, § 257 HGB). Nach Ablauf der 3 Jahre bewahren
+          wir von einer bezahlten Kursbuchung nur noch die für den Beleg nötigen Angaben auf (Name
+          des Kindes, Rechnungsanschrift, Kurs, Betrag, Buchungs- und Zahlungsdatum,
+          Buchungsnummer).
+        </li>
+        <li>
+          <strong>Prüfungsprotokolle</strong> (Schwimmabzeichen, auch für Prüflinge anderer
+          Schwimmschulen): 5 Jahre nach Ablauf des Prüfungsjahres.
+        </li>
+        <li>
+          <strong>Mitgliedsdaten:</strong> 3 Jahre nach Ende der Mitgliedschaft, soweit keine
+          längere gesetzliche Aufbewahrungspflicht besteht. Das Benutzerkonto für das
+          Mitgliederportal wird 30 Tage nach Ende der Mitgliedschaft gelöscht.
         </li>
         <li>
           <strong>Gesundheits- und Notfalldaten:</strong> sichere Archivierung nach Kursende;
@@ -105,11 +130,10 @@ function Page() {
           nach Ablauf des Kursjahres), bei Widerruf der Einwilligung früher.
         </li>
         <li>
-          <strong>Lernstand (Klötzchen am Schwimmgurt):</strong> 3 Jahre nach Ablauf des Kursjahres,
-          dann wird die Angabe automatisch gelöscht.
+          <strong>Widerrufe und Versandprotokolle:</strong> 3 Jahre.
         </li>
         <li>
-          <strong>Widerrufe und Versandprotokolle:</strong> in der Regel 3 Jahre.
+          <strong>Änderungsprotokoll der Verwaltung:</strong> 24 Monate.
         </li>
         <li>
           <strong>Vorfallsdokumentation:</strong> Aufbewahrung gemäß Vorgaben der
@@ -222,7 +246,8 @@ function Page() {
         senden darüber Eilnachrichten zu Ihrem Kurs (z. B. Ausfall). Rechtsgrundlage ist Ihre
         Einwilligung (Art. 6 Abs. 1 lit. a DSGVO, § 25 Abs. 1 TDDDG). Der Inhalt der Mitteilungen
         wird verschlüsselt übertragen. Sie können die Mitteilungen jederzeit auf derselben Seite
-        oder in den Einstellungen Ihres Browsers abschalten; wir löschen das Abonnement dann.
+        oder in den Einstellungen Ihres Browsers abschalten; wir löschen das Abonnement dann,
+        spätestens aber einen Monat nach Kursende.
       </p>
 
       <H2>9. Interne Sperrliste</H2>
@@ -231,8 +256,8 @@ function Page() {
         interne Sperrliste (Name und Geburtsdatum des Kindes, E-Mail-Adresse, Grund; Zugriff nur für
         den Vorstand). Eine Buchung trotz Eintrags ist nicht automatisch ausgeschlossen: Der
         Vorstand prüft solche Anfragen im Einzelfall. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f
-        DSGVO. Einträge werden spätestens nach zwei Jahren überprüft und gelöscht, wenn sie nicht
-        mehr erforderlich sind.
+        DSGVO. Einträge werden zwei Jahre nach dem Eintrag automatisch gelöscht, es sei denn, der
+        Vorstand hält sie nach erneuter Prüfung weiter für erforderlich.
       </p>
 
       <H2>10. Trainer, Helfer und Ehrenamtliche</H2>
@@ -243,7 +268,9 @@ function Page() {
         Kontoinhaber*in) für die Auszahlung der Übungsleitergelder hinterlegen; diese ist nur für
         sie selbst und den Vorstand sichtbar. Erweiterte Führungszeugnisse werden ausschließlich zur
         Erfüllung der Pflichten nach § 72a SGB VIII im Rahmen unseres Kinderschutzkonzepts
-        verarbeitet.
+        verarbeitet. Einteilung, Verfügbarkeit und Anwesenheit löschen wir 2 Jahre nach dem Termin,
+        Rückmeldungen zu Helferschichten 6 Monate nach der Veranstaltung; Abrechnungen der
+        Übungsleitergelder bewahren wir als Buchungsbelege 8 Jahre auf.
       </p>
 
       <H2>10a. Mitgliederschwimmen (nur für Vereinsmitglieder)</H2>
