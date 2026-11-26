@@ -67,18 +67,19 @@ ${printScript}
 }
 
 /**
- * Auszahlungskonto: die unter „Ich“ hinterlegte Bankverbindung. Wurde sie nach dem Auszahlungstag geändert,
- * steht ein Hinweis dabei – der Beleg zeigt dann das neue Konto, nicht zwingend das damals genutzte.
+ * Auszahlungskonto: bei der Freigabe festgehalten. Ältere freigegebene Auszahlungen ohne festgehaltenes Konto
+ * zeigen die aktuelle Bankverbindung mit Hinweis, weil sie nicht sicher die damals genutzte ist.
  */
 function bankLine(r: PayoutReceipt): string {
-  if (!r.bank) return `<p><strong>Auszahlungskonto:</strong> keine Bankverbindung hinterlegt</p>`;
-  const changed = r.bank.updatedAt;
-  const changedLater = changed !== null && changed.slice(0, 10) > r.paidOn;
-  return `<p><strong>Auszahlungskonto:</strong> ${esc(r.bank.holder)} · IBAN ${esc(formatIban(r.bank.iban))}${
-    changedLater
-      ? `<br><em>Hinweis: Bankverbindung am ${esc(formatDateBerlin(changed))} geändert, also nach dieser Auszahlung. Bitte mit dem Kontoauszug abgleichen.</em>`
-      : ""
-  }</p>`;
+  const b = r.bank;
+  if (!b) return `<p><strong>Auszahlungskonto:</strong> keine Bankverbindung hinterlegt</p>`;
+  const hint =
+    r.status === "approved" && !b.fixedAtApproval
+      ? `<br><em>Hinweis: Bei der Freigabe nicht festgehalten. Das ist die aktuelle Bankverbindung${
+          b.updatedAt ? ` (zuletzt geändert am ${esc(formatDateBerlin(b.updatedAt))})` : ""
+        }. Bitte mit dem Kontoauszug abgleichen.</em>`
+      : "";
+  return `<p><strong>Auszahlungskonto:</strong> ${esc(b.holder)} · IBAN ${esc(formatIban(b.iban))}${hint}</p>`;
 }
 
 /** Beleg einer einzelnen Auszahlung für die Buchhaltung und Kassenprüfung. */
