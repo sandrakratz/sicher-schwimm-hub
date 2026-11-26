@@ -58,6 +58,7 @@ const GUIDE: Array<[string, string[]]> = [
     [
       "Zähler zurücksetzen (z. B. bei Krankheit) über den Button „Zähler zurücksetzen“.",
       "Kind mit „Zurück auf wartend“ reaktivieren, manuell anbieten oder direkt buchen.",
+      "Familie meldet sich selbst ab (z. B. bleibt bei einer anderen Schwimmschule): „Abmelden“ mit Grund – geht bei „Wartend“, „Abgesagt“ und „Frist abgelaufen“, auch in der Familienakte. Der Eintrag bleibt als „Entfernt“ mit dem Grund in der Notiz erhalten und zählt nicht als Absage. Bei offenem Angebot stattdessen „Absage erfassen“. Nicht löschen.",
       "Familien, die Angebote wiederholt ablaufen lassen, über den Sperrvorschlag oder manuell auf die Sperrliste setzen.",
       "Zuständigkeit: Der Knopf „Zuweisen“ (in „Heute“ an jedem Namen, in der Tabelle in der Spalte „Zuständig“) weist einem Vorstandsmitglied zu oder gibt mit einer Notiz weiter; die Person bekommt eine E-Mail. Standard-Zuständigkeiten stehen unter „Mitglieder“ → „Zuständigkeiten“. Wiedervorlage am: in der aufgeklappten Zeile; fällige stehen in „Heute“.",
       "„Familie, Verlauf“ zeigt alle Kinder, Buchungen, Absagen, E-Mails und Sperrliste einer Familie auf einer Seite. Der Reiter „Nachfrage“ zeigt, wo sich ein zusätzlicher Kurs lohnt.",
