@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -45,7 +46,15 @@ function UnassignBox({ item, actions }: { item: Item; actions: Actions }) {
   const [busy, setBusy] = useState(false);
 
   async function doUnassign() {
-    if (!confirm("Zuweisung wirklich aufheben? Der Teilnehmer-Eintrag im Kurs wird storniert."))
+    if (
+      !(await askConfirm({
+        title: "Zuweisung aufheben?",
+        consequence:
+          "Der Teilnehmer-Eintrag im Kurs wird storniert, der Platz wird frei. Es geht keine Mail an die Familie raus. Die Anfrage bekommt den gewählten Status und kann neu zugewiesen werden.",
+        confirmLabel: "Zuweisung aufheben",
+        destructive: true,
+      }))
+    )
       return;
     setBusy(true);
     try {
@@ -429,7 +438,16 @@ export function RequestDetails({
   }
 
   async function doDelete() {
-    if (!confirm("Diese Kursanfrage wirklich endgültig löschen?")) return;
+    if (
+      !(await askConfirm({
+        title: "Kursanfrage löschen?",
+        consequence:
+          "Die Kursanfrage wird endgültig gelöscht. Es geht keine Mail raus und du kannst sie nicht wiederherstellen.",
+        confirmLabel: "Endgültig löschen",
+        destructive: true,
+      }))
+    )
+      return;
     const { error } = await supabase.from("course_requests").delete().eq("id", item.id);
     if (error) return toast.error(error.message);
     toast.success("Anfrage gelöscht");

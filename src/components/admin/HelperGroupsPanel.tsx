@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
@@ -101,7 +102,20 @@ export function HelperGroupsPanel({
   }
 
   async function remove(g: HelperGroup) {
-    if (!confirm(`Helferstelle „${g.name}“ löschen?`)) return;
+    if (
+      !(await askConfirm({
+        title: "Helferstelle löschen?",
+        consequence: (
+          <>
+            Die Helferstelle „{g.name}“ wird endgültig gelöscht. Es geht keine Mail raus. Du kannst
+            sie nur neu anlegen.
+          </>
+        ),
+        confirmLabel: "Löschen",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await delFn({ data: { id: g.id } });
       await load();

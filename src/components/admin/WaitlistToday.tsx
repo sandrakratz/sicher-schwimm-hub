@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -64,15 +65,17 @@ export function WaitlistToday({
     programOf(programs, e.program_id)?.name ??
     "ohne Zuordnung";
 
-  const offer = (e: WaitlistEntry, courseId: string) => {
+  const offer = async (e: WaitlistEntry, courseId: string) => {
     const c = courses.find((x) => x.id === courseId);
     if (!c) return;
     const minAge = programOf(programs, c.program_id)?.min_age_years ?? null;
-    if (!meetsMinAge(e.child_dob, c.starts_on, minAge) && !confirmTooYoung(e)) return;
+    if (!meetsMinAge(e.child_dob, c.starts_on, minAge) && !(await confirmTooYoung(e))) return;
     if (
-      !confirm(
-        `${e.child_name} einen Platz in „${c.name}“ anbieten? Die Eltern erhalten eine E-Mail mit Zusage-Link.`,
-      )
+      !(await askConfirm({
+        title: "Platz anbieten?",
+        consequence: `${e.child_name} bekommt einen Platz in „${c.name}“ angeboten. Die Eltern erhalten sofort eine E-Mail mit Zusage-Link. Du kannst das Angebot danach zurückziehen.`,
+        confirmLabel: "Platz anbieten",
+      }))
     )
       return;
     m.offer.mutate({ entryId: e.id, courseId });

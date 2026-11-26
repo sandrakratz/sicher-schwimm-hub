@@ -24,19 +24,23 @@ export function ConfirmActionDialog({
   busy = false,
   destructive = false,
   reason,
+  option,
 }: {
   title: string;
   /** Was nach dem Klick passiert (ganze Sätze, inkl. Mail ja/nein und Weg zurück). */
   consequence: ReactNode;
   confirmLabel: string;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string, optionChecked: boolean) => void;
   onClose: () => void;
   busy?: boolean;
   destructive?: boolean;
   /** Grund-Feld anzeigen; `required` = Knopf erst mit Grund aktiv. */
   reason?: { label: string; placeholder?: string; required?: boolean };
+  /** Zusätzliches Ankreuzfeld (z. B. „zusätzlich auf die Sperrliste“). */
+  option?: { label: string };
 }) {
   const [text, setText] = useState("");
+  const [optionChecked, setOptionChecked] = useState(false);
   const trimmed = text.trim();
   const missing = !!reason?.required && !trimmed;
 
@@ -68,6 +72,17 @@ export function ConfirmActionDialog({
             />
           </div>
         )}
+        {option && (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={optionChecked}
+              onChange={(ev) => setOptionChecked(ev.target.checked)}
+            />
+            <span>{option.label}</span>
+          </label>
+        )}
         <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
           {missing && (
             <span className="mr-auto text-xs text-muted-foreground">
@@ -80,7 +95,7 @@ export function ConfirmActionDialog({
           <Button
             variant={destructive ? "destructive" : "default"}
             disabled={busy || missing}
-            onClick={() => onConfirm(trimmed)}
+            onClick={() => onConfirm(trimmed, optionChecked)}
           >
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {confirmLabel}

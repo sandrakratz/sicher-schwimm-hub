@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,9 +55,12 @@ export function Vergabe({ events, reload }: { events: AdminEvent[]; reload: () =
   }
   async function apply() {
     if (
-      !confirm(
-        "Vergabe jetzt übernehmen? Alle betroffenen Familien bekommen eine E-Mail (Zusage oder Warteliste).",
-      )
+      !(await askConfirm({
+        title: "Vergabe übernehmen?",
+        consequence:
+          "Die Vorschläge werden übernommen und alle betroffenen Familien bekommen sofort eine E-Mail (Zusage oder Warteliste). Einzelne Zusagen kannst du danach nur noch über die Anmeldungen ändern.",
+        confirmLabel: "Vergabe übernehmen",
+      }))
     )
       return;
     setBusy(true);

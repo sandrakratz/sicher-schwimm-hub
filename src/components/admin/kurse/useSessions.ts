@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -122,9 +123,12 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
     }
     if (
       sessions.length > 0 &&
-      !window.confirm(
-        `Die ${sessions.length} vorhandenen Termine (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${real.length} neue ersetzt. Fortfahren?`,
-      )
+      !(await askConfirm({
+        title: "Termine ersetzen?",
+        consequence: `Die ${sessions.length} vorhandenen Termine (inkl. Anwesenheit und Trainer-Einteilung) werden gelöscht und durch ${real.length} neue ersetzt. Es geht keine Mail raus. Die alten Termine kannst du nicht wiederherstellen.`,
+        confirmLabel: "Termine ersetzen",
+        destructive: true,
+      }))
     )
       return;
     setBulkBusy(true);
@@ -215,9 +219,12 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
       return void toast.error(errorText(e, "Anwesenheit konnte nicht geprüft werden"));
     }
     if (
-      !window.confirm(
-        `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} als Fehleintrag löschen?\n\nDas passiert: Der Termin verschwindet ohne Protokoll und ohne Nachricht. Fällt ein echter Termin aus, bitte stattdessen „Fällt aus …“ nutzen.`,
-      )
+      !(await askConfirm({
+        title: "Termin als Fehleintrag löschen?",
+        consequence: `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Dieser Termin"} verschwindet ohne Protokoll und ohne Nachricht. Fällt ein echter Termin aus, nutze stattdessen „Fällt aus …“. Du kannst den Termin nur neu anlegen.`,
+        confirmLabel: "Als Fehleintrag löschen",
+        destructive: true,
+      }))
     )
       return;
     const { error } = await supabase.from("course_sessions").delete().eq("id", id);

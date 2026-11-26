@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { errorText, formatDateBerlin } from "@/lib/format";
@@ -134,14 +135,17 @@ export function useWaitlistMutations() {
   });
 
   /** Sperrvorschlag (aus „Heute“ oder den Stornierungen) übernehmen – nur nach Rückfrage. */
-  const blockSuggested = (
+  const blockSuggested = async (
     s: { childName: string | null; email: string | null; total: number },
     listWord: "Anfrageliste" | "Warteliste",
   ) => {
     if (
-      !confirm(
-        `${s.childName} / ${s.email} auf die Sperrliste setzen? Buchung und ${listWord} sind dann gesperrt.`,
-      )
+      !(await askConfirm({
+        title: "Auf die Sperrliste setzen?",
+        consequence: `${s.childName} / ${s.email} wird auf die Sperrliste gesetzt. Buchung und ${listWord} sind dann gesperrt. Es geht keine Mail raus. Du kannst den Eintrag unter Sperrliste wieder löschen.`,
+        confirmLabel: "Auf Sperrliste setzen",
+        destructive: true,
+      }))
     )
       return;
     resolveSuggestion.mutate({

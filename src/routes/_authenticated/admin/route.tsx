@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, Outlet, Link, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAdminRoles } from "@/lib/role-guard";
+import { ConfirmHost } from "@/components/admin/confirm-host";
 import { type Role, findAdminSection } from "@/lib/nav-items";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -50,6 +51,7 @@ function AdminLayout() {
         </div>
       )}
       <Outlet />
+      <ConfirmHost />
     </>
   );
 }

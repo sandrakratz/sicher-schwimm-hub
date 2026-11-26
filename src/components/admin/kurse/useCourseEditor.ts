@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,9 +57,12 @@ export function useCourseEditor(onSaved: () => Promise<void>, programs: ProgramR
     if (
       realList.length > 0 &&
       editing.id &&
-      !window.confirm(
-        `Die bisherigen Termine dieses Zeitraums (inkl. Anwesenheit und Trainer-Einteilung) werden durch ${realList.length} neue ersetzt. Fortfahren?`,
-      )
+      !(await askConfirm({
+        title: "Termine ersetzen?",
+        consequence: `Die bisherigen Termine dieses Zeitraums (inkl. Anwesenheit und Trainer-Einteilung) werden gelöscht und durch ${realList.length} neue ersetzt. Es geht keine Mail raus. Die alten Termine kannst du nicht wiederherstellen.`,
+        confirmLabel: "Termine ersetzen",
+        destructive: true,
+      }))
     )
       return;
     const payload: Record<string, unknown> = {

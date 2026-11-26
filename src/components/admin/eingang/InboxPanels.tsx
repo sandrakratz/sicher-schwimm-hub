@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2 } from "lucide-react";
@@ -258,7 +259,22 @@ export function MembershipsPanel({ onChanged }: { onChanged: () => void }) {
 
   async function decide(r: PendingMembership, status: "active" | "terminated") {
     const who = `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim();
-    if (status === "terminated" && !confirm(`Antrag von ${who} ablehnen?`)) return;
+    if (
+      status === "terminated" &&
+      !(await askConfirm({
+        title: "Antrag ablehnen?",
+        consequence: (
+          <>
+            Der Mitgliedschaftsantrag von {who} wird abgelehnt und verschwindet aus dem Eingang. Es
+            gilt weiter der Normalpreis. Wenn der Antrag doch stimmt, muss die Person ihn neu
+            stellen.
+          </>
+        ),
+        confirmLabel: "Antrag ablehnen",
+        destructive: true,
+      }))
+    )
+      return;
     setBusy(r.id);
     try {
       const res = await setStatusFn({ data: { id: r.id, status } });

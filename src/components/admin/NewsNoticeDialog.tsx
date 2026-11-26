@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -62,9 +63,11 @@ export function NewsNoticeDialog({
   async function sendAll() {
     if (!newsId || !info) return;
     if (
-      !confirm(
-        `Jetzt an ${info.open} Mitglieder-Adressen senden? Diese Mail kann nicht zurückgeholt werden.`,
-      )
+      !(await askConfirm({
+        title: "Mail an Mitglieder senden?",
+        consequence: `Die Mail geht jetzt an ${info.open} Mitglieder-Adressen. Eine gesendete Mail kannst du nicht zurückholen.`,
+        confirmLabel: "Jetzt senden",
+      }))
     )
       return;
     let delivered = 0;

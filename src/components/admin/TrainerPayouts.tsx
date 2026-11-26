@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, FileText, Printer } from "lucide-react";
@@ -179,9 +180,11 @@ export function TrainerPayouts() {
       const cert = await getPayoutCertificate({ data: { year, trainerId } });
       if (
         cert.pendingCount > 0 &&
-        !window.confirm(
-          `${cert.pendingCount} Auszahlung(en) sind noch nicht freigegeben und stehen nicht auf der Bescheinigung. Trotzdem drucken?`,
-        )
+        !(await askConfirm({
+          title: "Bescheinigung ohne offene Auszahlungen drucken?",
+          consequence: `${cert.pendingCount} Auszahlung(en) sind noch nicht freigegeben und stehen nicht auf der Bescheinigung. Es wird nur ein Ausdruck geöffnet, es geht keine Mail raus. Nach der Freigabe kannst du die Bescheinigung neu drucken.`,
+          confirmLabel: "Trotzdem drucken",
+        }))
       )
         return;
       if (!openCertificate(cert)) toast.error("Bitte Pop-ups für diese Seite erlauben.");

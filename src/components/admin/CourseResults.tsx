@@ -1,3 +1,4 @@
+import { askConfirm } from "@/components/admin/confirm-store";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
@@ -225,7 +226,16 @@ function CourseDetail({
   }
 
   async function remove(id: string) {
-    if (!window.confirm("Diesen Kostenposten wirklich löschen?")) return;
+    if (
+      !(await askConfirm({
+        title: "Kostenposten löschen?",
+        consequence:
+          "Der Kostenposten wird endgültig aus der Kursabrechnung entfernt. Es geht keine Mail raus. Du kannst ihn nur neu anlegen, nicht wiederherstellen.",
+        confirmLabel: "Löschen",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await deleteCourseCost({ data: { id } });
       await onChanged();
