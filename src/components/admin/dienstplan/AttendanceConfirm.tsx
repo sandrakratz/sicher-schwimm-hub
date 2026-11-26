@@ -10,6 +10,7 @@ import {
   type OpenAttendanceRow,
 } from "@/lib/trainer-attendance.functions";
 import { formatDateBerlin } from "@/lib/format";
+import { AttendanceCorrectDialog } from "./AttendanceCorrectDialog";
 
 /** Alle noch nicht bestätigten Trainer-Anwesenheiten auf einen Blick – direkt bestätigen. */
 export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
@@ -51,15 +52,9 @@ export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
   }
 
   /** Eintrag ablehnen (→ „nicht anwesend“) bzw. umgekehrt; gilt sofort als bestätigt. */
-  async function correct(r: OpenAttendanceRow) {
+  const [correctFor, setCorrectFor] = useState<OpenAttendanceRow | null>(null);
+  async function correct(r: OpenAttendanceRow, reason: string) {
     const toPresent = !r.present;
-    const reason = window.prompt(
-      toPresent
-        ? `${r.trainer_name} doch als „anwesend“ eintragen und bestätigen?\nGrund (optional):`
-        : `${r.trainer_name} als „nicht anwesend“ eintragen (Eintrag ablehnen)?\nGrund (optional), z. B. „nach der 1. Stunde gegangen“:`,
-      "",
-    );
-    if (reason === null) return;
     setBusy(`${r.session_id}:${r.trainer_id}`);
     try {
       await correctFn({
@@ -71,6 +66,7 @@ export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
         },
       });
       toast.success(toPresent ? "Auf „anwesend“ korrigiert" : "Eintrag abgelehnt: nicht anwesend");
+      setCorrectFor(null);
       await refresh();
       onChanged?.();
     } catch (e) {
@@ -125,7 +121,7 @@ export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
                 variant="ghost"
                 className="text-destructive"
                 disabled={busy !== null}
-                onClick={() => void correct(r)}
+                onClick={() => setCorrectFor(r)}
               >
                 {r.present ? "Ablehnen" : "Doch anwesend"}
               </Button>
@@ -141,6 +137,15 @@ export function AttendanceConfirm({ onChanged }: { onChanged?: () => void }) {
           );
         })}
       </div>
+      {correctFor && (
+        <AttendanceCorrectDialog
+          trainerName={correctFor.trainer_name}
+          present={!correctFor.present}
+          busy={busy !== null}
+          onClose={() => setCorrectFor(null)}
+          onConfirm={(note) => void correct(correctFor, note)}
+        />
+      )}
     </div>
   );
 }

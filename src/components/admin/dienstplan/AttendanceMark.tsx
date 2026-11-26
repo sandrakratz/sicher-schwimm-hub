@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,7 @@ import {
   correctTrainerAttendance,
 } from "@/lib/trainer-attendance.functions";
 import type { AttendanceState } from "@/lib/dienstplan";
+import { AttendanceCorrectDialog } from "./AttendanceCorrectDialog";
 
 /** Kleines Zeichen vor dem Namen: ✓ war da · ✓ (gelb) bestätigen · ✗ nicht da · ? kein Eintrag. */
 const MARK: Record<AttendanceState, { glyph: string; cls: string; label: string }> = {
@@ -70,6 +71,8 @@ export function AttendanceAction({
 }) {
   const confirmFn = useServerFn(confirmTrainerAttendance);
   const correctFn = useServerFn(correctTrainerAttendance);
+  // Ziel der Korrektur (anwesend ja/nein), solange das Fenster offen ist
+  const [target, setTarget] = useState<boolean | null>(null);
 
   if (!state) return <>{children}</>;
 
@@ -83,59 +86,63 @@ export function AttendanceAction({
     }
   }
 
-  function setPresent(present: boolean) {
-    const reason = window.prompt(
-      present
-        ? `${trainerName} als „anwesend“ eintragen?\nGrund (optional):`
-        : `${trainerName} als „nicht anwesend“ eintragen?\nGrund (optional), z. B. „nach der 1. Stunde gegangen“:`,
-      "",
-    );
-    if (reason === null) return;
+  function setPresent(present: boolean, note: string) {
+    setTarget(null);
     void run(
-      () => correctFn({ data: { sessionId, trainerId, present, note: reason } }),
+      () => correctFn({ data: { sessionId, trainerId, present, note } }),
       present ? "Als anwesend eingetragen" : "Als nicht anwesend eingetragen",
     );
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          title={`${trainerName}: ${MARK[state].label} – klicken zum Ändern`}
-          className={`${inline ? "inline-flex" : "block w-full"} cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-ring`}
-        >
-          {children}
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-          {trainerName}: {MARK[state].label}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {state === "recorded" && (
-          <DropdownMenuItem
-            onSelect={() =>
-              void run(
-                () => confirmFn({ data: { sessionId, trainerId, confirm: true } }),
-                "Bestätigt",
-              )
-            }
+    <>
+      {target !== null && (
+        <AttendanceCorrectDialog
+          trainerName={trainerName}
+          present={target}
+          onClose={() => setTarget(null)}
+          onConfirm={(note) => setPresent(target, note)}
+        />
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            title={`${trainerName}: ${MARK[state].label} – klicken zum Ändern`}
+            className={`${inline ? "inline-flex" : "block w-full"} cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-ring`}
           >
-            Bestätigen
-          </DropdownMenuItem>
-        )}
-        {state !== "absent" && (
-          <DropdownMenuItem className="text-destructive" onSelect={() => setPresent(false)}>
-            {state === "none" ? "Als nicht anwesend eintragen" : "Ablehnen (nicht anwesend)"}
-          </DropdownMenuItem>
-        )}
-        {(state === "none" || state === "absent") && (
-          <DropdownMenuItem onSelect={() => setPresent(true)}>
-            {state === "none" ? "Als anwesend eintragen" : "Doch anwesend"}
-          </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            {children}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+            {trainerName}: {MARK[state].label}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {state === "recorded" && (
+            <DropdownMenuItem
+              onSelect={() =>
+                void run(
+                  () => confirmFn({ data: { sessionId, trainerId, confirm: true } }),
+                  "Bestätigt",
+                )
+              }
+            >
+              Bestätigen
+            </DropdownMenuItem>
+          )}
+          {state !== "absent" && (
+            <DropdownMenuItem className="text-destructive" onSelect={() => setTarget(false)}>
+              {state === "none" ? "Als nicht anwesend eintragen" : "Ablehnen (nicht anwesend)"}
+            </DropdownMenuItem>
+          )}
+          {(state === "none" || state === "absent") && (
+            <DropdownMenuItem onSelect={() => setTarget(true)}>
+              {state === "none" ? "Als anwesend eintragen" : "Doch anwesend"}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

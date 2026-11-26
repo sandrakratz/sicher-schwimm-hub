@@ -418,6 +418,18 @@ export function TrainerBilling() {
               >
                 Zur Freigabe anlegen
               </Button>
+              {/* Grauer Knopf erklärt sich (Bedienregel 8) */}
+              {!busy && (
+                <span className="text-xs text-muted-foreground">
+                  {!selectedTrainerId
+                    ? "Erst unten die Termine einer Person anhaken."
+                    : !paidOn
+                      ? "Auszahlungsdatum fehlt."
+                      : needsReason && overrideReason.trim().length < 10
+                        ? "Begründung fehlt (mindestens 10 Zeichen)."
+                        : ""}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
