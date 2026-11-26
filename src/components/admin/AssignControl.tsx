@@ -138,7 +138,7 @@ export function AssignControl({
             </label>
             <p className="text-xs text-muted-foreground">
               Die neue zuständige Person erhält eine E-Mail mit Link und Notiz. Notiz und Zuweisung
-              stehen am Vorgang und im Audit-Log.
+              stehen am Vorgang und im Änderungsprotokoll.
             </p>
           </div>
           <DialogFooter>

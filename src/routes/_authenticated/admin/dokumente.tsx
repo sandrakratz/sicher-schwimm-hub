@@ -1,3 +1,5 @@
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import { createFileRoute } from "@tanstack/react-router";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -146,12 +148,13 @@ function Page() {
     await load();
   }
 
+  const [deleteFor, setDeleteFor] = useState<Doc | null>(null);
   async function remove(d: Doc) {
-    if (!confirm(`Dokument "${d.title}" löschen?`)) return;
     if (d.file_url) await supabase.storage.from("documents").remove([d.file_url]);
     const { error } = await supabase.from("documents").delete().eq("id", d.id);
     if (error) return toast.error(error.message);
     toast.success("Gelöscht");
+    setDeleteFor(null);
     await load();
   }
 
@@ -221,14 +224,8 @@ function Page() {
                 </TableCell>
                 <TableCell>
                   {d.file_url ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Datei herunterladen"
-                      title="Datei herunterladen"
-                      onClick={() => download(d)}
-                    >
-                      <Download className="h-4 w-4" />
+                    <Button variant="ghost" size="sm" onClick={() => download(d)}>
+                      <Download className="h-4 w-4" aria-hidden="true" /> Herunterladen
                     </Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
@@ -241,15 +238,16 @@ function Page() {
                   <Button variant="ghost" size="sm" onClick={() => startEdit(d)}>
                     Bearbeiten
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Dokument löschen"
-                    title="Dokument löschen"
-                    onClick={() => remove(d)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <MoreMenu
+                    items={[
+                      {
+                        label: "Dokument löschen …",
+                        hint: "Endgültig, samt Datei",
+                        destructive: true,
+                        onSelect: () => setDeleteFor(d),
+                      },
+                    ]}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -334,6 +332,22 @@ function Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {deleteFor && (
+        <ConfirmActionDialog
+          title={`„${deleteFor.title}“ löschen`}
+          consequence={
+            <>
+              Das Dokument und die Datei werden endgültig gelöscht. Mitglieder finden es danach
+              nicht mehr im Portal. Für eine neue Fassung besser „Bearbeiten“ und eine neue Datei
+              wählen.
+            </>
+          }
+          confirmLabel="Endgültig löschen"
+          destructive
+          onClose={() => setDeleteFor(null)}
+          onConfirm={() => void remove(deleteFor)}
+        />
+      )}
     </div>
   );
 }

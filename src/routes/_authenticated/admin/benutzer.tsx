@@ -114,6 +114,7 @@ function Page() {
   const [rows, setRows] = useState<Profile[]>([]);
   const [rolesByUser, setRolesByUser] = useState<Record<string, Role[]>>({});
   const [query, setQuery] = useState("");
+  const [onlyPending, setOnlyPending] = useState(false);
   const [selected, setSelected] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [toDelete, setToDelete] = useState<Profile | null>(null);
@@ -160,7 +161,9 @@ function Page() {
     if (!canManage) return;
     try {
       await setUserStatusFn({ data: { userId: id, status } });
-      toast.success("Status aktualisiert");
+      toast.success(
+        status === "active" ? "Freigeschaltet – das Konto ist aktiv" : "Status aktualisiert",
+      );
       await load();
       setSelected((s) => (s && s.id === id ? { ...s, status } : s));
     } catch (e: any) {
@@ -187,7 +190,10 @@ function Page() {
     );
   }, [rows, rolesByUser, canManage]);
 
+  // Filter „Wartet auf Freigabe“ (Bedienregel: Aufgabe direkt finden)
+  const pendingCount = visibleRows.filter((r) => r.status === "pending").length;
   const filtered = visibleRows.filter((r) => {
+    if (onlyPending && r.status !== "pending") return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return [r.email, r.first_name, r.last_name].filter(Boolean).join(" ").toLowerCase().includes(q);
@@ -206,12 +212,32 @@ function Page() {
               : "Übersicht der aktiven Vereinsmitglieder (nur Anzeige)."}
           </p>
         </div>
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Suche nach Name oder E-Mail…"
-          className="max-w-xs"
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {canManage && (
+            <>
+              <Button
+                size="sm"
+                variant={onlyPending ? "default" : "outline"}
+                onClick={() => setOnlyPending(true)}
+              >
+                Wartet auf Freigabe ({pendingCount})
+              </Button>
+              <Button
+                size="sm"
+                variant={onlyPending ? "outline" : "default"}
+                onClick={() => setOnlyPending(false)}
+              >
+                Alle
+              </Button>
+            </>
+          )}
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suche nach Name oder E-Mail…"
+            className="max-w-xs"
+          />
+        </div>
       </div>
 
       <CollapsibleCard
@@ -287,15 +313,13 @@ function Page() {
                     <Button variant="ghost" size="sm" onClick={() => setSelected(p)}>
                       Details
                     </Button>
-                    {isAdmin && p.id !== myId && (
+                    {p.status === "pending" && (
                       <Button
-                        variant="ghost"
                         size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setToDelete(p)}
-                        aria-label="Benutzer löschen"
+                        title="Konto auf „Aktiv“ setzen – danach kann sich die Person anmelden"
+                        onClick={() => void setStatus(p.id, "active")}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        Freischalten
                       </Button>
                     )}
                   </TableCell>

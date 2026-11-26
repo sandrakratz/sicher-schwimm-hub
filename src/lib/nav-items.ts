@@ -182,7 +182,7 @@ export const adminSections: {
   {
     label: "Versand",
     tabs: [
-      { to: "/admin/versand", label: "Rundmail senden" },
+      { to: "/admin/versand", label: "Nachrichten senden" },
       { to: "/admin/emails", label: "Gesendete E-Mails" },
     ],
     // „Mitglieder anschreiben“ ist jetzt eine Art im Versand; die alten Adressen bleiben erreichbar.
@@ -198,7 +198,7 @@ export const adminSections: {
       { to: "/admin/zustaendigkeiten", label: "Zuständigkeiten" },
       { to: "/admin/downloads", label: "Downloads" },
       { to: "/admin/statistik", label: "Statistik" },
-      { to: "/admin/audit", label: "Audit-Log" },
+      { to: "/admin/audit", label: "Änderungsprotokoll" },
     ],
   },
 ];

@@ -82,7 +82,7 @@ function Page() {
   return (
     <div className="max-w-5xl space-y-6">
       <div>
-        <h1 className="font-display text-3xl font-bold text-primary-deep">Posteingang</h1>
+        <h1 className="font-display text-3xl font-bold text-primary-deep">Postfach</h1>
         <p className="text-sm text-muted-foreground">
           Hier steht, was Ihre Antwort braucht. Anmeldungen laufen automatisch und stehen nur dann
           einzeln da, wenn die Eltern etwas dazugeschrieben haben.

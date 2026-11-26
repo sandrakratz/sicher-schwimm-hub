@@ -284,8 +284,8 @@ export function MessageCard({
             </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="destructive" aria-label="Nachricht löschen">
-                  <Trash2 className="h-4 w-4" />
+                <Button size="sm" variant="ghost" className="text-destructive">
+                  <Trash2 className="h-4 w-4" aria-hidden="true" /> Löschen …
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
