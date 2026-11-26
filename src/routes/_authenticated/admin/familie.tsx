@@ -1,20 +1,28 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ShieldBan } from "lucide-react";
+import { Loader2, MessageSquarePlus, ShieldBan } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FamilyTimeline } from "@/components/admin/FamilyTimeline";
 import { getFamilyOverview } from "@/lib/family.functions";
-import { resolveBlockSuggestion } from "@/lib/waitlist.functions";
-import { formatDateBerlin } from "@/lib/format";
+import { listWaitlist, resolveBlockSuggestion } from "@/lib/waitlist.functions";
+import type { Concern } from "@/lib/family-child-status";
 import { FamilyWaitlist } from "@/components/admin/familie/FamilyWaitlist";
 import { FamilyBookings } from "@/components/admin/familie/FamilyBookings";
-import { SubjectAccessButton } from "@/components/admin/familie/SubjectAccessButton";
+import { useSubjectAccessExport } from "@/components/admin/familie/useSubjectAccessExport";
+import { ChildCards } from "@/components/admin/familie/ChildCards";
+import { buildFamilyChildren } from "@/components/admin/familie/buildFamilyChildren";
+import { ParentReportDialog } from "@/components/admin/familie/ParentReportDialog";
+import { useFamilyBookings } from "@/components/admin/familie/useFamilyBookings";
+import {
+  WAITLIST_QUERY_KEY,
+  useWaitlistMutations,
+} from "@/components/admin/warteliste/useWaitlistMutations";
 import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { MoreMenu } from "@/components/admin/MoreMenu";
-import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin/familie")({
   validateSearch: (search: Record<string, unknown>): { email?: string; name?: string } => ({
@@ -48,7 +56,19 @@ function FamilyPage() {
     enabled: !!email || !!name,
   });
 
+  const navigate = useNavigate();
   const [blockOpen, setBlockOpen] = useState(false);
+  const [report, setReport] = useState<{ child: string | null; concern: Concern | null } | null>(
+    null,
+  );
+  const wl = useQuery({ queryKey: WAITLIST_QUERY_KEY, queryFn: () => listWaitlist() });
+  const m = useWaitlistMutations();
+  const onChanged = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: ["admin-family"] });
+    void qc.invalidateQueries({ queryKey: WAITLIST_QUERY_KEY });
+  }, [qc]);
+  const fb = useFamilyBookings(data?.bookings.map((b) => b.id) ?? [], onChanged);
+  const access = useSubjectAccessExport(data?.email ?? "");
   const block = useMutation({
     mutationFn: (reason: string) =>
       resolveBlockSuggestion({
@@ -103,6 +123,15 @@ function FamilyPage() {
       </p>
     );
 
+  const childrenList = buildFamilyChildren(
+    data.children,
+    data.entries.map((e) => e.id),
+    wl.data,
+    fb.rows,
+    (id) => fb.courses.get(id)?.name ?? "Kurs",
+    (id) => fb.courses.get(id)?.starts_on ?? null,
+  );
+
   return (
     <div className="max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -142,14 +171,13 @@ function FamilyPage() {
             )}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => setReport({ child: null, concern: null })}>
+            <MessageSquarePlus className="h-4 w-4" aria-hidden="true" /> Eltern melden sich …
+          </Button>
           <Button asChild variant="outline" size="sm">
             <Link to="/admin/warteliste">Zur Anfrageliste</Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/sperrliste">Sperrliste</Link>
-          </Button>
-          {data.email && <SubjectAccessButton email={data.email} />}
           {data.blockSuggestion && (
             <Button
               size="sm"
@@ -163,8 +191,23 @@ function FamilyPage() {
           )}
           <MoreMenu
             label="Familie"
-            items={
-              data.blocked
+            items={[
+              {
+                label: "Sperrliste öffnen",
+                hint: "Alle gesperrten Familien ansehen und Sperren aufheben",
+                onSelect: () => void navigate({ to: "/admin/sperrliste" }),
+              },
+              ...(data.email
+                ? [
+                    {
+                      label: access.busy ? "Datenauskunft wird erstellt …" : "Datenauskunft",
+                      hint: "Alle gespeicherten Daten zu dieser E-Mail als Excel (Art. 15 DSGVO), vor dem Versand prüfen",
+                      disabled: access.busy,
+                      onSelect: () => void access.run(),
+                    },
+                  ]
+                : []),
+              ...(data.blocked
                 ? []
                 : [
                     {
@@ -173,8 +216,8 @@ function FamilyPage() {
                       destructive: true,
                       onSelect: () => setBlockOpen(true),
                     },
-                  ]
-            }
+                  ]),
+            ]}
           />
         </div>
       </div>
@@ -202,24 +245,23 @@ function FamilyPage() {
         />
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Kinder</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            {data.children.length === 0 && <p className="text-muted-foreground">Keine Angaben.</p>}
-            {data.children.map((c) => (
-              <div key={c.name} className="flex justify-between gap-2 border-b pb-1 last:border-0">
-                <span className="font-medium">{c.name}</span>
-                <span className="text-muted-foreground">
-                  {c.dob ? `geb. ${formatDateBerlin(c.dob)}` : ""}
-                </span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+      <ChildCards
+        childrenList={childrenList}
+        loading={wl.isLoading || !fb.rows}
+        onReport={(child, concern) => setReport({ child, concern })}
+      />
+      {report && (
+        <ParentReportDialog
+          childrenList={childrenList}
+          initialChild={report.child}
+          initialConcern={report.concern}
+          participants={fb.rows ?? []}
+          m={m}
+          a={fb.a}
+          onClose={() => setReport(null)}
+          onDone={onChanged}
+        />
+      )}
 
       <Card>
         <CardHeader>
@@ -235,10 +277,7 @@ function FamilyPage() {
           <CardTitle className="text-base">Buchungen</CardTitle>
         </CardHeader>
         <CardContent>
-          <FamilyBookings
-            bookingIds={data.bookings.map((b) => b.id)}
-            onChanged={() => void qc.invalidateQueries({ queryKey: ["admin-family"] })}
-          />
+          <FamilyBookings fb={fb} />
         </CardContent>
       </Card>
 
