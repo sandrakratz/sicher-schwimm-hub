@@ -36,5 +36,6 @@ export const RETENTION_LABELS: [key: string, label: string][] = [
   ["helfer_rueckmeldungen", "Helfer-Rückmeldungen Events (6 Monate)"],
   ["trainer_auszahlungen", "Übungsleiter-Auszahlungen (8 Jahre)"],
   ["trainer_erklaerungen", "Übungsleiter-Jahreserklärungen (8 Jahre)"],
+  ["fuehrungszeugnis_nachweise", "Führungszeugnis-Nachweise (2 Jahre nach Ausscheiden)"],
   ["aenderungsprotokoll", "Änderungsprotokoll (24 Monate)"],
 ];

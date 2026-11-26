@@ -178,5 +178,76 @@ export const setQualificationChecked = createServerFn({ method: "POST" })
       checked_by: context.userId,
     });
     if (res.error) throw new Error(res.error.message);
+
+    // Führungszeugnis: jede Einsicht dauerhaft in die Historie (Nachweis über die ganze Tätigkeit);
+    // dasselbe Zeugnis (gleiches Ausstellungsdatum) nur einmal.
+    if (q.kind === "fuehrungszeugnis") {
+      let dup = db
+        .from("trainer_fz_checks")
+        .select("id", { count: "exact", head: true })
+        .eq("trainer_id", data.trainerId);
+      dup = q.issued_on ? dup.eq("issued_on", q.issued_on) : dup.is("issued_on", null);
+      const { count } = await dup;
+      if (!count) {
+        const { data: people } = await db
+          .from("profiles")
+          .select("id,first_name,last_name,email")
+          .in("id", [data.trainerId, context.userId]);
+        const nameOf = (id: string) => {
+          const p = (people ?? []).find((x: any) => x.id === id);
+          return p ? fullName(p.first_name, p.last_name) || p.email || "?" : "?";
+        };
+        const ins = await db.from("trainer_fz_checks").insert({
+          trainer_id: data.trainerId,
+          trainer_name: nameOf(data.trainerId),
+          issued_on: q.issued_on ?? null,
+          checked_by: context.userId,
+          checked_by_name: nameOf(context.userId),
+        });
+        if (ins.error)
+          throw new Error(
+            `Einsicht konnte nicht im Nachweis vermerkt werden: ${ins.error.message}`,
+          );
+      }
+    }
     return { ok: true };
+  });
+
+export type FzHistoryRow = {
+  trainerId: string;
+  trainerName: string;
+  issuedOn: string | null;
+  checkedAt: string;
+  checkedByName: string | null;
+  /** Rolle „Trainer/in“ entfernt am (sonst aktiv) */
+  leftAt: string | null;
+};
+
+/** Nachweis: alle Einsichtnahmen in Führungszeugnisse, auch von ausgeschiedenen Trainer:innen. */
+export const listFzHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<FzHistoryRow[]> => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = supabaseAdmin as any;
+    const [{ data: rows, error }, { data: dep }] = await Promise.all([
+      db
+        .from("trainer_fz_checks")
+        .select("trainer_id,trainer_name,issued_on,checked_at,checked_by_name")
+        .order("trainer_name")
+        .order("checked_at"),
+      db.from("trainer_departures").select("trainer_id,left_at"),
+    ]);
+    if (error) throw new Error(error.message);
+    const left = new Map(
+      (dep ?? []).map((d: any) => [d.trainer_id as string, d.left_at as string]),
+    );
+    return (rows ?? []).map((r: any) => ({
+      trainerId: r.trainer_id,
+      trainerName: r.trainer_name,
+      issuedOn: r.issued_on ?? null,
+      checkedAt: r.checked_at,
+      checkedByName: r.checked_by_name ?? null,
+      leftAt: (left.get(r.trainer_id) as string | undefined) ?? null,
+    }));
   });

@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateBerlin, todayBerlinIso } from "@/lib/format";
+import { FzHistoryCard } from "@/components/admin/FzHistoryCard";
 import {
   listQualificationOverview,
   setQualificationChecked,
@@ -61,6 +62,8 @@ function Page() {
   const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
   const [onlyTodo, setOnlyTodo] = useState(false);
+  // Nachweis-Liste nach jedem Abhaken neu laden
+  const [historyKey, setHistoryKey] = useState(0);
   const today = todayBerlinIso();
 
   async function reload() {
@@ -120,6 +123,7 @@ function Page() {
     try {
       await setChecked({ data: { trainerId, qualificationId, checked } });
       await reload();
+      setHistoryKey((k) => k + 1);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Konnte nicht gespeichert werden");
     }
@@ -272,6 +276,7 @@ function Page() {
             „In x Tagen“ erscheint ab {QUALIFICATION_BOARD_WARN_DAYS} Tagen vor Ablauf. Ändert eine
             Trainerin den Nachweis, gilt er wieder als ungeprüft.
           </p>
+          <FzHistoryCard key={historyKey} />
         </>
       )}
     </div>
