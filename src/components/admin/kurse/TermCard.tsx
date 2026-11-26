@@ -247,8 +247,17 @@ export function TermCard({ c, ctx }: { c: Course; ctx: TermContext }) {
                 <Archive /> Archivieren
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="text-destructive" onSelect={() => ctx.onRemove(c)}>
-              <Trash2 /> Löschen
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="flex-col items-start gap-0.5 text-destructive focus:text-destructive"
+              onSelect={() => ctx.onRemove(c)}
+            >
+              <span className="flex items-center gap-2">
+                <Trash2 /> Kurszeitraum löschen …
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Nur ohne Buchungen, z. B. Fehleintrag – sonst „Archivieren“
+              </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
