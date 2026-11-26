@@ -382,6 +382,7 @@ export function EntryRow({
             {e.status !== "accepted" && bookCourses.length > 0 && (
               <NativeSelect
                 size="xs"
+                className="w-72 max-w-full"
                 value={pick}
                 onChange={(ev) => setPick(ev.target.value)}
                 aria-label="Kurs wählen"
