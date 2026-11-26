@@ -71,6 +71,14 @@ export const getAdminTasks = createServerFn({ method: "POST" })
       blocklistExpiringSoon(blocklistExpiry(b.created_at, b.keep_until), today),
     ).length;
 
+    // Löschjob: ab 10.02.2027 an Probelauf und Einplanen erinnern, bis er einmal echt gelaufen ist
+    const { retentionReviewDue } = await import("@/lib/retention-2027");
+    const { count: retentionRuns } = await supabaseAdmin
+      .from("audit_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("action", "retention_cleanup_2027");
+    const retentionDue = retentionReviewDue(today, (retentionRuns ?? 0) > 0);
+
     const [overdue, memberships, messages, requests, memberChecks, adultNew, familyNew] =
       await Promise.all([
         supabaseAdmin
@@ -200,6 +208,14 @@ export const getAdminTasks = createServerFn({ method: "POST" })
         to: "/admin/sperrliste",
         tone: "info",
         hint: "werden in den nächsten 4 Wochen automatisch gelöscht",
+      },
+      {
+        key: "retention-review",
+        label: "Löschjob: Probelauf prüfen und einplanen",
+        count: retentionDue ? 1 : 0,
+        to: "",
+        tone: "attention",
+        hint: "Löschkonzept 2027 – einmalig",
       },
     ];
 
