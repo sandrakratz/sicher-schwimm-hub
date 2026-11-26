@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/co
 import { toast } from "sonner";
 import { isUnder, portalNav, visibleAdminNav, visibleTrainerNav, type Role } from "@/lib/nav-items";
 import { TrainerMobileNav } from "@/components/trainer/TrainerMobileNav";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { SkipLink } from "@/components/SkipLink";
 import { clearOfflineData } from "@/lib/offline-store";
 import { clearShellCache, registerServiceWorker } from "@/lib/register-sw";
@@ -154,6 +155,9 @@ function AuthLayout() {
             </Link>
           ))}
         </div>
+      )}
+      {area === "admin" && (roles.includes("admin") || roles.includes("board")) && (
+        <AdminSearchBox />
       )}
       {/* Nur das Menü des aktuellen Bereichs – die anderen Bereiche über den Umschalter oben */}
       <nav aria-label={AREA_LABEL[area]} className="p-3 flex-1 space-y-1 overflow-y-auto">

@@ -40,7 +40,7 @@ export const STATUS_LABEL: Record<string, { label: string; className: string }> 
   accepted: { label: "Zugesagt", className: "bg-emerald-100 text-emerald-900" },
   declined: { label: "Abgesagt", className: "bg-slate-200 text-slate-800" },
   expired: { label: "Frist abgelaufen", className: "bg-slate-200 text-slate-800" },
-  removed: { label: "Entfernt", className: "bg-slate-200 text-slate-800" },
+  removed: { label: "Abgemeldet", className: "bg-slate-200 text-slate-800" },
 };
 
 /** Kurze Status-Wörter in „Heute“. */
@@ -50,7 +50,7 @@ export const STATUS_WORD: Record<string, string> = {
   accepted: "gebucht",
   declined: "abgesagt",
   expired: "Frist abgelaufen",
-  removed: "entfernt",
+  removed: "abgemeldet",
 };
 
 /** Farbe des Status-Badges: gelb wartend, blau Angebot offen, grün gebucht, rot abgesagt/entfernt. */
