@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { ParticipantResultEditor } from "@/components/trainer/ParticipantResultEditor";
 import {
   ENROLL_STATUS,
   ageAt,
@@ -302,28 +303,25 @@ export function EditParticipantDialog({
               <div className="font-semibold text-sm mb-2 flex items-center gap-2">
                 <Award className="h-4 w-4" /> Kursergebnis
               </div>
-              <div className="text-sm space-y-1">
-                <div>
-                  <span className="text-muted-foreground">Kursziel: </span>
-                  {editPart.goal_reached === true
-                    ? "erreicht"
-                    : editPart.goal_reached === false
-                      ? "nicht erreicht"
-                      : "offen"}
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Abzeichen: </span>
-                  {editPart.badge || "—"}
-                </div>
-                <div className="whitespace-pre-wrap">
-                  <span className="text-muted-foreground">Geschafft / Anmerkungen: </span>
-                  {editPart.achievement || "—"}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Das Kursergebnis wird von den Trainer:innen vor Ort im Trainerbereich unter „Meine
-                Kurse“ erfasst.
+              <p className="text-xs text-muted-foreground mb-2">
+                Normalerweise erfassen die Trainer:innen das Ergebnis vor Ort. Hier kannst du es
+                korrigieren. „Speichern“ im Ergebnis-Block gilt sofort und ist unabhängig vom
+                Speichern der übrigen Angaben. Die Änderung wird mit deinem Namen protokolliert.
               </p>
+              <ParticipantResultEditor
+                key={editPart.id}
+                participantId={editPart.id}
+                value={{
+                  goal_reached: editPart.goal_reached,
+                  badge: editPart.badge,
+                  achievement: editPart.achievement,
+                  exam_level: editPart.exam_level,
+                  exam_criteria: editPart.exam_criteria ?? {},
+                  exam_date: editPart.exam_date,
+                  exam_pass_no: editPart.exam_pass_no,
+                }}
+                onSaved={(_id, r) => setEditPart((p) => p && { ...p, ...r })}
+              />
             </div>
 
             {canManage && (

@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { RefreshCw, UsersRound } from "lucide-react";
+import { CalendarCheck, RefreshCw, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadPlanningData } from "@/lib/dienstplan.functions";
@@ -117,12 +117,21 @@ function Page() {
           </h1>
           <p className="text-sm text-muted-foreground">
             Alles zur Einteilung an einem Ort: Wo fehlt jemand, wer kann einspringen, wer ist wann
-            eingeteilt – und unter „Kurs einteilen“ alle Termine eines Kurses auf einmal.
+            eingeteilt – und unter „Kurs einteilen“ alle Termine eines Kurses auf einmal. Wer für
+            welchen Termin zugesagt hat, siehst du im Wochenplan und unter „Nach Kursen“; die
+            Verfügbarkeit trägt jede Trainer:in selbst ein.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Aktualisieren
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/trainer/verfuegbarkeit">
+              <CalendarCheck className="h-4 w-4" /> Eigene Verfügbarkeit eintragen
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Aktualisieren
+          </Button>
+        </div>
       </div>
 
       {error && !data && <div className="text-sm text-destructive">{error}</div>}

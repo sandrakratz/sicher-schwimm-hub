@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -21,12 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, Search, Eye } from "lucide-react";
+import { Download, Search, Eye, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { listCancellations, setCancellationStatus } from "@/lib/cancellation.functions";
 import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { csvCell } from "@/lib/csv-safe";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 
 export const Route = createFileRoute("/_authenticated/admin/widerrufe")({
   beforeLoad: async () => {
@@ -80,6 +81,7 @@ function Page() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [detail, setDetail] = useState<Row | null>(null);
+  const [closeFor, setCloseFor] = useState<Row | null>(null);
 
   async function load() {
     setLoading(true);
@@ -103,9 +105,9 @@ function Page() {
     load(); /* eslint-disable-next-line */
   }, [status, from, to]);
 
-  async function changeStatus(id: string, next: Row["status"]) {
+  async function changeStatus(id: string, next: Row["status"], note?: string) {
     try {
-      await setStatusFn({ data: { id, status: next } });
+      await setStatusFn({ data: { id, status: next, ...(note ? { note } : {}) } });
       toast.success("Status aktualisiert");
       setRows((rs) => rs.map((r) => (r.id === id ? { ...r, status: next } : r)));
       if (detail && detail.id === id) setDetail({ ...detail, status: next });
@@ -258,19 +260,34 @@ function Page() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Select
-                            value={r.status}
-                            onValueChange={(v) => changeStatus(r.id, v as Row["status"])}
-                          >
-                            <SelectTrigger className="h-8 w-[150px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="eingegangen">Eingegangen</SelectItem>
-                              <SelectItem value="in_bearbeitung">In Bearbeitung</SelectItem>
-                              <SelectItem value="abgeschlossen">Abgeschlossen</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {r.status === "eingegangen" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => changeStatus(r.id, "in_bearbeitung")}
+                            >
+                              In Bearbeitung
+                            </Button>
+                          )}
+                          {r.status !== "abgeschlossen" && (
+                            <Button size="sm" onClick={() => setCloseFor(r)}>
+                              Abgeschlossen …
+                            </Button>
+                          )}
+                          {r.status === "abgeschlossen" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => changeStatus(r.id, "in_bearbeitung")}
+                            >
+                              Wieder öffnen
+                            </Button>
+                          )}
+                          <Button asChild size="sm" variant="ghost">
+                            <Link to="/admin/familie" search={{ email: r.email }}>
+                              <FolderOpen className="h-4 w-4" /> Familienakte öffnen
+                            </Link>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -289,6 +306,30 @@ function Page() {
           </div>
         </CardContent>
       </Card>
+
+      {closeFor && (
+        <ConfirmActionDialog
+          title={`Widerruf ${closeFor.reference_number} abschließen`}
+          consequence={
+            <>
+              Der Widerruf wird als „Abgeschlossen“ markiert; es wird keine Mail verschickt. Die
+              Buchung selbst bleibt dabei unverändert: Bitte nimm {closeFor.child_name} vorher in
+              der Familienakte aus dem Kurs („Absage erfassen“ bzw. „Aus dem Kurs nehmen“) und kläre
+              eine Erstattung in WISO MeinVerein. Du kannst den Widerruf danach wieder öffnen.
+            </>
+          }
+          confirmLabel="Abschließen"
+          reason={{
+            label: "Notiz zum Vorgang (z. B. Absage erfasst, Erstattung veranlasst)",
+            placeholder: "Was wurde erledigt?",
+          }}
+          onClose={() => setCloseFor(null)}
+          onConfirm={async (note) => {
+            await changeStatus(closeFor.id, "abgeschlossen", note);
+            setCloseFor(null);
+          }}
+        />
+      )}
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent className="max-w-2xl">

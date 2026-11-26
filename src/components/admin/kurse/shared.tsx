@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { formatDateBerlin } from "@/lib/format";
+import type { ExamCriteriaState } from "@/lib/swim-exams";
 
 // Gemeinsame Typen, Konstanten und kleine Hilfen der Kursverwaltung (aus routes/_authenticated/admin/kurse.tsx).
 
@@ -26,6 +27,10 @@ export type Participant = {
   goal_reached: boolean | null;
   achievement: string | null;
   badge: string | null;
+  exam_level?: string | null;
+  exam_criteria?: ExamCriteriaState | null;
+  exam_date?: string | null;
+  exam_pass_no?: string | null;
   /** Klötzchen am Schwimmgurt (6 = Anfänger … 0 = ohne Gurt), null = nicht erfasst */
   belt_blocks?: number | null;
   paid: boolean;

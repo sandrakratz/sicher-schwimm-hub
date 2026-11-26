@@ -17,13 +17,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrainerBilling, TrainerRates } from "@/components/admin/TrainerBilling";
 import { TrainerPayouts } from "@/components/admin/TrainerPayouts";
 import { CourseResults } from "@/components/admin/CourseResults";
+import { TrainerDeclarations } from "@/components/admin/TrainerDeclarations";
 import { toast } from "sonner";
 import { Copy, Download } from "lucide-react";
 import { formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import { formatIban } from "@/lib/iban";
 import { listPayoutDetails, type PayoutListRow } from "@/lib/trainer-payout.functions";
 
-const TABS = ["abrechnung", "ergebnis", "saetze", "auszahlungen", "konten"] as const;
+const TABS = [
+  "abrechnung",
+  "ergebnis",
+  "saetze",
+  "auszahlungen",
+  "erklaerungen",
+  "konten",
+] as const;
 
 export const Route = createFileRoute("/_authenticated/admin/uebungsleitergelder")({
   // ?tab=auszahlungen öffnet direkt die Freigaben (Link aus dem Eingang)
@@ -70,6 +78,7 @@ function Page() {
           <TabsTrigger value="ergebnis">Kursergebnis</TabsTrigger>
           <TabsTrigger value="saetze">Stundensätze</TabsTrigger>
           <TabsTrigger value="auszahlungen">Auszahlungen &amp; Bescheinigung</TabsTrigger>
+          <TabsTrigger value="erklaerungen">Jahreserklärungen</TabsTrigger>
           <TabsTrigger value="konten">Bankverbindungen</TabsTrigger>
         </TabsList>
         <TabsContent value="abrechnung" className="mt-4">
@@ -83,6 +92,9 @@ function Page() {
         </TabsContent>
         <TabsContent value="auszahlungen" className="mt-4">
           <TrainerPayouts />
+        </TabsContent>
+        <TabsContent value="erklaerungen" className="mt-4">
+          <TrainerDeclarations />
         </TabsContent>
         <TabsContent value="konten" className="mt-4">
           <IbanList />

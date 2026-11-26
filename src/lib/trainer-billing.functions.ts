@@ -1109,3 +1109,55 @@ export const saveMyDeclaration = createServerFn({ method: "POST" })
     });
     return mapDeclaration(saved);
   });
+
+export type DeclarationRow = {
+  trainerId: string;
+  name: string;
+  email: string | null;
+  /** null = für das Jahr nicht abgegeben */
+  declaration: Declaration | null;
+};
+
+/** Vorstand: Jahreserklärungen aller Trainer:innen für ein Jahr (fehlende sind erkennbar). */
+export const listDeclarations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
+  )
+  .handler(async ({ context, data }): Promise<{ year: number; rows: DeclarationRow[] }> => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: roleRows }, declRows] = await Promise.all([
+      supabaseAdmin.from("user_roles").select("user_id").eq("role", "trainer"),
+      fetchAll<any>((f, t) =>
+        (supabaseAdmin as any)
+          .from("trainer_declarations")
+          .select("trainer_id,year,side_job,other_allowance,other_note,confirmed_at")
+          .eq("year", data.year)
+          .order("id")
+          .range(f, t),
+      ),
+    ]);
+    const declBy = new Map<string, Declaration>(
+      declRows.map((d) => [d.trainer_id as string, mapDeclaration(d)]),
+    );
+    // Aktive Trainer:innen (Rolle) plus alle, die schon eine Erklärung abgegeben haben
+    const ids = Array.from(
+      new Set([...(roleRows ?? []).map((r) => r.user_id as string), ...declBy.keys()]),
+    );
+    if (ids.length === 0) return { year: data.year, rows: [] };
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select("id,first_name,last_name,email")
+      .in("id", ids);
+    const profileBy = new Map((profiles ?? []).map((p) => [p.id as string, p]));
+    const rows = ids
+      .map((id) => ({
+        trainerId: id,
+        name: nameOf(profileBy.get(id)),
+        email: (profileBy.get(id)?.email as string | null) ?? null,
+        declaration: declBy.get(id) ?? null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    return { year: data.year, rows };
+  });
