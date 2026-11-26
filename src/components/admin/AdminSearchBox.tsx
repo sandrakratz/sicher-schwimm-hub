@@ -49,7 +49,7 @@ export function AdminSearchBox() {
           type="search"
           value={q}
           onChange={(ev) => setQ(ev.target.value)}
-          placeholder="Kind oder Familie finden …"
+          placeholder="Kind/Familie suchen"
           className="w-full rounded-lg bg-sidebar-accent py-2 pl-8 pr-12 text-sm text-sidebar-foreground placeholder:text-sidebar-foreground/60 focus:outline-none focus:ring-2 focus:ring-sidebar-primary"
         />
         <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-sidebar-border px-1 text-[10px] opacity-70">
