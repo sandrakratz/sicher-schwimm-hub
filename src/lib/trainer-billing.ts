@@ -95,3 +95,26 @@ export function certificateSigners(
   if (norm(treasurer.name) === self) return others.slice(0, 2);
   return [treasurer, ...others.slice(0, 1)];
 }
+
+export type PayoutRemoval = {
+  status: "pending" | "approved";
+  trainerId: string;
+  cancelRequestedBy: string | null;
+};
+
+/**
+ * Wer darf eine Auszahlung entfernen (Vorstand 26.11.2026)? Eine noch nicht freigegebene Auszahlung
+ * jede:r aus dem Vorstand. Eine freigegebene nur zu zweit: Jemand hat die Stornierung beantragt, und eine
+ * andere Person bestätigt – nicht die beantragende und nicht die Empfänger:in selbst.
+ * Gibt den Grund zurück, warum es nicht geht, oder null.
+ */
+export function payoutRemovalBlocker(p: PayoutRemoval, userId: string): string | null {
+  if (p.status === "pending") return null;
+  if (!p.cancelRequestedBy)
+    return "Eine freigegebene Auszahlung lässt sich nur zu zweit stornieren: bitte zuerst die Stornierung beantragen.";
+  if (p.cancelRequestedBy === userId)
+    return "Die Stornierung hast du beantragt – bestätigen muss eine andere Person.";
+  if (p.trainerId === userId)
+    return "Die Stornierung einer eigenen Auszahlung muss jemand anderes bestätigen.";
+  return null;
+}

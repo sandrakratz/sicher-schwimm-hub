@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmActionDialog } from "@/components/admin/ConfirmActionDialog";
 import { TransferParticipantDialog } from "@/components/admin/TransferParticipantDialog";
 import { errorText } from "@/lib/format";
 import { combineReason } from "@/lib/decline-reasons";
@@ -37,20 +38,16 @@ export function useParticipantActions(refresh: (withCourses?: boolean) => Promis
   const [cancelCategory, setCancelCategory] = useState("");
   const [cancelDetail, setCancelDetail] = useState("");
   const [cancelBusy, setCancelBusy] = useState(false);
+  const [moveFor, setMoveFor] = useState<Participant | null>(null);
+  const [moveBusy, setMoveBusy] = useState(false);
   const [removeState, setRemoveState] = useState<RemoveState>(null);
   const [removing, setRemoving] = useState(false);
 
   async function updateStatus(p: Participant, status: Participant["status"]) {
     if (status === "waiting") {
-      // Zugeteiltes Kind zurück auf die Warteliste: Platz freigeben und
-      // Wartelisteneintrag (wieder-)herstellen, damit niemand verloren geht.
-      try {
-        await moveToWaitlistFn({ data: { participantId: p.id } });
-        toast.success("Zurück auf die Warteliste gesetzt");
-      } catch (e) {
-        return void toast.error(errorText(e, "Verschieben auf die Warteliste fehlgeschlagen"));
-      }
-      return refresh();
+      // Erst nach Rückfrage (Dialog „Das passiert“), siehe confirmMoveToWaitlist
+      setMoveFor(p);
+      return;
     }
     if (status === "cancelled") {
       // Absage durch die Familie: Grund per Auswahl erfassen (Dialog), Zeitpunkt und Grund werden
@@ -63,6 +60,22 @@ export function useParticipantActions(refresh: (withCourses?: boolean) => Promis
     const { error } = await supabase.from("course_participants").update({ status }).eq("id", p.id);
     if (error) return void toast.error(error.message);
     await refresh();
+  }
+
+  /** Zugeteiltes Kind zurück auf die Warteliste: Platz freigeben, Wartelisteneintrag (wieder-)herstellen. */
+  async function confirmMoveToWaitlist(note: string) {
+    if (!moveFor) return;
+    setMoveBusy(true);
+    try {
+      await moveToWaitlistFn({ data: { participantId: moveFor.id, note: note || undefined } });
+      toast.success(`${moveFor.participant_name ?? "Kind"} steht wieder auf der Warteliste`);
+      setMoveFor(null);
+      await refresh();
+    } catch (e) {
+      toast.error(errorText(e, "Verschieben auf die Warteliste fehlgeschlagen"));
+    } finally {
+      setMoveBusy(false);
+    }
   }
 
   async function confirmCancel() {
@@ -206,6 +219,10 @@ export function useParticipantActions(refresh: (withCourses?: boolean) => Promis
     cancelDetail,
     setCancelDetail,
     cancelBusy,
+    moveFor,
+    setMoveFor,
+    moveBusy,
+    confirmMoveToWaitlist,
     removeState,
     setRemoveState,
     removing,
@@ -267,6 +284,27 @@ export function ParticipantActionDialogs({
         onClose={() => a.setCancelFor(null)}
         onConfirm={a.confirmCancel}
       />
+      {a.moveFor && (
+        <ConfirmActionDialog
+          title={`${a.moveFor.participant_name ?? "Kind"} zurück auf die Warteliste`}
+          consequence={
+            <>
+              Das Kind verliert den Platz in diesem Kurs. Die Buchung bleibt als „abgesagt“ sichtbar
+              und zählt nicht als Absage der Familie. Das Kind steht danach wieder auf der
+              Warteliste, der frei gewordene Platz geht bei der nächsten Platzvergabe an die
+              Warteliste. Es geht keine E-Mail an die Eltern.
+            </>
+          }
+          reason={{
+            label: "Vermerk für die Warteliste",
+            placeholder: "z. B. Kurs passt vom Niveau noch nicht",
+          }}
+          confirmLabel="Auf die Warteliste setzen"
+          busy={a.moveBusy}
+          onClose={() => a.setMoveFor(null)}
+          onConfirm={(note) => void a.confirmMoveToWaitlist(note)}
+        />
+      )}
       <RemoveParticipantDialog
         state={a.removeState}
         setState={a.setRemoveState}

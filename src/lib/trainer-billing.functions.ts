@@ -571,29 +571,106 @@ export const createTrainerPayout = createServerFn({ method: "POST" })
     },
   );
 
-/** Auszahlung rückgängig machen (z. B. Fehlbuchung); die Termine sind danach wieder offen. */
+/**
+ * Auszahlung entfernen (z. B. Fehlbuchung); die Termine sind danach wieder offen. Nicht freigegebene
+ * Auszahlungen sofort, freigegebene nur als Bestätigung eines Storno-Antrags durch eine zweite Person
+ * (payoutRemovalBlocker). Das Protokoll hält Antrag, Grund und Bestätigung fest.
+ */
 export const deleteTrainerPayout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: payout } = await supabaseAdmin
+    const { data: payout } = await (supabaseAdmin as any)
       .from("trainer_payouts")
-      .select("trainer_id,total_amount,paid_on")
+      .select(
+        "trainer_id,total_amount,paid_on,status,approved_by,cancel_requested_by,cancel_requested_at,cancel_reason",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (!payout) throw new Error("Auszahlung nicht gefunden.");
-    const { error } = await supabaseAdmin.from("trainer_payouts").delete().eq("id", data.id);
+    const { payoutRemovalBlocker } = await import("@/lib/trainer-billing");
+    const blocker = payoutRemovalBlocker(
+      {
+        status: payout.status ?? "approved",
+        trainerId: payout.trainer_id,
+        cancelRequestedBy: payout.cancel_requested_by ?? null,
+      },
+      context.userId,
+    );
+    if (blocker) throw new Error(blocker);
+    // Nur löschen, wenn sich Status/Antrag seit dem Lesen nicht geändert haben
+    let del = (supabaseAdmin as any).from("trainer_payouts").delete().eq("id", data.id);
+    del =
+      payout.status === "pending"
+        ? del.eq("status", "pending")
+        : del.eq("cancel_requested_by", payout.cancel_requested_by);
+    const { error } = await del;
     if (error) throw new Error("Auszahlung konnte nicht gelöscht werden.");
     const { logAudit } = await import("@/lib/audit.server");
     await logAudit(null, context.userId, {
-      action: "trainer.payout.deleted",
+      action: payout.status === "pending" ? "trainer.payout.deleted" : "trainer.payout.cancelled",
       entity: "trainer_payouts",
       entity_id: data.id,
       metadata: payout,
     });
     return { ok: true };
+  });
+
+/** Stornierung einer freigegebenen Auszahlung beantragen (Schritt 1 von 2, Grund Pflicht). */
+export const requestPayoutCancellation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ id: z.string().uuid(), reason: z.string().trim().min(3).max(500) }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: updated, error } = await (supabaseAdmin as any)
+      .from("trainer_payouts")
+      .update({
+        cancel_requested_by: context.userId,
+        cancel_requested_at: new Date().toISOString(),
+        cancel_reason: data.reason,
+      })
+      .eq("id", data.id)
+      .eq("status", "approved")
+      .is("cancel_requested_by", null)
+      .select("trainer_id,total_amount,paid_on");
+    if (error) throw new Error("Stornierung konnte nicht beantragt werden.");
+    if (!updated?.length)
+      throw new Error("Nicht möglich: Die Auszahlung ist nicht freigegeben oder schon beantragt.");
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "trainer.payout.cancel_requested",
+      entity: "trainer_payouts",
+      entity_id: data.id,
+      metadata: { ...updated[0], reason: data.reason },
+    });
+    return { ok: true as const };
+  });
+
+/** Storno-Antrag zurückziehen bzw. ablehnen – die Auszahlung bleibt freigegeben. */
+export const withdrawPayoutCancellation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    await assertStaff(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any)
+      .from("trainer_payouts")
+      .update({ cancel_requested_by: null, cancel_requested_at: null, cancel_reason: null })
+      .eq("id", data.id);
+    if (error) throw new Error("Antrag konnte nicht zurückgenommen werden.");
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(null, context.userId, {
+      action: "trainer.payout.cancel_withdrawn",
+      entity: "trainer_payouts",
+      entity_id: data.id,
+      metadata: {},
+    });
+    return { ok: true as const };
   });
 
 /** Eigene Auszahlungen eines Jahres (Trainer:in sieht, was ihr wann ausgezahlt wurde). */
@@ -657,6 +734,8 @@ export type PayoutListEntry = {
   note: string | null;
   /** Anzahl der verknüpften Termine; 0 = nachträglich erfasste Auszahlung ohne Termine */
   itemCount: number;
+  /** Beantragte Stornierung einer freigegebenen Auszahlung (wartet auf zweite Person) */
+  cancelRequest: { byId: string; byName: string | null; at: string; reason: string | null } | null;
 };
 
 export type Certificate = {
@@ -739,7 +818,7 @@ export const listTrainerPayouts = createServerFn({ method: "GET" })
       let q = supabaseAdmin
         .from("trainer_payouts")
         .select(
-          "id,trainer_id,paid_on,total_amount,note,status,created_by,approved_by,approved_at,cap_override_reason",
+          "id,trainer_id,paid_on,total_amount,note,status,created_by,approved_by,approved_at,cap_override_reason,cancel_requested_by,cancel_requested_at,cancel_reason",
         )
         .gte("paid_on", `${data.year}-01-01`)
         .lte("paid_on", `${data.year}-12-31`);
@@ -764,7 +843,9 @@ export const listTrainerPayouts = createServerFn({ method: "GET" })
         "id",
         Array.from(
           new Set(
-            payouts.flatMap((p) => [p.trainer_id, p.created_by, p.approved_by]).filter(Boolean),
+            payouts
+              .flatMap((p) => [p.trainer_id, p.created_by, p.approved_by, p.cancel_requested_by])
+              .filter(Boolean),
           ),
         ) as string[],
       );
@@ -784,6 +865,14 @@ export const listTrainerPayouts = createServerFn({ method: "GET" })
         total: Number(p.total_amount),
         note: p.note ?? null,
         itemCount: counts.get(p.id) ?? 0,
+        cancelRequest: p.cancel_requested_by
+          ? {
+              byId: p.cancel_requested_by,
+              byName: names.get(p.cancel_requested_by) ?? null,
+              at: p.cancel_requested_at,
+              reason: p.cancel_reason ?? null,
+            }
+          : null,
       })),
     };
   });

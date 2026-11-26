@@ -7,6 +7,11 @@ import { parseSessionList } from "@/lib/session-list";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
 import { type Course } from "@/components/admin/kurse/shared";
 import type { SessionRow, SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
+import {
+  ATTENDANCE_LOCK_TEXT,
+  REPLACE_LOCK_TEXT,
+  sessionsWithAttendance,
+} from "@/components/admin/kurse/session-records";
 
 type Availability = { session_id: string; trainer_id: string; available: boolean };
 type Assignment = { session_id: string; trainer_id: string };
@@ -94,6 +99,12 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
     const real = parsed.filter((p) => !p.isBreak);
     if (real.length === 0)
       return toast.error("Keine Termine erkannt. Format z. B.: 07.11.2026 11:00–11:45 Uhr");
+    try {
+      if ((await sessionsWithAttendance(sessions.map((x) => x.id))).size > 0)
+        return void toast.error(REPLACE_LOCK_TEXT, { duration: 10000 });
+    } catch (e) {
+      return void toast.error(errorText(e, "Anwesenheit konnte nicht geprüft werden"));
+    }
     if (
       sessions.length > 0 &&
       !window.confirm(
@@ -182,9 +193,15 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
 
   async function removeSession(id: string) {
     const s = sessions.find((x) => x.id === id);
+    try {
+      if ((await sessionsWithAttendance([id])).has(id))
+        return void toast.error(ATTENDANCE_LOCK_TEXT, { duration: 10000 });
+    } catch (e) {
+      return void toast.error(errorText(e, "Anwesenheit konnte nicht geprüft werden"));
+    }
     if (
       !window.confirm(
-        `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} wirklich löschen? Anwesenheiten und Trainer-Nachweise zu diesem Termin gehen verloren.`,
+        `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} löschen?\n\nDas passiert: Der Termin und die Trainer-Einteilung dafür verschwinden. Die Eltern werden NICHT informiert – dafür danach „Eilnachricht an Eltern“ nutzen.`,
       )
     )
       return;

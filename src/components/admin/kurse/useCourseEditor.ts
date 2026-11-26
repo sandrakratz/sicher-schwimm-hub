@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { parseSessionList } from "@/lib/session-list";
 import { slugify, type Course, type ProgramRow } from "@/components/admin/kurse/shared";
 import type { CourseDialog } from "@/components/admin/kurse/CourseDialog";
+import { courseHasAttendance, REPLACE_LOCK_TEXT } from "@/components/admin/kurse/session-records";
 
 /** Kurszeitraum anlegen/bearbeiten (Dialog „Kurs bearbeiten“) inkl. optionaler Terminliste. */
 export function useCourseEditor(onSaved: () => Promise<void>, programs: ProgramRow[]) {
@@ -44,6 +45,14 @@ export function useCourseEditor(onSaved: () => Promise<void>, programs: ProgramR
     if (sessionText.trim() && realList.length === 0)
       return toast.error("In der Terminliste wurden keine Termine erkannt.");
     if (realList.length > 30) return toast.error("Maximal 30 Termine");
+    if (realList.length > 0 && editing.id) {
+      try {
+        if (await courseHasAttendance(editing.id))
+          return void toast.error(REPLACE_LOCK_TEXT, { duration: 10000 });
+      } catch (e) {
+        return void toast.error(e instanceof Error ? e.message : "Anwesenheit nicht prüfbar");
+      }
+    }
     if (
       realList.length > 0 &&
       editing.id &&
