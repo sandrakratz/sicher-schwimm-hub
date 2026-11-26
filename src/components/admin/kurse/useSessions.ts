@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { addDaysIso, errorText, formatDateBerlin, todayBerlinIso } from "@/lib/format";
 import { parseSessionList } from "@/lib/session-list";
 import { listTrainers, type TrainerOption } from "@/lib/trainers.functions";
+import { cancelCourseSession, type SessionCancellation } from "@/lib/session-cancel.functions";
 import { type Course } from "@/components/admin/kurse/shared";
 import type { SessionRow, SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
 import {
@@ -30,6 +31,10 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [bulkText, setBulkText] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [cancellations, setCancellations] = useState<SessionCancellation[]>([]);
+  const [cancelFor, setCancelFor] = useState<SessionRow | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const cancelFn = useServerFn(cancelCourseSession);
 
   async function openSessions(c: Course) {
     setCourse(c);
@@ -41,6 +46,16 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
       .order("session_index", { ascending: true });
     const list = (data as SessionRow[]) || [];
     setSessions(list);
+    // Protokoll ausgefallener Termine (neue Tabelle, fehlt in den generierten Typen)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: cx } = await (supabase as any)
+      .from("course_session_cancellations")
+      .select(
+        "id,session_index,session_date,start_time,reason,cancelled_at,parents_notified,trainers_notified",
+      )
+      .eq("course_id", c.id)
+      .order("session_date");
+    setCancellations((cx as SessionCancellation[]) ?? []);
     if (list.length > 0) {
       const ids = list.map((r) => r.id);
       const { data: av } = await supabase
@@ -201,13 +216,36 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
     }
     if (
       !window.confirm(
-        `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} löschen?\n\nDas passiert: Der Termin und die Trainer-Einteilung dafür verschwinden. Die Eltern werden NICHT informiert – dafür danach „Eilnachricht an Eltern“ nutzen.`,
+        `${s ? `Termin ${s.session_index} (${formatDateBerlin(s.session_date)})` : "Diesen Termin"} als Fehleintrag löschen?\n\nDas passiert: Der Termin verschwindet ohne Protokoll und ohne Nachricht. Fällt ein echter Termin aus, bitte stattdessen „Fällt aus …“ nutzen.`,
       )
     )
       return;
     const { error } = await supabase.from("course_sessions").delete().eq("id", id);
     if (error) return toast.error(error.message);
     await resync();
+  }
+
+  async function confirmCancel(v: {
+    reason: string;
+    parentMessage: string;
+    notifyTrainers: boolean;
+  }) {
+    if (!cancelFor) return;
+    setCancelBusy(true);
+    try {
+      const r = await cancelFn({ data: { sessionId: cancelFor.id, ...v } });
+      toast.success(
+        `Termin am ${formatDateBerlin(cancelFor.session_date)} fällt aus` +
+          (v.parentMessage ? ` · ${r.parents} Familie(n) informiert` : "") +
+          (v.notifyTrainers ? ` · ${r.trainers} Trainer:in(nen) informiert` : ""),
+      );
+      setCancelFor(null);
+      await resync();
+    } catch (e) {
+      toast.error(errorText(e, "Ausfall konnte nicht eingetragen werden"));
+    } finally {
+      setCancelBusy(false);
+    }
   }
 
   const dialogProps: Parameters<typeof SessionsDialog>[0] = {
@@ -224,9 +262,23 @@ export function useSessions(onCourseChanged: () => Promise<void>) {
     onImport: importSessions,
     onAdd: addSession,
     onRemove: removeSession,
+    onCancel: (s: SessionRow) => setCancelFor(s),
+    cancellations,
     onDateChange: updateSessionDate,
     onTimeChange: updateSessionTime,
   };
 
-  return { openSessions, dialogProps };
+  const cancelProps =
+    cancelFor && course
+      ? {
+          courseName: course.name,
+          session: cancelFor,
+          busy: cancelBusy,
+          onClose: () => setCancelFor(null),
+          onConfirm: (v: { reason: string; parentMessage: string; notifyTrainers: boolean }) =>
+            void confirmCancel(v),
+        }
+      : null;
+
+  return { openSessions, dialogProps, cancelProps };
 }

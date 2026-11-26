@@ -6,6 +6,7 @@ import { CourseBroadcastDialog } from "@/components/admin/CourseBroadcastDialog"
 import { CourseDialog } from "@/components/admin/kurse/CourseDialog";
 import { ParticipantsPanel } from "@/components/admin/kurse/ParticipantsPanel";
 import { SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
+import { SessionCancelDialog } from "@/components/admin/kurse/SessionCancelDialog";
 import { courseLabel, type Course } from "@/components/admin/kurse/shared";
 import { useCourseData } from "@/components/admin/kurse/useCourseData";
 import { useCourseEditor } from "@/components/admin/kurse/useCourseEditor";
@@ -100,6 +101,7 @@ function CoursePage() {
 
       <CourseDialog {...courseEditor.dialogProps} />
       <SessionsDialog {...sessions.dialogProps} />
+      {sessions.cancelProps && <SessionCancelDialog {...sessions.cancelProps} />}
       <CourseBroadcastDialog course={broadcast} onClose={() => setBroadcast(null)} />
     </div>
   );
