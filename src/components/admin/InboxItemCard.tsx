@@ -192,7 +192,7 @@ export function InboxItemCard({ item, showAge }: { item: InboxItem; showAge?: bo
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={8}
-                  placeholder="Ihre Antwort …"
+                  placeholder="Deine Antwort an die Eltern …"
                 />
               </div>
               <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">

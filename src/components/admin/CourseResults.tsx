@@ -78,7 +78,7 @@ export function CourseResults() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         Pro Kurs: eingegangene Kursgebühren, ausgezahlte Übungsleitergelder und die Kosten für die
-        Wasserzeit, die Sie hier selbst eintragen. Als „fertig“ gilt ein Kurs, wenn der letzte
+        Wasserzeit, die du hier selbst einträgst. Als „fertig“ gilt ein Kurs, wenn der letzte
         Kurstag vorbei ist und alle bestätigten Einsätze der Trainer:innen ausgezahlt sind. Zum
         Eintragen der Kosten die Zeile aufklappen.
       </p>

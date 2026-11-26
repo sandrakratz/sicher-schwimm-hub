@@ -200,7 +200,7 @@ function Page() {
         <p className="mt-1 text-muted-foreground">
           Unverbindliche Interessenbekundungen für den geplanten Kurs ab 13.02.2027. Diese Personen
           sind weder angemeldet noch Mitglied noch zahlungspflichtig. Die verbindliche Anmeldung
-          schalten Sie unter Kurse &amp; Teilnehmer frei (Angebot „Erwachsenenschwimmen“ → buchbar).
+          schaltest du unter Kurse &amp; Teilnehmer frei (Angebot „Erwachsenenschwimmen“ → buchbar).
         </p>
       </div>
 

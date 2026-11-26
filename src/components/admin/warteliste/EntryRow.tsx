@@ -595,7 +595,7 @@ export function EntryRow({
             <>
               Der Eintrag verschwindet endgültig aus der Warteliste, samt Notizen und Verlauf. Das
               ist nur für Fehleinträge und Dubletten gedacht. Soll die Familie nicht mehr warten,
-              nutzen Sie „Abmelden“: Dann bleibt der Vorgang mit Grund nachvollziehbar.
+              nutze „Abmelden“: Dann bleibt der Vorgang mit Grund nachvollziehbar.
             </>
           }
           confirmLabel="Endgültig löschen"

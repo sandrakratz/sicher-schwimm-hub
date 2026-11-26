@@ -656,9 +656,9 @@ function Page() {
           consequence={
             <>
               Der nie genehmigte Antrag wird endgültig gelöscht, samt aller Angaben. Das ist nur für
-              Fehleinträge und Dubletten gedacht. Soll jemand nicht Mitglied werden, nutzen Sie
-              „Ablehnen / Beenden“: dann bleibt der Vorgang nachvollziehbar und wird nach Frist
-              automatisch gelöscht.
+              Fehleinträge und Dubletten gedacht. Soll jemand nicht Mitglied werden, nutze „Ablehnen
+              / Beenden“: dann bleibt der Vorgang nachvollziehbar und wird nach Frist automatisch
+              gelöscht.
             </>
           }
           confirmLabel="Antrag löschen"

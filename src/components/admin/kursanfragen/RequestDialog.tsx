@@ -178,7 +178,7 @@ function ReplyBox({ item, actions, onSent }: { item: Item; actions: Actions; onS
           rows={6}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Ihre Rückfrage an die Eltern …"
+          placeholder="Deine Rückfrage an die Eltern …"
         />
       </div>
       <Button variant="default" onClick={doReply} disabled={busy || body.trim().length < 2}>

@@ -15,7 +15,7 @@ const GUIDE: Array<[string, string[]]> = [
       "Nur Kinder, die zum Kursbeginn das Mindestalter erreichen.",
       "Kinder mit „Erst zuteilen ab“ erst für Kurse ab diesem Datum.",
       "Programme mit ausgeschalteter Warteliste nehmen keine neuen Einträge an.",
-      "„Passt das?“: Automatisch angeboten wird nur, wenn das Schwimmniveau zum Mindest-Niveau des Angebots passt. Andere Fälle erscheinen im Eingang unter „Passt das?“ mit Begründung; der Vorstand bietet dann von Hand an. Das Mindest-Niveau stellen Sie je Angebot in der Kursverwaltung ein.",
+      "„Passt das?“: Automatisch angeboten wird nur, wenn das Schwimmniveau zum Mindest-Niveau des Angebots passt. Andere Fälle erscheinen im Eingang unter „Passt das?“ mit Begründung; der Vorstand bietet dann von Hand an. Das Mindest-Niveau stellst du je Angebot in der Kursverwaltung ein.",
     ],
   ],
   [

@@ -62,7 +62,7 @@ export function MemberCheckPanel({ onChanged }: { onChanged?: () => void }) {
         <p className="text-sm text-muted-foreground">
           Diese Personen haben „Mitglied“ angegeben, im System ist aber keine aktive Mitgliedschaft
           zu finden. Der Platz ist gebucht, vorläufig gilt der Normalpreis und es wurde noch keine
-          Zahlungsmail verschickt. Mit Ihrer Entscheidung geht die Kursbestätigung mit
+          Zahlungsmail verschickt. Mit deiner Entscheidung geht die Kursbestätigung mit
           Zahlungsaufforderung raus.
         </p>
       </CardHeader>

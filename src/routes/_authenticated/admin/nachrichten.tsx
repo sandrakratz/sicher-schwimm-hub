@@ -84,7 +84,7 @@ function Page() {
       <div>
         <h1 className="font-display text-3xl font-bold text-primary-deep">Postfach</h1>
         <p className="text-sm text-muted-foreground">
-          Hier steht, was Ihre Antwort braucht. Anmeldungen laufen automatisch und stehen nur dann
+          Hier steht, was deine Antwort braucht. Anmeldungen laufen automatisch und stehen nur dann
           einzeln da, wenn die Eltern etwas dazugeschrieben haben.
         </p>
       </div>
@@ -155,7 +155,7 @@ function Page() {
                   <p>
                     <strong>{summary.automatic}</strong> Anmeldungen der letzten 30 Tage laufen
                     automatisch weiter ({summary.offered} mit Platzangebot,{" "}
-                    {summary.waiting - summary.withNote} wartend ohne Anmerkung). Dazu müssen Sie
+                    {summary.waiting - summary.withNote} wartend ohne Anmerkung). Dazu musst du
                     nichts tun.
                   </p>
                   <Button asChild size="sm" variant="outline" className="mt-3">

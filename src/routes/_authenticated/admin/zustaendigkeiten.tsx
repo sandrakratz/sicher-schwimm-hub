@@ -60,7 +60,7 @@ function Page() {
         <p className="text-sm text-muted-foreground">
           Wer kümmert sich standardmäßig um welchen Bereich? Der Standard gilt für alle Vorgänge,
           die nicht ausdrücklich jemand anderem zugewiesen sind. Er erscheint als „(Regel)“ und im
-          Filter „Zuständig“. Einzelne Vorgänge können Sie jederzeit anderen zuweisen oder mit einer
+          Filter „Zuständig“. Einzelne Vorgänge kannst du jederzeit anderen zuweisen oder mit einer
           Notiz weitergeben.
         </p>
       </div>
@@ -91,8 +91,8 @@ function Page() {
           <div>
             <div className="font-medium">Tägliche Zusammenfassung per E-Mail</div>
             <p className="text-xs text-muted-foreground">
-              Werktags früh: „Das liegt heute bei dir“ mit Ihren offenen Zahlungen, Nachrichten und
-              Anfragen, nur wenn etwas offen ist. Gilt für Sie persönlich.
+              Werktags früh: „Das liegt heute bei dir“ mit deinen offenen Zahlungen, Nachrichten und
+              Anfragen, nur wenn etwas offen ist. Gilt für dich persönlich.
             </p>
           </div>
           <label className="flex items-center gap-2 text-sm">
