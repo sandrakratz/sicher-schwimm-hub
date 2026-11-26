@@ -33,6 +33,7 @@ import {
 } from "./logic";
 import { confirmFit, confirmTooYoung } from "./confirm";
 import { EntryAssign, SuggestionActions } from "./ui";
+import { UnregisterDialog } from "./UnregisterDialog";
 import type { WaitlistMutations } from "./useWaitlistMutations";
 
 const CELL = "py-2 pr-3 pl-0";
@@ -173,21 +174,27 @@ export function EntryRow({
     m.bookDirect.mutate({ entryId: e.id, courseId });
   };
 
-  const unregister = () => {
-    if (!confirm(`${e.child_name} als abgemeldet markieren?`)) return;
-    const block = confirm("Zusätzlich auf die Sperrliste setzen? (OK = ja, Abbrechen = nein)");
+  // Abmelden mit Grund: Eintrag bleibt als „Entfernt“ erhalten, Grund mit Zeitstempel in der Notiz.
+  // Bei offenem Angebot gibt es stattdessen „Absage erfassen“ (gibt den Platz sofort weiter).
+  const [unregisterOpen, setUnregisterOpen] = useState(false);
+  const canUnregister = ["waiting", "declined", "expired"].includes(e.status);
+  const unregister = ({ reason, blocklist }: { reason: string; blocklist: boolean }) =>
     update(
       {
         entryId: e.id,
         status: "removed",
-        ...(block ? { blocklist: true, blocklistReason: "Von der Warteliste abgemeldet" } : {}),
+        appendNote: `Abgemeldet – Grund: ${reason}`,
+        ...(blocklist ? { blocklist: true, blocklistReason: reason } : {}),
       },
       {
-        onSuccess: () =>
-          toast.success(block ? "Abgemeldet und gesperrt" : "Als abgemeldet markiert"),
+        onSuccess: () => {
+          setUnregisterOpen(false);
+          toast.success(
+            blocklist ? "Abgemeldet und gesperrt" : "Abgemeldet – der Grund steht in der Notiz",
+          );
+        },
       },
     );
-  };
 
   const st = STATUS_LABEL[e.status] ?? { label: e.status, className: "" };
   const fu = e.follow_up_on;
@@ -418,12 +425,12 @@ export function EntryRow({
                 Absage erfassen
               </Button>
             )}
-            {e.status === "waiting" && (
+            {canUnregister && (
               <Button
                 size="sm"
                 variant="ghost"
-                title="Als abgemeldet markieren"
-                onClick={unregister}
+                title="Abmelden (mit Grund – der Eintrag bleibt nachvollziehbar erhalten)"
+                onClick={() => setUnregisterOpen(true)}
               >
                 <Send className="h-4 w-4 rotate-180" />
               </Button>
@@ -555,6 +562,14 @@ export function EntryRow({
             </div>
           </TableCell>
         </TableRow>
+      )}
+      {unregisterOpen && (
+        <UnregisterDialog
+          entry={e}
+          onClose={() => setUnregisterOpen(false)}
+          onSave={unregister}
+          saving={m.update.isPending}
+        />
       )}
     </>
   );
