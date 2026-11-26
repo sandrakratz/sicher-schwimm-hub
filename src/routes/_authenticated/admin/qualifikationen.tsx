@@ -193,7 +193,7 @@ function Page() {
         <p className="text-sm text-muted-foreground">
           Erste Hilfe und erweitertes Führungszeugnis gelten 2 Jahre ab Ausstellung. Trainer tragen
           ihre Nachweise selbst ein und werden 30 Tage vor Ablauf per E-Mail erinnert. Hier
-          kontrollieren Sie, was vorliegt, und haken die Prüfung ab. Fehlende oder abgelaufene
+          kontrollierst du, was vorliegt, und hakst die Prüfung ab. Fehlende oder abgelaufene
           Nachweise sperren die Einteilung nicht.
         </p>
       </div>

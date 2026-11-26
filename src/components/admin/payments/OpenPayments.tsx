@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { askConfirm } from "@/components/admin/confirm-store";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -112,7 +113,14 @@ export function useOpenPayments() {
 
   async function remind(r: PaymentRow) {
     if (!r.participant_email?.trim()) return void toast.error("Keine E-Mail-Adresse hinterlegt.");
-    if (!window.confirm(`Zahlungserinnerung an ${r.participant_email} senden?`)) return;
+    if (
+      !(await askConfirm({
+        title: `Zahlungserinnerung an ${r.participant_name ?? "die Eltern"}`,
+        consequence: `Eine E-Mail mit der Bitte um Zahlung geht an ${r.participant_email}. Zurückholen lässt sie sich nicht.`,
+        confirmLabel: "Erinnerung senden",
+      }))
+    )
+      return;
     setBusy(r.id);
     try {
       const res = await remindFn({ data: { participantId: r.id } });

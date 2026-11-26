@@ -101,11 +101,11 @@ function FamilyPage() {
   if (!email && !name) {
     return (
       <p className="text-muted-foreground">
-        Keine Familie ausgewählt. Nutzen Sie die{" "}
+        Keine Familie ausgewählt. Nutze die{" "}
         <Link to="/admin/suche" className="underline">
           Suche
         </Link>{" "}
-        oder öffnen Sie eine Familie aus der Anfrageliste.
+        oder öffne eine Familie aus der Anfrageliste.
       </p>
     );
   }

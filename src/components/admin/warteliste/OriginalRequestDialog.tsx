@@ -274,7 +274,7 @@ export function OriginalRequestDialog({
                   rows={5}
                   value={replyBody}
                   onChange={(e) => setReplyBody(e.target.value)}
-                  placeholder="Ihre Rückfrage an die Eltern …"
+                  placeholder="Deine Rückfrage an die Eltern …"
                 />
               </label>
               <Button

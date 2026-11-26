@@ -264,7 +264,7 @@ export function MessageCard({
                       value={replyBody}
                       onChange={(e) => setReplyBody(e.target.value)}
                       rows={8}
-                      placeholder="Ihre Antwort …"
+                      placeholder="Deine Antwort …"
                     />
                   </div>
                   <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">

@@ -1,4 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
+import { askConfirm } from "@/components/admin/confirm-store";
 import { logExport } from "@/lib/export-log.functions";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -676,7 +677,15 @@ export function TrainerRates() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm("Diesen Satz löschen? Bereits ausgezahlte Beträge bleiben unverändert."))
+    if (
+      !(await askConfirm({
+        title: "Stundensatz löschen",
+        consequence:
+          "Der Satz wird gelöscht. Bereits ausgezahlte Beträge bleiben unverändert; neue Abrechnungen nutzen dann den nächsten passenden Satz.",
+        confirmLabel: "Löschen",
+        destructive: true,
+      }))
+    )
       return;
     try {
       await deleteTrainerRate({ data: { id } });

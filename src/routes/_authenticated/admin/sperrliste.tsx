@@ -15,7 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Trash2, ShieldBan } from "lucide-react";
+import { ShieldBan } from "lucide-react";
+import { MoreMenu } from "@/components/admin/MoreMenu";
 import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import {
   listBlocklist,
@@ -308,14 +309,16 @@ function Page() {
                       >
                         {e.active ? "Sperre aufheben" : "Wieder sperren"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => remove(e)}
-                        aria-label="Eintrag löschen"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <MoreMenu
+                        items={[
+                          {
+                            label: "Eintrag löschen …",
+                            hint: "Sofort und endgültig – sonst löscht der Löschjob nach 2 Jahren",
+                            destructive: true,
+                            onSelect: () => void remove(e),
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
