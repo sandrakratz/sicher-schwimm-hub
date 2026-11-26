@@ -18,6 +18,7 @@ import {
   Hourglass,
   ListChecks,
   MailOpen,
+  ShieldBan,
   ShieldCheck,
   UserRound,
   Users,
@@ -84,6 +85,7 @@ const TASK_ICON: Record<string, typeof Euro> = {
   "family-swim": Waves,
   messages: MailOpen,
   unstaffed: CalendarCheck,
+  "blocklist-expiring": ShieldBan,
 };
 
 const TASK_TEXT: Record<string, { todo: string; action: string }> = {
@@ -158,6 +160,10 @@ const TASK_TEXT: Record<string, { todo: string; action: string }> = {
   unstaffed: {
     todo: "Kurstermine in den nächsten 14 Tagen, bei denen noch Trainer:innen fehlen. Einteilen oder Ersatz anfragen.",
     action: "Lücken im Dienstplan",
+  },
+  "blocklist-expiring": {
+    todo: "Diese Sperrlisten-Einträge werden in den nächsten 4 Wochen automatisch gelöscht (2 Jahre nach Eintrag). Soll eine Sperre bleiben, in der Sperrliste „Verlängern“ klicken; sonst ist nichts zu tun.",
+    action: "Sperrliste öffnen",
   },
 };
 

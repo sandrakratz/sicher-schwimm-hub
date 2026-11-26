@@ -15,14 +15,16 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Trash2, ShieldBan } from "lucide-react";
-import { formatDateBerlin, formatDateTimeBerlin } from "@/lib/format";
+import { formatDateBerlin, formatDateTimeBerlin, todayBerlinIso } from "@/lib/format";
 import {
   listBlocklist,
   addBlocklistEntry,
   setBlocklistActive,
   deleteBlocklistEntry,
+  extendBlocklistEntry,
   type BlocklistEntry,
 } from "@/lib/blocklist.functions";
+import { blocklistExpiringSoon, blocklistExpiry } from "@/lib/blocklist-retention";
 
 export const Route = createFileRoute("/_authenticated/admin/sperrliste")({
   ssr: false,
@@ -84,9 +86,21 @@ function Page() {
     }
   }
 
+  const today = todayBerlinIso();
+  async function extend(e: BlocklistEntry) {
+    try {
+      const res = await extendBlocklistEntry({ data: { id: e.id } });
+      toast.success(`Verlängert – der Eintrag bleibt bis ${formatDateBerlin(res.keepUntil)}.`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Verlängern fehlgeschlagen.");
+    }
+  }
+
   async function toggle(e: BlocklistEntry) {
     try {
       await setBlocklistActive({ data: { id: e.id, active: !e.active } });
+      toast.success(e.active ? "Sperre aufgehoben" : "Wieder gesperrt");
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Änderung fehlgeschlagen.");
@@ -113,6 +127,10 @@ function Page() {
           Gesperrte Teilnehmer können keinen Kurs direkt online buchen. Ihre Angaben landen
           stattdessen als Kursanfrage zur Einzelfallprüfung im Bereich „Kursanfragen“. Abgelehnte
           Kursanfragen werden automatisch übernommen.
+        </p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Einträge werden 2 Jahre nach dem Eintrag automatisch gelöscht (Datenschutz). Der Eingang
+          erinnert 4 Wochen vorher; „Verlängern“ behält einen Eintrag 2 Jahre ab heute.
         </p>
       </div>
 
@@ -186,6 +204,9 @@ function Page() {
                   <TableHead>Quelle</TableHead>
                   <TableHead>Zugehörige Anfrage</TableHead>
                   <TableHead>Erstellt</TableHead>
+                  <TableHead title="Danach löscht der Löschjob den Eintrag automatisch">
+                    Bleibt bis
+                  </TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
@@ -245,13 +266,37 @@ function Page() {
                     <TableCell className="text-xs text-muted-foreground">
                       {formatDateTimeBerlin(e.created_at)}
                     </TableCell>
+                    <TableCell className="text-xs">
+                      {(() => {
+                        const until = blocklistExpiry(e.created_at, e.keep_until);
+                        const soon = blocklistExpiringSoon(until, today);
+                        return (
+                          <span
+                            className={
+                              soon ? "font-semibold text-amber-700" : "text-muted-foreground"
+                            }
+                            title={e.keep_until ? "verlängert" : "2 Jahre nach Eintrag"}
+                          >
+                            {formatDateBerlin(until)}
+                          </span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-right space-x-2 whitespace-nowrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Eintrag 2 Jahre ab heute behalten"
+                        onClick={() => void extend(e)}
+                      >
+                        Verlängern
+                      </Button>
                       <Button
                         size="sm"
                         variant={e.active ? "outline" : "default"}
                         onClick={() => toggle(e)}
                       >
-                        {e.active ? "Deaktivieren" : "Aktivieren"}
+                        {e.active ? "Sperre aufheben" : "Wieder sperren"}
                       </Button>
                       <Button
                         size="sm"

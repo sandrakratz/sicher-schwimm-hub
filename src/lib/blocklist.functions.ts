@@ -13,6 +13,8 @@ export type BlocklistEntry = {
   request_id: string | null;
   active: boolean;
   created_at: string;
+  /** Verlängert bis; leer = 2 Jahre nach Eintrag (Löschkonzept 2027) */
+  keep_until: string | null;
   /** Kurzinfo zur ursprünglichen Kursanfrage, falls der Eintrag daraus entstand */
   request?: {
     parent_name: string | null;
@@ -29,9 +31,13 @@ export const listBlocklist = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertStaff(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    // keep_until fehlt in den generierten Typen (neue Spalte)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabaseAdmin as any)
       .from("booking_blocklist")
-      .select("id,child_name_norm,child_dob,email_norm,reason,source,request_id,active,created_at")
+      .select(
+        "id,child_name_norm,child_dob,email_norm,reason,source,request_id,active,created_at,keep_until",
+      )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
@@ -146,4 +152,29 @@ export const deleteBlocklistEntry = createServerFn({ method: "POST" })
       entity_id: data.id,
     });
     return { ok: true };
+  });
+
+/** Eintrag behalten: 2 Jahre ab heute (sonst löscht der Löschjob ihn 2 Jahre nach Eintrag). */
+export const extendBlocklistEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertStaff(context);
+    const { todayBerlinIso } = await import("@/lib/format");
+    const { blocklistExtendedUntil } = await import("@/lib/blocklist-retention");
+    const keepUntil = blocklistExtendedUntil(todayBerlinIso());
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("booking_blocklist")
+      .update({ keep_until: keepUntil } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    const { logAudit } = await import("@/lib/audit.server");
+    await logAudit(context.supabase, context.userId, {
+      action: "blocklist.extended",
+      entity: "booking_blocklist",
+      entity_id: data.id,
+      metadata: { keep_until: keepUntil },
+    });
+    return { keepUntil };
   });
