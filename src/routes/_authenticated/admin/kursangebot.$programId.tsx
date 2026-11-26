@@ -7,6 +7,7 @@ import { CourseSessionsMailDialog } from "@/components/admin/CourseSessionsMailD
 import { CourseDialog } from "@/components/admin/kurse/CourseDialog";
 import { ProgramDetail } from "@/components/admin/kurse/ProgramDetail";
 import { SessionsDialog } from "@/components/admin/kurse/SessionsDialog";
+import { SessionCancelDialog } from "@/components/admin/kurse/SessionCancelDialog";
 import type { TermContext } from "@/components/admin/kurse/TermCard";
 import type { Course } from "@/components/admin/kurse/shared";
 import { useCourseData } from "@/components/admin/kurse/useCourseData";
@@ -117,6 +118,7 @@ function ProgramPage() {
 
       <CourseDialog {...courseEditor.dialogProps} />
       <SessionsDialog {...sessions.dialogProps} />
+      {sessions.cancelProps && <SessionCancelDialog {...sessions.cancelProps} />}
       <CourseBroadcastDialog course={broadcastCourse} onClose={() => setBroadcastCourse(null)} />
       <CourseSessionsMailDialog
         course={sessionsMailCourse}

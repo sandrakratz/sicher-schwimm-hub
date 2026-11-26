@@ -1,4 +1,7 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import { MoreMenu } from "@/components/admin/MoreMenu";
+import { formatDateBerlin } from "@/lib/format";
+import type { SessionCancellation } from "@/lib/session-cancel.functions";
 import { AttendanceBoard } from "@/components/AttendanceBoard";
 import { TrainerAttendancePanel } from "@/components/TrainerAttendancePanel";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +44,8 @@ export function SessionsDialog({
   onImport,
   onAdd,
   onRemove,
+  onCancel,
+  cancellations,
   onDateChange,
   onTimeChange,
 }: {
@@ -57,6 +62,10 @@ export function SessionsDialog({
   onImport: () => void;
   onAdd: () => void;
   onRemove: (id: string) => void;
+  /** „Termin fällt aus“ öffnen */
+  onCancel: (s: SessionRow) => void;
+  /** Bereits ausgefallene Termine (Protokoll) */
+  cancellations: SessionCancellation[];
   onDateChange: (id: string, date: string) => void;
   onTimeChange: (id: string, field: "start_time" | "end_time", value: string) => void;
 }) {
@@ -155,14 +164,23 @@ export function SessionsDialog({
                     onChange={(e) => onTimeChange(s.id, "end_time", e.target.value)}
                   />
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    aria-label="Termin entfernen"
-                    title="Termin entfernen"
-                    onClick={() => onRemove(s.id)}
+                    title="Termin findet nicht statt – mit Grund, Eltern und Trainer:innen auf Wunsch informieren"
+                    onClick={() => onCancel(s)}
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    Fällt aus …
                   </Button>
+                  <MoreMenu
+                    items={[
+                      {
+                        label: "Fehleintrag löschen …",
+                        hint: "Nur für versehentlich angelegte Termine – ohne Protokoll, ohne Nachricht",
+                        destructive: true,
+                        onSelect: () => onRemove(s.id),
+                      },
+                    ]}
+                  />
                 </div>
                 <div className="flex flex-wrap items-center gap-2 pl-10 text-xs">
                   {yes.map((a) => (
@@ -201,6 +219,26 @@ export function SessionsDialog({
             );
           })}
         </div>
+        {cancellations.length > 0 && (
+          <div className="space-y-1 rounded-md border border-dashed p-3 text-sm">
+            <h3 className="font-semibold">Ausgefallene Termine</h3>
+            {cancellations.map((c) => (
+              <div key={c.id} className="text-xs">
+                <span className="font-medium">
+                  {formatDateBerlin(c.session_date)}
+                  {c.start_time ? `, ${c.start_time.slice(0, 5)} Uhr` : ""}
+                </span>
+                {" – "}
+                {c.reason}
+                <span className="text-muted-foreground">
+                  {" "}
+                  · eingetragen {formatDateBerlin(c.cancelled_at)} · informiert:{" "}
+                  {c.parents_notified} Familie(n), {c.trainers_notified} Trainer:in(nen)
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
         {course && (
           <div className="mt-4 space-y-2 border-t pt-4">
             <h3 className="text-sm font-semibold">Anwesenheit</h3>

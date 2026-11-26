@@ -340,64 +340,22 @@ export const broadcastCourseMessage = createServerFn({ method: "POST" })
       });
       if (!isTrainer || !ofCourse) throw new Error("Forbidden");
     }
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: course } = await supabaseAdmin
-      .from("courses")
-      .select("id,name")
-      .eq("id", data.courseId)
-      .maybeSingle();
-    if (!course) throw new Error("Kurs nicht gefunden");
-    const { queueTemplateEmail } = await import("@/lib/email-send.server");
-    const { data: parts } = await supabaseAdmin
-      .from("course_participants")
-      .select("id,participant_name,participant_email")
-      .eq("course_id", course.id)
-      .eq("status", "confirmed");
-    const stamp = Date.now();
-    const seen = new Set<string>();
-    let sent = 0;
-    for (const p of parts ?? []) {
-      const email = p.participant_email?.trim().toLowerCase();
-      if (!email || seen.has(email)) continue;
-      seen.add(email);
-      const kids = (parts ?? [])
-        .filter((x) => x.participant_email?.trim().toLowerCase() === email)
-        .map((x) => x.participant_name)
-        .filter(Boolean)
-        .join(" und ");
-      const r = await queueTemplateEmail({
-        templateName: "course-broadcast",
-        recipientEmail: p.participant_email!,
-        senderUserId: context.userId,
-        idempotencyKey: `course-broadcast-${course.id}-${p.id}-${stamp}`,
-        templateData: {
-          subject: data.subject,
-          message: data.message,
-          course_name: course.name,
-          child_name: kids || null,
-        },
-      });
-      if (r.queued) sent++;
-    }
-    // Zusätzlich als Mitteilung aufs Handy (nur an Familien, die das aktiviert haben)
-    const { sendPushToCourse } = await import("@/lib/push.server");
-    const push = await sendPushToCourse(course.id, {
-      title: data.subject,
-      body: data.message.replace(/\s+/g, " ").slice(0, 160),
-      url: "/",
-      tag: `course-broadcast-${course.id}`,
-    }).catch((e) => {
-      console.error("push broadcast failed", e);
-      return { sent: 0, devices: 0 };
+    const { sendCourseBroadcast } = await import("@/lib/course-broadcast.server");
+    const r = await sendCourseBroadcast({
+      courseId: data.courseId,
+      subject: data.subject,
+      message: data.message,
+      senderUserId: context.userId,
+      key: String(Date.now()),
     });
     const { logAudit } = await import("@/lib/audit.server");
     await logAudit(null, context.userId, {
       action: "course.broadcast",
       entity: "courses",
-      entity_id: course.id,
-      metadata: { subject: data.subject, sent, push_sent: push.sent },
+      entity_id: data.courseId,
+      metadata: { subject: data.subject, sent: r.sent, push_sent: r.pushSent },
     });
-    return { sent, total: seen.size, pushSent: push.sent, pushDevices: push.devices };
+    return { sent: r.sent, total: r.total, pushSent: r.pushSent, pushDevices: r.pushDevices };
   });
 
 /**
