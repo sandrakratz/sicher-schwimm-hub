@@ -21,17 +21,30 @@ const STYLE = `
   .sum{margin-top:18px;font-size:15px;font-weight:bold;border-top:2px solid #111;padding-top:8px;display:flex;justify-content:space-between}
   .note{margin-top:22px;font-size:12px;color:#333}
   .meta{margin-top:18px;font-size:12px;color:#333}
-  .signs{margin-top:60px;display:flex;gap:48px;font-size:12px}
-  .signs div{flex:1;border-top:1px solid #111;padding-top:4px}
+  .signs{margin-top:8px;display:flex;gap:48px;font-size:12px}
+  .signs section{flex:1}
+  .signs .sig{height:60px;display:flex;align-items:flex-end}
+  .signs .sig img{max-height:56px;max-width:220px}
+  .signs .line{border-top:1px solid #111;padding-top:4px}
   @media print{body{margin:18mm}}
 `;
 
 const header = () =>
   `<div class="org"><strong>${esc(ORG.name)}</strong> · ${esc(ORG.street)}, ${esc(ORG.zipCity)}<br>${esc(ORG.register)}</div>`;
 
-const signLines = (signers: { name: string; role: string }[]) =>
+// Hinterlegte Unterschrift steht über der Linie; ohne Bild bleibt Platz zum Unterschreiben von Hand.
+const signLines = (signers: { name: string; role: string; signatureUrl?: string }[]) =>
   `<p style="margin-top:40px;font-size:12px">${esc(ORG.city)}, ${esc(formatDateBerlin(new Date()))}</p>
-<div class="signs">${signers.map((s) => `<div>${esc(s.name)}<br>${esc(s.role)}</div>`).join("")}</div>`;
+<div class="signs">${signers
+    .map(
+      (s) =>
+        `<section><div class="sig">${
+          s.signatureUrl?.startsWith("data:image/png;base64,")
+            ? `<img src="${s.signatureUrl}" alt="Unterschrift ${esc(s.name)}">`
+            : ""
+        }</div><div class="line">${esc(s.name)}<br>${esc(s.role)}</div></section>`,
+    )
+    .join("")}</div>`;
 
 const printScript = `<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},300)})</script>`;
 

@@ -76,7 +76,14 @@ export function capCheck(paidYear: number, otherAllowance: number, amount: numbe
   };
 }
 
-export type Signer = { name: string; role: string };
+export type Signer = {
+  name: string;
+  role: string;
+  /** Kennung der hinterlegten Unterschrift (michael, sandra, manuela) */
+  key?: string;
+  /** Eingesetzte Unterschrift als Bild (nur wenn alle Unterzeichnenden eine haben) */
+  signatureUrl?: string;
+};
 
 /**
  * Unterschriften der Jahresbescheinigung (Vorstand 25.11.2026): die Kassenwartin, die abrechnet, und ein
