@@ -111,8 +111,12 @@ export function firstYearFee(
 }
 
 /** Unterschriften auf der Übungsleiter-Jahresbescheinigung (siehe certificateSigners). */
-export const CERT_BOARD = [
-  { name: "Michael Kratz", role: "1. Vorsitzender" },
-  { name: "Sandra Kratz", role: "2. Vorsitzende" },
+export const CERT_BOARD: { name: string; role: string; key: "michael" | "sandra" }[] = [
+  { name: "Michael Kratz", role: "1. Vorsitzender", key: "michael" },
+  { name: "Sandra Kratz", role: "2. Vorsitzende", key: "sandra" },
 ];
-export const CERT_TREASURER = { name: "Manuela Scholz-Ornowski", role: "Kassenwartin" };
+export const CERT_TREASURER = {
+  name: "Manuela Scholz-Ornowski",
+  role: "Kassenwartin",
+  key: "manuela",
+} as const;

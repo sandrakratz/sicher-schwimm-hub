@@ -951,12 +951,23 @@ export const getPayoutCertificate = createServerFn({ method: "GET" })
       });
     }
     const trainerName = nameOf(profile ?? undefined);
+    let signers = certificateSigners(trainerName, CERT_BOARD, CERT_TREASURER);
+    // Hinterlegte Unterschriften einsetzen: nur bei freigegebenen Auszahlungen und nur, wenn beide
+    // Unterzeichnenden eine haben (alle oder keine – sonst wird von Hand unterschrieben).
+    if (mapped.length > 0) {
+      const { loadSignaturesAllOrNone } = await import("@/lib/pdf-branding.server");
+      const keys = signers.map((s) => s.key).filter(Boolean) as (
+        "michael" | "sandra" | "manuela"
+      )[];
+      const urls = keys.length === signers.length ? await loadSignaturesAllOrNone(keys) : null;
+      if (urls) signers = signers.map((s) => ({ ...s, signatureUrl: urls[s.key!] }));
+    }
     return {
       trainerName,
       year: data.year,
       total: Math.round(mapped.reduce((s, p) => s + p.total, 0) * 100) / 100,
       payouts: mapped,
-      signers: certificateSigners(trainerName, CERT_BOARD, CERT_TREASURER),
+      signers,
       pendingCount,
     };
   });

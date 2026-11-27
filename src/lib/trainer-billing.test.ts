@@ -9,6 +9,7 @@ import {
   resolveHours,
   type Rate,
 } from "./trainer-billing";
+import { CERT_BOARD, CERT_TREASURER } from "./billing-config";
 
 describe("Abgerechnete Stunden", () => {
   test("Stunden des Kurses gehen vor dem Standard der Kursart", () => {
@@ -95,6 +96,16 @@ describe("Unterschriften der Jahresbescheinigung", () => {
 
   test("eigene Bescheinigung der Kasse: beide Vorstandsmitglieder", () => {
     expect(names("Kasse Drei")).toEqual(["Vorsitz Eins", "Vorsitz Zwei"]);
+  });
+
+  test("Vereinsliste: immer zwei Unterschriften mit hinterlegter Kennung, nie die eigene", () => {
+    for (const t of ["Trainer Vier", ...CERT_BOARD.map((b) => b.name), CERT_TREASURER.name]) {
+      const s = certificateSigners(t, CERT_BOARD, CERT_TREASURER);
+      expect(s.length).toBe(2);
+      expect(s.every((x) => !!x.key)).toBe(true);
+      expect(new Set(s.map((x) => x.key)).size).toBe(2);
+      expect(s.some((x) => x.name === t)).toBe(false);
+    }
   });
 });
 

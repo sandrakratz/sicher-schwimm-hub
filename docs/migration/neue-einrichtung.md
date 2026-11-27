@@ -34,9 +34,13 @@ Die `.env` ist im öffentlichen Repository versioniert und darf **nur öffentlic
 4. Speicherbereiche `documents` und `media` (beide privat) – werden von der Migration `20260930120000_create_storage_buckets.sql` angelegt. Die 9 Dateien
    (Liste in `storage.md`) mit **exakt gleichem Dateinamen** hochladen, weil die Datenbank die Namen speichert
    (`documents/…`, `media/events/…`, `media/news/…`).
-   Zusätzlich der private Bereich `branding` (Migration `20261001130000_branding_bucket.sql`) mit den zwei Dateien **`signature.png`** (Unterschrift) und
-   **`stamp.png`** (Vereinsstempel), exakt so benannt. Sie stehen **nicht** im Code (öffentliches Repository) und werden nur beim Erstellen der
-   Teilleistungsnachweise vom Server geladen. Fehlt eine Datei, wird kein Nachweis erstellt (Fehlermeldung im Verwaltungsbereich bzw. im Protokoll).
+   Zusätzlich der private Bereich `branding` (Migration `20261001130000_branding_bucket.sql`, ohne Zugriffsregeln: nur der Server liest ihn) mit
+   **`stamp.png`** (Vereinsstempel) und den Unterschriften **`unterschrift-michael.png`**, **`unterschrift-sandra.png`**, **`unterschrift-manuela.png`**
+   (PNG, freigestellt), exakt so benannt. Sie stehen **nicht** im Code (öffentliches Repository). Verwendung:
+   - Prüfungsprotokoll und Teilleistungsnachweis: immer Michael (prüfende Person, Reg.-Nr.) + Stempel. Ältere Ablage `signature.png` gilt als Michaels
+     Unterschrift, solange `unterschrift-michael.png` fehlt. Fehlt Unterschrift oder Stempel, wird kein Nachweis erstellt.
+   - Übungsleiter-Jahresbescheinigung: zwei Personen nach `certificateSigners` (Kasse + ein Vorstandsmitglied, nie die Person selbst). Nur wenn
+     **beide** Unterschriften da sind, werden sie eingesetzt; sonst bleiben beide Linien leer zum Unterschreiben von Hand.
 5. Authentication:
    - Sign-in: nur E-Mail + Passwort. „Confirm email“ **an**, Registrierung offen lassen wie bisher.
    - URL Configuration: Site URL `https://sicher-schwimmen.com`; Redirect URLs `https://sicher-schwimmen.com/**`, `https://www.sicher-schwimmen.com/**`.
